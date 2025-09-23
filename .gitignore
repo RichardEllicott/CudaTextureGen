@@ -1,2 +1,7 @@
 # Ignore build directory
 /build/
+
+# Ignore virtual environments
+.venv/
+venv/
+ENV/

@@ -1,7 +1,4 @@
 #!/bin/bash
-
-
-#!/bin/bash
 set -e
 
 export CPLUS_INCLUDE_PATH=/usr/include/python3.12

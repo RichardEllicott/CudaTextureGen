@@ -1,1 +1,1 @@
-./build/cuda_hello
+PYTHONPATH=build/python python3 test.py
