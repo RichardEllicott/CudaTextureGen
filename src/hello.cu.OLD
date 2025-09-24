@@ -1,4 +1,9 @@
-// hello.cu
+/*
+
+this example is plain CUDA, not with the python hook
+
+
+*/
 #include <iostream>
 
 __global__ void hello_kernel() {
