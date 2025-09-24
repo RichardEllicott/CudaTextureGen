@@ -32,10 +32,14 @@ tar -czf archive-name.tar.gz /path/to/directory-or-file # compress
 tar xzf file.tar.gz # decompress
 
 ls - a # list all hidden
+rm -rf folder/ # remove folder 
 
 
 
-## Notes
+
+## Install Notes
+
+wsl --install -d Ubuntu-24.04 # install Ubuntu 24.04 (mainly as we need python 3.12)
 
 
 sudo apt update
