@@ -25,15 +25,14 @@ adding python
 
 sudo apt update
 sudo apt install python3-dev
-
-
 sudo apt install python3.12-dev
 
 
 
 
-okay it seems we're working but i likely forgot dependancies, we now have a python hook not yet linked by hello world from each
+```bash
+pip install -e . --break-system-packages
+```
 
 
-https://copilot.microsoft.com/chats/ihW3tBAGq6pqzhJ9aRTUS
 
