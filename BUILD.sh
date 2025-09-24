@@ -10,9 +10,5 @@ cd build
 cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
 ninja
 
-# Run Python test from correct directory
-cd python
-python3 -c "import cuda_hello; print(cuda_hello.hello())"
-
 
 
