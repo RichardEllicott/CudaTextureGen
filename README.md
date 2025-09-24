@@ -17,15 +17,32 @@ Written on WSL using Ubuntu 24.04.3 LTS
 ```
 
 
+## Commands
+
+wsl --list --online # list linux distros that can be installed
+wsl --install -d Ubuntu-24.04 # install Ubuntu-24.04
+
+
+wsl -l -v # list wsl linux's installed
+wsl --unregister Ubuntu # delete installed linux
+
+
+tar -czvf archive-name.tar.gz /path/to/directory-or-file # compress (verbose)
+tar -czf archive-name.tar.gz /path/to/directory-or-file # compress
+tar xzf file.tar.gz # decompress
+
+ls - a # list all hidden
+
+
+
 ## Notes
-
-adding python
-
 
 
 sudo apt update
-sudo apt install python3-dev
-sudo apt install python3.12-dev
+sudo apt install -y build-essential cmake ninja-build
+sudo apt install -y python3 python3-venv python3-dev
+sudo apt install -y nvidia-cuda-toolkit
+
 
 
 
