@@ -17,4 +17,4 @@ arr = np.array(img, dtype=np.float32)         # shape (H, W)
 # Erode
 import cuda_hello
 cuda_hello.erosion(arr, steps=50)   # modifies in place
-Image.fromarray(arr.astype(np.uint8)).save("temp/eroded.png")
+Image.fromarray(arr.astype(np.uint8)).save("output/eroded.png")

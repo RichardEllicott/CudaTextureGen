@@ -6,4 +6,6 @@
 venv/
 ENV/
 
+# Test image output
 /scripts/temp/
+/scripts/output/
