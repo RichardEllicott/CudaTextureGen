@@ -2,11 +2,12 @@
 
 My C++ CUDA tests with Python bindings
 
-Written on Ubuntu 24.04.3 LTS using WSL 
-C++17
-CUDA 12.0
-Python 3.12
+Written using:
 
+- Ubuntu 24.04.3 LTS using WSL
+- C++17
+- CUDA 12.0
+- Python 3.12
 
 ## Structure
 
@@ -14,8 +15,6 @@ Python 3.12
 - `BUILD.sh`: Build script using Make
 - `BUILD_NINJA.sh`: Build script using Ninja
 - `CMakeLists.txt`: Simple CMake configuration
-
-
 
 ## Build Instructions
 
@@ -41,13 +40,37 @@ sudo apt install python3-pil
 sudo apt install python3-numpy
 ```
 
-to build run the script
+to build run
 
 ```bash
 sh BUILD.sh
 ```
 
-## Commands
+
+## Setup VS.code to work with WSL
+
+Linux will need clang-format
+```bash
+sudo apt update
+sudo apt install clang-format
+```
+
+
+## Command Notes
+
+### WSL
+
+```powershell
+wsl --list --online # list linux distros that can be installed
+```
+```powershell
+wsl --install -d Ubuntu-24.04 # install Ubuntu-24.04
+```
+```powershell
+wsl -l -v # list wsl linux's installed
+```
+
+
 
 ```powershell
 wsl --list --online # list linux distros that can be installed
@@ -67,4 +90,29 @@ ls - a # list all hidden
 rm -rf folder/ # remove folder 
 
 ```
+
+```powershell
+sudo chown -R richard:richard /path/to/project # ensuring the folders permissions
+
+# Give yourself read/write/execute on directories
+find /path/to/project -type d -exec chmod 755 {} \;
+
+# Give yourself read/write on files
+find /path/to/project -type f -exec chmod 644 {} \;
+
+
+```
+
+
+```powershell
+lsb_release -a # get distro version
+```
+
+```powershell
+sudo apt update
+sudo apt install python-is-python3 # make python command work (alias for python3)
+```
+
+
+
 
