@@ -69,48 +69,45 @@ wsl --install -d Ubuntu-24.04 # install Ubuntu-24.04
 ```powershell
 wsl -l -v # list wsl linux's installed
 ```
-
-
-
 ```powershell
-wsl --list --online # list linux distros that can be installed
-wsl --install -d Ubuntu-24.04 # install Ubuntu-24.04
-wsl -l -v # list wsl linux's installed
 wsl --unregister Ubuntu # delete installed linux
 ```
 
-```powershell
-tar -czvf archive-name.tar.gz /path/to/directory-or-file # compress (verbose)
-tar -czf archive-name.tar.gz /path/to/directory-or-file # compress
-tar xzf file.tar.gz # decompress
+### Compress
+```bash
+tar -czf archive_name.tar.gz /path/to/directory-or-file # compress (verbose)
+```
+```bash
+tar xzf archive_name.tar.gz # decompress
 ```
 
-```powershell
+
+### Permissions
+```bash
+sudo chown -R richard:richard /path/to/project # ensuring the folder and contents are owned by user
+```
+```bash
+find /path/to/project -type d -exec chmod 755 {} \; # Give yourself read/write/execute on directories
+```
+```bash
+find /path/to/project -type f -exec chmod 644 {} \; # Give yourself read/write on files
+```
+
+
+### Misc 
+```bash
 ls - a # list all hidden
+```
+```bash
 rm -rf folder/ # remove folder 
-
 ```
-
-```powershell
-sudo chown -R richard:richard /path/to/project # ensuring the folders permissions
-
-# Give yourself read/write/execute on directories
-find /path/to/project -type d -exec chmod 755 {} \;
-
-# Give yourself read/write on files
-find /path/to/project -type f -exec chmod 644 {} \;
-
-
-```
-
-
-```powershell
+```bash
 lsb_release -a # get distro version
 ```
 
-```powershell
+```bash
 sudo apt update
-sudo apt install python-is-python3 # make python command work (alias for python3)
+sudo apt install python-is-python3 # Ubuntu way to make python run python3
 ```
 
 
