@@ -46,7 +46,6 @@ to build run
 sh BUILD.sh
 ```
 
-
 ## Setup VS.code to work with WSL
 
 Linux will need clang-format
@@ -54,62 +53,4 @@ Linux will need clang-format
 sudo apt update
 sudo apt install clang-format
 ```
-
-
-## Command Notes
-
-### WSL
-
-```powershell
-wsl --list --online # list linux distros that can be installed
-```
-```powershell
-wsl --install -d Ubuntu-24.04 # install Ubuntu-24.04
-```
-```powershell
-wsl -l -v # list wsl linux's installed
-```
-```powershell
-wsl --unregister Ubuntu # delete installed linux
-```
-
-### Compress
-```bash
-tar -czf archive_name.tar.gz /path/to/directory-or-file # compress (verbose)
-```
-```bash
-tar xzf archive_name.tar.gz # decompress
-```
-
-
-### Permissions
-```bash
-sudo chown -R richard:richard /path/to/project # ensuring the folder and contents are owned by user
-```
-```bash
-find /path/to/project -type d -exec chmod 755 {} \; # Give yourself read/write/execute on directories
-```
-```bash
-find /path/to/project -type f -exec chmod 644 {} \; # Give yourself read/write on files
-```
-
-
-### Misc 
-```bash
-ls - a # list all hidden
-```
-```bash
-rm -rf folder/ # remove folder 
-```
-```bash
-lsb_release -a # get distro version
-```
-
-```bash
-sudo apt update
-sudo apt install python-is-python3 # Ubuntu way to make python run python3
-```
-
-
-
 
