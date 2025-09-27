@@ -13,7 +13,6 @@ Written using:
 
 - `src/main.cu`: CUDA kernel and host code
 - `BUILD.sh`: Build script using Make
-- `BUILD_NINJA.sh`: Build script using Ninja
 - `CMakeLists.txt`: Simple CMake configuration
 
 ## Build Instructions
@@ -48,9 +47,31 @@ sh BUILD.sh
 
 ## Setup VS.code to work with WSL
 
+install the "WSL" extension in VS.code
+
 Linux will need clang-format
 ```bash
 sudo apt update
 sudo apt install clang-format
 ```
 
+## Edit Configurations (UI)
+
+```
+{
+  "configurations": [
+    {
+      "name": "WSL",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/usr/include/python3.12"
+      ],
+      "defines": [],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c17",
+      "cppStandard": "c++17"
+    }
+  ],
+  "version": 4
+}
+```s
