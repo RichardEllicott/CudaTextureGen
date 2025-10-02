@@ -1,3 +1,5 @@
+# Commands
+
 ## Command Notes
 
 ### WSL
@@ -64,6 +66,25 @@ sudo apt update
 # Make 'python' run python3 (Ubuntu way)
 sudo apt install python-is-python3
 ```
+
+
+### Update 
+
+```bash
+# Update package list
+sudo apt update 
+# Full update
+sudo apt full-upgrade 
+# Remove unused packages
+sudo apt autoremove
+# Clears out the local repository of retrieved package files
+sudo apt clean
+```
+
+```bash
+sudo apt update; sudo apt full-upgrade; sudo apt autoremove; sudo apt clean
+```
+
 
 
 
