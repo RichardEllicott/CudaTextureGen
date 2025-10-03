@@ -1,7 +1,4 @@
-# Windows Build Work
+# Windows Building
 
-it is very messy and i have had all sorts of problems with windows
+Windows is a bit more complicated, a lot of enviroment variables have been hardcoded to my build
 
-so this approach pretty much seems to add ALL the paths
-
-it's likely very platform dependant

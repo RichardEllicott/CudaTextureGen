@@ -1,4 +1,5 @@
-
+# Windows Build Script
+#
 # REQUIREMENTS:
 #
 # Visual Studio Installer:
@@ -14,10 +15,8 @@
 #   - "Developer PowerShell for VS 2022"
 #
 #
-# CUDA Toolkit, must be downloaded from Nvidia:
-#   - https://developer.nvidia.com/cuda-toolkit # version 13 didn't work for me
-#   - https://developer.nvidia.com/cuda-12-0-0-download-archive?target_os=Windows # using 12 for now to match linux
-#   - https://developer.nvidia.com/cuda-12-5-0-download-archive?target_os=Windows # 12 didn't work with the MS compiler, 12.5 would be oldest compatible!
+# CUDA Toolkit, must be downloaded from Nvidia, currently working on CUDA 12.5 as this is the minimum version working with the 
+#   - https://developer.nvidia.com/cuda-12-5-0-download-archive
 #
 # i use scoop to install my tools, get scoop:
 #   - https://scoop.sh/
