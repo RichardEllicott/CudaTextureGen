@@ -4,6 +4,20 @@ project(cuda_core LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 
+
+# 🪟🪟🪟🪟 Python workaround for Windows
+find_package(Python REQUIRED COMPONENTS Interpreter Development)
+
+if(WIN32 AND NOT TARGET Python::Module)
+    add_library(Python::Module UNKNOWN IMPORTED)
+    set_target_properties(Python::Module PROPERTIES
+        IMPORTED_LOCATION "${Python_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${Python_INCLUDE_DIRS}"
+    )
+endif()
+# 🪟🪟🪟🪟
+
+
 # 🍅🍅🍅🍅 Add .cu files
 
 # # Core CUDA library (no glob here can be safer)
