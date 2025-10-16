@@ -38,11 +38,10 @@ arr = np.array(img, dtype=np.float32)         # shape (H, W)
 
 
 
-def test_hello():
+def test_cuda_hello():
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
     cuda_hello.cuda_hello()
 
 
-
-test_hello()
+test_cuda_hello()

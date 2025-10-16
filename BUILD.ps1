@@ -85,7 +85,11 @@ $toolchain = Resolve-Path ./toolchain-msvc.cmake
 # i needed to run windows code from dev console, this also would likely not support CUDA?
 # cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
+
+# cmake -S . -B $build_dir -G "Ninja" -DCMAKE_BUILD_TYPE=Release
 cmake -S . -B $build_dir -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release
+
+
 ninja -C $build_dir
 
 
