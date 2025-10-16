@@ -28,12 +28,28 @@ endif()
 #     src/scale_kernel.cu
 # )
 
-# Auto-glob version (find all .cu files)
-# slightly dangerous if we delete source files without full rebuild
-file(GLOB CUDA_SOURCES CONFIGURE_DEPENDS
+# # Auto-glob version (find all .cu files)
+# # slightly dangerous if we delete source files without full rebuild
+# file(GLOB CUDA_SOURCES CONFIGURE_DEPENDS
+#     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu"
+# )
+# add_library(cuda_core STATIC ${CUDA_SOURCES})
+
+
+
+# NEW
+# # Recursively find all .cu and .cpp files in src/
+# #
+file(GLOB_RECURSE CUDA_CPP_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
-add_library(cuda_core STATIC ${CUDA_SOURCES})
+# Create a static library from all collected sources
+add_library(cuda_core STATIC ${CUDA_CPP_SOURCES}) # NOTE "cuda_core"
+
+
+
+
 
 # 🍅🍅🍅🍅
 
@@ -43,7 +59,14 @@ add_library(cuda_core STATIC ${CUDA_SOURCES})
 # Tell CMake that the target `cuda_core` should look for headers in the `include/` folder.
 # This does NOT "grab all headers" automatically — it just adds that directory to the compiler's
 # search path (-I flag). You still need to #include the headers you want in your .cpp files.
-target_include_directories(cuda_core PUBLIC include)
+
+# target_include_directories(cuda_core PUBLIC include)
+target_include_directories(cuda_core PUBLIC
+    include
+    core
+)
+
+
 
 # Mark the `cuda_core` target as position-independent code (PIC).
 # This is required if you want to link it into shared libraries or Python extension modules,

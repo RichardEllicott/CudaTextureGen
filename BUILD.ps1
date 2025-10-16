@@ -37,7 +37,7 @@
 # ⚠️ WARNING ⚠️
 # getting windows to compile took a lot of added paths to find the right compilers
 
-$ErrorActionPreference = "Stop" # like "set -e" in bash 
+$ErrorActionPreference = "Stop" # like "set -e" in bash (will exit if we crash)
 
 
 
@@ -70,46 +70,23 @@ $env:LIB = "$env:CUDA_PATH\lib\x64;" + $env:LIB
 $env:CUDACXX = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin\nvcc.exe"
 
 
+$build_dir = "build/windows"
 
+# Remove-Item -Recurse -Force .\$buildDir # ⚠️ for debug (force a full rebuild)
+mkdir -Force $build_dir # make a build folder
 
-
-# Remove-Item -Recurse -Force .\build # ⚠️ for debug (force a full rebuild)
-mkdir -Force build # make a build folder
-
+# custom windows toolchain to make work on windows
 $toolchain = Resolve-Path ./toolchain-msvc.cmake
 
 
-# cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain"
-
-## modified to make Release and to try and generate info for the code intel
 
 
-cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release
+# attempting "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" ... note this didn't help my intelisense
+# i needed to run windows code from dev console, this also would likely not support CUDA?
+# cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
-
-## might make clangd work, but is pointless for cuda i think
-# cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Release
-
-
-
-
-# cmake -S . -B build -G "Ninja" `
-#   -DCMAKE_TOOLCHAIN_FILE="$toolchain"`
-#   -DCMAKE_BUILD_TYPE=Release
-# #   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-#   
-# cmake -S . -B build-windows -G "Ninja" `
-#   -DCMAKE_TOOLCHAIN_FILE="$env:toolchain" `
-#   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON `
-#   -DCMAKE_BUILD_TYPE=Release
-
-
-
-
-
-cd build
-ninja
-
+cmake -S . -B $build_dir -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release
+ninja -C $build_dir
 
 
 

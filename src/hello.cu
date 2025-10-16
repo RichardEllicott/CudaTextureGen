@@ -1,6 +1,7 @@
 #include "core_api.h"
 #include <cstdio>
 
+// #include "core.h"
 
 
 void print_debug_info() {
@@ -38,7 +39,10 @@ __global__ void hello_kernel() {
     printf("Hello from GPU thread %d\n", threadIdx.x);
 }
 
-extern "C" void cuda_hello() {
+void cuda_hello() {
+
+    // printf("🧙 testing printf...\n");
+    // println("🧙 testing my print...");
 
 
     print_debug_info();
