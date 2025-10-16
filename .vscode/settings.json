@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/home/richard/github/hello_cuda"
+    "cmake.sourceDirectory": "/home/richard/github/hello_cuda",
+    "workbench.colorTheme": "Monokai"
 }

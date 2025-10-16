@@ -1,11 +1,7 @@
-// hello.cu
 #include "core_api.h"
 #include <cstdio>
 
 
-
-// checking versions
-// extern "C" void print_debug_info() {
 
 void print_debug_info() {
 

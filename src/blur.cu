@@ -1,11 +1,5 @@
-/*
-
-gaussian blur 1D kernel
-
-*/
 #include "core_api.h"
 #include <cuda_runtime.h>
-
 
 void buildGaussianKernel1D(float *kernel, int kSize, float sigma)
 {

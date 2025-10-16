@@ -34,9 +34,11 @@
 #
 #
 
-
 # ⚠️ WARNING ⚠️
 # getting windows to compile took a lot of added paths to find the right compilers
+
+$ErrorActionPreference = "Stop" # like "set -e" in bash 
+
 
 
 $env:WindowsSdkDir = "C:\Program Files (x86)\Windows Kits\10"
@@ -75,7 +77,36 @@ $env:CUDACXX = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin\nvc
 mkdir -Force build # make a build folder
 
 $toolchain = Resolve-Path ./toolchain-msvc.cmake
-cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain"
+
+
+# cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain"
+
+## modified to make Release and to try and generate info for the code intel
+
+
+cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release
+
+
+## might make clangd work, but is pointless for cuda i think
+# cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Release
+
+
+
+
+# cmake -S . -B build -G "Ninja" `
+#   -DCMAKE_TOOLCHAIN_FILE="$toolchain"`
+#   -DCMAKE_BUILD_TYPE=Release
+# #   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+#   
+# cmake -S . -B build-windows -G "Ninja" `
+#   -DCMAKE_TOOLCHAIN_FILE="$env:toolchain" `
+#   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON `
+#   -DCMAKE_BUILD_TYPE=Release
+
+
+
+
+
 cd build
 ninja
 

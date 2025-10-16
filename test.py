@@ -36,5 +36,8 @@ import cuda_hello
 # print(ret)
 
 
-ret = cuda_hello.make_array_efficient(16, 16)
-print(ret)
+# ret = cuda_hello.make_array_efficient(16, 16)
+# print(ret)
+
+
+cuda_hello.cuda_hello()
