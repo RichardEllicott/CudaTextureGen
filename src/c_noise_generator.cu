@@ -197,6 +197,7 @@ void CNoiseGenerator::fill(float *host_data, int width, int height) {
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
         printf("CUDA kernel launch failed: %s\n", cudaGetErrorString(err));
+        // std::cout << "CUDA kernel launch failed!\n";
     }
 
     cudaMemcpyAsync(host_data, dev_data, size, cudaMemcpyDeviceToHost, stream);

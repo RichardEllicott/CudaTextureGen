@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tiled preview (single image)</title>
+  <style>
+    body { margin: 0; background: #111; color: #eee; font-family: system-ui; }
+    .controls { padding: 12px; display: flex; gap: 12px; align-items: center; }
+    .preview {
+      width: 100vw; height: calc(100vh - 56px);
+      background-color: #222;
+      background-image: var(--img, none);
+      background-repeat: repeat;
+      background-size: var(--size, auto); /* e.g., '256px 256px' or 'auto' */
+      background-position: var(--pos, 0 0);
+      border-top: 1px solid #333;
+    }
+    input[type="range"] { width: 200px; }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <input type="file" id="file" accept="image/*">
+    <label>Scale: <input type="range" id="scale" min="16" max="1024" value="256"></label>
+    <button id="reset">1:1</button>
+  </div>
+  <div class="preview" id="preview"></div>
+
+  <script>
+    const preview = document.getElementById('preview');
+    const file = document.getElementById('file');
+    const scale = document.getElementById('scale');
+    const reset = document.getElementById('reset');
+
+    file.addEventListener('change', () => {
+      const f = file.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      preview.style.setProperty('--img', `url("${url}")`);
+    });
+
+    function updateSize() {
+      const s = scale.value + 'px';
+      preview.style.setProperty('--size', s + ' ' + s);
+    }
+    scale.addEventListener('input', updateSize);
+    reset.addEventListener('click', () => preview.style.setProperty('--size', 'auto'));
+    updateSize();
+  </script>
+</body>
+</html>

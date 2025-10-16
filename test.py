@@ -37,14 +37,12 @@ img = Image.new(mode="RGB", size=(128, 128))
 arr = np.array(img, dtype=np.float32)         # shape (H, W)
 
 
-
+# test
 def test_cuda_hello():
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
     cuda_hello.cuda_hello()
 
-
-
-
+# save a png or tif
 def save_array_as_image(arr, filename):
 
     if isinstance(filename, (list, tuple)):
@@ -63,9 +61,6 @@ def save_array_as_image(arr, filename):
     else:
         raise ValueError(f"Unsupported format: {filename}")
 
-
-
-
 # offset array by half (to test tiling)
 def offset_arr(arr):
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
@@ -78,10 +73,7 @@ def offset_arr(arr):
     # shifted = np.roll(arr, shift=(dy, dx), axis=(0, 1))
     arr[:] = np.roll(arr, shift=(dy, dx), axis=(0, 1))
 
-
-
-
-
+# seamless noise
 def test_c_noise_generation(width=256, height=256, filename="output/noise_gen_test256.png"):
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
@@ -108,8 +100,7 @@ def test_c_noise_generation(width=256, height=256, filename="output/noise_gen_te
     save_array_as_image(arr * 255, filename)
     save_array_as_image(arr, filename + '.tif')
 
-
-
+# errosion
 def test_errosion(filename, output_filename):
 
     print("load image...")
@@ -158,13 +149,10 @@ def test_errosion(filename, output_filename):
 
     save_array_as_image(arr, output_filename)
 
-# test_cuda_hello()
-
+test_cuda_hello()
 
 # # GENERATE NOISE AND ERODE
-noise_filename = "output/noise.png"
-test_c_noise_generation(512, 512, noise_filename)
-
-
-test_errosion(noise_filename, "output/erode_test.png")
+# noise_filename = "output/noise.png"
+# test_c_noise_generation(512, 512, noise_filename)
+# test_errosion(noise_filename, "output/erode_test.png")
 
