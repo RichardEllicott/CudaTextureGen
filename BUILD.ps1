@@ -40,34 +40,36 @@
 $ErrorActionPreference = "Stop" # like "set -e" in bash (will exit if we crash)
 
 
-
-$env:WindowsSdkDir = "C:\Program Files (x86)\Windows Kits\10"
-$env:INCLUDE = @(
-    "$env:WindowsSdkDir\Include\10.0.26100.0\ucrt",
-    "$env:WindowsSdkDir\Include\10.0.26100.0\shared",
-    "$env:WindowsSdkDir\Include\10.0.26100.0\um",
-    "$env:WindowsSdkDir\Include\10.0.26100.0\winrt"
-) -join ';'
-
-$env:LIB = @(
-    "$env:WindowsSdkDir\Lib\10.0.26100.0\ucrt\x64",
-    "$env:WindowsSdkDir\Lib\10.0.26100.0\um\x64"
-) -join ';'
+# ❓❓❓ MAY HAVE BEEN REQUIRED WITHOUT DEV SHELL
+# $env:WindowsSdkDir = "C:\Program Files (x86)\Windows Kits\10"
+# $env:INCLUDE = @(
+#     "$env:WindowsSdkDir\Include\10.0.26100.0\ucrt",
+#     "$env:WindowsSdkDir\Include\10.0.26100.0\shared",
+#     "$env:WindowsSdkDir\Include\10.0.26100.0\um",
+#     "$env:WindowsSdkDir\Include\10.0.26100.0\winrt"
+# ) -join ';'
 
 
+# ❓❓❓ MAY HAVE BEEN REQUIRED WITHOUT DEV SHELL
+# $env:LIB = @(
+#     "$env:WindowsSdkDir\Lib\10.0.26100.0\ucrt\x64",
+#     "$env:WindowsSdkDir\Lib\10.0.26100.0\um\x64"
+# ) -join ';'
 
-$msvcLibPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\lib\x64"
-$env:LIB = "$env:LIB;$msvcLibPath"
+
+# ❓❓❓ MAY HAVE BEEN REQUIRED WITHOUT DEV SHELL
+# $msvcLibPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\lib\x64"
+# $env:LIB = "$env:LIB;$msvcLibPath"
 
 
-# $env:INCLUDE += ";C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0\include"
 
 
-$env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5"
-$env:PATH = "$env:CUDA_PATH\bin;$env:CUDA_PATH\libnvvp;" + $env:PATH
-$env:INCLUDE = "$env:CUDA_PATH\include;" + $env:INCLUDE
-$env:LIB = "$env:CUDA_PATH\lib\x64;" + $env:LIB
-$env:CUDACXX = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin\nvcc.exe"
+# ❓❓❓ MAY HAVE BEEN REQUIRED WITHOUT DEV SHELL
+# $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5"
+# $env:PATH = "$env:CUDA_PATH\bin;$env:CUDA_PATH\libnvvp;" + $env:PATH
+# $env:INCLUDE = "$env:CUDA_PATH\include;" + $env:INCLUDE
+# $env:LIB = "$env:CUDA_PATH\lib\x64;" + $env:LIB
+# $env:CUDACXX = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin\nvcc.exe"
 
 
 $build_dir = "build/windows"
