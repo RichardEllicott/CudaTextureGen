@@ -1,5 +1,7 @@
-#include "core_api.h"
-#include <cuda_runtime.h>
+#include "blur.cuh"
+
+
+namespace blur{
 
 void buildGaussianKernel1D(float *kernel, int kSize, float sigma)
 {
@@ -65,7 +67,7 @@ __global__ void gaussianBlurVertical(const float *input, float *output, int widt
 }
 
 
-void run_blur(float *host_data, int width, int height, float sigma, bool wrap)
+void blur(float *host_data, int width, int height, float sigma, bool wrap)
 {
     int imageSize = width * height * sizeof(float);
     int kSize = static_cast<int>(std::ceil(6 * sigma)) | 1;
@@ -97,3 +99,4 @@ void run_blur(float *host_data, int width, int height, float sigma, bool wrap)
     delete[] h_kernel;
 }
 
+}

@@ -195,63 +195,6 @@ inline std::vector<float> generate_normal_map_array(const std::vector<float> &im
     return normal_map;
 }
 
-inline std::vector<float> generate_ao_map_array_OLD(const std::vector<float> &image, Vector2i image_size, int radius, bool wrap) {
-    std::vector<float> ao_map;
-
-    // Validate input size
-    if (image.size() != image_size.x * image_size.y) {
-        // UtilityFunctions::push_error("Input image size does not match the specified image dimensions.");
-        return ao_map;
-    }
-
-    ao_map.resize(image.size());
-
-    for (int y = 0; y < image_size.y; ++y) {
-        for (int x = 0; x < image_size.x; ++x) {
-            const int base_index = image_position_to_index(Vector2i(x, y), image_size, wrap);
-            const float base_height = image[base_index];
-
-            float occlusion = 0.0f;
-            float total_weight = 0.0f;
-
-            for (int dy = -radius; dy <= radius; ++dy) {
-                for (int dx = -radius; dx <= radius; ++dx) {
-                    if (dx == 0 && dy == 0)
-                        continue;
-
-                    // Apply circular mask
-                    if (dx * dx + dy * dy > radius * radius)
-                        continue;
-
-                    const Vector2i sample_pos(x + dx, y + dy);
-                    const int sample_index = image_position_to_index(sample_pos, image_size, wrap);
-                    const float neighbor_height = image[sample_index];
-
-                    const float diff = neighbor_height - base_height;
-
-                    // const float distance = MAX(sqrt(dx * dx + dy * dy), 1e-5f);
-                    const float distance = std::max(static_cast<float>(std::hypot(dx, dy)), 1e-5f);
-
-                    const float weight = 1.0f / (distance * distance + 1.0f);
-
-                    // Optional: directional bias (e.g., emphasize occlusion from above)
-                    // if (dy < 0) weight *= 1.5f;
-
-                    if (diff > 0.0f) {
-                        occlusion += diff * weight;
-                    }
-                    total_weight += weight;
-                }
-            }
-
-            const float ao_value = std::clamp(1.0f - (occlusion / total_weight), 0.0f, 1.0f);
-            ao_map[base_index] = ao_value;
-        }
-    }
-
-    return ao_map;
-}
-
 inline std::vector<float> generate_ao_map(const std::vector<float> &image, Vector2i image_size, int radius, bool wrap) {
     std::vector<float> ao_map;
 

@@ -50,6 +50,7 @@ sh BUILD.sh
 install the "WSL" extension in VS.code
 
 Linux will need clang-format
+
 ```bash
 sudo apt update
 sudo apt install clang-format

@@ -2,5 +2,8 @@
     "cmake.sourceDirectory": "${workspaceFolder}",
     "workbench.colorTheme": "Monokai",
     "C_Cpp.intelliSenseEngine": "default",
-    "files.eol": "\n", // stop windows vs.code using windows line endings
+    "files.eol": "\n",
+    "files.associations": {
+        "vector": "cpp"
+    }, // stop windows vs.code using windows line endings
 }

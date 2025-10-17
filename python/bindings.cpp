@@ -1,15 +1,20 @@
+#include <vector>
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 
-#include "core_api.h"
+// #include "core_api.h"
 
-#include "c_noise_generator.cuh"
 
-#include "erosion.cuh"
+#include "cuda_hello.cuh"
+
 
 #include "FastNoiseLite.h"
+#include "shader_maps.h"
 
-#include <vector>
+#include "blur.cuh"
+#include "erosion.cuh"
+#include "c_noise_generator.cuh"
+
 
 namespace nb = nanobind;
 
@@ -76,6 +81,76 @@ static void bind_erosion(nb::module_ &m) {
         });
 }
 
+static void bind_shader_maps(nb::module_ &m) {
+}
+
+static void bind_blur(nb::module_ &m) {
+
+    m.def("blur", [](nb::ndarray<float, nb::ndim<2>, nb::c_contig> arr, float amount, bool wrap) {
+        int h = arr.shape(0);
+        int w = arr.shape(1);
+        blur::blur(arr.data(), w, h, amount, wrap); }, nb::arg("arr"), nb::arg("amount"), nb::arg("wrap") = false);
+}
+
+// helpers to make python objects which is a bit convoluted from python
+namespace python_helper {
+
+// make a 2D numpy array, very akward from raw C++
+nb::object get_2d_numpy_array(int h, int w) {
+    try {
+        // Import numpy
+        nb::module_ np = nb::module_::import_("numpy");
+
+        // Create zeros array
+        nb::object arr = np.attr("zeros")(nb::make_tuple(h, w));
+        arr = arr.attr("astype")("float32");
+
+        // Fill with values using Python indexing
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                arr[nb::make_tuple(y, x)] = static_cast<float>(y * w + x);
+            }
+        }
+
+        return arr;
+    } catch (const std::exception &e) {
+        throw std::runtime_error(std::string("Error in make_array_simple: ") + e.what());
+    }
+}
+
+nb::object get_list_of_lists(int h, int w) {
+
+    std::vector<nb::list> rows;
+    rows.reserve(h);
+
+    for (int y = 0; y < h; ++y) {
+        nb::list row;
+        for (int x = 0; x < w; ++x) {
+            row.append(0.0f); // or some value
+        }
+        rows.push_back(row);
+    }
+
+    nb::list outer;
+    for (auto &r : rows)
+        outer.append(r);
+
+    return outer; // Python will see a list of lists
+}
+
+static void bind_helpers(nb::module_ &m) {
+    // EXAMPLE create a list of lists, we can't seem to make a numpy array though
+    m.def("get_list_of_lists", [](int h, int w) {
+        return get_list_of_lists(h, w);
+    });
+
+    m.def("get_2d_numpy_array", [](int h, int w) -> nb::object {
+        return get_2d_numpy_array(h, w);
+    });
+}
+
+} // namespace python_helper
+
 NB_MODULE(cuda_hello, m) {
 
     bind_hello(m);
@@ -83,86 +158,9 @@ NB_MODULE(cuda_hello, m) {
     bind_c_noise_generator(m);
     bind_erosion(m);
 
-    // // Erosion
-    // m.def("erosion", [](nb::ndarray<float, nb::ndim<2>, nb::c_contig> arr, int steps) {
-    //         int h = arr.shape(0);
-    //         int w = arr.shape(1);
-    //         run_erosion(arr.data(), w, h, steps); }, nb::arg("arr"), nb::arg("steps"));
+    bind_shader_maps(m);
+    bind_blur(m);
 
-    // Blur
-    m.def("blur", [](nb::ndarray<float, nb::ndim<2>, nb::c_contig> arr, float amount, bool wrap) {
-        int h = arr.shape(0);
-        int w = arr.shape(1);
-        run_blur(arr.data(), w, h, amount, wrap); }, nb::arg("arr"), nb::arg("amount"), nb::arg("wrap") = false);
-    //
-    //
-    //
-    // generate_noise
 
-    m.def("generate_noise",
-          [](int width, int height, float frequency) {
-              return "test generate_noise return";
-          });
-
-    //
-    //
-    //
-
-    // EXAMPLE create a list of lists, we can't seem to make a numpy array though
-    m.def("make_list", [](int h, int w) {
-        std::vector<nb::list> rows;
-        rows.reserve(h);
-
-        for (int y = 0; y < h; ++y) {
-            nb::list row;
-            for (int x = 0; x < w; ++x) {
-                row.append(0.0f); // or some value
-            }
-            rows.push_back(row);
-        }
-
-        nb::list outer;
-        for (auto &r : rows)
-            outer.append(r);
-
-        return outer; // Python will see a list of lists
-    });
-
-    //
-    //
-    //
-
-    //
-    // Claude got it!!!
-    // https://claude.ai/chat/1b5b7537-a89b-4f07-8cb9-dd18b0557935
-    //
-    // Simple version that definitely works
-    m.def("make_array_simple", [](int h, int w) -> nb::object {
-    try {
-        // Import numpy
-        nb::module_ np = nb::module_::import_("numpy");
-        
-        // Create zeros array
-        nb::object arr = np.attr("zeros")(nb::make_tuple(h, w));
-        arr = arr.attr("astype")("float32");
-        
-        // Fill with values using Python indexing
-        for (int y = 0; y < h; ++y) {
-            for (int x = 0; x < w; ++x) {
-                arr[nb::make_tuple(y, x)] = static_cast<float>(y * w + x);
-            }
-        }
-        
-        return arr;
-    } catch (const std::exception& e) {
-        throw std::runtime_error(std::string("Error in make_array_simple: ") + e.what());
-    } });
-
-    //
-    //
-    //
-
-    //
-    //
-    //
+    python_helper::bind_helpers(m);
 }

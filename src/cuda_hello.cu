@@ -1,5 +1,9 @@
-#include "core_api.h"
+// #include "core_api.h"
 #include <cstdio>
+
+#include "cuda_hello.cuh"
+
+
 
 // #include "core.h"
 

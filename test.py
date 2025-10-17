@@ -61,6 +61,20 @@ def save_array_as_image(arr, filename):
     else:
         raise ValueError(f"Unsupported format: {filename}")
 
+
+
+
+# simple tests
+def test_python_object_creating():
+
+    arr = cuda_hello.get_2d_numpy_array(1024, 1024)
+    print(arr)
+
+    arr = cuda_hello.get_list_of_lists(12,12)
+    print(arr)
+
+
+
 # offset array by half (to test tiling)
 def offset_arr(arr):
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
@@ -100,8 +114,26 @@ def test_c_noise_generation(width=256, height=256, filename="output/noise_gen_te
     save_array_as_image(arr * 255, filename)
     save_array_as_image(arr, filename + '.tif')
 
+
+def test_blur(filename, output_filename):
+    print('{}()...'.format(inspect.currentframe().f_code.co_name))
+
+    print("load image...")
+    img = Image.open(filename).convert("L")
+    arr = np.array(img, dtype=np.float32)
+    print("height range: [{}, {}]".format(arr.min(), arr.max()))
+    print("blur...")
+
+    cuda_hello.blur(arr, amount = 15, wrap = True)
+
+    save_array_as_image(arr, output_filename)
+
+
+
+
 # errosion
 def test_errosion(filename, output_filename):
+    print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
     print("load image...")
     img = Image.open(filename).convert("L")
@@ -149,10 +181,20 @@ def test_errosion(filename, output_filename):
 
     save_array_as_image(arr, output_filename)
 
-test_cuda_hello()
+# test_cuda_hello()
 
 # # GENERATE NOISE AND ERODE
-# noise_filename = "output/noise.png"
-# test_c_noise_generation(512, 512, noise_filename)
+noise_filename = "output/noise.png"
+test_c_noise_generation(512, 512, noise_filename)
 # test_errosion(noise_filename, "output/erode_test.png")
+
+
+test_blur(noise_filename, "output/blur.png")
+
+
+
+
+
+print(dir(cuda_hello))
+
 

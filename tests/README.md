@@ -1,3 +1,3 @@
-# tests
+# Test Folder
 
-little executables with main() that let you sanity‑check things without going through Python.
+all the cpp file here are found in this dir are compiled into standalone executables outputted to: `/build/<platform>/tests`
