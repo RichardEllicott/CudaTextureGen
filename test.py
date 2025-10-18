@@ -181,6 +181,10 @@ def test_errosion(filename, output_filename):
 
     save_array_as_image(arr, output_filename)
 
+
+
+os.makedirs("output", exist_ok=True)
+
 # test_cuda_hello()
 
 # # GENERATE NOISE AND ERODE

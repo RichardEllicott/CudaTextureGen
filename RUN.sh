@@ -1,1 +1,0 @@
-PYTHONPATH=build/python python3 test.py
