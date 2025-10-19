@@ -8,11 +8,13 @@ https://claude.ai/chat/626e97e1-b6cb-4690-9dc7-db32b31ccccf
 
 */
 
-#include "c_noise_generator.cuh"
+#include "noise_generator_c.cuh"
 
-namespace c_noise_generator {
+namespace noise_generator_c {
 
-#pragma region VALUE_NOISE
+
+
+#pragma region SOLID_MAIN
 
 __device__ float hash(int x, int y, int seed) {
     int n = x + y * 57 + seed * 131;
@@ -34,7 +36,7 @@ __device__ inline int posmod(int value, int mod) {
     return result < 0 ? result + mod : result;
 }
 
-__device__ float tileable_noise(float x, float y, int period_x, int period_y, int seed) {
+__device__ float value_noise(float x, float y, int period_x, int period_y, int seed) {
     int xi = (int)floorf(x);
     int yi = (int)floorf(y);
 
@@ -60,10 +62,6 @@ __device__ float tileable_noise(float x, float y, int period_x, int period_y, in
 
     return lerp(x1, x2, v);
 }
-
-#pragma endregion
-
-#pragma region GRADIENT_NOISE
 
 __device__ float2 gradient(int x, int y, int seed) {
     int n = x + y * 57 + seed * 131;
@@ -109,22 +107,50 @@ __device__ float gradient_noise(float x, float y, int period_x, int period_y, in
     return lerp(x1, x2, v) * 0.5f + 0.5f; // Remap to [0,1]
 }
 
-#pragma endregion
-
-#pragma region WARPED_NOISE
-
 __device__ float warped_noise(float x, float y, int period, int seed) {
     // Sample noise at offset positions
-    float warp_x = tileable_noise(x + 5.2f, y + 1.3f, period, period, seed + 1) * 4.0f;
-    float warp_y = tileable_noise(x + 3.7f, y + 9.1f, period, period, seed + 2) * 4.0f;
+    float warp_x = value_noise(x + 5.2f, y + 1.3f, period, period, seed + 1) * 4.0f;
+    float warp_y = value_noise(x + 3.7f, y + 9.1f, period, period, seed + 2) * 4.0f;
 
     // Use warped coordinates for final sample
-    return tileable_noise(x + warp_x, y + warp_y, period, period, seed);
+    return value_noise(x + warp_x, y + warp_y, period, period, seed);
 }
+
+// exposing parameters
+__device__ float warped_noise(
+    float x, float y,
+    int period_x, int period_y,
+    int seed,
+    float warp_amp,  // how strong the warp is
+    float warp_scale // frequency of the warp field
+) {
+    float warp_x = value_noise(x * warp_scale + 5.2f,
+                               y * warp_scale + 1.3f,
+                               period_x, period_y,
+                               seed + 1) *
+                   warp_amp;
+
+    float warp_y = value_noise(x * warp_scale + 3.7f,
+                               y * warp_scale + 9.1f,
+                               period_x, period_y,
+                               seed + 2) *
+                   warp_amp;
+
+    return value_noise(x + warp_x, y + warp_y, period_x, period_y, seed);
+}
+
 
 #pragma endregion
 
-__global__ void generate_noise(float *out, int width, int height, float scale, int period, int seed) {
+
+
+
+
+
+__global__ void generate_noise(int type,
+                               float *out, int width, int height,
+                               float scale, int period, int seed) {
+
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= width || y >= height)
@@ -137,67 +163,40 @@ __global__ void generate_noise(float *out, int width, int height, float scale, i
 
     int idx = y * width + x;
 
-#if C_NOISE_GENERATOR_TYPE == 0
-    out[idx] = tileable_noise(fx, fy, period, period, seed);
-#elif C_NOISE_GENERATOR_TYPE == 1
-    out[idx] = gradient_noise(fx, fy, period, period, seed);
-#elif C_NOISE_GENERATOR_TYPE == 2
-    out[idx] = warped_noise(fx, fy, period, seed);
-#endif
-}
-
-#define C_NOISE_GENERATOR_STREAM
-
-#ifndef C_NOISE_GENERATOR_STREAM
-
-void CNoiseGenerator::fill(float *host_data, int width, int height) {
-
-    float scale = (float)period / width; // Assuming square images (also period must be an integer for seamless)
-
-    size_t size = width * height * sizeof(float);
-    float *dev_data = nullptr;
-    cudaMalloc(&dev_data, size);
-    cudaMemcpy(dev_data, host_data, size, cudaMemcpyHostToDevice);
-
-    dim3 blockDim(16, 16);
-    dim3 gridDim((width + blockDim.x - 1) / blockDim.x,
-                 (height + blockDim.y - 1) / blockDim.y);
-
-    generate_noise<<<gridDim, blockDim>>>(dev_data, width, height, scale, period, seed);
-
-    cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        printf("CUDA kernel launch failed: %s\n", cudaGetErrorString(err));
+    switch (type) {
+    case 0:
+        out[idx] = value_noise(fx, fy, period, period, seed);
+        break;
+    case 1:
+        out[idx] = gradient_noise(fx, fy, period, period, seed);
+        break;
+    case 2:
+        out[idx] = warped_noise(fx, fy, period, seed);
+        break;
     }
-
-    cudaMemcpy(host_data, dev_data, size, cudaMemcpyDeviceToHost); // copy back
-    cudaFree(dev_data);                                            // free
 }
 
-#else
-
-void CNoiseGenerator::fill(float *host_data, int width, int height) {
+void NoiseGeneratorC::fill(float *host_data, int width, int height) {
     float scale = static_cast<float>(period) / width;
 
     size_t size = width * height * sizeof(float);
     float *dev_data = nullptr;
 
-    cudaStream_t stream;
+    cudaStream_t stream; // optional, make a stream for this
     cudaStreamCreate(&stream);
 
     cudaMalloc(&dev_data, size);
     cudaMemcpyAsync(dev_data, host_data, size, cudaMemcpyHostToDevice, stream);
 
-    dim3 blockDim(16, 16);
-    dim3 gridDim((width + blockDim.x - 1) / blockDim.x,
-                 (height + blockDim.y - 1) / blockDim.y);
+    dim3 block(16, 16);
+    dim3 grid((width + block.x - 1) / block.x,
+              (height + block.y - 1) / block.y);
 
-    generate_noise<<<gridDim, blockDim, 0, stream>>>(dev_data, width, height, scale, period, seed);
+    generate_noise<<<grid, block, 0, stream>>>(type, dev_data, width, height, scale, period, seed);
 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
         printf("CUDA kernel launch failed: %s\n", cudaGetErrorString(err));
-        // std::cout << "CUDA kernel launch failed!\n";
     }
 
     cudaMemcpyAsync(host_data, dev_data, size, cudaMemcpyDeviceToHost, stream);
@@ -208,7 +207,5 @@ void CNoiseGenerator::fill(float *host_data, int width, int height) {
     cudaFree(dev_data);
     cudaStreamDestroy(stream);
 }
-
-#endif
 
 } // namespace c_noise_generator

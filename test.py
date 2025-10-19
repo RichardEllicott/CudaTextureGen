@@ -1,55 +1,57 @@
-# add the build/python directory
+"""
+Ubuntu Linux no longer wants to use PIP, but apt:
+    sudo apt install python3-pil
+    sudo apt install python3-numpy
+
+Windows still uses PIP:
+    pip install Pillow
+    pip install numpy
 
 
-import sys
+update on windows:
+
+pip list --outdated --format=json | ConvertFrom-Json | ForEach-Object {
+    pip install --upgrade $_.name
+}
+
+    
+
+"""
+
+
+import builtins  # snake print
 import os
-import platform # detect platform
-import inspect # function reflect
-
-# test add the folder for python
-root_dir = os.path.dirname(__file__)
-if platform.system() == "Windows":
-    build_subdir = os.path.join("build", "windows")
-else:
-    build_subdir = os.path.join("build", "linux")
-sys.path.append(os.path.join(root_dir, build_subdir, "python"))
-
+import platform
+import sys
+import cuda_hello_bootstrap
+import inspect  # function reflect
+from PIL import Image
+import numpy as np
 import cuda_hello
 
+# fun print that puts a snake at front!
 
-# snake print
-import builtins
+
 def snake_print(*args, **kwargs):
     builtins.print("🐍", *args, **kwargs)
+
+
 print = snake_print
 
 
-
-# Ubuntu Linux no longer wants to use PIP, but apt
-# sudo apt install python3-pil
-# sudo apt install python3-numpy
-
-from PIL import Image
-import numpy as np
-
-# img = Image.open("perlin_noise_example.png").convert("L")  # grayscale for simplicity
-img = Image.new(mode="RGB", size=(128, 128))
-arr = np.array(img, dtype=np.float32)         # shape (H, W)
-
-
-# test
 def test_cuda_hello():
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
     cuda_hello.cuda_hello()
 
-# save a png or tif
+
+# save numpy 2d array as an image (supports .png or .tif)
 def save_array_as_image(arr, filename):
 
     if isinstance(filename, (list, tuple)):
         for fname in filename:
             save_array_as_image(arr, fname)
         return
-    
+
     if filename.endswith(".png"):
         img = Image.fromarray(arr.astype(np.uint8))
         img.save(filename)
@@ -62,17 +64,14 @@ def save_array_as_image(arr, filename):
         raise ValueError(f"Unsupported format: {filename}")
 
 
-
-
 # simple tests
 def test_python_object_creating():
 
     arr = cuda_hello.get_2d_numpy_array(1024, 1024)
     print(arr)
 
-    arr = cuda_hello.get_list_of_lists(12,12)
+    arr = cuda_hello.get_list_of_lists(12, 12)
     print(arr)
-
 
 
 # offset array by half (to test tiling)
@@ -88,31 +87,35 @@ def offset_arr(arr):
     arr[:] = np.roll(arr, shift=(dy, dx), axis=(0, 1))
 
 # seamless noise
-def test_c_noise_generation(width=256, height=256, filename="output/noise_gen_test256.png"):
+
+
+def test_noise_generator_d(width=256, height=256, filename="output/noise_gen_test256.png", type=0):
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
     arr = np.zeros((width, height), dtype=np.float32)
-    gen = cuda_hello.CNoiseGenerator()
+    gen = cuda_hello.NoiseGeneratorD()
 
+    gen.type = type
 
     gen.period = 9
-    # gen.period = 17
+    gen.period = 17
 
+    gen.seed = 0
 
-    gen.seed = 42
+    gen.fill(arr) # generate the noise
 
-    gen.fill(arr)
+    offset_arr(arr) # offset to check the tiling
+
+    print("height range: [{}, {}]".format(arr.min(), arr.max()))
+
+    # arr = (arr - arr.min()) / (arr.max() - arr.min())  # normalize to [0, 1]
+    arr = arr * 0.5 + 0.5 # [-1, 1] => [0, 1]
 
     print("height range: [{}, {}]".format(arr.min(), arr.max()))
 
 
-    offset_arr(arr)
-
-    arr = (arr - arr.min()) / (arr.max() - arr.min())  # normalize to [0, 1]
-
-    # arr *= 255.0
     save_array_as_image(arr * 255, filename)
-    save_array_as_image(arr, filename + '.tif')
+    # save_array_as_image(arr, filename + '.tif')
 
 
 def test_blur(filename, output_filename):
@@ -124,11 +127,9 @@ def test_blur(filename, output_filename):
     print("height range: [{}, {}]".format(arr.min(), arr.max()))
     print("blur...")
 
-    cuda_hello.blur(arr, amount = 15, wrap = True)
+    cuda_hello.blur(arr, amount=15, wrap=True)
 
     save_array_as_image(arr, output_filename)
-
-
 
 
 # errosion
@@ -182,23 +183,32 @@ def test_errosion(filename, output_filename):
     save_array_as_image(arr, output_filename)
 
 
+def test_all_noise():
+    print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
-os.makedirs("output", exist_ok=True)
+    os.makedirs("output", exist_ok=True)
+    # noise_filename = "output/noise.png"
 
-# test_cuda_hello()
+    for type in range(5+2):
 
-# # GENERATE NOISE AND ERODE
-noise_filename = "output/noise.png"
-test_c_noise_generation(512, 512, noise_filename)
-# test_errosion(noise_filename, "output/erode_test.png")
+        print("noise type: {}".format(type))
 
+        test_noise_generator_d(
+            1024, 1024, "output/noise{}.png".format(type), type)
 
-test_blur(noise_filename, "output/blur.png")
+        print()
 
-
-
-
-
-print(dir(cuda_hello))
+test_all_noise()
 
 
+# # test_cuda_hello()
+# os.makedirs("output", exist_ok=True)
+
+# # # GENERATE NOISE AND ERODE
+# noise_filename = "output/noise.png"
+# test_c_noise_generation(512, 512, noise_filename)
+# # test_errosion(noise_filename, "output/erode.png")
+# test_blur(noise_filename, "output/blur.png")
+
+
+# print(dir(cuda_hello))

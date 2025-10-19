@@ -1,20 +1,15 @@
-#include <vector>
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
-
-// #include "core_api.h"
-
-
-#include "cuda_hello.cuh"
-
+#include <vector>
 
 #include "FastNoiseLite.h"
 #include "shader_maps.h"
 
 #include "blur.cuh"
+#include "cuda_hello.cuh"
 #include "erosion.cuh"
-#include "c_noise_generator.cuh"
-
+#include "noise_generator_c.cuh" // cuda noise generator
+#include "noise_generator_d.cuh" // new noise techiques
 
 namespace nb = nanobind;
 
@@ -26,15 +21,39 @@ static void bind_cuda_hello(nb::module_ &m) {
     m.def("cuda_hello", []() { cuda_hello(); });
 }
 
-static void bind_c_noise_generator(nb::module_ &m) {
+static void bind_noise_generator_c(nb::module_ &m) {
 
-    nb::class_<c_noise_generator::CNoiseGenerator>(m, "CNoiseGenerator")
+    nb::class_<noise_generator_c::NoiseGeneratorC>(m, "NoiseGeneratorC")
         .def(nb::init<>())
-        // .def_rw("scale", &c_noise_generator::CNoiseGenerator::scale)
-        .def_rw("period", &c_noise_generator::CNoiseGenerator::period)
-        .def_rw("seed", &c_noise_generator::CNoiseGenerator::seed)
+        .def_rw("period", &noise_generator_c::NoiseGeneratorC::period)
+        .def_rw("seed", &noise_generator_c::NoiseGeneratorC::seed)
+        .def_rw("type", &noise_generator_c::NoiseGeneratorC::type)
 
-        .def("fill", [](c_noise_generator::CNoiseGenerator &self, nb::ndarray<float> arr) {
+        .def("fill", [](noise_generator_c::NoiseGeneratorC &self, nb::ndarray<float> arr) {
+
+                if (arr.ndim() != 2)
+    throw std::runtime_error("Expected a 2D float32 array");
+
+
+        int h = arr.shape(0);
+        int w = arr.shape(1);
+        float *data = arr.data();
+
+        self.fill(data, w, h); });
+}
+
+static void bind_noise_generator_d(nb::module_ &m) {
+
+    nb::class_<noise_generator_d::NoiseGeneratorD>(m, "NoiseGeneratorD")
+        .def(nb::init<>())
+
+
+#define X(TYPE, NAME, DEFAULT_VAL) \
+    .def_prop_rw(#NAME, &noise_generator_d::NoiseGeneratorD::get_##NAME, &noise_generator_d::NoiseGeneratorD::set_##NAME)
+            NOISE_GENERATOR_D_PARAMETERS
+#undef X
+
+        .def("fill", [](noise_generator_d::NoiseGeneratorD &self, nb::ndarray<float> arr) {
 
                 if (arr.ndim() != 2)
     throw std::runtime_error("Expected a 2D float32 array");
@@ -155,12 +174,12 @@ NB_MODULE(cuda_hello, m) {
 
     bind_hello(m);
     bind_cuda_hello(m);
-    bind_c_noise_generator(m);
+    bind_noise_generator_c(m);
+    bind_noise_generator_d(m);
     bind_erosion(m);
 
     bind_shader_maps(m);
     bind_blur(m);
-
 
     python_helper::bind_helpers(m);
 }

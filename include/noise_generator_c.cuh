@@ -11,19 +11,28 @@ is very simple value noise at the moment
 */
 #pragma once
 
-#define C_NOISE_GENERATOR_TYPE 2 // value, gradient, domain warped
+#include <iostream>
 
-#include "core.h"
+namespace noise_generator_c {
 
-namespace c_noise_generator {
+struct Parameter {
+    int type;
+    float period;
+    int seed;
+};
 
-class CNoiseGenerator {
+class NoiseGeneratorC {
   public:
     // float scale = 1.0 / 64.0;
     float period = 8; // Period in noise space (8 units for 8x8 repetition) (must be integer for seamless)
     int seed = 42;
 
+    // 0 = value
+    // 1 = gradient
+    // 2 = warped
+    int type = 0;
+
     void fill(float *d_out, int width, int height);
 };
 
-} // namespace c_noise_generator
+} // namespace noise_generator_c

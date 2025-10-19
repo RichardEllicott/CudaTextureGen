@@ -4,6 +4,10 @@
     "C_Cpp.intelliSenseEngine": "default",
     "files.eol": "\n",
     "files.associations": {
-        "vector": "cpp"
+        "vector": "cpp",
+        "filesystem": "cpp",
+        "locale": "cpp",
+        "__locale": "cpp",
+        "chrono": "cpp"
     }, // stop windows vs.code using windows line endings
 }
