@@ -198,7 +198,32 @@ def test_all_noise():
 
         print()
 
-test_all_noise()
+
+
+def test_warped_noise():
+    print('{}()...'.format(inspect.currentframe().f_code.co_name))
+
+
+    gen = cuda_hello.NoiseGeneratorD()
+
+    for thing in dir(gen):
+        print(thing)
+
+    for type in gen.Type:
+        print(type)
+
+
+
+
+
+test_warped_noise()
+
+# print(cuda_hello.Type)
+
+# for type in cuda_hello.Type:
+#     print(type)
+
+# test_all_noise()
 
 
 # # test_cuda_hello()

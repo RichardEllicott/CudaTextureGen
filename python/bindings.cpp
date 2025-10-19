@@ -44,16 +44,22 @@ static void bind_noise_generator_c(nb::module_ &m) {
 
 static void bind_noise_generator_d(nb::module_ &m) {
 
-    nb::class_<noise_generator_d::NoiseGeneratorD>(m, "NoiseGeneratorD")
-        .def(nb::init<>())
-
+    auto ngd = nb::class_<noise_generator_d::NoiseGeneratorD>(m, "NoiseGeneratorD")
+                   .def(nb::init<>())
 
 #define X(TYPE, NAME, DEFAULT_VAL) \
     .def_prop_rw(#NAME, &noise_generator_d::NoiseGeneratorD::get_##NAME, &noise_generator_d::NoiseGeneratorD::set_##NAME)
-            NOISE_GENERATOR_D_PARAMETERS
+                       NOISE_GENERATOR_D_PARAMETERS
 #undef X
 
-        .def("fill", [](noise_generator_d::NoiseGeneratorD &self, nb::ndarray<float> arr) {
+                   // nb::enum_<NoiseType>(m, "NoiseType")
+                   //     .value("Hash", NoiseType::Hash)
+                   //     .value("Gradient", NoiseType::Gradient)
+                   //     .value("Simplex", NoiseType::Simplex)
+                   //     .value("Cellular", NoiseType::Cellular)
+                   //     .export_values();
+
+                   .def("fill", [](noise_generator_d::NoiseGeneratorD &self, nb::ndarray<float> arr) {
 
                 if (arr.ndim() != 2)
     throw std::runtime_error("Expected a 2D float32 array");
@@ -64,6 +70,15 @@ static void bind_noise_generator_d(nb::module_ &m) {
         float *data = arr.data();
 
         self.fill(data, w, h); });
+
+    // Type enumerators
+    nb::enum_<noise_generator_d::NoiseGeneratorD::Type>(ngd, "Type")
+
+#define X(NAME) \
+    .value(#NAME, noise_generator_d::NoiseGeneratorD::Type::NAME)
+        NOISE_GENERATOR_D_TYPES
+#undef X
+            .export_values();
 }
 
 static void bind_erosion(nb::module_ &m) {

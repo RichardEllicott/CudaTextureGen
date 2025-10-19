@@ -5,7 +5,7 @@ functions for the noise generators, hash functions, dot products, gradients
 */
 #pragma once
 
-#define NOISE_UTIL_TRIG_HASH 0
+#define NOISE_UTIL_TRIG_HASH 1
 
 namespace noise_util {
 
