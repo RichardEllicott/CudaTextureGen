@@ -189,41 +189,40 @@ def test_all_noise():
     os.makedirs("output", exist_ok=True)
     # noise_filename = "output/noise.png"
 
-    for type in range(5+2):
 
-        print("noise type: {}".format(type))
+    for t in cuda_hello.NoiseGeneratorD.Type:
+        print(t.name, t.value)
+        test_noise_generator_d(1024, 1024, "output/noise_{}.png".format(t.name), t.value)
 
-        test_noise_generator_d(
-            1024, 1024, "output/noise{}.png".format(type), type)
 
-        print()
+
+    # for tyoe in cuda_hello.NoiseGeneratorD.Type:
+    #     # print(dir(type))
+    #     print(type.__name__)
+
+
+    # for type in range(5+2):
+
+    #     print("noise type: {}".format(type))
+
+    #     
+    #     print()
 
 
 
 def test_warped_noise():
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
-
     gen = cuda_hello.NoiseGeneratorD()
 
-    for thing in dir(gen):
-        print(thing)
-
-    for type in gen.Type:
-        print(type)
+    
 
 
 
-
-
-test_warped_noise()
-
-# print(cuda_hello.Type)
-
-# for type in cuda_hello.Type:
-#     print(type)
 
 # test_all_noise()
+test_warped_noise()
+
 
 
 # # test_cuda_hello()

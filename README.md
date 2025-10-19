@@ -2,20 +2,27 @@
 
 My C++ CUDA tests with Python bindings
 
-Written using:
+#### Tested using:
 
 - Ubuntu 24.04.3 LTS using WSL
-- C++17
-- CUDA 12.0
-- Python 3.12
+- C++ 17
+- CUDA V12.0.140
+- Python 3.12.3
 
-## Structure
+#### Also:
+
+- Windows 11
+- C++ 17
+- CUDA V12.5.40
+- Python 3.13.7
+
+## Structure 🚧🚧🚧 (nonsense)
 
 - `src/main.cu`: CUDA kernel and host code
 - `BUILD.sh`: Build script using Make
 - `CMakeLists.txt`: Simple CMake configuration
 
-## Build Instructions
+## Build Instructions (this changed a bit, WSL is the easiest, Windows use developer shell and pray a bit)
 
 install Ubuntu 24.04 using WSL
 
@@ -55,24 +62,3 @@ Linux will need clang-format
 sudo apt update
 sudo apt install clang-format
 ```
-
-## Edit Configurations (UI)
-
-```
-{
-  "configurations": [
-    {
-      "name": "WSL",
-      "includePath": [
-        "${workspaceFolder}/**",
-        "/usr/include/python3.12"
-      ],
-      "defines": [],
-      "compilerPath": "/usr/bin/g++",
-      "cStandard": "c17",
-      "cppStandard": "c++17"
-    }
-  ],
-  "version": 4
-}
-```s

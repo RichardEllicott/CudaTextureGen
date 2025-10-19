@@ -10,6 +10,10 @@
 #include "erosion.cuh"
 #include "noise_generator_c.cuh" // cuda noise generator
 #include "noise_generator_d.cuh" // new noise techiques
+#include "resample.cuh"
+
+
+
 
 namespace nb = nanobind;
 
@@ -126,6 +130,14 @@ static void bind_blur(nb::module_ &m) {
         blur::blur(arr.data(), w, h, amount, wrap); }, nb::arg("arr"), nb::arg("amount"), nb::arg("wrap") = false);
 }
 
+
+
+static void bind_resample(nb::module_ &m) {
+
+}
+
+
+
 // helpers to make python objects which is a bit convoluted from python
 namespace python_helper {
 
@@ -184,6 +196,9 @@ static void bind_helpers(nb::module_ &m) {
 }
 
 } // namespace python_helper
+
+
+
 
 NB_MODULE(cuda_hello, m) {
 
