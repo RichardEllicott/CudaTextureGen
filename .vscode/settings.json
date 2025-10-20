@@ -8,6 +8,10 @@
         "filesystem": "cpp",
         "locale": "cpp",
         "__locale": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "xiosbase": "cpp",
+        "ios": "cpp",
+        "stdexcept": "cpp",
+        "xstring": "cpp"
     }, // stop windows vs.code using windows line endings
 }

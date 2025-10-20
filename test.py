@@ -215,13 +215,29 @@ def test_warped_noise():
 
     gen = cuda_hello.NoiseGeneratorD()
 
-    
+test_warped_noise()
 
 
+def test_shader_maps(filename, output_filename):
+    print('{}()...'.format(inspect.currentframe().f_code.co_name))
+
+    shader_maps = cuda_hello.ShaderMaps()
+
+    print(shader_maps)
+    print(dir(shader_maps))
+
+
+    print("load image...")
+    img = Image.open(filename).convert("L")
+    arr = np.array(img, dtype=np.float32)
+
+
+    ret = shader_maps.generate_normal_map(arr)
+
+    print(type(ret))
 
 
 # test_all_noise()
-test_warped_noise()
 
 
 
@@ -229,10 +245,13 @@ test_warped_noise()
 # os.makedirs("output", exist_ok=True)
 
 # # # GENERATE NOISE AND ERODE
-# noise_filename = "output/noise.png"
-# test_c_noise_generation(512, 512, noise_filename)
+noise_filename = "output/noise.png"
+test_noise_generator_d(512, 512, noise_filename, 1)
+
 # # test_errosion(noise_filename, "output/erode.png")
 # test_blur(noise_filename, "output/blur.png")
 
 
 # print(dir(cuda_hello))
+
+test_shader_maps(noise_filename, "{}.normal.png".format(noise_filename))
