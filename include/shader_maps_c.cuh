@@ -23,6 +23,6 @@ class ShaderMaps {
     void generate_ao_map(
         const float *host_in, float *host_out,
         int width, int height,
-        int radius, bool wrap);
+        int radius, bool wrap, int mode = 0);
 };
 } // namespace shader_maps_c

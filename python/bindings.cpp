@@ -1,17 +1,28 @@
+/*
+
+central file for the python bindings
+
+concider rename to module.cpp
+
+*/
+
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <vector>
 
+// #include "python_helper.h"
+
 #include "FastNoiseLite.h"
-#include "shader_maps.h"
 
 #include "blur.cuh"
 #include "cuda_hello.cuh"
 #include "erosion.cuh"
-#include "noise_generator_c.cuh" // cuda noise generator
 #include "noise_generator_d.cuh" // new noise techiques
 #include "resample.cuh"
 #include "shader_maps_c.cuh"
+
+
+
 
 namespace nb = nanobind;
 
@@ -73,27 +84,6 @@ static void bind_hello(nb::module_ &m) {
 
 static void bind_cuda_hello(nb::module_ &m) {
     m.def("cuda_hello", []() { cuda_hello(); });
-}
-
-static void bind_noise_generator_c(nb::module_ &m) {
-
-    nb::class_<noise_generator_c::NoiseGeneratorC>(m, "NoiseGeneratorC")
-        .def(nb::init<>())
-        .def_rw("period", &noise_generator_c::NoiseGeneratorC::period)
-        .def_rw("seed", &noise_generator_c::NoiseGeneratorC::seed)
-        .def_rw("type", &noise_generator_c::NoiseGeneratorC::type)
-
-        .def("fill", [](noise_generator_c::NoiseGeneratorC &self, nb::ndarray<float> arr) {
-
-                if (arr.ndim() != 2)
-    throw std::runtime_error("Expected a 2D float32 array");
-
-
-        int h = arr.shape(0);
-        int w = arr.shape(1);
-        float *data = arr.data();
-
-        self.fill(data, w, h); });
 }
 
 static void bind_noise_generator_d(nb::module_ &m) {
@@ -218,7 +208,6 @@ NB_MODULE(cuda_hello, m) {
 
     bind_hello(m);
     bind_cuda_hello(m);
-    bind_noise_generator_c(m);
     bind_noise_generator_d(m);
     bind_erosion(m);
 

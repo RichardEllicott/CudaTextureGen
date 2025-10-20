@@ -43,6 +43,7 @@ endif()
 file(GLOB_RECURSE CUDA_CPP_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    # "${CMAKE_CURRENT_SOURCE_DIR}/python/bindings/*.cpp"
 )
 # Create a static library from all collected sources
 add_library(cuda_core STATIC ${CUDA_CPP_SOURCES}) # NOTE "cuda_core"
@@ -64,6 +65,7 @@ add_library(cuda_core STATIC ${CUDA_CPP_SOURCES}) # NOTE "cuda_core"
 target_include_directories(cuda_core PUBLIC
     include
     core
+    # python/bindings
 )
 
 

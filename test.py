@@ -90,7 +90,7 @@ def offset_arr(arr):
 # seamless noise
 
 
-def test_noise_generator_d(width=256, height=256, filename="output/noise_gen_test256.png", type=0):
+def test_noise_generator(width=256, height=256, filename="output/noise_gen_test256.png", type=0):
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
     arr = np.zeros((width, height), dtype=np.float32)
@@ -191,7 +191,7 @@ def test_all_noise():
 
     for t in cuda_hello.NoiseGeneratorD.Type:
         print(t.name, t.value)
-        test_noise_generator_d(
+        test_noise_generator(
             1024, 1024, "output/noise_{}.png".format(t.name), t.value)
 
     # for tyoe in cuda_hello.NoiseGeneratorD.Type:
@@ -215,8 +215,14 @@ def test_warped_noise():
 test_warped_noise()
 
 
+# gen some gradient noise, and make a normal map and ao map
 def test_shader_maps(filename):
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
+
+    for t in cuda_hello.NoiseGeneratorD.Type:
+        print(t.name, t.value)
+
+    test_noise_generator(512, 512, filename, cuda_hello.NoiseGeneratorD.Type.Gradient2D.value)
 
     shader_maps = cuda_hello.ShaderMaps()
 
@@ -228,7 +234,7 @@ def test_shader_maps(filename):
     arr = np.array(img, dtype=np.float32)
 
     normal_arr = shader_maps.generate_normal_map(arr)
-    ao_arr = shader_maps.generate_ao_map(arr, radius = 5)
+    ao_arr = shader_maps.generate_ao_map(arr * 0.5, radius = 2)
 
     path = Path(filename)
     save_array_as_image(
@@ -244,7 +250,7 @@ def test_shader_maps(filename):
 # os.makedirs("output", exist_ok=True)
 # # # GENERATE NOISE AND ERODE
 noise_filename = "output/noise.png"
-test_noise_generator_d(512, 512, noise_filename, 1)
+# test_noise_generator_d(512, 512, noise_filename, 1)
 
 # # test_errosion(noise_filename, "output/erode.png")
 # test_blur(noise_filename, "output/blur.png")
