@@ -290,13 +290,12 @@ htao_kernel(
         float dir_occ_B = accum / (float)pars->steps_per_dir;
 
         // Blend them; tweak alpha in [0,1] for look
-        const float alpha = 0.7f; // bias toward horizon max
-        float dir_occ = alpha * dir_occ_A + (1.0f - alpha) * dir_occ_B;
+        float dir_occ = pars->alpha * dir_occ_A + (1.0f - pars->alpha) * dir_occ_B;
 
         // Nonlinear remap to keep values bounded and soft
         // k controls sensitivity to small slopes
-        const float k = 2.0f;
-        dir_occ = dir_occ / (dir_occ + k);
+        // const float k = 2.0f;
+        dir_occ = dir_occ / (dir_occ + pars->k);
 
         occlusion_sum += dir_occ;
     }
