@@ -18,6 +18,11 @@ class ShaderMaps {
     void generate_normal_map(
         const float *host_in, float *host_out,
         int width, int height,
-        float normal_scale, bool wrap);
+        float scale, bool wrap);
+
+    void generate_ao_map(
+        const float *host_in, float *host_out,
+        int width, int height,
+        int radius, bool wrap);
 };
 } // namespace shader_maps_c

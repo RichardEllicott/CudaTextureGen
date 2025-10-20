@@ -12,6 +12,9 @@
         "xiosbase": "cpp",
         "ios": "cpp",
         "stdexcept": "cpp",
-        "xstring": "cpp"
+        "xstring": "cpp",
+        "system_error": "cpp",
+        "xlocale": "cpp",
+        "typeinfo": "cpp"
     }, // stop windows vs.code using windows line endings
 }

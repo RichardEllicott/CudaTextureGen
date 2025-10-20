@@ -28,6 +28,7 @@ import inspect  # function reflect
 from PIL import Image
 import numpy as np
 import cuda_hello
+from pathlib import Path
 
 # fun print that puts a snake at front!
 
@@ -102,17 +103,16 @@ def test_noise_generator_d(width=256, height=256, filename="output/noise_gen_tes
 
     gen.seed = 0
 
-    gen.fill(arr) # generate the noise
+    gen.fill(arr)  # generate the noise
 
-    offset_arr(arr) # offset to check the tiling
+    offset_arr(arr)  # offset to check the tiling
 
     print("height range: [{}, {}]".format(arr.min(), arr.max()))
 
     # arr = (arr - arr.min()) / (arr.max() - arr.min())  # normalize to [0, 1]
-    arr = arr * 0.5 + 0.5 # [-1, 1] => [0, 1]
+    arr = arr * 0.5 + 0.5  # [-1, 1] => [0, 1]
 
     print("height range: [{}, {}]".format(arr.min(), arr.max()))
-
 
     save_array_as_image(arr * 255, filename)
     # save_array_as_image(arr, filename + '.tif')
@@ -189,25 +189,21 @@ def test_all_noise():
     os.makedirs("output", exist_ok=True)
     # noise_filename = "output/noise.png"
 
-
     for t in cuda_hello.NoiseGeneratorD.Type:
         print(t.name, t.value)
-        test_noise_generator_d(1024, 1024, "output/noise_{}.png".format(t.name), t.value)
-
-
+        test_noise_generator_d(
+            1024, 1024, "output/noise_{}.png".format(t.name), t.value)
 
     # for tyoe in cuda_hello.NoiseGeneratorD.Type:
     #     # print(dir(type))
     #     print(type.__name__)
 
-
     # for type in range(5+2):
 
     #     print("noise type: {}".format(type))
 
-    #     
+    #
     #     print()
-
 
 
 def test_warped_noise():
@@ -215,10 +211,11 @@ def test_warped_noise():
 
     gen = cuda_hello.NoiseGeneratorD()
 
+
 test_warped_noise()
 
 
-def test_shader_maps(filename, output_filename):
+def test_shader_maps(filename):
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
     shader_maps = cuda_hello.ShaderMaps()
@@ -226,24 +223,25 @@ def test_shader_maps(filename, output_filename):
     print(shader_maps)
     print(dir(shader_maps))
 
-
     print("load image...")
     img = Image.open(filename).convert("L")
     arr = np.array(img, dtype=np.float32)
 
+    normal_arr = shader_maps.generate_normal_map(arr)
+    ao_arr = shader_maps.generate_ao_map(arr, radius = 5)
 
-    ret = shader_maps.generate_normal_map(arr)
-
-    print(type(ret))
+    path = Path(filename)
+    save_array_as_image(
+        normal_arr * 255.0, str(path.with_name(path.stem + ".normal" + path.suffix)))
+    save_array_as_image(
+        ao_arr * 255.0, str(path.with_name(path.stem + ".ao" + path.suffix)))
 
 
 # test_all_noise()
 
 
-
 # # test_cuda_hello()
 # os.makedirs("output", exist_ok=True)
-
 # # # GENERATE NOISE AND ERODE
 noise_filename = "output/noise.png"
 test_noise_generator_d(512, 512, noise_filename, 1)
@@ -254,4 +252,4 @@ test_noise_generator_d(512, 512, noise_filename, 1)
 
 # print(dir(cuda_hello))
 
-test_shader_maps(noise_filename, "{}.normal.png".format(noise_filename))
+test_shader_maps(noise_filename)
