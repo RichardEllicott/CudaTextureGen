@@ -16,5 +16,6 @@
         "system_error": "cpp",
         "xlocale": "cpp",
         "typeinfo": "cpp"
-    }, // stop windows vs.code using windows line endings
+    },
+    "C_Cpp.errorSquiggles": "enabled", // stop windows vs.code using windows line endings
 }

@@ -1,6 +1,30 @@
 
 
 
+
+#❓❓❓❓ ONLY REQUIRED FOR INTELISENSE??? ❓❓❓❓
+# find_package(CUDAToolkit REQUIRED)
+# add_library(cuda_hello_py MODULE bindings.cpp)
+# target_link_libraries(cuda_hello_py PRIVATE CUDA::cudart cuda_core)
+#❓❓❓❓ ONLY REQUIRED FOR INTELISENSE??? ❓❓❓❓
+# target_include_directories(python_bindings PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
+#❓❓❓❓ ONLY REQUIRED FOR INTELISENSE??? ❓❓❓❓
+# find_package(CUDAToolkit)
+
+
+
+# 🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️
+# SOME NOTES JUST FOR LATER REFERNCE WE CAN ADD VARS, AND SET MESSAGES
+# 🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️
+# set(MY_VAR "hello")
+# message(STATUS "MY_VAR = ${MY_VAR}")
+# 🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️🗒️
+
+
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # will generate compile_commands.json for vs.code
+
+
 # --- python/CMakeLists.txt ---
 
 # Bring in nanobind (either vendored as subdir, or via find_package if installed)
@@ -20,22 +44,23 @@ nanobind_add_module(cuda_hello_py
 
 # Include paths needed for bindings to see core + headers
 target_include_directories(cuda_hello_py PRIVATE
-    # ${PROJECT_SOURCE_DIR}/include
-    # ${PROJECT_SOURCE_DIR}/core
+    # ${PROJECT_SOURCE_DIR}/include # ❓❓❓❓
+    # ${PROJECT_SOURCE_DIR}/core # ❓❓❓❓
     ${CMAKE_CURRENT_SOURCE_DIR}/bindings
 )
 
-# Link against your CUDA static library and nanobind
-target_link_libraries(cuda_hello_py PRIVATE
+# Link against your CUDA static library
+target_link_libraries(cuda_hello_py PRIVATE 
     cuda_core
-    # nanobind::nanobind
-    )
+    # CUDA::cudart # ❓❓❓❓
+)
 
 # Ensure the output file is named cuda_hello.so / cuda_hello.pyd
 set_target_properties(cuda_hello_py PROPERTIES
     OUTPUT_NAME "cuda_hello"
-    PREFIX ""  # no "lib" prefix
+    # PREFIX ""  # no "lib" prefix
 )
+
 
 
 

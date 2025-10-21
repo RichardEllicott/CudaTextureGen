@@ -7,14 +7,8 @@
 #include <nanobind/ndarray.h>
 #include <vector>
 
-
-
-inline void test_find_this_lib(){
-
-
-
+inline void test_find_this_lib() {
 }
-
 
 // helpers to make python objects which is a bit convoluted from python
 namespace python_helper {

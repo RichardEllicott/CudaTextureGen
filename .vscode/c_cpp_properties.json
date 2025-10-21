@@ -1,23 +1,44 @@
 {
-    "configurations": [
-        {
-            "name": "Win32",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "C:\\Users\\Richard\\AppData\\Local\\Programs\\Python\\Python313\\include",
-                "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.5\\include"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "windowsSdkVersion": "10.0.26100.0",
-            "compilerPath": "cl.exe",
-            "cStandard": "c17",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64"
-        }
-    ],
-    "version": 4
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": [
+        // "${workspaceFolder}/**", // HOVER IT ALL UP (bad idea)
+        "${workspaceFolder}/core",
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/python/bindings",
+        "${workspaceFolder}/python/nanobind/include",
+        "C:/Users/Richard/AppData/Local/Programs/Python/Python313/include",
+        "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5/include"
+      ],
+      "defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE"
+      ],
+      "windowsSdkVersion": "10.0.26100.0",
+      "compilerPath": "cl.exe",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-msvc-x64",
+      // "compileCommands": "${workspaceFolder}/build/windows/compile_commands.json" // 🚧 doesn't seem to work? (and breaks it)
+    }
+  ],
+  "version": 4
 }
+// 🚧 TRYING TO USE compile_commands.json
+// {
+//   "configurations": [
+//     {
+//       "name": "Win32",
+//       "includePath": [
+//         "C:/Users/Richard/AppData/Local/Programs/Python/Python313/include",
+//         "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5/include"
+//       ],
+//       "compileCommands": "${workspaceFolder}/build/windows/compile_commands.json",
+//       "intelliSenseMode": "windows-msvc-x64"
+//     }
+//   ],
+//   "version": 4
+// }

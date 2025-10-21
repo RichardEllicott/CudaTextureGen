@@ -4,6 +4,11 @@ project(cuda_core LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # will generate compile_commands.json for vs.code
+
+
+
+
 
 # 🪟🪟🪟🪟 Python workaround for Windows
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
@@ -16,6 +21,10 @@ if(WIN32 AND NOT TARGET Python::Module)
     )
 endif()
 # 🪟🪟🪟🪟
+
+
+
+
 
 
 
@@ -61,11 +70,10 @@ add_library(cuda_core STATIC ${CUDA_CPP_SOURCES}) # NOTE "cuda_core"
 # This does NOT "grab all headers" automatically — it just adds that directory to the compiler's
 # search path (-I flag). You still need to #include the headers you want in your .cpp files.
 
-# target_include_directories(cuda_core PUBLIC include)
 target_include_directories(cuda_core PUBLIC
     include
     core
-    # python/bindings
+    # ${CMAKE_CURRENT_SOURCE_DIR}/python/bindings # ❓❓❓❓TRYING TO GET INTELISENSE WORKING
 )
 
 
