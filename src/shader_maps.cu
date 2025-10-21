@@ -1,6 +1,6 @@
-#include "shader_maps_c.cuh"
+#include "shader_maps.cuh"
 
-namespace shader_maps_c {
+namespace shader_maps {
 
 #pragma region NORMAL_MAP
 

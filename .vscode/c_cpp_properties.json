@@ -36,7 +36,7 @@
 //         "C:/Users/Richard/AppData/Local/Programs/Python/Python313/include",
 //         "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5/include"
 //       ],
-//       "compileCommands": "${workspaceFolder}/build/windows/compile_commands.json",
+//       "compileCommands": "${workspaceFolder}/build/windows/compile_commands.json", // 🚧 doesn't seem to work? (and breaks it)
 //       "intelliSenseMode": "windows-msvc-x64"
 //     }
 //   ],

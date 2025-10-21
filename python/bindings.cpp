@@ -12,68 +12,18 @@ concider rename to module.cpp
 
 #include "python_helper.h"
 
-#include "FastNoiseLite.h"
+// #include "FastNoiseLite.h"
 
 #include "blur.cuh"
 #include "cuda_hello.cuh"
 #include "erosion.cuh"
 #include "noise_generator_d.cuh" // new noise techiques
-#include "resample.cuh"
-#include "shader_maps_c.cuh"
+#include "resample.cuh"          // 🚧 untested
+
+// #include "shader_maps_c.cuh"     // 🚧 adding a new AO
+#include "shader_maps.bind.h" // new pattern
 
 namespace nb = nanobind;
-
-// helpers to make python objects which is a bit convoluted from python
-// namespace python_helper {
-
-// // create an empty 2D numpy array
-// nb::ndarray<nb::numpy, float> get_numpy_float_array(int height, int width) {
-//     nb::module_ np = nb::module_::import_("numpy");                                       // import numpy
-//     nb::object arr_obj = np.attr("empty")(nb::make_tuple(height, width), "float32");      // create empty numpy array
-//     nb::ndarray<nb::numpy, float> arr = nb::cast<nb::ndarray<nb::numpy, float>>(arr_obj); // Cast to a typed ndarray
-//     return arr;
-// }
-
-// // create an empty 3D numpy array
-// nb::ndarray<nb::numpy, float> get_numpy_float_array(int height, int width, int depth) {
-//     nb::module_ np = nb::module_::import_("numpy");                                         // import numpy
-//     nb::object arr_obj = np.attr("empty")(nb::make_tuple(height, width, depth), "float32"); // create empty numpy array
-//     nb::ndarray<nb::numpy, float> arr = nb::cast<nb::ndarray<nb::numpy, float>>(arr_obj);   // Cast to a typed ndarray
-//     return arr;
-// }
-
-// nb::object get_list_of_lists(int h, int w) {
-
-//     std::vector<nb::list> rows;
-//     rows.reserve(h);
-
-//     for (int y = 0; y < h; ++y) {
-//         nb::list row;
-//         for (int x = 0; x < w; ++x) {
-//             row.append(0.0f); // or some value
-//         }
-//         rows.push_back(row);
-//     }
-
-//     nb::list outer;
-//     for (auto &r : rows)
-//         outer.append(r);
-
-//     return outer; // Python will see a list of lists
-// }
-
-// static void bind_helpers(nb::module_ &m) {
-//     // EXAMPLE create a list of lists, we can't seem to make a numpy array though
-//     m.def("get_list_of_lists", [](int h, int w) {
-//         return get_list_of_lists(h, w);
-//     });
-
-//     m.def("get_2d_numpy_array", [](int h, int w) {
-//         return get_numpy_float_array(h, w);
-//     });
-// }
-
-// } // namespace python_helper
 
 static void bind_hello(nb::module_ &m) {
     m.def("hello", []() { return "Hello from Python!"; });
@@ -150,9 +100,6 @@ static void bind_erosion(nb::module_ &m) {
         });
 }
 
-static void bind_shader_maps(nb::module_ &m) {
-}
-
 static void bind_blur(nb::module_ &m) {
 
     m.def("blur", [](nb::ndarray<float, nb::ndim<2>, nb::c_contig> arr, float amount, bool wrap) {
@@ -162,43 +109,6 @@ static void bind_blur(nb::module_ &m) {
 }
 
 static void bind_resample(nb::module_ &m) {
-}
-
-static void bind_shader_maps_c(nb::module_ &m) {
-
-    auto _class = nb::class_<shader_maps_c::ShaderMaps>(m, "ShaderMaps")
-
-                      .def(nb::init<>()) // init
-
-                      // bind generate_normal_map
-                      .def("generate_normal_map", [](shader_maps_c::ShaderMaps &self, nb::ndarray<float> arr, float amount, bool wrap) {
-                          if (arr.ndim() != 2)
-                              throw std::runtime_error("Expected a 2D float32 array");
-
-                          int height = arr.shape(0);
-                          int width = arr.shape(1);
-                          auto normal_arr = python_helper::get_numpy_float_array(height, width, 3); // 3D numpy array (rgb)
-                          self.generate_normal_map(arr.data(), normal_arr.data(), width, height, amount, wrap);
-                          return normal_arr; // ret
-                      },
-                           nb::arg("arr"), nb::arg("amount") = 1.0f, nb::arg("wrap") = true) // defaults
-
-                      // bind generate_ao_map
-                      .def("generate_ao_map", [](shader_maps_c::ShaderMaps &self, nb::ndarray<float> arr, float radius = 1.0f, bool wrap = true) {
-                          if (arr.ndim() != 2)
-                              throw std::runtime_error("Expected a 2D float32 array");
-
-                          int height = arr.shape(0);
-                          int width = arr.shape(1);
-                          auto ao_arr = python_helper::get_numpy_float_array(height, width); // 3D numpy array (rgb)
-                          self.generate_ao_map(arr.data(), ao_arr.data(), width, height, 1.0f, true);
-                          return ao_arr; // ret
-                      },
-                           nb::arg("arr"), nb::arg("radius") = 1.0f, nb::arg("wrap") = true) // defaults
-
-        ;
-
-    //  nb::arg("self"), nb::arg("arr"), nb::arg("radius") = 1.0f, nb::arg("wrap") = true
 }
 
 NB_MODULE(cuda_hello, m) {
@@ -212,7 +122,7 @@ NB_MODULE(cuda_hello, m) {
     bind_blur(m);
 
     bind_resample(m);
-    bind_shader_maps_c(m);
+    bind_shader_maps(m);
 
-    python_helper::bind_helpers(m);
+    // python_helper::bind_python_helper(m);
 }

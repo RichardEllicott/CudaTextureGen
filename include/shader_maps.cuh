@@ -10,7 +10,7 @@
 #include <cuda_runtime.h>
 #include <iostream>
 
-namespace shader_maps_c {
+namespace shader_maps {
 
 class ShaderMaps {
   private:
@@ -25,4 +25,4 @@ class ShaderMaps {
         int width, int height,
         int radius, bool wrap, int mode = 0);
 };
-} // namespace shader_maps_c
+} // namespace shader_maps
