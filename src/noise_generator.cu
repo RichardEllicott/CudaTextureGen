@@ -7,9 +7,9 @@ https://claude.ai/chat/626e97e1-b6cb-4690-9dc7-db32b31ccccf
 
 
 */
-#include "noise_generator_d.cuh"
+#include "noise_generator.cuh"
 
-namespace noise_generator_d {
+namespace noise_generator {
 using namespace noise_util;
 
 #pragma region NOISE
@@ -290,7 +290,7 @@ __global__ void generate_noise(float *out, const unsigned width, const unsigned 
     }
 }
 
-void NoiseGeneratorD::fill(float *host_data, const unsigned width, const unsigned height) {
+void NoiseGenerator::fill(float *host_data, const unsigned width, const unsigned height) {
 
     pars.scale = static_cast<float>(pars.period) / width;
 

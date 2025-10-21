@@ -18,7 +18,7 @@ z         -start position z (for 3D noise, useful for animation)
 
 // #define NOISE_GENERATOR_D_HASH_MODE 0 // bitwise, trig based // 🚧 UNUSED
 
-#define NOISE_GENERATOR_D_PARAMETERS \
+#define NOISE_GENERATOR_PARAMETERS \
     X(int, type, 0)                  \
     X(int, seed, 0)                  \
     X(float, period, 8.0f)           \
@@ -40,7 +40,7 @@ z         -start position z (for 3D noise, useful for animation)
 //     NOISE_GENERATOR_D_PARAMETERS         \
 //     NOISE_GENERATOR_D_ADVANCED_PARAMETERS
 
-#define NOISE_GENERATOR_D_TYPES \
+#define NOISE_GENERATOR_TYPES \
     X(Value2D)                  \
     X(Gradient2D)               \
     X(WarpedValue2D)            \
@@ -49,33 +49,33 @@ z         -start position z (for 3D noise, useful for animation)
     X(Hash2D)                   \
     X(Hash3D)
 
-namespace noise_generator_d {
+namespace noise_generator {
 
 struct Parameters {
 #define X(TYPE, NAME, DEFAULT_VAL) \
     TYPE NAME;
-    NOISE_GENERATOR_D_PARAMETERS
+    NOISE_GENERATOR_PARAMETERS
 #undef X
 };
 
-class NoiseGeneratorD {
+class NoiseGenerator {
 
   private:
     Parameters pars;
 
   public:
-    NoiseGeneratorD() {
+    NoiseGenerator() {
         // set default values
 #define X(TYPE, NAME, DEFAULT_VAL) \
     pars.NAME = DEFAULT_VAL;
-        NOISE_GENERATOR_D_PARAMETERS
+        NOISE_GENERATOR_PARAMETERS
 #undef X
     }
     // make get/sets
 #define X(TYPE, NAME, DEFAULT_VAL)                \
     TYPE get_##NAME() const { return pars.NAME; } \
     void set_##NAME(TYPE value) { pars.NAME = value; }
-        NOISE_GENERATOR_D_PARAMETERS
+        NOISE_GENERATOR_PARAMETERS
 #undef X
 
     // make enumerators
@@ -83,7 +83,7 @@ class NoiseGeneratorD {
 
 #define X(NAME) \
     NAME,
-        NOISE_GENERATOR_D_TYPES
+        NOISE_GENERATOR_TYPES
 #undef X
     };
 

@@ -94,7 +94,7 @@ def test_noise_generator(width=256, height=256, filename="output/noise_gen_test2
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
     arr = np.zeros((width, height), dtype=np.float32)
-    gen = cuda_hello.NoiseGeneratorD()
+    gen = cuda_hello.NoiseGenerator()
 
     gen.type = type
 
@@ -189,12 +189,12 @@ def test_all_noise():
     os.makedirs("output", exist_ok=True)
     # noise_filename = "output/noise.png"
 
-    for t in cuda_hello.NoiseGeneratorD.Type:
+    for t in cuda_hello.NoiseGenerator.Type:
         print(t.name, t.value)
         test_noise_generator(
             1024, 1024, "output/noise_{}.png".format(t.name), t.value)
 
-    # for tyoe in cuda_hello.NoiseGeneratorD.Type:
+    # for tyoe in cuda_hello.NoiseGenerator.Type:
     #     # print(dir(type))
     #     print(type.__name__)
 
@@ -209,7 +209,7 @@ def test_all_noise():
 def test_warped_noise():
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
-    gen = cuda_hello.NoiseGeneratorD()
+    gen = cuda_hello.NoiseGenerator()
 
 
 test_warped_noise()
@@ -219,10 +219,10 @@ test_warped_noise()
 def test_shader_maps(filename):
     print('{}()...'.format(inspect.currentframe().f_code.co_name))
 
-    for t in cuda_hello.NoiseGeneratorD.Type:
+    for t in cuda_hello.NoiseGenerator.Type:
         print(t.name, t.value)
 
-    test_noise_generator(512, 512, filename, cuda_hello.NoiseGeneratorD.Type.Gradient2D.value)
+    test_noise_generator(512, 512, filename, cuda_hello.NoiseGenerator.Type.Gradient2D.value)
 
     shader_maps = cuda_hello.ShaderMaps()
 
