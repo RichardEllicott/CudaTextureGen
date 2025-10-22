@@ -1,4 +1,8 @@
 """
+
+🚧 testing the framework 🚧
+
+
 Ubuntu Linux no longer wants to use PIP, but apt:
     sudo apt install python3-pil
     sudo apt install python3-numpy
@@ -14,7 +18,6 @@ pip list --outdated --format=json | ConvertFrom-Json | ForEach-Object {
     pip install --upgrade $_.name
 }
 
-    
 
 """
 
@@ -23,16 +26,16 @@ import builtins  # snake print
 import os
 import platform
 import sys
-import cuda_hello_bootstrap
+import python_bootstrap # bootstrap to our fresh compiled module
 import inspect  # function reflect
 from PIL import Image
 import numpy as np
 import cuda_hello
 from pathlib import Path
+#
 
-# fun print that puts a snake at front!
 
-
+# print that puts a snake at front so we can see the print from python!
 def snake_print(*args, **kwargs):
     builtins.print("🐍", *args, **kwargs)
 
@@ -222,7 +225,8 @@ def test_shader_maps(filename):
     for t in cuda_hello.NoiseGenerator.Type:
         print(t.name, t.value)
 
-    test_noise_generator(512, 512, filename, cuda_hello.NoiseGenerator.Type.Gradient2D.value)
+    test_noise_generator(512, 512, filename,
+                         cuda_hello.NoiseGenerator.Type.Gradient2D.value)
 
     shader_maps = cuda_hello.ShaderMaps()
 
@@ -234,7 +238,7 @@ def test_shader_maps(filename):
     arr = np.array(img, dtype=np.float32)
 
     normal_arr = shader_maps.generate_normal_map(arr)
-    ao_arr = shader_maps.generate_ao_map(arr * 0.5, radius = 2)
+    ao_arr = shader_maps.generate_ao_map(arr * 0.5, radius=2)
 
     path = Path(filename)
     save_array_as_image(

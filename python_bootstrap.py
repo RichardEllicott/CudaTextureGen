@@ -1,5 +1,9 @@
 """
 Wrapper to load cuda_hello from the fresh compile (without installing it)
+
+ # noqa: E402
+ is the only way to stop the python format from screwing up the order
+
 """
 import sys  # noqa: E402
 import platform  # noqa: E402

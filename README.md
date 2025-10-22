@@ -1,64 +1,46 @@
-# Python C++ CUDA Tests
+# Cuda Texture Generation
 
-My C++ CUDA tests with Python bindings
+CudaTextureGeneration is a Python-based framework for procedural texture generation and erosion simulation, accelerated with CUDA. It provides modular tools for crafting realistic surface patterns, simulating terrain wear, and integrating GPU-powered workflows into creative or scientific pipelines.
 
-#### Tested using:
+## ⚙️ Requirements
 
-- Ubuntu 24.04.3 LTS using WSL
-- C++ 17
-- CUDA V12.0.140
-- Python 3.12.3
+This framework requires a CUDA-capable NVIDIA GPU and a compatible
+software stack. It has been tested on the following configurations:
 
-#### Also:
+### ✅ Primary Environment
 
-- Windows 11
-- C++ 17
-- CUDA V12.5.40
-- Python 3.13.7
+* OS: Ubuntu 24.04.3 LTS (via WSL)
+* C++: C++17
+* CUDA: V12.0.140
+* Python: 3.12.3
 
-## Structure 🚧🚧🚧 (nonsense)
+### 🧪 Also Tested On
 
-- `src/main.cu`: CUDA kernel and host code
-- `BUILD.sh`: Build script using Make
-- `CMakeLists.txt`: Simple CMake configuration
+* OS: Windows 11
+* C++: C++17
+* CUDA: V12.5.40
+* Python: 3.13.7
 
-## Build Instructions (this changed a bit, WSL is the easiest, Windows use developer shell and pray a bit)
+> ⚠️ **A CUDA-compatible GPU is required.** This project will not run on systems without NVIDIA hardware and drivers.  
+> 🧪 *Note: Future support for non-CUDA backends may be possible via [AdaptiveCpp](https://github.com/AdaptiveCpp/AdaptiveCpp), a SYCL-based compiler targeting multiple accelerators.*
 
-install Ubuntu 24.04 using WSL
+## Structure
 
-```powershell
-wsl --install -d Ubuntu-24.04 
-```
+This repository is organized as follows:
 
-install build tools
+* `src/`: CUDA kernel and host code  
+* `include/`: Header files  
+* `core/`: Core header library (currently unused)  
+* `python/`: Python bindings directory  
+* `python/bindings/`: Individual binding modules  
+* `BUILD.sh`: Build script using CMake (Linux)  
+* `BUILD.ps1`: Build script using CMake (Windows)  
+* `CMakeLists.txt`: Simple CMake configuration
+* `test.py`: Some simple tests
 
-```bash
-sudo apt update
-sudo apt install -y build-essential cmake ninja-build
-sudo apt install -y python3 python3-venv python3-dev
-sudo apt install -y nvidia-cuda-toolkit
-```
+## Building
 
-get python libraries
+For platform-specific build instructions, see:
 
-```bash
-sudo apt install python3-pil
-sudo apt install python3-numpy
-```
-
-to build run
-
-```bash
-sh BUILD.sh
-```
-
-## Setup VS.code to work with WSL
-
-install the "WSL" extension in VS.code
-
-Linux will need clang-format
-
-```bash
-sudo apt update
-sudo apt install clang-format
-```
+* [Windows Build Guide](docs/windows-build.md)
+* [Linux Build Guide](docs/linux-build.md)
