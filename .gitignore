@@ -10,5 +10,7 @@ ENV/
 /scripts/temp/
 /scripts/output/
 /output/
+/bin/output/
+
 
 /__pycache__/

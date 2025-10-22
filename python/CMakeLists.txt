@@ -37,32 +37,29 @@ file(GLOB BINDING_SOURCES CONFIGURE_DEPENDS
 
 # Define the Python extension module
 # NB: module.cpp is your NB_MODULE entry point
-nanobind_add_module(cuda_hello_py
+nanobind_add_module(cuda_texture_gen_py
     bindings.cpp
     ${BINDING_SOURCES}
 )
 
 # Include paths needed for bindings to see core + headers
-target_include_directories(cuda_hello_py PRIVATE
+target_include_directories(cuda_texture_gen_py PRIVATE
     # ${PROJECT_SOURCE_DIR}/include # ❓❓❓❓
     # ${PROJECT_SOURCE_DIR}/core # ❓❓❓❓
     ${CMAKE_CURRENT_SOURCE_DIR}/bindings
 )
 
 # Link against your CUDA static library
-target_link_libraries(cuda_hello_py PRIVATE 
+target_link_libraries(cuda_texture_gen_py PRIVATE 
     cuda_core
     # CUDA::cudart # ❓❓❓❓
 )
 
 # Ensure the output file is named cuda_hello.so / cuda_hello.pyd
-set_target_properties(cuda_hello_py PROPERTIES
-    OUTPUT_NAME "cuda_hello"
-    # PREFIX ""  # no "lib" prefix
+set_target_properties(cuda_texture_gen_py PROPERTIES
+    OUTPUT_NAME "cuda_texture_gen"
+    PREFIX ""  # no "lib" prefix (best for ensuring lib is the same name cross platform)
 )
-
-
-
 
 
 

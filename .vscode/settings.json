@@ -1,5 +1,4 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}",
     "workbench.colorTheme": "Monokai",
     "C_Cpp.intelliSenseEngine": "default",
     "files.eol": "\n",

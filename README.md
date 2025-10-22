@@ -1,6 +1,6 @@
-# Cuda Texture Generation
+# CudaTextureGen
 
-CudaTextureGeneration is a Python-based framework for procedural texture generation and erosion simulation, accelerated with CUDA. It provides modular tools for crafting realistic surface patterns, simulating terrain wear, and integrating GPU-powered workflows into creative or scientific pipelines.
+CudaTextureGen is a Python-based framework for procedural texture generation and erosion simulation, accelerated with CUDA. It provides modular tools for crafting realistic surface patterns, simulating terrain wear, and integrating GPU-powered workflows into creative or scientific pipelines.
 
 ## ⚙️ Requirements
 
@@ -37,6 +37,11 @@ This repository is organized as follows:
 * `BUILD.ps1`: Build script using CMake (Windows)  
 * `CMakeLists.txt`: Simple CMake configuration
 * `test.py`: Some simple tests
+* `bin/`: prebuilt modules (windows and linux)
+
+## 🚀 Running the Prebuilt Module
+
+prebuilt modules inside the `bin/` folder, ready for usage with Python
 
 ## Building
 

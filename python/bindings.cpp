@@ -31,7 +31,7 @@ static void bind_cuda_hello(nb::module_ &m) {
     m.def("cuda_hello", []() { cuda_hello(); });
 }
 
-NB_MODULE(cuda_hello, m) {
+NB_MODULE(cuda_texture_gen, m) {
 
     bind_hello(m);
     bind_cuda_hello(m);

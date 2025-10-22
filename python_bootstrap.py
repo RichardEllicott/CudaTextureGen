@@ -1,5 +1,5 @@
 """
-Wrapper to load cuda_hello from the fresh compile (without installing it)
+Wrapper to load cuda_texture_gen from the fresh compile (without installing it)
 
  # noqa: E402
  is the only way to stop the python format from screwing up the order
@@ -14,4 +14,5 @@ if platform.system() == "Windows":  # noqa: E402
 else:  # noqa: E402
     build_subdir = os.path.join("build", "linux")  # noqa: E402
 sys.path.append(os.path.join(root_dir, build_subdir, "python"))  # noqa: E402
-import cuda_hello  # noqa: E402
+# import cuda_hello  # noqa: E402
+import cuda_texture_gen  # noqa: E402

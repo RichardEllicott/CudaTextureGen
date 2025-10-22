@@ -26,7 +26,7 @@ import builtins  # snake print
 import os
 import platform
 import sys
-import python_bootstrap # bootstrap to our fresh compiled module
+# import python_bootstrap # bootstrap to our fresh compiled module
 import inspect  # function reflect
 from PIL import Image
 import numpy as np
@@ -250,11 +250,16 @@ def test_shader_maps(filename):
 # test_all_noise()
 
 
-# # test_cuda_hello()
+test_cuda_hello()
 # os.makedirs("output", exist_ok=True)
 # # # GENERATE NOISE AND ERODE
-noise_filename = "output/noise.png"
-# test_noise_generator_d(512, 512, noise_filename, 1)
+
+
+# noise_filename = "output/noise.png"
+# test_noise_generator(512, 512, noise_filename, 1)
+
+
+
 
 # # test_errosion(noise_filename, "output/erode.png")
 # test_blur(noise_filename, "output/blur.png")
@@ -262,4 +267,4 @@ noise_filename = "output/noise.png"
 
 # print(dir(cuda_hello))
 
-test_shader_maps(noise_filename)
+# test_shader_maps(noise_filename)
