@@ -29,14 +29,6 @@ https://copilot.microsoft.com/chats/pcsfGy53kozEuavmq68Fu
     X(float, max_height, 1.0) \
     X(float, jitter, 1.0)
 
-
-
-//   // constants to be copied to the GPU
-// #define EROSION_PARAMETERS     \
-//     X(float, min_height, 0.0) \
-//     X(float, max_height, 1.0) \
-//     X(float, jitter, 1.0)
-
 namespace erosion {
 
 // --------------------------------------------------------------------------------
@@ -46,13 +38,6 @@ namespace erosion {
 EROSION_CONSTANTS
 #undef X
 // --------------------------------------------------------------------------------
-
-
-
-
-
-
-
 
 class ErosionSimulator {
 

@@ -278,4 +278,16 @@ def new_noise_test(width = 256, height = 256, filename = "output/new_noise_test.
 
 
 
-new_noise_test()
+# new_noise_test()
+
+
+
+def template_class_test():
+
+    template_class = cuda_texture_gen.TemplateClass()
+
+    print(template_class)
+    print(dir(template_class))
+
+
+template_class_test()

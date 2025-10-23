@@ -14,7 +14,25 @@
         "xstring": "cpp",
         "system_error": "cpp",
         "xlocale": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "algorithm": "cpp",
+        "functional": "cpp",
+        "xutility": "cpp",
+        "optional": "cpp",
+        "type_traits": "cpp",
+        "xlocmon": "cpp",
+        "xtr1common": "cpp",
+        "__bit_reference": "cpp",
+        "__functional_base": "cpp",
+        "__node_handle": "cpp",
+        "bitset": "cpp",
+        "complex": "cpp",
+        "deque": "cpp",
+        "__memory": "cpp",
+        "limits": "cpp",
+        "memory": "cpp",
+        "ratio": "cpp",
+        "tuple": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled", // stop windows vs.code using windows line endings
 }
