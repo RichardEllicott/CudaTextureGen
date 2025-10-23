@@ -4,11 +4,11 @@
       "name": "Win32",
       "includePath": [
         // "${workspaceFolder}/**", // HOVER IT ALL UP (bad idea)
-        "${workspaceFolder}/core",
-        "${workspaceFolder}/include",
-        "${workspaceFolder}/src",
-        "${workspaceFolder}/python/bindings",
-        "${workspaceFolder}/python/nanobind/include",
+        // "${workspaceFolder}/core",
+        // "${workspaceFolder}/include",
+        // "${workspaceFolder}/src",
+        // "${workspaceFolder}/python/bindings",
+        // "${workspaceFolder}/python/nanobind/include",
         "C:/Users/Richard/AppData/Local/Programs/Python/Python313/include",
         "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5/include"
       ],
@@ -22,7 +22,7 @@
       "cStandard": "c17",
       "cppStandard": "c++17",
       "intelliSenseMode": "windows-msvc-x64",
-      // "compileCommands": "${workspaceFolder}/build/windows/compile_commands.json" // 🚧 doesn't seem to work? (and breaks it)
+      "compileCommands": "${workspaceFolder}/build/windows/compile_commands.json" // 🚧 doesn't seem to work? (and breaks it)
     }
   ],
   "version": 4

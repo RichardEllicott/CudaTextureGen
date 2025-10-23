@@ -6,11 +6,14 @@
 venv/
 ENV/
 
-# Test image output
+
 /scripts/temp/
 /scripts/output/
 /output/
 /bin/output/
-
+/bin/
 
 /__pycache__/
+
+# UNUSED ATM!!!
+/godot/

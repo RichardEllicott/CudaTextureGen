@@ -1,13 +1,30 @@
-# add the build/python directory
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "build", "python"))
-
-# alternative could be running this command instead (also adds build/python)
-# PYTHONPATH=build/python python3 test.py
+"""
 
 
-import cuda_hello
 
 
-print(cuda_hello.hello())   # "Hello from Python!"
-cuda_hello.cuda_hello()     # prints "Hello from CPU" + GPU thread messages
+"""
+import python_bootstrap # bootstrap to our fresh compiled module
+import cuda_texture_gen
+import inspect
+import os
+from PIL import Image
+import numpy as np
+
+def test_cuda_hello():
+    print('{}()...'.format(inspect.currentframe().f_code.co_name))
+    cuda_texture_gen.cuda_hello()
+
+
+
+os.makedirs("output", exist_ok=True)
+
+
+
+
+print(dir(cuda_texture_gen))
+
+test_cuda_hello()
+
+
+

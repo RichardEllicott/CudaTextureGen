@@ -1,5 +1,5 @@
 /*
-*/
+ */
 #pragma once
 
 #include "noise_generator.cuh"
@@ -18,17 +18,25 @@ inline void bind_noise_generator(nb::module_ &m) {
                        NOISE_GENERATOR_PARAMETERS
 #undef X
 
-                   .def("fill", [](noise_generator::NoiseGenerator &self, nb::ndarray<float> arr) {
+                   .def("fill", [](noise_generator::NoiseGenerator &self, nb::ndarray<float> arr) { // fill an existing array with noise
+                       if (arr.ndim() != 2)
+                           throw std::runtime_error("Expected a 2D float32 array");
 
-                if (arr.ndim() != 2)
-    throw std::runtime_error("Expected a 2D float32 array");
+                       int h = arr.shape(0);
+                       int w = arr.shape(1);
+                       float *data = arr.data();
+                       self.fill(data, w, h); // fill the array data
 
+                   })
 
-        int h = arr.shape(0);
-        int w = arr.shape(1);
-        float *data = arr.data();
+                   .def("generate", [](noise_generator::NoiseGenerator &self, int width, int height) { // return a new array with noise
+                       auto arr = python_helper::get_numpy_float_array(height, width);
+                       float *data = arr.data();
+                       self.fill(data, width, height);
+                       return arr;
+                   })
 
-        self.fill(data, w, h); });
+        ;
 
     // Type enumerators
     nb::enum_<noise_generator::NoiseGenerator::Type>(ngd, "Type")
