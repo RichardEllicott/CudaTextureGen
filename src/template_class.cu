@@ -2,32 +2,40 @@
 
 namespace template_class {
 
-// --------------------------------------------------------------------------------
-// Make Get/Sets
-// --------------------------------------------------------------------------------
-#define X(TYPE, NAME, DEFAULT_VAL)                               \
-    TYPE TemplateClass::get_##NAME() const { return pars.NAME; } \
-    void TemplateClass::set_##NAME(TYPE value) { pars.NAME = value; }
-TEMPLATE_CLASS_PARAMETERS
-#undef X
-// --------------------------------------------------------------------------------
-
-// TemplateClass::TemplateClass() {
-//         // --------------------------------------------------------------------------------
-//         // Set Defaults
-//         // --------------------------------------------------------------------------------
-// #define X(TYPE, NAME, DEFAULT_VAL) \
-//     pars.NAME = DEFAULT_VAL;
-//         TEMPLATE_CLASS_PARAMETERS
-// #undef X
-//         // --------------------------------------------------------------------------------
-//     }
 
 
+// a kernel example
+__global__ void process_texture(Parameters *pars, Maps *maps, int width, int height) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
 
+    if (x >= width || y >= height)
+        return;
 
+    int idx = y * width + x;
 
+    float blend = 0.0f;
+    if (maps->blend_mask) {
+        blend = maps->blend_mask[idx]; // Safe to access
+    }
 
+    // // Use blend in computation...
+}
 
+void TemplateClass::process() {
+
+    allocate_memory();
+
+    dim3 block(16, 16);
+    dim3 grid((host_pars.width + block.x - 1) / block.x,
+              (host_pars.height + block.y - 1) / block.y);
+
+    // Launch kernel with access to private members
+    process_texture<<<block, grid>>>(device_pars, device_map_struct, host_pars.width, host_pars.height);
+    CUDA_CHECK(cudaGetLastError());      // Check launch
+    CUDA_CHECK(cudaDeviceSynchronize()); // Check execution
+
+    free_memory();
+}
 
 } // namespace template_class

@@ -14,6 +14,21 @@ https://copilot.microsoft.com/chats/2XJNp3jKPgdUwKbQoPHP1
 
 #include <cstdio>
 
+#define TEMPLATE_CLASS_NAME TemplateClass
+#define TEMPLATE_CLASS_NAMESPACE template_class
+
+#define TEMPLATE_CLASS_PARAMETERS \
+    X(int, width, 256)            \
+    X(int, height, 256)           \
+    X(float, test_par1, 0.0)      \
+    X(float, test_par2, 1.0)      \
+    X(float, test_par3, 1.0)
+
+#define TEMPLATE_CLASS_MAPS \
+    X(float, height_map)    \
+    X(float, blend_mask)    \
+    X(float, gradient_map)
+
 #define CUDA_CHECK(call)                                                                               \
     do {                                                                                               \
         cudaError_t err = call;                                                                        \
@@ -23,22 +38,7 @@ https://copilot.microsoft.com/chats/2XJNp3jKPgdUwKbQoPHP1
         }                                                                                              \
     } while (0)
 
-#define TEMPLATE_CLASS_PARAMETERS \
-    X(int, width, 256)            \
-    X(int, height, 256)           \
-    X(float, test_par1, 0.0)      \
-    X(float, test_par2, 1.0)      \
-    X(float, test_par3, 1.0)
-
-// #define TEMPLATE_CLASS_MAPS \
-// X(int, data, 256)
-
-#define TEMPLATE_CLASS_MAPS \
-    X(float *, height_map)  \
-    X(float *, blend_mask)  \
-    X(float *, gradient_map)
-
-namespace template_class {
+namespace TEMPLATE_CLASS_NAMESPACE {
 
 struct Parameters {
     // declare pars on structures
@@ -46,71 +46,130 @@ struct Parameters {
     TYPE NAME;
     TEMPLATE_CLASS_PARAMETERS
 #undef X
+};
 
-// declare maps on structures
-#define X(TYPE, NAME) TYPE NAME;
+struct Maps {
+    // declare maps on structures
+#define X(TYPE, NAME) \
+    TYPE *NAME = nullptr;
     TEMPLATE_CLASS_MAPS
 #undef X
 };
 
-class TemplateClass {
+// The template class itself
+class TEMPLATE_CLASS_NAME {
 
   private:
-    Parameters pars;
-    Parameters *dev_pars;
+    Parameters host_pars; // pars stored host side
+    Parameters *device_pars = nullptr;
 
-    float *dev_data = nullptr;
+    Maps host_maps;
+    // Maps dev_maps; // will need to be
+    Maps device_map_pointers;          // host-side struct holding device pointers
+    Maps *device_map_struct = nullptr; // device-side struct to pass to kernels
 
   public:
-    TemplateClass() {
+    TEMPLATE_CLASS_NAME() {
         // set default pars
 #define X(TYPE, NAME, DEFAULT_VAL) \
-    pars.NAME = DEFAULT_VAL;
+    host_pars.NAME = DEFAULT_VAL;
         TEMPLATE_CLASS_PARAMETERS
 #undef X
 
         // null the maps
-#define X(TYPE, NAME) pars.NAME = nullptr;
+#define X(TYPE, NAME) \
+    host_maps.NAME = nullptr;
         TEMPLATE_CLASS_MAPS
 #undef X
     }
 
-// --------------------------------------------------------------------------------
+    ~TEMPLATE_CLASS_NAME() {
+        free_memory();
+    }
+
 // Decalare Get/Sets
-// --------------------------------------------------------------------------------
 #define X(TYPE, NAME, DEFAULT_VAL) \
     TYPE get_##NAME() const;       \
     void set_##NAME(TYPE value);
     TEMPLATE_CLASS_PARAMETERS
 #undef X
-    // --------------------------------------------------------------------------------
 
-    //
-    //
-    void allocate_memory(float *host_data, const unsigned width, const unsigned height) {
+// Decalare Get/Sets for maps
+#define X(TYPE, NAME) \
+    void set_##NAME(TYPE *ptr);
+    TEMPLATE_CLASS_MAPS
+#undef X
 
-        free_memory();
+    //  Allocate Memory
+    void allocate_memory() {
 
-        // cudaMalloc(&dev_pars, sizeof(Parameters));
-        // cudaMemcpy(dev_pars, &pars, sizeof(Parameters), cudaMemcpyHostToDevice);
+        free_memory(); // Free existing allocations first
 
-        // THIS PATTERN ADDS CHECKS!!!
-        CUDA_CHECK(cudaMalloc(&dev_pars, sizeof(Parameters)));
-        CUDA_CHECK(cudaMemcpy(dev_pars, &pars, sizeof(Parameters), cudaMemcpyHostToDevice));
+        size_t map_size = host_pars.width * host_pars.height; // find map size
 
-        // data??
-        cudaMalloc(&dev_data, width * height * sizeof(float));
-        cudaMemcpy(dev_data, host_data, width * height * sizeof(float), cudaMemcpyHostToDevice);
+        // allocate and copy map data to GPU if we have any (we can leave some maps null)
+#define X(TYPE, NAME)                                                                                                      \
+    if (host_maps.NAME) {                                                                                                  \
+        CUDA_CHECK(cudaMalloc(&device_map_pointers.NAME, map_size * sizeof(TYPE)));                                        \
+        CUDA_CHECK(cudaMemcpy(device_map_pointers.NAME, host_maps.NAME, map_size * sizeof(TYPE), cudaMemcpyHostToDevice)); \
+    } else {                                                                                                               \
+        device_map_pointers.NAME = nullptr;                                                                                \
+    }
+        TEMPLATE_CLASS_MAPS
+#undef X
+
+        // copy pars to gpu
+        CUDA_CHECK(cudaMalloc(&device_pars, sizeof(Parameters)));
+        CUDA_CHECK(cudaMemcpy(device_pars, &host_pars, sizeof(Parameters), cudaMemcpyHostToDevice));
+
+        // copy map pointers to gpu
+        CUDA_CHECK(cudaMalloc(&device_map_struct, sizeof(Maps)));
+        CUDA_CHECK(cudaMemcpy(device_map_struct, &device_map_pointers, sizeof(Maps), cudaMemcpyHostToDevice));
     }
 
+    // Free Memory
     void free_memory() {
 
-        if (dev_data)
-            cudaFree(dev_data);
-
-        if (dev_pars)
-            cudaFree(dev_pars);
+#define X(TYPE, NAME)                       \
+    if (device_map_pointers.NAME) {         \
+        cudaFree(device_map_pointers.NAME); \
+        device_map_pointers.NAME = nullptr; \
     }
+        TEMPLATE_CLASS_MAPS
+#undef X
+
+        if (device_pars) {
+            cudaFree(device_pars);
+            device_pars = nullptr;
+        }
+
+        if (device_map_struct) {
+            cudaFree(device_map_struct);
+            device_map_struct = nullptr;
+        }
+    }
+
+    // 🚀
+    void process();
 };
 
-} // namespace template_class
+// Then outside class (after class definition NOTE USING INLINE?):
+#define X(TYPE, NAME, DEFAULT_VAL)                                                 \
+    inline TYPE TEMPLATE_CLASS_NAME::get_##NAME() const { return host_pars.NAME; } \
+    inline void TEMPLATE_CLASS_NAME::set_##NAME(TYPE value) { host_pars.NAME = value; }
+TEMPLATE_CLASS_PARAMETERS
+#undef X
+
+// Outside class:
+#define X(TYPE, NAME) \
+    inline void TEMPLATE_CLASS_NAME::set_##NAME(TYPE *ptr) { host_maps.NAME = ptr; }
+TEMPLATE_CLASS_MAPS
+#undef X
+
+} // namespace TEMPLATE_CLASS_NAMESPACE
+
+// undefs
+#undef TEMPLATE_CLASS_NAME
+#undef TEMPLATE_CLASS_NAMESPACE
+#undef TEMPLATE_CLASS_PARAMETERS
+#undef TEMPLATE_CLASS_MAPS

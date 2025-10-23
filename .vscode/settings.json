@@ -32,7 +32,9 @@
         "limits": "cpp",
         "memory": "cpp",
         "ratio": "cpp",
-        "tuple": "cpp"
+        "tuple": "cpp",
+        "__config": "cpp",
+        "__nullptr": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled", // stop windows vs.code using windows line endings
 }
