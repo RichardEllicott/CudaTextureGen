@@ -8,6 +8,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # will generate compile_commands.json for 
 
 
 
+# testing debug 🚧
+# set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -lineinfo -DDEBUG") # 🚧
 
 
 # 🪟🪟🪟🪟 Python workaround for Windows

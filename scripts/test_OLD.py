@@ -39,17 +39,25 @@ import cuda_texture_gen
 def snake_print(*args, **kwargs):
     builtins.print("🐍", *args, **kwargs)
 
-
 print = snake_print
+
+def print_current_function():
+    frame = inspect.currentframe().f_back  # caller's frame
+    func_name = frame.f_code.co_name
+    args, _, _, values = inspect.getargvalues(frame)
+    arg_str = ', '.join(f"{arg}={values[arg]!r}" for arg in args)
+    print(f"{func_name}({arg_str})...")
+
 
 
 def test_cuda_hello():
-    print('{}()...'.format(inspect.currentframe().f_code.co_name))
+    print_current_function()
     cuda_texture_gen.cuda_hello()
 
 
 # save numpy 2d array as an image (supports .png or .tif)
 def save_array_as_image(arr, filename):
+    print_current_function()
 
     if isinstance(filename, (list, tuple)):
         for fname in filename:
@@ -66,11 +74,25 @@ def save_array_as_image(arr, filename):
 
     else:
         raise ValueError(f"Unsupported format: {filename}")
+    
 
+
+def load_array_from_image(filename):
+    print_current_function()
+    img = Image.open(filename).convert("L")
+    arr = np.array(img, dtype=np.float32)
+    return arr
+
+# normalize array in place (make from 0 to 1)
+def normalize_array(arr):
+    print_current_function()
+
+    arr -= arr.min()
+    arr /= arr.max()
 
 # offset array by half (to test tiling)
-def offset_arr(arr):
-    print('{}()...'.format(inspect.currentframe().f_code.co_name))
+def offset_array(arr):
+    print_current_function()
 
     # Compute half offsets
     dx = arr.shape[1] // 2  # width
@@ -83,8 +105,6 @@ def offset_arr(arr):
 
 
 
-
-# seamless noise
 
 
 def test_noise_generator(width=256, height=256, filename="output/noise_gen_test256.png", type=0):
@@ -150,7 +170,7 @@ def test_errosion(filename, output_filename):
     erosion.deposition_rate = 0.02 * 0.5
     # lowers squareness if higher as makes sure works on steeper slopes
     erosion.slope_threshold = 0.01
-    erosion.steps = 512
+    erosion.steps = 512 * 4
     erosion.jitter = 0.0
 
     erosion.steps = 256
@@ -173,7 +193,7 @@ def test_errosion(filename, output_filename):
     arr /= arr.max()
     arr *= 255.0
 
-    offset_arr(arr)
+    offset_array(arr)
 
     print("height range: [{}, {}]".format(arr.min(), arr.max()))
 
@@ -230,23 +250,6 @@ def test_shader_maps(filename):
         ao_arr * 255.0, str(path.with_name(path.stem + ".ao" + path.suffix)))
 
 
-# test_all_noise()
-
-
-# # test_cuda_hello()
-# os.makedirs("output", exist_ok=True)
-# # # GENERATE NOISE AND ERODE
-noise_filename = "output/noise.png"
-# test_noise_generator(512, 512, noise_filename, 1)
-
-# # test_errosion(noise_filename, "output/erode.png")
-# test_blur(noise_filename, "output/blur.png")
-
-
-# print(dir(cuda_hello))
-
-# test_shader_maps(noise_filename)
-
 
 def new_noise_test(width = 256, height = 256, filename = "output/new_noise_test.png"):
 
@@ -278,16 +281,31 @@ def new_noise_test(width = 256, height = 256, filename = "output/new_noise_test.
 
 
 
+
+# test_all_noise()
+
+
+# # test_cuda_hello()
+# os.makedirs("output", exist_ok=True)
+# # # GENERATE NOISE AND ERODE
+noise_filename = "output/noise.png"
+test_noise_generator(1024, 1024, noise_filename, 1)
+test_errosion(noise_filename, "output/erode.png")
+# test_blur(noise_filename, "output/blur.png")
+
+
+# print(dir(cuda_hello))
+
+# test_shader_maps(noise_filename)
+
+
+
 # new_noise_test()
 
 
 
 def template_class_test():
-
     template_class = cuda_texture_gen.TemplateClass()
-
     print(template_class)
     print(dir(template_class))
-
-
-template_class_test()
+# template_class_test()

@@ -3,4 +3,4 @@
 $ErrorActionPreference = "Stop" # like "set -e" in bash (will exit if we crash)
 
 .\BUILD.ps1
-python test.py
+.\TEST.ps1

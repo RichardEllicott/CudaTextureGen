@@ -6,7 +6,7 @@
 namespace erosion {
 
 #ifdef ENABLE_EROSION_TRIPWIRE
-bool ErosionSimulator::instance_created = false; // set tripwire
+bool Erosion::instance_created = false; // set tripwire
 #endif
 
 #pragma region MAIN
@@ -115,10 +115,10 @@ __global__ void erode_kernel(
 // --------------------------------------------------------------------------------
 // Define CUDA constant get/sets
 #define X(TYPE, NAME, DEFAULT_VAL)                           \
-    TYPE ErosionSimulator::get_##NAME() const {              \
+    TYPE Erosion::get_##NAME() const {              \
         return NAME##_host;                                  \
     }                                                        \
-    void ErosionSimulator::set_##NAME(const TYPE p_##NAME) { \
+    void Erosion::set_##NAME(const TYPE p_##NAME) { \
         NAME##_host = p_##NAME;                              \
     }
 EROSION_CONSTANTS
@@ -129,7 +129,7 @@ EROSION_CONSTANTS
 //         cudaMemcpyToSymbol(erosion::NAME, &p_##NAME, sizeof(TYPE)); \
 
 
-void ErosionSimulator::run_erosion(float *host_data, int width, int height) {
+void Erosion::run_erosion(float *host_data, int width, int height) {
 
     println("⛰️ run_erosion...");
     // println();
@@ -229,7 +229,7 @@ void ErosionSimulator::run_erosion(float *host_data, int width, int height) {
     cudaFree(dev_sediment);
 }
 
-ErosionSimulator::ErosionSimulator() {
+Erosion::Erosion() {
 
 #ifdef ENABLE_EROSION_TRIPWIRE
     if (instance_created) {
@@ -247,7 +247,7 @@ ErosionSimulator::ErosionSimulator() {
     // --------------------------------------------------------------------------------
 }
 
-ErosionSimulator::~ErosionSimulator() {
+Erosion::~Erosion() {
 #ifdef ENABLE_EROSION_TRIPWIRE
     instance_created = false;
 #endif

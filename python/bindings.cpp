@@ -16,6 +16,7 @@ concider rename to module.cpp
 
 // new pattern
 #include "blur.bind.h"
+#include "erosion2.bind.h"
 #include "erosion.bind.h"
 #include "noise_generator.bind.h"
 #include "resample.bind.h"       // 🚧 untested
@@ -37,8 +38,10 @@ NB_MODULE(cuda_texture_gen, m) {
     bind_hello(m);
     bind_cuda_hello(m);
 
-    blur::bind(m);
     erosion::bind(m);
+
+    blur::bind(m);
+    erosion2::bind(m);
     noise_generator::bind(m);
     resample::bind(m);
     shader_maps::bind(m);

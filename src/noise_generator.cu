@@ -230,6 +230,45 @@ __device__ float hash_noise(int x, int y, int z, int seed) {
 //     return value;
 // }
 
+
+
+// voronoi, no wrap yet
+__global__ void voronoi_kernel(float* output, int width, int height,
+                               float2* feature_points, int num_points) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x >= width || y >= height) return;
+
+    int idx = y * width + x;
+    float min_dist = 1e20f;
+
+    float2 p = make_float2(x, y);
+
+    for (int i = 0; i < num_points; ++i) {
+        float2 fp = feature_points[i];
+        float dx = p.x - fp.x;
+        float dy = p.y - fp.y;
+        float dist = dx * dx + dy * dy;  // squared distance
+        if (dist < min_dist) min_dist = dist;
+    }
+
+    output[idx] = sqrtf(min_dist);  // or leave squared for performance
+}
+
+// USAGE
+//
+// dim3 block(16, 16);
+// dim3 grid((width + block.x - 1) / block.x,
+//           (height + block.y - 1) / block.y);
+// voronoi_kernel<<<grid, block>>>(output, width, height, d_feature_points, num_points);
+//
+//
+
+
+
+
+
 #pragma endregion
 
 #pragma region GLOBAL

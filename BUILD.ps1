@@ -88,9 +88,9 @@ $toolchain = Resolve-Path ./toolchain-msvc.cmake
 # cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 
-# cmake -S . -B $build_dir -G "Ninja" -DCMAKE_BUILD_TYPE=Release
-cmake -S . -B $build_dir -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release
 
+cmake -S . -B $build_dir -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release
+# cmake -S . -B $build_dir -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Debug # 🚧 DEBUG (not working i think)
 
 ninja -C $build_dir
 

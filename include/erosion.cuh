@@ -9,7 +9,7 @@ https://copilot.microsoft.com/chats/pcsfGy53kozEuavmq68Fu
 */
 #pragma once
 
-#define ENABLE_EROSION_JITTER // adds jitter to erosion
+// #define ENABLE_EROSION_JITTER // adds jitter to erosion
 // #define ENABLE_EROSION_TILED_MEMORY // 🚧 memory optimization, currently we just have global memory of entire map
 #define ENABLE_EROSION_WRAP     // erosion wraps from the edges, making the result tileable
 // #define ENABLE_EROSION_TRIPWIRE // tripwire error to prevent multiple instances of this class
@@ -54,7 +54,7 @@ EROSION_CONSTANTS
 
 
 
-class ErosionSimulator {
+class Erosion {
 
   private:
 #ifdef ENABLE_EROSION_TRIPWIRE
@@ -91,8 +91,8 @@ class ErosionSimulator {
   public:
     void run_erosion(float *host_data, int width, int height);
 
-    ErosionSimulator();
-    ~ErosionSimulator();
+    Erosion();
+    ~Erosion();
 };
 
 } // namespace erosion

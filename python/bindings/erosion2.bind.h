@@ -2,25 +2,28 @@
  */
 #pragma once
 
+#include "erosion2.cuh"
 #include "python_helper.h"
-#include "template_class.cuh"
 
 // 📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜
 
-#define TEMPLATE_CLASS_NAME TemplateClass
-#define TEMPLATE_CLASS_NAMESPACE template_class
+#define TEMPLATE_CLASS_NAME Erosion2
+#define TEMPLATE_CLASS_NAMESPACE erosion2
 
-#define TEMPLATE_CLASS_PARAMETERS \
-    X(size_t, width, 256)         \
-    X(size_t, height, 256)        \
-    X(float, test_par1, 0.0)      \
-    X(float, test_par2, 1.0)      \
-    X(float, test_par3, 1.0)
+#define TEMPLATE_CLASS_PARAMETERS      \
+    X(size_t, width, 256)              \
+    X(size_t, height, 256)             \
+    X(float, rain_rate, 0.01f)         \
+    X(float, evaporation_rate, 0.005f) \
+    X(float, erosion_rate, 0.01f)      \
+    X(float, deposition_rate, 0.25f)   \
+    X(float, slope_threshold, 0.1f)    \
+    X(int, steps, 128)
 
 #define TEMPLATE_CLASS_MAPS \
     X(float, height_map)    \
-    X(float, blend_mask)    \
-    X(float, gradient_map)
+    X(float, water_map)     \
+    X(float, sediment_map)
 
 // 📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜📜
 
@@ -47,21 +50,14 @@ inline void bind(nb::module_ &m) {
 #undef X
 
     // 🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅
-    ngd.def("test", [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float> arr) {
+    ngd.def("run_erosion", [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float> arr) {
         if (arr.ndim() != 2)
             throw std::runtime_error("Input must be a 2D float32 array");
 
-        int height = arr.shape(0);
-        int width = arr.shape(1);
-        float *data = arr.data();
-
-        self.set_height(height);
-        self.set_width(width);
-        self.set_height_map(data);
+        self.set_height(arr.shape(0));
+        self.set_width(arr.shape(1));
+        self.set_height_map(arr.data());
         self.process();
-
-
-
     });
     // 🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅🍅
 }
