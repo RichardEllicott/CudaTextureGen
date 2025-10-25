@@ -9,7 +9,7 @@ https://copilot.microsoft.com/chats/pcsfGy53kozEuavmq68Fu
 */
 #pragma once
 
-// #define ENABLE_EROSION_JITTER // adds jitter to erosion
+#define ENABLE_EROSION_JITTER // adds jitter to erosion
 // #define ENABLE_EROSION_TILED_MEMORY // 🚧 memory optimization, currently we just have global memory of entire map
 
 #define EROSION_BLOCK_SIZE 16 // normally the best size for block, 16x16 = 256 threads per block 8 warps (32 threads a warp)
@@ -18,23 +18,21 @@ https://copilot.microsoft.com/chats/pcsfGy53kozEuavmq68Fu
 #include "core.h"
 #include <chrono>
 #include <cuda_runtime.h>
+#include <curand_kernel.h>
 #include <iostream>
 
-#ifdef ENABLE_EROSION_JITTER
-#include <curand_kernel.h>
-#endif
-
 // constants to be copied to the GPU
-#define EROSION_PARAMETERS          \
-    X(float, min_height, 0.0)       \
-    X(float, max_height, 1.0)       \
-    X(float, jitter, 0.0)           \
-    X(float, rain_rate, 0.0)        \
-    X(float, evaporation_rate, 0.0) \
-    X(float, erosion_rate, 0.01)    \
-    X(float, deposition_rate, 0.01) \
-    X(float, slope_threshold, 0.01) \
-    X(int, steps, 1024)             \
+#define EROSION_PARAMETERS           \
+    X(float, min_height, 0.0)        \
+    X(float, max_height, 1.0)        \
+    X(float, jitter, 0.0)            \
+    X(float, rain_rate, 0.0)         \
+    X(float, evaporation_rate, 0.01) \
+    X(float, erosion_rate, 0.01)     \
+    X(float, deposition_rate, 0.01)  \
+    X(float, slope_threshold, 0.01)  \
+    X(int, steps, 1024)              \
+    X(int, block_size, 16)           \
     X(bool, wrap, true)
 
 #define CUDA_CHECK(call)                                                                               \
@@ -58,9 +56,10 @@ struct Parameters {
 class Erosion {
 
   private:
+    curandState *dev_rand_states = nullptr;
 
     Parameters pars;
-    Parameters *dev_pars;
+    Parameters *dev_pars = nullptr;
 
     float *dev_heightmap = nullptr;
     float *dev_water = nullptr;
@@ -68,7 +67,7 @@ class Erosion {
     float *dev_sediment = nullptr;
 
   public:
-#define X(TYPE, NAME, DEFAULT_VAL)               \
+#define X(TYPE, NAME, DEFAULT_VAL)          \
     TYPE get_##NAME() { return pars.NAME; } \
     void set_##NAME(TYPE value) { pars.NAME = value; }
     EROSION_PARAMETERS

@@ -45,11 +45,12 @@ def generate_noise_and_erode():
     erosion.steps = 512 * 2
     # erosion.jitter = 0.0
 
+    
 
 
     # erosion.sediment_transport_rate = 1.0 # implicit
 
-    # erosion.jitter = 0.0
+    erosion.jitter = 0.0
 
     # erosion.min_height = 0.0
 

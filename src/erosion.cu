@@ -71,10 +71,12 @@ __global__ void erode_kernel(
         float slope = h - nh;
 
 #ifdef ENABLE_EROSION_JITTER
-        // float jitter = 0.01f * (rand() % 1000) / 1000.0f;
-        // slope += jitter;
-        float rand = curand_uniform(&rand_states[idx]); // [0,1)
-        slope += rand * jitter;
+
+        if (pars->jitter > 0.0f) {
+            float rand = curand_uniform(&rand_states[idx]); // [0,1)
+            slope += rand * pars->jitter;
+        }
+
 #endif
 
         if (slope > pars->slope_threshold) {
@@ -124,8 +126,13 @@ void Erosion::run_erosion(float *host_data, int width, int height) {
 
 #ifdef ENABLE_EROSION_JITTER
     curandState *dev_rand_states;
-    CUDA_CHECK((cudaMalloc(&dev_rand_states, width * height * sizeof(curandState)));
+    CUDA_CHECK(
+        cudaMalloc(&dev_rand_states, width * height * sizeof(curandState)));
 #endif
+
+    // copy pars to gpu
+    CUDA_CHECK(cudaMalloc(&dev_pars, sizeof(Parameters)));
+    CUDA_CHECK(cudaMemcpy(dev_pars, &pars, sizeof(Parameters), cudaMemcpyHostToDevice));
 
     // allocate memory
     CUDA_CHECK(cudaMalloc(&dev_heightmap, size));
@@ -134,24 +141,20 @@ void Erosion::run_erosion(float *host_data, int width, int height) {
     CUDA_CHECK(cudaMalloc(&dev_water, size));
     CUDA_CHECK(cudaMemset(dev_water, 0, size)); // start with no water
 
-    // copy pars to gpu
-    CUDA_CHECK(cudaMalloc(&dev_pars, sizeof(Parameters)));
-    CUDA_CHECK(cudaMemcpy(dev_pars, &pars, sizeof(Parameters), cudaMemcpyHostToDevice));
-
     // cudaMalloc(&dev_outflow, size);
     // cudaMemset(dev_outflow, 0, size);
 
     cudaMalloc(&dev_sediment, size);
     cudaMemset(dev_sediment, 0, size);
 
-    dim3 block_size(EROSION_BLOCK_SIZE, EROSION_BLOCK_SIZE);
-    dim3 grid_size((width + block_size.x - 1) / block_size.x, (height + block_size.y - 1) / block_size.y);
+    dim3 block(pars.block_size, pars.block_size);
+    dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
 
     // ⏲️ Timer
     auto start_time = std::chrono::high_resolution_clock::now();
 
 #ifdef ENABLE_EROSION_JITTER
-    initRand<<<grid_size, block_size>>>(dev_rand_states, width, height);
+    initRand<<<grid, block>>>(dev_rand_states, width, height);
 #endif
 
     // Loop on the host, but keep data on device
@@ -165,7 +168,7 @@ void Erosion::run_erosion(float *host_data, int width, int height) {
 
         // evaporation_kernel<<<grid, block>>>(dev_water, width, height, evaporation_rate);
 
-        erode_kernel<<<grid_size, block_size>>>(
+        erode_kernel<<<grid, block>>>(
             dev_pars, width, height,
             dev_heightmap, dev_sediment
 
@@ -192,7 +195,6 @@ void Erosion::run_erosion(float *host_data, int width, int height) {
     CUDA_CHECK(cudaFree(dev_heightmap));
     CUDA_CHECK(cudaFree(dev_water));
     CUDA_CHECK(cudaFree(dev_sediment));
-
 }
 
 Erosion::Erosion() {
