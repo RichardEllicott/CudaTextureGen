@@ -1,8 +1,5 @@
 #include "erosion.cuh"
 
-#define EROSION_BLOCK_SIZE 16 // normally the best size for block, 16x16 = 256 threads per block 8 warps (32 threads a warp)
-// #define EROSION_BLOCK_SIZE 8 // smaller blocks (not a good idea)
-
 namespace erosion {
 
 #ifdef ENABLE_EROSION_TRIPWIRE
@@ -21,9 +18,11 @@ __global__ void initRand(curandState *states, int width, int height) {
 #endif
 
 __global__ void erode_kernel(
-    float *heightmap, float *sediment,
+    Parameters *pars,
     int width, int height,
-    float erosion_rate, float deposition_rate, float slope_threshold
+
+    float *heightmap, float *sediment
+
 #ifdef ENABLE_EROSION_JITTER
     ,
     curandState *rand_states
@@ -54,15 +53,18 @@ __global__ void erode_kernel(
     // Compute slopes to neighbors
     for (int i = 0; i < 8; ++i) {
 
-#ifdef ENABLE_EROSION_WRAP
-        int nx = (x + dx[i] + width) % width;
-        int ny = (y + dy[i] + height) % height;
-#else
-        int nx = x + dx[i];
-        int ny = y + dy[i];
-        if (nx < 0 || nx >= width || ny < 0 || ny >= height)
-            continue;
-#endif
+        int nx;
+        int ny;
+
+        if (pars->wrap) {
+            nx = (x + dx[i] + width) % width;
+            ny = (y + dy[i] + height) % height;
+        } else {
+            nx = x + dx[i];
+            ny = y + dy[i];
+            if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+                continue;
+        }
 
         int nIdx = ny * width + nx;
         float nh = heightmap[nIdx];
@@ -75,14 +77,14 @@ __global__ void erode_kernel(
         slope += rand * jitter;
 #endif
 
-        if (slope > slope_threshold) {
+        if (slope > pars->slope_threshold) {
             slopes[i] = slope;
             total_slope += slope;
         }
     }
 
     // Erode and deposit based on slope
-    float eroded = erosion_rate * total_slope;
+    float eroded = pars->erosion_rate * total_slope;
     h -= eroded;
     s += eroded;
 
@@ -95,7 +97,7 @@ __global__ void erode_kernel(
                 continue;
 
             int nIdx = ny * width + nx;
-            float share = (slopes[i] / total_slope) * deposition_rate * s;
+            float share = (slopes[i] / total_slope) * pars->deposition_rate * s;
 
             // Atomic to avoid race conditions
             atomicAdd(&heightmap[nIdx], share);
@@ -112,67 +114,29 @@ __global__ void erode_kernel(
 
 #pragma region CLASS
 
-// --------------------------------------------------------------------------------
-// Define CUDA constant get/sets
-#define X(TYPE, NAME, DEFAULT_VAL)                           \
-    TYPE Erosion::get_##NAME() const {              \
-        return NAME##_host;                                  \
-    }                                                        \
-    void Erosion::set_##NAME(const TYPE p_##NAME) { \
-        NAME##_host = p_##NAME;                              \
-    }
-EROSION_CONSTANTS
-#undef X
-// --------------------------------------------------------------------------------
-
 // NOT REQUIRED
 //         cudaMemcpyToSymbol(erosion::NAME, &p_##NAME, sizeof(TYPE)); \
 
 
 void Erosion::run_erosion(float *host_data, int width, int height) {
 
-    println("⛰️ run_erosion...");
-    // println();
-    // println("rain_rate = ", rain_rate, "");
-    // println("evaporation_rate = ", evaporation_rate, "");
-    println("erosion_rate = ", erosion_rate, "");
-    println("deposition_rate = ", deposition_rate, "");
-    println("slope_threshold = ", slope_threshold, "");
-    // println();
-
-    // println("steps = ", steps, "");
-
-    // --------------------------------------------------------------------------------
-    // print values
-#define X(TYPE, NAME, DEFAULT_VAL) \
-    println(#NAME, " = ", get_##NAME());
-    EROSION_CONSTANTS
-#undef X
-    // --------------------------------------------------------------------------------
-
-    // --------------------------------------------------------------------------------
-    // Sync CUDA constants to device
-#define X(TYPE, NAME, DEFAULT_VAL) \
-    cudaMemcpyToSymbol(erosion::NAME, &NAME##_host, sizeof(TYPE));
-    EROSION_CONSTANTS
-#undef X
-    // --------------------------------------------------------------------------------
-
-    println();
-
     size_t size = width * height * sizeof(float);
 
 #ifdef ENABLE_EROSION_JITTER
     curandState *dev_rand_states;
-    cudaMalloc(&dev_rand_states, width * height * sizeof(curandState));
+    CUDA_CHECK((cudaMalloc(&dev_rand_states, width * height * sizeof(curandState)));
 #endif
 
     // allocate memory
-    cudaMalloc(&dev_heightmap, size);
-    cudaMemcpy(dev_heightmap, host_data, size, cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMalloc(&dev_heightmap, size));
+    CUDA_CHECK(cudaMemcpy(dev_heightmap, host_data, size, cudaMemcpyHostToDevice));
 
-    cudaMalloc(&dev_water, size);
-    cudaMemset(dev_water, 0, size); // start with no water
+    CUDA_CHECK(cudaMalloc(&dev_water, size));
+    CUDA_CHECK(cudaMemset(dev_water, 0, size)); // start with no water
+
+    // copy pars to gpu
+    CUDA_CHECK(cudaMalloc(&dev_pars, sizeof(Parameters)));
+    CUDA_CHECK(cudaMemcpy(dev_pars, &pars, sizeof(Parameters), cudaMemcpyHostToDevice));
 
     // cudaMalloc(&dev_outflow, size);
     // cudaMemset(dev_outflow, 0, size);
@@ -191,7 +155,7 @@ void Erosion::run_erosion(float *host_data, int width, int height) {
 #endif
 
     // Loop on the host, but keep data on device
-    for (int s = 0; s < steps; ++s) {
+    for (int s = 0; s < pars.steps; ++s) {
 
         // rain_kernel<<<grid, block>>>(dev_water, width, height, rain_rate);
         // flow_kernel<<<grid, block>>>(dev_height, dev_water, dev_outflow, width, height);
@@ -202,9 +166,9 @@ void Erosion::run_erosion(float *host_data, int width, int height) {
         // evaporation_kernel<<<grid, block>>>(dev_water, width, height, evaporation_rate);
 
         erode_kernel<<<grid_size, block_size>>>(
-            dev_heightmap, dev_sediment,
-            width, height,
-            erosion_rate, deposition_rate, slope_threshold
+            dev_pars, width, height,
+            dev_heightmap, dev_sediment
+
 #ifdef ENABLE_EROSION_JITTER
             ,
             dev_rand_states
@@ -223,10 +187,12 @@ void Erosion::run_erosion(float *host_data, int width, int height) {
     cudaMemcpy(host_data, dev_heightmap, size, cudaMemcpyDeviceToHost);
 
     // // free data
-    cudaFree(dev_heightmap);
-    cudaFree(dev_water);
-    // cudaFree(dev_outflow);
-    cudaFree(dev_sediment);
+    CUDA_CHECK(cudaFree(dev_pars));
+
+    CUDA_CHECK(cudaFree(dev_heightmap));
+    CUDA_CHECK(cudaFree(dev_water));
+    CUDA_CHECK(cudaFree(dev_sediment));
+
 }
 
 Erosion::Erosion() {
@@ -238,13 +204,6 @@ Erosion::Erosion() {
     }
     instance_created = true;
 #endif
-    // --------------------------------------------------------------------------------
-    // Sync CUDA constants to device
-#define X(TYPE, NAME, DEFAULT_VAL) \
-    set_##NAME(DEFAULT_VAL);
-    EROSION_CONSTANTS
-#undef X
-    // --------------------------------------------------------------------------------
 }
 
 Erosion::~Erosion() {

@@ -5,42 +5,34 @@
 #include "erosion.cuh"
 #include "python_helper.h"
 
+#define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
+
 namespace erosion {
 
 namespace nb = nanobind;
 
 inline static void bind(nb::module_ &m) {
 
-    nb::class_<Erosion>(m, "Erosion")
-        .def(nb::init<>())
+    auto ngd = nb::class_<Erosion>(m, "Erosion").def(nb::init<>());
 
-        // .def_rw("rain_rate", &erosion::ErosionSimulator::rain_rate)
-        // .def_rw("evaporation_rate", &erosion::ErosionSimulator::evaporation_rate)
-        .def_rw("erosion_rate", &Erosion::erosion_rate)
-        .def_rw("deposition_rate", &Erosion::deposition_rate)
-        .def_rw("slope_threshold", &Erosion::slope_threshold)
-        .def_rw("steps", &Erosion::steps)
+    // .def_prop_rw("max_height", &erosion::ErosionSimulator::get_max_height, &erosion::ErosionSimulator::set_max_height)
 
-// --------------------------------------------------------------------------------
-// Declare CUDA constants
 #define X(TYPE, NAME, DEFAULT_VAL) \
-    .def_prop_rw(#NAME, &Erosion::get_##NAME, &Erosion::set_##NAME)
-            EROSION_CONSTANTS
+    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), &Erosion::get_##NAME, &Erosion::set_##NAME);
+    EROSION_PARAMETERS
 #undef X
-        // --------------------------------------------------------------------------------
 
-        // .def_prop_rw("max_height", &erosion::ErosionSimulator::get_max_height, &erosion::ErosionSimulator::set_max_height)
-        // .def_prop_rw("min_height", &erosion::ErosionSimulator::get_min_height, &erosion::ErosionSimulator::set_min_height)
 
-        .def("run_erosion", [](Erosion &self, nb::ndarray<float> arr) {
-            if (arr.ndim() != 2)
-                throw std::runtime_error("Input must be a 2D float32 array");
 
-            int height = arr.shape(0);
-            int width = arr.shape(1);
-            float *data = arr.data();
-            self.run_erosion(data, width, height);
-        });
+    ngd.def("run_erosion", [](Erosion &self, nb::ndarray<float> arr) {
+        if (arr.ndim() != 2)
+            throw std::runtime_error("Input must be a 2D float32 array");
+
+        int height = arr.shape(0);
+        int width = arr.shape(1);
+        float *data = arr.data();
+        self.run_erosion(data, width, height);
+    });
 }
 
 } // namespace erosion

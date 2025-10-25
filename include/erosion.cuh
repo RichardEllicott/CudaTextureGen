@@ -11,8 +11,9 @@ https://copilot.microsoft.com/chats/pcsfGy53kozEuavmq68Fu
 
 // #define ENABLE_EROSION_JITTER // adds jitter to erosion
 // #define ENABLE_EROSION_TILED_MEMORY // 🚧 memory optimization, currently we just have global memory of entire map
-#define ENABLE_EROSION_WRAP     // erosion wraps from the edges, making the result tileable
-// #define ENABLE_EROSION_TRIPWIRE // tripwire error to prevent multiple instances of this class
+
+#define EROSION_BLOCK_SIZE 16 // normally the best size for block, 16x16 = 256 threads per block 8 warps (32 threads a warp)
+// #define EROSION_BLOCK_SIZE 8 // smaller blocks (not a good idea)
 
 #include "core.h"
 #include <chrono>
@@ -24,42 +25,42 @@ https://copilot.microsoft.com/chats/pcsfGy53kozEuavmq68Fu
 #endif
 
 // constants to be copied to the GPU
-#define EROSION_CONSTANTS     \
-    X(float, min_height, 0.0) \
-    X(float, max_height, 1.0) \
-    X(float, jitter, 1.0)
+#define EROSION_PARAMETERS          \
+    X(float, min_height, 0.0)       \
+    X(float, max_height, 1.0)       \
+    X(float, jitter, 0.0)           \
+    X(float, rain_rate, 0.0)        \
+    X(float, evaporation_rate, 0.0) \
+    X(float, erosion_rate, 0.01)    \
+    X(float, deposition_rate, 0.01) \
+    X(float, slope_threshold, 0.01) \
+    X(int, steps, 1024)             \
+    X(bool, wrap, true)
 
-
-
-//   // constants to be copied to the GPU
-// #define EROSION_PARAMETERS     \
-//     X(float, min_height, 0.0) \
-//     X(float, max_height, 1.0) \
-//     X(float, jitter, 1.0)
+#define CUDA_CHECK(call)                                                                               \
+    do {                                                                                               \
+        cudaError_t err = call;                                                                        \
+        if (err != cudaSuccess) {                                                                      \
+            fprintf(stderr, "CUDA error at %s:%d: %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
+            return;                                                                                    \
+        }                                                                                              \
+    } while (0)
 
 namespace erosion {
 
-// --------------------------------------------------------------------------------
-// Declare CUDA constants
+struct Parameters {
 #define X(TYPE, NAME, DEFAULT_VAL) \
-    __constant__ TYPE NAME;
-EROSION_CONSTANTS
+    TYPE NAME = DEFAULT_VAL;
+    EROSION_PARAMETERS
 #undef X
-// --------------------------------------------------------------------------------
-
-
-
-
-
-
-
+};
 
 class Erosion {
 
   private:
-#ifdef ENABLE_EROSION_TRIPWIRE
-    static bool instance_created; // tripwire to stop more than one class instance (defensive hack)
-#endif
+
+    Parameters pars;
+    Parameters *dev_pars;
 
     float *dev_heightmap = nullptr;
     float *dev_water = nullptr;
@@ -67,28 +68,12 @@ class Erosion {
     float *dev_sediment = nullptr;
 
   public:
-    float rain_rate = 0.01f;
-    float evaporation_rate = 0.005f;
-    float erosion_rate = 0.01f;
-    float deposition_rate = 0.25f;
-    int steps = 128;
-
-    float slope_threshold = 0.1;
-
-    // --------------------------------------------------------------------------------
-    // Declare CUDA constant get/sets
-#define X(TYPE, NAME, DEFAULT_VAL)        \
-  public:                                 \
-    TYPE get_##NAME() const;              \
-    void set_##NAME(const TYPE p_##NAME); \
-                                          \
-  private:                                \
-    TYPE NAME##_host = DEFAULT_VAL;
-    EROSION_CONSTANTS
+#define X(TYPE, NAME, DEFAULT_VAL)               \
+    TYPE get_##NAME() { return pars.NAME; } \
+    void set_##NAME(TYPE value) { pars.NAME = value; }
+    EROSION_PARAMETERS
 #undef X
-    // --------------------------------------------------------------------------------
 
-  public:
     void run_erosion(float *host_data, int width, int height);
 
     Erosion();
