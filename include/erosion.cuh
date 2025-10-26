@@ -36,10 +36,10 @@ https://copilot.microsoft.com/chats/pcsfGy53kozEuavmq68Fu
     X(int, mode, 0)                  \
     X(bool, wrap, true)
 
-#define EROSION_MAPS      \
-    X(float, height) \
-    X(float, water)  \
-    X(float, sediment)
+#define EROSION_MAPS     \
+    X(float, height_map) \
+    X(float, water_map)  \
+    X(float, sediment_map)
 
 #define CUDA_CHECK(call)                                                                               \
     do {                                                                                               \
@@ -64,24 +64,23 @@ class Erosion {
   private:
     // curandState *dev_rand_states = nullptr;
 
-    Parameters host_pars;
+    Parameters pars;
     Parameters *dev_pars = nullptr;
 
     // device maps
 #define X(TYPE, NAME) \
-    TYPE *dev_##NAME##_map = nullptr;
+    TYPE *dev_##NAME = nullptr;
     EROSION_MAPS
 #undef X
-
-
 
     size_t width = 0; // 0 until
     size_t height = 0;
 
   public:
-#define X(TYPE, NAME, DEFAULT_VAL)               \
-    TYPE get_##NAME() { return host_pars.NAME; } \
-    void set_##NAME(TYPE value) { host_pars.NAME = value; }
+    // get/set pars
+#define X(TYPE, NAME, DEFAULT_VAL)          \
+    TYPE get_##NAME() { return pars.NAME; } \
+    void set_##NAME(TYPE value) { pars.NAME = value; }
     EROSION_PARAMETERS
 #undef X
 
@@ -94,27 +93,20 @@ class Erosion {
     void allocate_host_memory();
     void free_host_memory();
 
-    void allocate_device_memory();
-    void copy_to_device();
-    void copy_from_device();
-    void free_device_memory();
+    void allocate_device_memory(); // allocate memory on the GPU, also copy pars over
+    void copy_maps_to_device();
+    void copy_maps_from_device();
+    void free_device_memory(); // free all the memory
 
     void run_erosion(float *host_data);
 
+    // HOST MEMORY
 
-
-  // HOST MEMORY
-
-  // host maps as std::vector
+    // host maps as std::vector
 #define X(TYPE, NAME) \
-    std::vector<TYPE> host_##NAME##_map;
+    core::Array2D<TYPE> NAME;
     EROSION_MAPS
 #undef X
-
-
-
-
-
 };
 
 inline void Erosion::allocate_host_memory() {
@@ -130,21 +122,44 @@ inline void Erosion::allocate_device_memory() {
 
     // copy allocate and copy pars to gpu
     CUDA_CHECK(cudaMalloc(&dev_pars, sizeof(Parameters)));
-    CUDA_CHECK(cudaMemcpy(dev_pars, &host_pars, sizeof(Parameters), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(dev_pars, &pars, sizeof(Parameters), cudaMemcpyHostToDevice));
 
     size_t size = width * height;
 
     // alocate maps
 #define X(TYPE, NAME) \
-    CUDA_CHECK(cudaMalloc(&dev_##NAME##_map, size * sizeof(TYPE)));
+    CUDA_CHECK(cudaMalloc(&dev_##NAME, size * sizeof(TYPE)));
     EROSION_MAPS
 #undef X
 }
 
-inline void Erosion::copy_to_device() {
+inline void Erosion::copy_maps_to_device() {
+
+    size_t size = width * height; // ⚠️ WARNING if the size of the map changes here, we could have issues
+
+    if (dev_height_map && height_map.get_width() == width && height_map.get_height() == height) {
+        CUDA_CHECK(cudaMemcpy(dev_height_map, height_map.data(), size * sizeof(float), cudaMemcpyHostToDevice)); // copy data
+    }
 }
 
-inline void Erosion::copy_from_device() {
+// copy data from the device to the host side maps
+inline void Erosion::copy_maps_from_device() {
+
+    size_t size = width * height; // ⚠️ WARNING if the size of the map changes here, we could have issues
+
+    // // 🚧
+    // if (dev_height_map) {
+    //     height_map.resize(width, height);
+    //     CUDA_CHECK(cudaMemcpy(height_map.data(), dev_height_map, size * sizeof(float), cudaMemcpyDeviceToHost));
+    // }
+
+#define X(TYPE, NAME)                                                                                 \
+    if (dev_##NAME) {                                                                                 \
+        NAME.resize(width, height);                                                                   \
+        CUDA_CHECK(cudaMemcpy(NAME.data(), dev_##NAME, size * sizeof(TYPE), cudaMemcpyDeviceToHost)); \
+    }
+    EROSION_MAPS
+#undef X
 }
 
 inline void Erosion::free_device_memory() {
@@ -152,12 +167,14 @@ inline void Erosion::free_device_memory() {
     // free pars
     if (dev_pars) {
         CUDA_CHECK(cudaFree(dev_pars));
+        dev_pars = nullptr;
     }
 
-    // free maps
-#define X(TYPE, NAME)                           \
-    if (dev_##NAME##_map) {                     \
-        CUDA_CHECK(cudaFree(dev_##NAME##_map)); \
+    // free maps, null local ptr's to mark it free
+#define X(TYPE, NAME)                     \
+    if (dev_##NAME) {                     \
+        CUDA_CHECK(cudaFree(dev_##NAME)); \
+        dev_##NAME = nullptr;             \
     }
     EROSION_MAPS
 #undef X

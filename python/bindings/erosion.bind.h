@@ -4,10 +4,10 @@
 
 #include "erosion.cuh"
 #include "python_helper.h"
-#include <cstring>
+#include <cstring> // required for std::memcpy in linux (not windows)
 
-
-
+// standard macro for expanding to a string
+#define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
 
 namespace erosion {
@@ -38,35 +38,18 @@ inline static void bind(nb::module_ &m) {
         self.run_erosion(data);
     });
 
+    // 🚧 before template example
+    // auto get_water_map = [](Erosion &self) { return python_helper::array2d_to_numpy_array(self.water_map); };
+    // auto set_water_map = [](Erosion &self, nb::ndarray<float, nb::c_contig> arr) { self.water_map = python_helper::numpy_array_to_array2d(arr); };
+    // ngd.def_prop_rw("water_map", get_water_map, set_water_map);
 
-
-    // ngd.def("set_water_map", [](Erosion &self, nb::ndarray<float> arr) {
-    //     if (arr.ndim() != 2)
-    //         throw std::runtime_error("Input must be a 2D float32 array");
-
-    //     size_t total_size = arr.shape(0) * arr.shape(1);
-    //     self.host_water_map.resize(total_size);
-    //     std::memcpy(self.host_water_map.data(), arr.data(), total_size * sizeof(float));
-    // });
-
-    // safer with "c_contig" contiguous
-    ngd.def("set_water_map", [](Erosion &self, nb::ndarray<float, nb::c_contig> arr) {
-        if (arr.ndim() != 2)
-            throw std::runtime_error("Input must be a 2D float32 array");
-
-        size_t total_size = arr.shape(0) * arr.shape(1);
-        self.host_water_map.resize(total_size);
-        std::memcpy(self.host_water_map.data(), arr.data(), total_size * sizeof(float)); // needs #include <cstring> in linux
-    });
-
-
-    // ngd.def("get_water_map"
-
-
-
-
-
-
+    // bind maps
+#define X(TYPE, NAME)                                                                                                                      \
+    auto get_##NAME = [](Erosion &self) { return python_helper::array2d_to_numpy_array(self.NAME); };                                      \
+    auto set_##NAME = [](Erosion &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = python_helper::numpy_array_to_array2d(arr); }; \
+    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME);
+    EROSION_MAPS
+#undef X
 }
 
 } // namespace erosion

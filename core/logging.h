@@ -9,6 +9,8 @@ includes print functions
 #include <iostream>
 #include <string>
 
+namespace core {
+
 // Base case print (not needed if you skip empty println)
 static void print() {
     // nothing to print
@@ -33,3 +35,5 @@ inline void println(const Args &...args) {
     print(args...);
     std::cout << std::endl;
 }
+
+} // namespace core

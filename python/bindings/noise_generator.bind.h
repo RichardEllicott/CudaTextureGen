@@ -9,36 +9,33 @@ namespace nb = nanobind;
 
 inline void bind(nb::module_ &m) {
 
-    auto ngd = nb::class_<NoiseGenerator>(m, "NoiseGenerator")
-                   .def(nb::init<>())
+    auto ngd = nb::class_<NoiseGenerator>(m, "NoiseGenerator").def(nb::init<>());
 
     // bind get/sets
 #define X(TYPE, NAME, DEFAULT_VAL) \
-    .def_prop_rw(#NAME, &NoiseGenerator::get_##NAME, &NoiseGenerator::set_##NAME)
-                       NOISE_GENERATOR_PARAMETERS
+    ngd.def_prop_rw(#NAME, &NoiseGenerator::get_##NAME, &NoiseGenerator::set_##NAME);
+    NOISE_GENERATOR_PARAMETERS
 #undef X
 
-                   .def("fill", [](NoiseGenerator &self, nb::ndarray<float> arr) { // fill an existing array with noise
-                       if (arr.ndim() != 2)
-                           throw std::runtime_error("Expected a 2D float32 array");
+    ngd.def("fill", [](NoiseGenerator &self, nb::ndarray<float> arr) { // fill an existing array with noise
+        if (arr.ndim() != 2)
+            throw std::runtime_error("Expected a 2D float32 array");
 
-                       int h = arr.shape(0);
-                       int w = arr.shape(1);
-                       float *data = arr.data();
-                       self.fill(data, w, h); // fill the array data
+        int h = arr.shape(0);
+        int w = arr.shape(1);
+        float *data = arr.data();
+        self.fill(data, w, h); // fill the array data
 
-                   })
+    });
 
-                   .def("generate", [](NoiseGenerator &self, int width, int height) { // return a new array with noise
-                       auto arr = python_helper::get_numpy_float_array(height, width);
-                       float *data = arr.data();
-                       self.fill(data, width, height);
-                       return arr;
-                   })
+    ngd.def("generate", [](NoiseGenerator &self, int width, int height) { // return a new array with noise
+        auto arr = python_helper::get_numpy_float_array(height, width);
+        float *data = arr.data();
+        self.fill(data, width, height);
+        return arr;
+    });
 
-        ;
-
-    // Type enumerators
+      // Type enumerators
     nb::enum_<NoiseGenerator::Type>(ngd, "Type")
 
 #define X(NAME) \

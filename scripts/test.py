@@ -22,7 +22,6 @@ def generate_noise_and_erode():
 
     gen = cuda_texture_gen.NoiseGenerator()
 
-    gen.type = 1
     gen.period = 13
     gen.seed = 0
 
@@ -47,7 +46,6 @@ def generate_noise_and_erode():
     # erosion.steps = 512 * 2
     # erosion.jitter = 0.0
 
-
     # WORKING DEFAULTS
     erosion.mode = 0
     erosion.flow_factor = 0.2
@@ -58,7 +56,6 @@ def generate_noise_and_erode():
     erosion.wrap = True
     erosion.steps = 512 * 2
 
-
     # erosion.mode = 1
     # erosion.rain_rate = 0.005
     # erosion.evaporation_rate = 0.01
@@ -68,7 +65,6 @@ def generate_noise_and_erode():
     # erosion.slope_threshold = 0.005
     # # erosion.jitter = 0.01
     # erosion.wrap = True
-
 
     # erosion.mode = 1
     # erosion.flow_factor = 0.2 / 100.0
@@ -81,11 +77,7 @@ def generate_noise_and_erode():
     # erosion.rain_rate = 0.005
     # erosion.evaporation_rate = 0.01
 
-
-
-
     # erosion.sediment_transport_rate = 1.0 # implicit
-
 
     # erosion.min_height = 0.0
 
@@ -94,18 +86,25 @@ def generate_noise_and_erode():
     save_array_as_image(array * 255, "output/erosion.png")
 
 
+    array2 = erosion.height_map
+
+    save_array_as_image(array * 255, "output/erosion2.png")
+
+
+
+
 def erode_array(array):
     erosion = cuda_texture_gen.Erosion2()
     erosion.erosion_rate = 0.01
     erosion.deposition_rate = 0.02 * 0.5
-    erosion.slope_threshold = 0.01 # lowers squareness if higher as makes sure works on steeper slopes
+    # lowers squareness if higher as makes sure works on steeper slopes
+    erosion.slope_threshold = 0.01
     erosion.steps = 512 * 2
     # erosion.jitter = 0.0
 
     duplicate = np.copy(array)
     erosion.run_erosion(duplicate)
     return duplicate
-
 
 
 # using the noise to get fractal nosie (using numpy)
@@ -126,9 +125,11 @@ def get_fractal_noise():
     normalize_array(array)
 
     return array
-    # 
+    #
 
 # test macro template design
+
+
 def test_template_class():
     print(dir(cuda_texture_gen))
 
@@ -146,11 +147,41 @@ def test_template_class():
 
 # test_template_class()
 
+## testing new system for copying data in and out
+def test_copy_in_out_water_map():
+    print("🫠...")
 
-generate_noise_and_erode()
+    gen = cuda_texture_gen.NoiseGenerator()
+    print(dir(gen))
+    array = gen.generate(1024, 1024)
+    normalize_array(array)
+
+    save_array_as_image(array * 255, "output/water_save_test.png")
+
+    erosion = cuda_texture_gen.Erosion()
+    print(erosion)
+    print(dir(erosion))
+
+    # erosion.set_water_map(array)
+    erosion.water_map = array
+
+    # array2 = erosion.get_water_map()
+    array2 = erosion.water_map
+
+    print(array2)
+    save_array_as_image(array2 * 255, "output/water_save_test2.png")
+
+
+# test_copy_in_out_water_map()
+
+
+
+generate_noise_and_erode() # MAIN TEST ATM
 
 # array = get_fractal_noise()
 # save_array_as_image(array * 255, "output/fractal_noise.png")
 # array = erode_array(array)
 # save_array_as_image(array * 255, "output/fractal_noise_eroded.png")
+
+
 

@@ -19,14 +19,14 @@ z         -start position z (for 3D noise, useful for animation)
 // #define NOISE_GENERATOR_D_HASH_MODE 0 // bitwise, trig based // 🚧 UNUSED
 
 #define NOISE_GENERATOR_PARAMETERS \
-    X(int, type, 0)                  \
-    X(int, seed, 0)                  \
-    X(float, period, 8.0f)           \
-    X(float, scale, 1.0f)            \
-    X(float, x, 0.0f)                \
-    X(float, y, 0.0f)                \
-    X(float, z, 0.0f)                \
-    X(float, warp_amp, 4.0f)         \
+    X(int, type, 0)                \
+    X(int, seed, 0)                \
+    X(float, period, 8.0f)         \
+    X(float, scale, 1.0f)          \
+    X(float, x, 0.0f)              \
+    X(float, y, 0.0f)              \
+    X(float, z, 0.0f)              \
+    X(float, warp_amp, 4.0f)       \
     X(float, warp_scale, 1.0f)
 
 // // 🚧 xmacro extension idea
@@ -41,12 +41,12 @@ z         -start position z (for 3D noise, useful for animation)
 //     NOISE_GENERATOR_D_ADVANCED_PARAMETERS
 
 #define NOISE_GENERATOR_TYPES \
-    X(Value2D)                  \
-    X(Gradient2D)               \
-    X(WarpedValue2D)            \
-    X(Value3D)                  \
-    X(Gradient3D)               \
-    X(Hash2D)                   \
+    X(Gradient2D)             \
+    X(Value2D)                \
+    X(WarpedValue2D)          \
+    X(Value3D)                \
+    X(Gradient3D)             \
+    X(Hash2D)                 \
     X(Hash3D)
 
 namespace noise_generator {
@@ -75,7 +75,7 @@ class NoiseGenerator {
 #define X(TYPE, NAME, DEFAULT_VAL)                \
     TYPE get_##NAME() const { return pars.NAME; } \
     void set_##NAME(TYPE value) { pars.NAME = value; }
-        NOISE_GENERATOR_PARAMETERS
+    NOISE_GENERATOR_PARAMETERS
 #undef X
 
     // make enumerators
@@ -90,4 +90,4 @@ class NoiseGenerator {
     void fill(float *d_out, const unsigned width, const unsigned height);
 };
 
-} // namespace noise_generator_d
+} // namespace noise_generator

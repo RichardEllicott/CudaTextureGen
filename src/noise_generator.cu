@@ -214,7 +214,6 @@ __device__ float hash_noise(int x, int y, int z, int seed) {
     return hash_scalar(x, y, z, seed);
 }
 
-
 // 🚧
 // float fbm(float x, float y, float z, int seed, int octaves = 5) {
 //     float value = 0.0f;
@@ -230,15 +229,14 @@ __device__ float hash_noise(int x, int y, int z, int seed) {
 //     return value;
 // }
 
-
-
 // voronoi, no wrap yet
-__global__ void voronoi_kernel(float* output, int width, int height,
-                               float2* feature_points, int num_points) {
+__global__ void voronoi_kernel(float *output, int width, int height,
+                               float2 *feature_points, int num_points) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (x >= width || y >= height) return;
+    if (x >= width || y >= height)
+        return;
 
     int idx = y * width + x;
     float min_dist = 1e20f;
@@ -249,11 +247,12 @@ __global__ void voronoi_kernel(float* output, int width, int height,
         float2 fp = feature_points[i];
         float dx = p.x - fp.x;
         float dy = p.y - fp.y;
-        float dist = dx * dx + dy * dy;  // squared distance
-        if (dist < min_dist) min_dist = dist;
+        float dist = dx * dx + dy * dy; // squared distance
+        if (dist < min_dist)
+            min_dist = dist;
     }
 
-    output[idx] = sqrtf(min_dist);  // or leave squared for performance
+    output[idx] = sqrtf(min_dist); // or leave squared for performance
 }
 
 // USAGE
@@ -264,10 +263,6 @@ __global__ void voronoi_kernel(float* output, int width, int height,
 // voronoi_kernel<<<grid, block>>>(output, width, height, d_feature_points, num_points);
 //
 //
-
-
-
-
 
 #pragma endregion
 
@@ -290,14 +285,14 @@ __global__ void generate_noise(float *out, const unsigned width, const unsigned 
 
     switch (pars->type) {
 
-    case 0: // value noise 2D (very blocky)
-        out[idx] = value_noise(
+    case 0: // gradient noise 2D, like simplex rounded and smooth
+        out[idx] = gradient_noise(
             fx, fy,
             pars->period, pars->period,
             pars->seed);
         break;
-    case 1: // gradient noise 2D, like simplex rounded and smooth
-        out[idx] = gradient_noise(
+    case 1: // value noise 2D (very blocky)
+        out[idx] = value_noise(
             fx, fy,
             pars->period, pars->period,
             pars->seed);
@@ -369,4 +364,4 @@ void NoiseGenerator::fill(float *host_data, const unsigned width, const unsigned
 
 #pragma endregion
 
-} // namespace noise_generator_d
+} // namespace noise_generator

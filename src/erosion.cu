@@ -331,21 +331,16 @@ __global__ void my_erode_kernel_01(
     // outflow_y[idx] = outflow.y;
 }
 
-
-
-
-
-
 void Erosion::run_erosion(float *host_data) {
 
     printf("Erosion::run_erosion()...\n");
 
     size_t size = width * height * sizeof(float);
-    dim3 block(host_pars.block_size, host_pars.block_size);
+    dim3 block(pars.block_size, pars.block_size);
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
 
     curandState *dev_rand_states = nullptr;
-    if (host_pars.jitter > 0.0f) {
+    if (pars.jitter > 0.0f) {
         CUDA_CHECK(cudaMalloc(&dev_rand_states, width * height * sizeof(curandState)));
         init_rand<<<grid, block>>>(dev_rand_states, width, height);
     }
@@ -359,9 +354,9 @@ void Erosion::run_erosion(float *host_data) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // Loop on the host, but keep data on device
-    for (int s = 0; s < host_pars.steps; ++s) {
+    for (int s = 0; s < pars.steps; ++s) {
 
-        switch (host_pars.mode) {
+        switch (pars.mode) {
         case 0: // basic erode (no water)
             erode_kernel_01<<<grid, block>>>(
                 dev_pars, width, height,
@@ -390,10 +385,12 @@ void Erosion::run_erosion(float *host_data) {
     auto end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end_time - start_time;
     double seconds = elapsed.count();
-    println("calculation time: ", seconds * 1000.0, " ms\n"); // ⏱️
+    core::println("calculation time: ", seconds * 1000.0, " ms\n"); // ⏱️
 
     // Copy back once
     cudaMemcpy(host_data, dev_height_map, size, cudaMemcpyDeviceToHost);
+
+    copy_maps_from_device(); // 🚧 new method to get data back
 
     free_device_memory();
 
