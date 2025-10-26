@@ -11,6 +11,10 @@ import os
 from PIL import Image
 import numpy as np
 from tools import *
+import math
+
+from scipy.ndimage import rotate
+from scipy.ndimage import shift
 
 
 os.makedirs("output", exist_ok=True)
@@ -22,12 +26,16 @@ def generate_noise_and_erode():
 
     gen = cuda_texture_gen.NoiseGenerator()
 
-    gen.period = 13
+    gen.period = 7
     gen.seed = 0
 
     print(dir(gen))
 
     array = gen.generate(1024, 1024)
+
+    print("height range: [{}, {}]".format(array.min(), array.max()))
+
+
 
     normalize_array(array)
 
@@ -83,7 +91,7 @@ def generate_noise_and_erode():
 
     erosion.run_erosion(array)
 
-    offset_array(array)
+    offset_array(array) # test seamless
 
     save_array_as_image(array * 255, "output/erosion.png")
 
@@ -178,7 +186,7 @@ def test_copy_in_out_water_map():
 
 
 
-generate_noise_and_erode() # MAIN TEST ATM
+# generate_noise_and_erode() # MAIN TEST ATM
 
 # array = get_fractal_noise()
 # save_array_as_image(array * 255, "output/fractal_noise.png")
@@ -187,3 +195,43 @@ generate_noise_and_erode() # MAIN TEST ATM
 
 
 
+def test_noise_offet():
+
+    print("🦍 test_noise_offet...")
+
+    gen = cuda_texture_gen.NoiseGenerator()
+    gen.period = 7
+    gen.type = 1 # value noise
+
+    array = gen.generate(1024, 1024)
+    print("height range: [{}, {}]".format(array.min(), array.max()))
+    normalize_array(array)
+    save_array_as_image(array * 255, "output/noise_offset1.png")
+
+    gen.x = 0.5
+    gen.y = 0.5
+
+    # gen.angle = math.radians(45)
+
+
+
+
+
+
+    array = gen.generate(1024, 1024)
+    print("height range: [{}, {}]".format(array.min(), array.max()))
+    normalize_array(array)
+    offset_array(array)
+    save_array_as_image(array * 255, "output/noise_offset2.png")
+
+
+    # # noise is your 2D NumPy array
+    # rotated = rotate(noise, angle_degrees, reshape=False, mode='wrap')
+
+
+    # # Apply offset (in pixels), then rotate
+    # shifted = shift(noise, shift=(dy, dx), mode='wrap')
+    # rotated = rotate(shifted, angle_degrees, reshape=False, mode='wrap')
+
+
+test_noise_offet()

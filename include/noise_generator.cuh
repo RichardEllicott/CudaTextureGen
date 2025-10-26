@@ -16,29 +16,18 @@ z         -start position z (for 3D noise, useful for animation)
 #include "noise_util.cuh"
 #include <iostream>
 
-// #define NOISE_GENERATOR_D_HASH_MODE 0 // bitwise, trig based // 🚧 UNUSED
-
 #define NOISE_GENERATOR_PARAMETERS \
     X(int, type, 0)                \
     X(int, seed, 0)                \
-    X(float, period, 8.0f)         \
+    X(float, period, 7.0f)         \
     X(float, scale, 1.0f)          \
     X(float, x, 0.0f)              \
     X(float, y, 0.0f)              \
     X(float, z, 0.0f)              \
     X(float, warp_amp, 4.0f)       \
-    X(float, warp_scale, 1.0f)
-
-// // 🚧 xmacro extension idea
-// #define NOISE_GENERATOR_D_ADVANCED_PARAMETERS \
-//     X(float, gain, 0.5f)                      \
-//     X(float, lacunarity, 2.0f)                \
-//     X(int, octaves, 4)
-
-// // 🚧 xmacro extension idea
-// #define NOISE_GENERATOR_D_ALL_PARAMETERS \
-//     NOISE_GENERATOR_D_PARAMETERS         \
-//     NOISE_GENERATOR_D_ADVANCED_PARAMETERS
+    X(float, warp_scale, 1.0f)\
+    X(float, angle, 0.0f)\
+    
 
 #define NOISE_GENERATOR_TYPES \
     X(Gradient2D)             \

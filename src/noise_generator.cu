@@ -14,7 +14,8 @@ using namespace noise_util;
 
 #pragma region NOISE
 
-__device__ float value_noise(float x, float y, int period_x, int period_y, int seed) {
+// 2D Value Noise
+__device__ float value_noise2(float x, float y, int period_x, int period_y, int seed) {
     int xi = (int)floorf(x);
     int yi = (int)floorf(y);
 
@@ -41,7 +42,53 @@ __device__ float value_noise(float x, float y, int period_x, int period_y, int s
     return lerp(x1, x2, v);
 }
 
-__device__ float gradient_noise(float x, float y, int period_x, int period_y, int seed) {
+// 2D Value Noise (with rotation) .... BROKEN!!
+__device__ float value_noise2(float x, float y, int period_x, int period_y, int seed, float angle) {
+    // Compute center of the noise domain
+    float cx = 0.5f * period_x;
+    float cy = 0.5f * period_y;
+
+    // Shift coordinates so rotation is centered
+    float x_shifted = x - cx;
+    float y_shifted = y - cy;
+
+    // Apply rotation
+    float cos_a = cosf(angle);
+    float sin_a = sinf(angle);
+    float x_rot = cos_a * x_shifted - sin_a * y_shifted + cx;
+    float y_rot = sin_a * x_shifted + cos_a * y_shifted + cy;
+
+    // Compute grid cell and fractional offset from rotated coordinates
+    int xi = (int)floorf(x_rot);
+    int yi = (int)floorf(y_rot);
+
+    float xf = x_rot - floorf(x_rot);
+    float yf = y_rot - floorf(y_rot);
+
+    // Interpolation weights
+    float u = fade(xf);
+    float v = fade(yf);
+
+    // Wrap grid coordinates to the period
+    int xi0 = posmod(xi, period_x);
+    int yi0 = posmod(yi, period_y);
+    int xi1 = posmod(xi + 1, period_x);
+    int yi1 = posmod(yi + 1, period_y);
+
+    // Sample scalar values at corners
+    float a = hash_scalar(xi0, yi0, seed);
+    float b = hash_scalar(xi1, yi0, seed);
+    float c = hash_scalar(xi0, yi1, seed);
+    float d = hash_scalar(xi1, yi1, seed);
+
+    // Interpolate
+    float x1 = lerp(a, b, u);
+    float x2 = lerp(c, d, u);
+    return lerp(x1, x2, v);
+}
+
+// 2D Gradient Noise
+__device__ float gradient_noise2(float x, float y, int period_x, int period_y, int seed, float angle) {
     int xi = (int)floorf(x);
     int yi = (int)floorf(y);
 
@@ -57,10 +104,10 @@ __device__ float gradient_noise(float x, float y, int period_x, int period_y, in
     int yi1 = posmod(yi + 1, period_y);
 
     // Get gradients at corners
-    float2 g00 = gradient(xi0, yi0, seed);
-    float2 g10 = gradient(xi1, yi0, seed);
-    float2 g01 = gradient(xi0, yi1, seed);
-    float2 g11 = gradient(xi1, yi1, seed);
+    float2 g00 = gradient2(xi0, yi0, seed, angle);
+    float2 g10 = gradient2(xi1, yi0, seed, angle);
+    float2 g01 = gradient2(xi0, yi1, seed, angle);
+    float2 g11 = gradient2(xi1, yi1, seed, angle);
 
     // Calculate dot products with distance vectors
     float d00 = g00.x * xf + g00.y * yf;
@@ -72,44 +119,39 @@ __device__ float gradient_noise(float x, float y, int period_x, int period_y, in
     float x1 = lerp(d00, d10, u);
     float x2 = lerp(d01, d11, u);
 
-    return lerp(x1, x2, v); // Remap to [0,1]
+    float noise_value = lerp(x1, x2, v); // likely will not exceed 2**-0.5 (0.7071067811865476)
+    noise_value *= 1.4f;                 // should bring the noise closer to -1 to 1 range
+
+    return noise_value;
 }
 
-// __device__ float warped_noise(float x, float y, int period, int seed) {
-//     // Sample noise at offset positions
-//     float warp_x = value_noise(x + 5.2f, y + 1.3f, period, period, seed + 1) * 4.0f;
-//     float warp_y = value_noise(x + 3.7f, y + 9.1f, period, period, seed + 2) * 4.0f;
-
-//     // Use warped coordinates for final sample
-//     return value_noise(x + warp_x, y + warp_y, period, period, seed);
-// }
-
-// exposing parameters
-__device__ float warped_noise(
+// 2D Warped
+__device__ float warped_value_noise(
     float x, float y,
     int period_x, int period_y,
     int seed,
     float warp_amp,  // how strong the warp is
     float warp_scale // frequency of the warp field
 ) {
-    float warp_x = value_noise(x * warp_scale + 5.2f,
-                               y * warp_scale + 1.3f,
-                               period_x, period_y,
-                               seed + 1) *
+    float warp_x = value_noise2(x * warp_scale + 5.2f,
+                                y * warp_scale + 1.3f,
+                                period_x, period_y,
+                                seed + 1) *
                    warp_amp;
 
-    float warp_y = value_noise(x * warp_scale + 3.7f,
-                               y * warp_scale + 9.1f,
-                               period_x, period_y,
-                               seed + 2) *
+    float warp_y = value_noise2(x * warp_scale + 3.7f,
+                                y * warp_scale + 9.1f,
+                                period_x, period_y,
+                                seed + 2) *
                    warp_amp;
 
-    return value_noise(x + warp_x, y + warp_y, period_x, period_y, seed);
+    return value_noise2(x + warp_x, y + warp_y, period_x, period_y, seed);
 }
 
-__device__ float value_noise(const float x, const float y, const float z,
-                             const int period_x, const int period_y, const int period_z,
-                             const int seed) {
+// 3D Value Noise
+__device__ float value_noise3(const float x, const float y, const float z,
+                              const int period_x, const int period_y, const int period_z,
+                              const int seed) {
 
     int xi = floorf(x), yi = floorf(y), zi = floorf(z);
     float xf = x - xi, yf = y - yi, zf = z - zi;
@@ -140,9 +182,10 @@ __device__ float value_noise(const float x, const float y, const float z,
     return lerp(y0, y1, w);
 }
 
-__device__ float gradient_noise(float x, float y, float z,
-                                int period_x, int period_y, int period_z,
-                                int seed) {
+// 3D Gradient Noise
+__device__ float gradient_noise3(float x, float y, float z,
+                                 int period_x, int period_y, int period_z,
+                                 int seed) {
     int xi = (int)floorf(x);
     int yi = (int)floorf(y);
     int zi = (int)floorf(z);
@@ -163,14 +206,14 @@ __device__ float gradient_noise(float x, float y, float z,
     int zi1 = posmod(zi + 1, period_z);
 
     // Get gradients at cube corners
-    float3 g000 = gradient(xi0, yi0, zi0, seed);
-    float3 g100 = gradient(xi1, yi0, zi0, seed);
-    float3 g010 = gradient(xi0, yi1, zi0, seed);
-    float3 g110 = gradient(xi1, yi1, zi0, seed);
-    float3 g001 = gradient(xi0, yi0, zi1, seed);
-    float3 g101 = gradient(xi1, yi0, zi1, seed);
-    float3 g011 = gradient(xi0, yi1, zi1, seed);
-    float3 g111 = gradient(xi1, yi1, zi1, seed);
+    float3 g000 = gradient3(xi0, yi0, zi0, seed);
+    float3 g100 = gradient3(xi1, yi0, zi0, seed);
+    float3 g010 = gradient3(xi0, yi1, zi0, seed);
+    float3 g110 = gradient3(xi1, yi1, zi0, seed);
+    float3 g001 = gradient3(xi0, yi0, zi1, seed);
+    float3 g101 = gradient3(xi1, yi0, zi1, seed);
+    float3 g011 = gradient3(xi0, yi1, zi1, seed);
+    float3 g111 = gradient3(xi1, yi1, zi1, seed);
 
     // Distance vectors
     float3 d000 = make_float3(xf, yf, zf);
@@ -280,36 +323,54 @@ __global__ void generate_noise(float *out, const unsigned width, const unsigned 
 
     // Key fix: scale determines the noise frequency
     // The period should match the scaled coordinate space
-    const float fx = x * pars->scale + pars->x;
-    const float fy = y * pars->scale + pars->y;
+    float fx = x * pars->scale; // fx should now be x in "noise space"
+    float fy = y * pars->scale;
+
+    fx += pars->x * pars->period; // in theory this will make 0.5 shift the noise by half of image
+    fy += pars->y * pars->period;
+
+    // would have been more effecient to calculate this earlier
+    // float fx = x * pars->scale + pars->x;
+    // float fy = y * pars->scale + pars->y;
+
+    // // rotation
+    // float angle = pars->angle; // in radians
+    // float cos_a = cosf(angle);
+    // float sin_a = sinf(angle);
+    // float fx_rot = cos_a * fx - sin_a * fy;
+    // float fy_rot = sin_a * fx + cos_a * fy;
+
+    // // again a little hacky
+    // fx = fx_rot;
+    // fy = fy_rot;
 
     switch (pars->type) {
 
     case 0: // gradient noise 2D, like simplex rounded and smooth
-        out[idx] = gradient_noise(
+        out[idx] = gradient_noise2(
             fx, fy,
             pars->period, pars->period,
-            pars->seed);
+            pars->seed, pars->angle);
         break;
     case 1: // value noise 2D (very blocky)
-        out[idx] = value_noise(
+        out[idx] = value_noise2(
             fx, fy,
             pars->period, pars->period,
-            pars->seed);
+            pars->seed, pars->angle);
         break;
     case 2: // warped value noise 2D
-        out[idx] = warped_noise(
+        out[idx] = warped_value_noise(
             fx, fy,
             pars->period, pars->period, pars->seed, pars->warp_amp, pars->warp_scale);
         break;
     case 3: // value noise 3D
-        out[idx] = value_noise(
+        out[idx] = value_noise3(
             fx, fy, pars->z,
             pars->period, pars->period, pars->period,
             pars->seed);
         break;
     case 4: // gradient noise 3D
-        out[idx] = gradient_noise(
+        out[idx] = gradient_noise3(
             fx, fy, pars->z,
             pars->period, pars->period, pars->period,
             pars->seed);

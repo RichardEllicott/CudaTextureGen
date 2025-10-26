@@ -2,6 +2,8 @@
 
 custom types trying to match Godot's patterns (might not be used due to preferance for flat float arrays)
 
+also special Array2D
+
 */
 
 #pragma once

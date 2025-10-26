@@ -34,8 +34,6 @@ __device__ __forceinline__ float dot(float3 a, float3 b) {
 
 #pragma endregion
 
-
-
 #pragma region HASH_FUNCTIONS
 
 __device__ __forceinline__ float trig_hash(float x, float y, float z, int seed) {
@@ -77,14 +75,28 @@ __device__ __forceinline__ float hash_scalar(int x, int y, int z, int seed) {
 
 #pragma region GRADIENT_GENERATORS
 
-// 2D gradient for gradient noise (looks like simplex)
-__device__ __forceinline__ float2 gradient(int x, int y, int seed) {
-    float angle = (hash_int(x, y, seed) / 1073741824.0f) * 3.14159265f;
-    return make_float2(cosf(angle), sinf(angle));
+// // 2D gradient for gradient noise (looks like simplex)
+// __device__ __forceinline__ float2 gradient2(int x, int y, int seed) {
+
+//     // float angle = (hash_int(x, y, seed) / 1073741824.0f) * 3.14159265f; // old one giving  [-0.6386145949363708, 0.5844378471374512]
+//     float angle = (hash_int(x, y, 0, seed) / 1073741824.0f) * 2.0f * 3.14159265f; // 🚧 trying to get closer to -1 to 1
+
+//     return make_float2(cosf(angle), sinf(angle));
+// }
+
+__device__ __forceinline__ float2 gradient2(int x, int y, int seed, float angle) {
+    float raw_angle = (hash_int(x, y, seed) / 1073741824.0f) * 2.0f * 3.14159265f;
+    float final_angle = raw_angle + angle;
+
+    return make_float2(cosf(final_angle), sinf(final_angle));
 }
 
+
+
+
+
 // 3D gradient for gradient noise (looks like simplex)
-__device__ __forceinline__ float3 gradient(int x, int y, int z, int seed) {
+__device__ __forceinline__ float3 gradient3(int x, int y, int z, int seed) {
     // Hash to get a pseudo-random angle and elevation
     float h1 = hash_int(x, y, z, seed) / 1073741824.0f; // range ~[0, 2]
     float h2 = hash_int(z, x, y, seed + 1337) / 1073741824.0f;
@@ -101,7 +113,5 @@ __device__ __forceinline__ float3 gradient(int x, int y, int z, int seed) {
 }
 
 #pragma endregion
-
-
 
 } // namespace noise_util
