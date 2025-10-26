@@ -9,6 +9,33 @@ functions for the noise generators, hash functions, dot products, gradients
 
 namespace noise_util {
 
+#pragma region UTILITY_MATH
+
+// Creates an S-curve (sigmoid-like shape)
+__device__ __forceinline__ float fade(float t) {
+    return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+// simple interpolate
+__device__ __forceinline__ float lerp(float a, float b, float t) {
+    return a + t * (b - a);
+}
+
+// positive modulo wrap (note it might be faster to concider other wrap methods depending on the situation)
+__device__ __forceinline__ int posmod(int value, int mod) {
+    int result = value % mod;
+    return result < 0 ? result + mod : result;
+}
+
+// dot product for 3D
+__device__ __forceinline__ float dot(float3 a, float3 b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+#pragma endregion
+
+
+
 #pragma region HASH_FUNCTIONS
 
 __device__ __forceinline__ float trig_hash(float x, float y, float z, int seed) {
@@ -75,27 +102,6 @@ __device__ __forceinline__ float3 gradient(int x, int y, int z, int seed) {
 
 #pragma endregion
 
-#pragma region UTILITY_MATH
 
-// Creates an S-curve (sigmoid-like shape)
-__device__ __forceinline__ float fade(float t) {
-    return t * t * t * (t * (t * 6 - 15) + 10);
-}
-
-__device__ __forceinline__ float lerp(float a, float b, float t) {
-    return a + t * (b - a);
-}
-
-__device__ __forceinline__ int posmod(int value, int mod) {
-    int result = value % mod;
-    return result < 0 ? result + mod : result;
-}
-
-// dot product for 3D
-__device__ __forceinline__ float dot(float3 a, float3 b) {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-#pragma endregion
 
 } // namespace noise_util

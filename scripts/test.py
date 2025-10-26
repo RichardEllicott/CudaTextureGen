@@ -18,10 +18,12 @@ os.makedirs("output", exist_ok=True)
 
 def generate_noise_and_erode():
 
+    print("⛰️")
+
     gen = cuda_texture_gen.NoiseGenerator()
 
     gen.type = 1
-    gen.period = 14
+    gen.period = 13
     gen.seed = 0
 
     print(dir(gen))
@@ -38,19 +40,52 @@ def generate_noise_and_erode():
     # erosion = cuda_texture_gen.Erosion2()
 
     # good settings
-    erosion.erosion_rate = 0.01
-    erosion.deposition_rate = 0.02 * 0.5
+    # erosion.erosion_rate = 0.01
+    # erosion.deposition_rate = 0.02 * 0.5
     # lowers squareness if higher as makes sure works on steeper slopes
-    erosion.slope_threshold = 0.01
-    erosion.steps = 512 * 2
+    # erosion.slope_threshold = 0.01
+    # erosion.steps = 512 * 2
     # erosion.jitter = 0.0
 
-    
+
+    # WORKING DEFAULTS
+    erosion.mode = 0
+    erosion.flow_factor = 0.2
+    erosion.erosion_rate = 0.01
+    erosion.deposition_rate = 0.02 * 0.5
+    erosion.slope_threshold = 0.01
+    # erosion.jitter = 0.01
+    erosion.wrap = True
+    erosion.steps = 512 * 2
+
+
+    # erosion.mode = 1
+    # erosion.rain_rate = 0.005
+    # erosion.evaporation_rate = 0.01
+    # erosion.flow_factor = 0.2
+    # erosion.erosion_rate = 0.01
+    # erosion.deposition_rate = 0.5
+    # erosion.slope_threshold = 0.005
+    # # erosion.jitter = 0.01
+    # erosion.wrap = True
+
+
+    # erosion.mode = 1
+    # erosion.flow_factor = 0.2 / 100.0
+    # erosion.erosion_rate = 0.01
+    # erosion.deposition_rate = 0.02 * 0.5
+    # erosion.slope_threshold = 0.01
+    # # erosion.jitter = 0.01
+    # erosion.wrap = True
+
+    # erosion.rain_rate = 0.005
+    # erosion.evaporation_rate = 0.01
+
+
 
 
     # erosion.sediment_transport_rate = 1.0 # implicit
 
-    erosion.jitter = 0.0
 
     # erosion.min_height = 0.0
 
