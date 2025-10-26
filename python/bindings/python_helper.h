@@ -2,15 +2,16 @@
 
 python helper library
 
+functions to covert numpy arrays back and forth to std::vector and core::Array2D
+
 */
 #pragma once
 
 #include "core.h"
+#include <cstring> // required for std::memcpy in linux (not windows)
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <vector>
-#include <cstring> // required for std::memcpy in linux (not windows)
-
 
 // helpers to make python objects which is a bit convoluted from python
 namespace python_helper {

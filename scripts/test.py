@@ -83,12 +83,14 @@ def generate_noise_and_erode():
 
     erosion.run_erosion(array)
 
+    offset_array(array)
+
     save_array_as_image(array * 255, "output/erosion.png")
 
 
     array2 = erosion.height_map
 
-    save_array_as_image(array * 255, "output/erosion2.png")
+    save_array_as_image(array2 * 255, "output/erosion2.png")
 
 
 
