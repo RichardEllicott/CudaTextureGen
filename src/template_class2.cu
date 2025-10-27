@@ -2,7 +2,6 @@
 
 namespace TEMPLATE_CLASS_NAMESPACE {
 
-
 // a kernel example
 __global__ void process_texture(const Parameters *pars, Maps *maps, const size_t width, const size_t height) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -34,14 +33,17 @@ __global__ void process_texture(const Parameters *pars, Maps *maps, const size_t
     }
 }
 
-
 void TEMPLATE_CLASS_NAME::process() {
+
+    pars.width = height_map.get_width();
+    pars.height = height_map.get_height();
 
     dim3 block(pars._block, pars._block);
     dim3 grid((pars.width + block.x - 1) / block.x,
               (pars.height + block.y - 1) / block.y);
 
     allocate_device_memory();
+    clear_maps_on_device(); // optional clear maps
     copy_maps_to_device();
 
     process_texture<<<grid, block>>>(dev_pars, dev_maps, pars.width, pars.height);
@@ -49,8 +51,5 @@ void TEMPLATE_CLASS_NAME::process() {
     copy_maps_from_device();
     free_device_memory();
 }
-
-
-
 
 } // namespace TEMPLATE_CLASS_NAMESPACE

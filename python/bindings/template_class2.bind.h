@@ -3,27 +3,6 @@
 #include "python_helper.h"
 #include "template_class2.cuh"
 
-// ════════════════════════════════════════════════ //
-// ════════════════════════════════════════════════ //
-
-#define TEMPLATE_CLASS_NAME TemplateClass2
-#define TEMPLATE_CLASS_NAMESPACE template_class2
-
-#define TEMPLATE_CLASS_PARAMETERS \
-    X(size_t, width, 256)         \
-    X(size_t, height, 256)        \
-    X(size_t, _block, 16)         \
-    X(float, test_par1, 0.0)      \
-    X(float, test_par2, 1.0)      \
-    X(float, test_par3, 1.0)
-
-#define TEMPLATE_CLASS_MAPS \
-    X(float, height_map)    \
-    X(float, blend_mask)    \
-    X(float, gradient_map)
-
-// ════════════════════════════════════════════════ //
-// ════════════════════════════════════════════════ //
 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
@@ -69,6 +48,10 @@ inline void bind(nb::module_ &m) {
         // self.set_width(arr.shape(1));
         // self.run_erosion(arr.data());
     });
+
+    
+
+
 }
 
 } // namespace TEMPLATE_CLASS_NAMESPACE

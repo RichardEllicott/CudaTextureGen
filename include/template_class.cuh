@@ -2,6 +2,10 @@
 
 Template object using macros to auto allocate memory
 
+⚠️⚠️⚠️⚠️
+DROPPING THIS TEMPLATE
+⚠️⚠️⚠️⚠️
+
 */
 #pragma once
 

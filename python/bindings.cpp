@@ -41,12 +41,11 @@ NB_MODULE(cuda_texture_gen, m) {
     bind_cuda_hello(m);
 
     erosion::bind(m);
-
     blur::bind(m);
-    // erosion2::bind(m);
     noise_generator::bind(m);
     resample::bind(m);
     shader_maps::bind(m);
+
     template_class::bind(m);
     template_class2::bind(m);
 }

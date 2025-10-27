@@ -140,20 +140,7 @@ def get_fractal_noise():
 # test macro template design
 
 
-def test_template_class():
-    print(dir(cuda_texture_gen))
 
-    template_class = cuda_texture_gen.TemplateClass()
-
-    print(template_class)
-    print(dir(template_class))
-
-    array = get_fractal_noise()
-    save_array_as_image(array * 255, "output/fractal_noise.png")
-
-    template_class.test(array)
-
-    save_array_as_image(array * 255, "output/fractal_noise2.png")
 
 # test_template_class()
 
@@ -234,9 +221,45 @@ def test_noise_offet():
     # rotated = rotate(shifted, angle_degrees, reshape=False, mode='wrap')
 
 
+
+def test_template_class():
+    print(dir(cuda_texture_gen))
+
+    template_class = cuda_texture_gen.TemplateClass()
+
+    print(template_class)
+    print(dir(template_class))
+
+    array = get_fractal_noise()
+    save_array_as_image(array * 255, "output/fractal_noise.png")
+
+    template_class.test(array)
+
+    save_array_as_image(array * 255, "output/fractal_noise2.png")
+
+
+
 # test_noise_offet()
 
-print(dir(cuda_texture_gen))
 
-template_class2 = cuda_texture_gen.TemplateClass2()
-print(dir(template_class2))
+def test_template_class2():
+    print("🐧 test_template_class2()...")
+
+    print(dir(cuda_texture_gen))
+    template_class2 = cuda_texture_gen.TemplateClass2()
+    print(dir(template_class2))
+
+    array = get_fractal_noise()
+    save_array_as_image(array * 255, "output/fractal_noise.png")
+
+    template_class2.height_map = array
+    
+    template_class2.process()
+    array = template_class2.height_map
+
+    save_array_as_image(array * 255, "output/test_template_class2.png")
+
+
+
+
+test_template_class2()

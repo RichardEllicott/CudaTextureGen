@@ -1,5 +1,3 @@
-/*
- */
 #pragma once
 
 #include "python_helper.h"
