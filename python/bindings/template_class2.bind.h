@@ -49,7 +49,10 @@ inline void bind(nb::module_ &m) {
         // self.run_erosion(arr.data());
     });
 
-    
+
+    ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
+        self.process();
+    });
 
 
 }
