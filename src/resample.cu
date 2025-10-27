@@ -44,6 +44,8 @@ __device__ float sample_bilinear(const float *img,
            dx * dy * v11;
 }
 
+#define RESAMPLE_RELATIVE
+
 __global__ void resample_kernel(const float *input, float *output,
                                 int in_w, int in_h,
                                 int out_w, int out_h,
@@ -56,64 +58,51 @@ __global__ void resample_kernel(const float *input, float *output,
 
     int idx = y * out_w + x;
 
+#ifdef RESAMPLE_RELATIVE
+    // Treat map_x/map_y as relative offsets from (x, y)
+    float src_x = x + map_x[idx];
+    float src_y = y + map_y[idx];
+#elif
     // map_x/map_y give the input coords for this output pixel
     float src_x = map_x[idx];
     float src_y = map_y[idx];
 
+#endif
+
     output[idx] = sample_bilinear(input, in_w, in_h, src_x, src_y, true);
 }
 
-void Resample::process_maps(
-    const float *host_in, float *host_out,
-    const int width, const int height,
-    const float *map_x, const float *map_y) {
+void Resample::process() {
 
-    size_t size = width * height * sizeof(float);
+    core::CudaStream stream; // create a stream
 
-    float *dev_in = nullptr;
-    float *dev_out = nullptr;
-    float *dev_map_x = nullptr;
-    float *dev_map_y = nullptr;
+    size_t width = input.get_width();
+    size_t height = input.get_width();
+    size_t _block = 16;
 
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
+    input.upload();
+    map_x.upload();
+    map_y.upload();
 
-    // Allocate device buffers
-    cudaMalloc(&dev_in, size);
-    cudaMalloc(&dev_out, size);
-    cudaMalloc(&dev_map_x, size);
-    cudaMalloc(&dev_map_y, size);
+    output.resize(input.get_width(), input.get_height());
+    output.allocate_device(); // allocate memory (no upload)
 
-    // Copy input + maps
-    cudaMemcpyAsync(dev_in, host_in, size, cudaMemcpyHostToDevice, stream);
-    cudaMemcpyAsync(dev_map_x, map_x, size, cudaMemcpyHostToDevice, stream);
-    cudaMemcpyAsync(dev_map_y, map_y, size, cudaMemcpyHostToDevice, stream);
-
-    dim3 block(16, 16);
+    dim3 block(_block, _block);
     dim3 grid((width + block.x - 1) / block.x,
               (height + block.y - 1) / block.y);
 
-    // Launch resample kernel
-    resample_kernel<<<grid, block, 0, stream>>>(dev_in, dev_out,
-                                                width, height,
-                                                width, height,
-                                                dev_map_x, dev_map_y);
+    resample_kernel<<<grid, block, 0, stream.get()>>>(
+        input.device_ptr, output.device_ptr,
+        width, height, width, height, map_x.device_ptr, map_y.device_ptr);
 
-    cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        printf("CUDA kernel launch failed: %s\n", cudaGetErrorString(err));
-    }
+    output.download();
 
-    // Copy result back
-    cudaMemcpyAsync(host_out, dev_out, size, cudaMemcpyDeviceToHost, stream);
+    input.free_device();
+    output.free_device();
+    map_x.free_device();
+    map_y.free_device();
 
-    cudaStreamSynchronize(stream);
-
-    cudaFree(dev_in);
-    cudaFree(dev_out);
-    cudaFree(dev_map_x);
-    cudaFree(dev_map_y);
-    cudaStreamDestroy(stream);
+    stream.sync();
 }
 
 } // namespace resample

@@ -10,8 +10,6 @@ Erosion2 based on:
 */
 #pragma once
 
-#include "cuda_types.cuh"
-
 // ════════════════════════════════════════════════ //
 #define TEMPLATE_CLASS_NAME Erosion2
 #define TEMPLATE_NAMESPACE erosion2
@@ -40,6 +38,8 @@ Erosion2 based on:
     X(float, water_map)
 
 // ════════════════════════════════════════════════ //
+
+#include "cuda_types.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 

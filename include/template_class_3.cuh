@@ -7,21 +7,21 @@ this one uses more clever types and classes, needing less horrible macros
 */
 #pragma once
 
-#include "cuda_types.cuh"
-
 // ════════════════════════════════════════════════ //
 #define TEMPLATE_CLASS_NAME TemplateClass3
 #define TEMPLATE_NAMESPACE template_class_3
 
 #define TEMPLATE_CLASS_PARAMETERS \
-    X(size_t, width, 256)       \
-    X(size_t, height, 256)      \
-    X(size_t, _block, 16)       \
+    X(size_t, width, 256)         \
+    X(size_t, height, 256)        \
+    X(size_t, _block, 16)         \
     X(float, test, 0.0)
 
 #define TEMPLATE_CLASS_MAPS \
     X(float, image)
 // ════════════════════════════════════════════════ //
+
+#include "cuda_types.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 

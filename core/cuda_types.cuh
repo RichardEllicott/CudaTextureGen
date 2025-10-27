@@ -39,10 +39,13 @@ class CudaArray2D : public Array2D<T> {
         return this->size() * sizeof(T);
     }
 
-    void upload() {
-
+    void allocate_device() {
         free_device(); // ultra safe pattern (otherwise need to track size changes better)
         cudaMalloc(&device_ptr, size_bytes());
+    }
+
+    void upload() {
+        allocate_device();
         cudaMemcpy(device_ptr, this->data(), size_bytes(), cudaMemcpyHostToDevice);
     }
 
@@ -109,8 +112,6 @@ class CudaStruct {
         free_device();
     }
 };
-
-
 
 /*
 Wrapper to handle the stream with auto freeing
