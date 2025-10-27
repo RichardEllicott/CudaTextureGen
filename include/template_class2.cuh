@@ -1,9 +1,11 @@
 /*
 
-should work as new template
+🧜‍♀️ TEMPLATE VERSION 20251027-0
+
+
+new template... this template allocates maps and memory automaticly
 
 TRYING TO ADD NEW SAFTEY
-
 
 https://claude.ai/chat/1eb7983b-ca1f-436c-b1eb-75fcb28f319f
 
@@ -75,7 +77,7 @@ class TEMPLATE_CLASS_NAME {
     Parameters pars;                // host side pars
     Parameters *dev_pars = nullptr; // pointer to device side pars
 
-    Maps maps;                // pointer to device side maps
+    Maps map_pointers;        // pointer to device side maps
     Maps *dev_maps = nullptr; // pointer to device side structure containing map pointers
 
   public:
@@ -115,13 +117,13 @@ class TEMPLATE_CLASS_NAME {
 
         // alocate maps
 #define X(TYPE, NAME) \
-    CUDA_CHECK(cudaMalloc(&maps.NAME, array_size * sizeof(TYPE)));
+    CUDA_CHECK(cudaMalloc(&map_pointers.NAME, array_size * sizeof(TYPE)));
         TEMPLATE_CLASS_MAPS
 #undef X
 
         // send the map ptrs after allocating the maps
         CUDA_CHECK(cudaMalloc(&dev_maps, sizeof(Maps)));
-        CUDA_CHECK(cudaMemcpy(dev_maps, &maps, sizeof(Maps), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(dev_maps, &map_pointers, sizeof(Maps), cudaMemcpyHostToDevice));
     }
 
     // set all the maps on device to 0 (clearing the memory)
@@ -131,13 +133,14 @@ class TEMPLATE_CLASS_NAME {
 
         // if the size has changed, we will trigger a reallocation of memory
         if (array_size != allocated_array_size) {
+            fprintf(stderr, "⚠️  Warning: Array size changed (%zu -> %zu), reallocating device memory\n", allocated_array_size, array_size);
             allocate_device_memory();
         }
 
         // set all allocated maps to 0
-#define X(TYPE, NAME)                                                    \
-    if (maps.NAME) {                                                     \
-        CUDA_CHECK(cudaMemset(maps.NAME, 0, array_size * sizeof(TYPE))); \
+#define X(TYPE, NAME)                                                            \
+    if (map_pointers.NAME) {                                                     \
+        CUDA_CHECK(cudaMemset(map_pointers.NAME, 0, array_size * sizeof(TYPE))); \
     };
         TEMPLATE_CLASS_MAPS
 #undef X
@@ -150,18 +153,36 @@ class TEMPLATE_CLASS_NAME {
 
         // if the size has changed, we will trigger a reallocation of memory
         if (array_size != allocated_array_size) {
+            fprintf(stderr, "⚠️  Warning: Array size changed (%zu -> %zu), reallocating device memory\n", allocated_array_size, array_size);
             allocate_device_memory();
         }
+        //
+        //
+        //
+        // copy maps accross, only copy ones where the width and height matches though
+        // #define X(TYPE, NAME)                                                                                      \
+        //     if (maps.NAME && NAME.get_width() == pars.width && NAME.get_height() == pars.height) {                 \
+        //         CUDA_CHECK(cudaMemcpy(maps.NAME, NAME.data(), array_size * sizeof(TYPE), cudaMemcpyHostToDevice)); \
+        //     }
+        //         TEMPLATE_CLASS_MAPS
+        // #undef X
+        //
+        //
+        //
 
         // copy maps accross, only copy ones where the width and height matches though
-#define X(TYPE, NAME)                                                                                      \
-    if (maps.NAME && NAME.get_width() == pars.width && NAME.get_height() == pars.height) {                 \
-        CUDA_CHECK(cudaMemcpy(maps.NAME, NAME.data(), array_size * sizeof(TYPE), cudaMemcpyHostToDevice)); \
+        // 🚧 new one with error? ... note claude dropped the null check, we might want this back
+#define X(TYPE, NAME)                                                                                                             \
+    if (map_pointers.NAME) {                                                                                                      \
+        if (NAME.get_width() == pars.width && NAME.get_height() == pars.height) {                                                 \
+            CUDA_CHECK(cudaMemcpy(map_pointers.NAME, NAME.data(), array_size * sizeof(TYPE), cudaMemcpyHostToDevice));            \
+        } else if (NAME.get_width() > 0 || NAME.get_height() > 0) {                                                               \
+            fprintf(stderr, "⚠️  Warning: Map '" #NAME "' dimensions (%zux%zu) don't match parameters (%zux%zu), skipping copy\n", \
+                    NAME.get_width(), NAME.get_height(), pars.width, pars.height);                                                \
+        }                                                                                                                         \
     }
         TEMPLATE_CLASS_MAPS
 #undef X
-        //
-        //
     }
 
     // copy back the maps from the device
@@ -169,10 +190,10 @@ class TEMPLATE_CLASS_NAME {
 
         size_t array_size = pars.width * pars.height; // ⚠️ WARNING if the size of the map changes here, we could have issues
 
-#define X(TYPE, NAME)                                                                                      \
-    if (maps.NAME) {                                                                                       \
-        NAME.resize(pars.width, pars.height);                                                              \
-        CUDA_CHECK(cudaMemcpy(NAME.data(), maps.NAME, array_size * sizeof(TYPE), cudaMemcpyDeviceToHost)); \
+#define X(TYPE, NAME)                                                                                              \
+    if (map_pointers.NAME) {                                                                                       \
+        NAME.resize(pars.width, pars.height);                                                                      \
+        CUDA_CHECK(cudaMemcpy(NAME.data(), map_pointers.NAME, array_size * sizeof(TYPE), cudaMemcpyDeviceToHost)); \
     }
         TEMPLATE_CLASS_MAPS
 #undef X
@@ -196,10 +217,10 @@ class TEMPLATE_CLASS_NAME {
         }
 
         // free maps memory on gpu
-#define X(TYPE, NAME)                    \
-    if (maps.NAME) {                     \
-        CUDA_CHECK(cudaFree(maps.NAME)); \
-        maps.NAME = nullptr;             \
+#define X(TYPE, NAME)                            \
+    if (map_pointers.NAME) {                     \
+        CUDA_CHECK(cudaFree(map_pointers.NAME)); \
+        map_pointers.NAME = nullptr;             \
     }
         TEMPLATE_CLASS_MAPS
 #undef X

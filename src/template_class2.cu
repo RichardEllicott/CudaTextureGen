@@ -35,6 +35,7 @@ __global__ void process_texture(const Parameters *pars, Maps *maps, const size_t
 
 void TEMPLATE_CLASS_NAME::process() {
 
+    // ⚠️ ensuring the map sizes match
     pars.width = height_map.get_width();
     pars.height = height_map.get_height();
 
