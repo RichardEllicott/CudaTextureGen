@@ -250,14 +250,17 @@ def test_template_class2():
     print(dir(template_class2))
 
     array = get_fractal_noise()
-    save_array_as_image(array * 255, "output/fractal_noise.png")
+    save_array_as_image(array * 255, "output/test_template_class2_0.png")
 
-    template_class2.height_map = array
-    
-    template_class2.process()
+    # template_class2.height_map = array
+    # template_class2.process()
+
+    template_class2.process(array)
+
+
     array = template_class2.height_map
 
-    save_array_as_image(array * 255, "output/test_template_class2.png")
+    save_array_as_image(array * 255, "output/test_template_class2_1.png")
 
 
 

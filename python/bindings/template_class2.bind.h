@@ -3,7 +3,6 @@
 #include "python_helper.h"
 #include "template_class2.cuh"
 
-
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
 
@@ -49,12 +48,18 @@ inline void bind(nb::module_ &m) {
         // self.run_erosion(arr.data());
     });
 
-
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
     });
 
+    // optional overload
+    ngd.def("process", [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) {
+        if (arr.ndim() != 2)
+            throw std::runtime_error("Input must be a 2D float32 array");
 
+        self.height_map = python_helper::numpy_array_to_array2d(arr);
+        self.process();
+    });
 }
 
 } // namespace TEMPLATE_CLASS_NAMESPACE
