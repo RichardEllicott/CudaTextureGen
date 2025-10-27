@@ -1,4 +1,4 @@
-#include "template_class2.cuh"
+#include "template_class_2.cuh"
 
 namespace TEMPLATE_CLASS_NAMESPACE {
 

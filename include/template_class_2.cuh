@@ -9,7 +9,6 @@ TRYING TO ADD NEW SAFTEY
 
 https://claude.ai/chat/1eb7983b-ca1f-436c-b1eb-75fcb28f319f
 
-
 */
 #pragma once
 
@@ -19,7 +18,7 @@ https://claude.ai/chat/1eb7983b-ca1f-436c-b1eb-75fcb28f319f
 #pragma region XMACRO_SETTINGS
 // ════════════════════════════════════════════════ //
 #define TEMPLATE_CLASS_NAME TemplateClass2
-#define TEMPLATE_CLASS_NAMESPACE template_class2
+#define TEMPLATE_CLASS_NAMESPACE template_class_2
 
 #define TEMPLATE_CLASS_PARAMETERS \
     X(size_t, width, 256)         \

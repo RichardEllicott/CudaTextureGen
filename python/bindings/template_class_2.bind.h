@@ -1,7 +1,7 @@
 #pragma once
 
 #include "python_helper.h"
-#include "template_class2.cuh"
+#include "template_class_2.cuh"
 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
@@ -64,7 +64,10 @@ inline void bind(nb::module_ &m) {
 
 } // namespace TEMPLATE_CLASS_NAMESPACE
 
-// #undef TEMPLATE_CLASS_NAME
-// #undef TEMPLATE_CLASS_NAMESPACE
-// #undef TEMPLATE_CLASS_PARAMETERS
-// #undef TEMPLATE_CLASS_MAPS
+#undef TEMPLATE_CLASS_NAME
+#undef TEMPLATE_CLASS_NAMESPACE
+#undef TEMPLATE_CLASS_PARAMETERS
+#undef TEMPLATE_CLASS_MAPS
+
+#undef STRINGIFY
+#undef EXPAND_AND_STRINGIFY

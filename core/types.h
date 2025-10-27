@@ -100,4 +100,5 @@ class Array2D {
     const T &operator[](size_t i) const { return _vector[i]; }
 };
 
+
 } // namespace core

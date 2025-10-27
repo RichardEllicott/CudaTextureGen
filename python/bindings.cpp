@@ -18,12 +18,12 @@ concider rename to module.cpp
 #include "blur.bind.h"
 #include "erosion.bind.h"
 #include "noise_generator.bind.h"
-#include "resample.bind.h"       // 🚧 untested
-#include "shader_maps.bind.h"    // 🚧 adding a new AO
+#include "resample.bind.h"    // 🚧 untested
+#include "shader_maps.bind.h" // 🚧 adding a new AO
 // #include "template_class.bind.h" // 🚧 template example
-#include "template_class2.bind.h" // 🚧 new template
+#include "template_class_2.bind.h" // 🚧 new template
 
-
+#include "template_class_3.bind.h" // 🚧 new test
 
 namespace nb = nanobind;
 
@@ -46,6 +46,6 @@ NB_MODULE(cuda_texture_gen, m) {
     resample::bind(m);
     shader_maps::bind(m);
 
-    // template_class::bind(m);
-    template_class2::bind(m);
+    template_class_2::bind(m);
+    template_class_3::bind(m);
 }

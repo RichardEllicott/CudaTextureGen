@@ -263,6 +263,25 @@ def test_template_class2():
     save_array_as_image(array * 255, "output/test_template_class2_1.png")
 
 
+# test_template_class2()
 
 
-test_template_class2()
+def test_test_class_3():
+    print("🐮 test_test_class_3()...")
+
+    print(dir(cuda_texture_gen))
+    test_class_3 = cuda_texture_gen.TestClass3()
+    print(dir(test_class_3))
+
+    array = get_fractal_noise()
+    save_array_as_image(array * 255, "output/test_class_3_0.png")
+
+    test_class_3.image = array
+    test_class_3.process()
+    array = test_class_3.image
+
+    save_array_as_image(array * 255, "output/test_class_3_1.png")
+
+
+
+test_test_class_3()
