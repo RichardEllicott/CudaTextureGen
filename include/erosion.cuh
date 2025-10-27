@@ -90,8 +90,6 @@ class Erosion {
     void set_width(size_t value) { width = value; }
     void set_height(size_t value) { height = value; }
 
-    void allocate_host_memory();
-    void free_host_memory();
 
     void allocate_device_memory(); // allocate memory on the GPU, also copy pars over
     void copy_maps_to_device();
@@ -109,12 +107,7 @@ class Erosion {
 #undef X
 };
 
-inline void Erosion::allocate_host_memory() {
-    free_host_memory();
-}
 
-inline void Erosion::free_host_memory() {
-}
 
 inline void Erosion::allocate_device_memory() {
 

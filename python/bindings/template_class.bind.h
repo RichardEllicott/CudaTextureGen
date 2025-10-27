@@ -29,6 +29,7 @@
 
 namespace TEMPLATE_CLASS_NAMESPACE {
 
+
 namespace nb = nanobind;
 
 inline void bind(nb::module_ &m) {

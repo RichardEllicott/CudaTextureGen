@@ -200,7 +200,7 @@ def test_noise_offet():
     print("🦍 test_noise_offet...")
 
     gen = cuda_texture_gen.NoiseGenerator()
-    gen.period = 7
+    gen.period = 13
     gen.type = 1 # value noise
 
     array = gen.generate(1024, 1024)
@@ -215,18 +215,18 @@ def test_noise_offet():
 
 
 
-
-
-
     array = gen.generate(1024, 1024)
     print("height range: [{}, {}]".format(array.min(), array.max()))
     normalize_array(array)
     offset_array(array)
+
+    array = rotate(array, 45, reshape=False, mode='wrap') # scipy rotate
+
+
     save_array_as_image(array * 255, "output/noise_offset2.png")
 
 
-    # # noise is your 2D NumPy array
-    # rotated = rotate(noise, angle_degrees, reshape=False, mode='wrap')
+
 
 
     # # Apply offset (in pixels), then rotate
@@ -234,4 +234,9 @@ def test_noise_offet():
     # rotated = rotate(shifted, angle_degrees, reshape=False, mode='wrap')
 
 
-test_noise_offet()
+# test_noise_offet()
+
+print(dir(cuda_texture_gen))
+
+template_class2 = cuda_texture_gen.TemplateClass2()
+print(dir(template_class2))
