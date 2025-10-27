@@ -75,7 +75,7 @@ add_library(cuda_core STATIC ${CUDA_CPP_SOURCES}) # NOTE "cuda_core"
 target_include_directories(cuda_core PUBLIC
     include
     core
-    # ${CMAKE_CURRENT_SOURCE_DIR}/python/bindings # ❓❓❓❓TRYING TO GET INTELISENSE WORKING
+    kernels
 )
 
 

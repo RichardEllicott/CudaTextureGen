@@ -20,89 +20,6 @@ from scipy.ndimage import shift
 os.makedirs("output", exist_ok=True)
 
 
-def generate_noise_and_erode():
-
-    print("⛰️")
-
-    gen = cuda_texture_gen.NoiseGenerator()
-
-    gen.period = 7
-    gen.seed = 0
-
-    print(dir(gen))
-
-    array = gen.generate(1024, 1024)
-
-    print("height range: [{}, {}]".format(array.min(), array.max()))
-
-
-
-    normalize_array(array)
-
-    save_array_as_image(array * 255, "output/noise.png")
-
-    print(dir(cuda_texture_gen))
-
-    erosion = cuda_texture_gen.Erosion()
-    # erosion = cuda_texture_gen.Erosion2()
-
-    # good settings
-    # erosion.erosion_rate = 0.01
-    # erosion.deposition_rate = 0.02 * 0.5
-    # lowers squareness if higher as makes sure works on steeper slopes
-    # erosion.slope_threshold = 0.01
-    # erosion.steps = 512 * 2
-    # erosion.jitter = 0.0
-
-    # WORKING DEFAULTS
-    erosion.mode = 0
-    erosion.flow_factor = 0.2
-    erosion.erosion_rate = 0.01
-    erosion.deposition_rate = 0.02 * 0.5
-    erosion.slope_threshold = 0.01
-    # erosion.jitter = 0.01
-    erosion.wrap = True
-    erosion.steps = 512 * 2
-
-    # erosion.mode = 1
-    # erosion.rain_rate = 0.005
-    # erosion.evaporation_rate = 0.01
-    # erosion.flow_factor = 0.2
-    # erosion.erosion_rate = 0.01
-    # erosion.deposition_rate = 0.5
-    # erosion.slope_threshold = 0.005
-    # # erosion.jitter = 0.01
-    # erosion.wrap = True
-
-    # erosion.mode = 1
-    # erosion.flow_factor = 0.2 / 100.0
-    # erosion.erosion_rate = 0.01
-    # erosion.deposition_rate = 0.02 * 0.5
-    # erosion.slope_threshold = 0.01
-    # # erosion.jitter = 0.01
-    # erosion.wrap = True
-
-    # erosion.rain_rate = 0.005
-    # erosion.evaporation_rate = 0.01
-
-    # erosion.sediment_transport_rate = 1.0 # implicit
-
-    # erosion.min_height = 0.0
-
-    erosion.run_erosion(array)
-
-    offset_array(array) # test seamless
-
-    save_array_as_image(array * 255, "output/erosion.png")
-
-
-    array2 = erosion.height_map
-
-    save_array_as_image(array2 * 255, "output/erosion2.png")
-
-
-
-
 def erode_array(array):
     erosion = cuda_texture_gen.Erosion2()
     erosion.erosion_rate = 0.01
@@ -140,11 +57,9 @@ def get_fractal_noise():
 # test macro template design
 
 
-
-
 # test_template_class()
 
-## testing new system for copying data in and out
+# testing new system for copying data in and out
 def test_copy_in_out_water_map():
     print("🫠...")
 
@@ -172,7 +87,6 @@ def test_copy_in_out_water_map():
 # test_copy_in_out_water_map()
 
 
-
 # generate_noise_and_erode() # MAIN TEST ATM
 
 # array = get_fractal_noise()
@@ -181,14 +95,13 @@ def test_copy_in_out_water_map():
 # save_array_as_image(array * 255, "output/fractal_noise_eroded.png")
 
 
-
 def test_noise_offet():
 
     print("🦍 test_noise_offet...")
 
     gen = cuda_texture_gen.NoiseGenerator()
     gen.period = 13
-    gen.type = 1 # value noise
+    gen.type = 1  # value noise
 
     array = gen.generate(1024, 1024)
     print("height range: [{}, {}]".format(array.min(), array.max()))
@@ -200,26 +113,18 @@ def test_noise_offet():
 
     # gen.angle = math.radians(45)
 
-
-
     array = gen.generate(1024, 1024)
     print("height range: [{}, {}]".format(array.min(), array.max()))
     normalize_array(array)
     offset_array(array)
 
-    array = rotate(array, 45, reshape=False, mode='wrap') # scipy rotate
-
+    array = rotate(array, 45, reshape=False, mode='wrap')  # scipy rotate
 
     save_array_as_image(array * 255, "output/noise_offset2.png")
-
-
-
-
 
     # # Apply offset (in pixels), then rotate
     # shifted = shift(noise, shift=(dy, dx), mode='wrap')
     # rotated = rotate(shifted, angle_degrees, reshape=False, mode='wrap')
-
 
 
 def test_template_class():
@@ -236,7 +141,6 @@ def test_template_class():
     template_class.test(array)
 
     save_array_as_image(array * 255, "output/fractal_noise2.png")
-
 
 
 # test_noise_offet()
@@ -257,7 +161,6 @@ def test_template_class2():
 
     template_class2.process(array)
 
-
     array = template_class2.height_map
 
     save_array_as_image(array * 255, "output/test_template_class2_1.png")
@@ -270,18 +173,60 @@ def test_test_class_3():
     print("🐮 test_test_class_3()...")
 
     print(dir(cuda_texture_gen))
-    test_class_3 = cuda_texture_gen.TestClass3()
-    print(dir(test_class_3))
+    template_class_3 = cuda_texture_gen.TemplateClass3()
+    print(dir(template_class_3))
 
     array = get_fractal_noise()
-    save_array_as_image(array * 255, "output/test_class_3_0.png")
+    save_array_as_image(array * 255, "output/template_class_3_0.png")
 
-    test_class_3.image = array
-    test_class_3.process()
-    array = test_class_3.image
+    template_class_3.image = array
+    template_class_3.process()
+    array = template_class_3.image
 
-    save_array_as_image(array * 255, "output/test_class_3_1.png")
+    save_array_as_image(array * 255, "output/template_class_3_1.png")
 
 
+def generate_noise_and_erode():
 
-test_test_class_3()
+    print("⛰️")
+
+    gen = cuda_texture_gen.NoiseGenerator()
+
+    gen.period = 14
+    gen.seed = 0
+
+    print(dir(gen))
+
+    array = gen.generate(1024, 1024)
+
+    print("height range: [{}, {}]".format(array.min(), array.max()))
+
+    normalize_array(array)
+
+    save_array_as_image(array * 255, "output/noise.png")
+
+    # erosion = cuda_texture_gen.Erosion()
+    erosion = cuda_texture_gen.Erosion2()
+
+    print(dir(erosion))
+
+    # WORKING DEFAULTS
+    erosion.mode = 1
+    erosion.flow_factor = 0.2
+    erosion.erosion_rate = 0.01
+    erosion.deposition_rate = 0.02 * 0.5
+    erosion.slope_threshold = 0.01
+    # erosion.jitter = 0.01
+    erosion.wrap = True
+    erosion.steps = 512 * 2
+
+    erosion.process(array)
+    array = erosion.height_map
+    offset_array(array)  # test seamless
+    save_array_as_image(array * 255, "output/erosion.png")
+
+    save_array_as_image(erosion.sediment_map * 255, "output/sediment_map.png")
+    save_array_as_image(erosion.water_map * 255, "output/water_map.png")
+
+
+generate_noise_and_erode()

@@ -13,6 +13,8 @@ also special Array2D
 #include "types.h"
 #include <cuda_runtime.h> // NOTE we must have header pollution with this, it SHOULD be required
 
+#include <stdexcept>
+
 namespace core {
 
 // added Cuda features
@@ -37,29 +39,29 @@ class CudaArray2D : public Array2D<T> {
         return this->size() * sizeof(T);
     }
 
-    void upload_to_device() {
+    void upload() {
 
-        free_device_memory();
-
+        free_device(); // ultra safe pattern (otherwise need to track size changes better)
         cudaMalloc(&device_ptr, size_bytes());
         cudaMemcpy(device_ptr, this->data(), size_bytes(), cudaMemcpyHostToDevice);
     }
 
-    void download_from_device() {
+    void download() {
 
         if (device_ptr) {
             cudaMemcpy(this->data(), device_ptr, size_bytes(), cudaMemcpyDeviceToHost); // note that linux is more script and needs this-> for inherited
         }
     }
 
-    void free_device_memory() {
+    // free allocated device memory
+    void free_device() {
         if (device_ptr) {
             cudaFree(device_ptr);
         }
     }
 
     ~CudaArray2D() {
-        free_device_memory();
+        free_device();
     }
 };
 
@@ -75,16 +77,16 @@ class CudaStruct {
     CudaStruct() = default;
 
     explicit CudaStruct(const T &value) : host_data(value) {
-        upload_to_device(); // automaticly upload to device
+        upload(); // automaticly upload to device
     }
 
-    void upload_to_device() {
+    void upload() {
         if (!device_ptr)
             cudaMalloc(&device_ptr, sizeof(T));
         cudaMemcpy(device_ptr, &host_data, sizeof(T), cudaMemcpyHostToDevice);
     }
 
-    void download_from_device() {
+    void download() {
         // if (!device_ptr)
         //     throw std::runtime_error("No device memory allocated");
         if (device_ptr)
@@ -96,7 +98,7 @@ class CudaStruct {
     // const T &host() const { return host_data; }
     // T &host() { return host_data; }
 
-    void free_device_memory() {
+    void free_device() {
         if (device_ptr) {
             cudaFree(device_ptr);
             device_ptr = nullptr;
@@ -104,7 +106,67 @@ class CudaStruct {
     }
 
     ~CudaStruct() {
-        free_device_memory();
+        free_device();
+    }
+};
+
+
+
+/*
+Wrapper to handle the stream with auto freeing
+
+🧩 Usage Example:
+
+    CudaStream stream;  // automatically created
+
+    my_kernel<<<grid, block, 0, stream.get()>>>(...);
+
+    stream.sync();      // optional: wait for completion
+    // stream is automatically destroyed when it goes out of scope
+
+*/
+class CudaStream {
+    cudaStream_t stream = nullptr;
+
+  public:
+    CudaStream(unsigned int flags = cudaStreamDefault) {
+        cudaError_t err = cudaStreamCreateWithFlags(&stream, flags);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("Failed to create CUDA stream");
+        }
+    }
+
+    ~CudaStream() {
+        if (stream) {
+            cudaStreamDestroy(stream);
+        }
+    }
+
+    // Non-copyable
+    CudaStream(const CudaStream &) = delete;
+    CudaStream &operator=(const CudaStream &) = delete;
+
+    // Movable
+    CudaStream(CudaStream &&other) noexcept : stream(other.stream) {
+        other.stream = nullptr;
+    }
+
+    CudaStream &operator=(CudaStream &&other) noexcept {
+        if (this != &other) {
+            if (stream)
+                cudaStreamDestroy(stream);
+            stream = other.stream;
+            other.stream = nullptr;
+        }
+        return *this;
+    }
+
+    // Accessor
+    cudaStream_t get() const { return stream; }
+
+    // Convenience
+    void sync() const {
+        cudaStreamSynchronize(stream);
     }
 };
 

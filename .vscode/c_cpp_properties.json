@@ -6,6 +6,7 @@
         // "${workspaceFolder}/**", // HOVER IT ALL UP (bad idea)
         "${workspaceFolder}/core",
         "${workspaceFolder}/include",
+        "${workspaceFolder}/kernels",
         "${workspaceFolder}/src",
         "${workspaceFolder}/python/bindings",
         "${workspaceFolder}/python/nanobind/include",

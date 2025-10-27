@@ -22,7 +22,7 @@ __global__ void process_texture(const Parameters *pars, float *height_map, const
 
 void TEMPLATE_CLASS_NAME::process() {
 
-    image.upload_to_device();
+    image.upload();
 
     pars.width = image.get_width();
     pars.height = image.get_height();
@@ -40,8 +40,8 @@ void TEMPLATE_CLASS_NAME::process() {
 
     process_texture<<<grid, block>>>(gpu_pars.device_ptr, image.device_ptr, pars.width, pars.height);
 
-    image.download_from_device();
-    image.free_device_memory();
+    image.download();
+    image.free_device();
 
     // #define X(TYPE, NAME)            \
     //     NAME.download_from_device(); \

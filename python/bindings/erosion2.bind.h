@@ -1,7 +1,7 @@
 #pragma once
 
+#include "erosion2.cuh"
 #include "python_helper.h"
-#include "template_class_3.cuh"
 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
@@ -31,9 +31,18 @@ inline void bind(nb::module_ &m) {
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
     });
+
+    // optional overload
+    ngd.def("process", [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) {
+        if (arr.ndim() != 2)
+            throw std::runtime_error("Input must be a 2D float32 array");
+
+        self.height_map = python_helper::numpy_array_to_array2d(arr);
+        self.process();
+    });
 }
 
-} // namespace test_class_3
+} // namespace TEMPLATE_NAMESPACE
 
 #undef TEMPLATE_CLASS_NAME
 #undef TEMPLATE_NAMESPACE
@@ -42,5 +51,3 @@ inline void bind(nb::module_ &m) {
 
 #undef STRINGIFY
 #undef EXPAND_AND_STRINGIFY
-
-
