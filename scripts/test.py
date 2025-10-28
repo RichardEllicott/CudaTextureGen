@@ -4,6 +4,7 @@
 
 
 """
+from pathlib import Path
 import python_bootstrap  # bootstrap to our fresh compiled module
 import cuda_texture_gen
 import inspect
@@ -287,9 +288,46 @@ def generate_noise_and_erode():
 # generate_noise_and_erode()
 
 
+# gen some gradient noise, and make a normal map and ao map
+def test_shader_maps(filename="output/04_eroded.png"):
+
+    shader_maps = cuda_texture_gen.ShaderMaps()
+
+    print(shader_maps)
+    print(dir(shader_maps))
+
+    print("load image...")
+    img = Image.open(filename).convert("L")
+    arr = np.array(img, dtype=np.float32)
+
+    normal_arr = shader_maps.generate_normal_map(arr)
+    ao_arr = shader_maps.generate_ao_map(arr * 0.5, radius=2)
+
+    path = Path(filename)
+    save_array_as_image(
+        normal_arr * 255.0, str(path.with_name(path.stem + ".normal" + path.suffix)))
+    save_array_as_image(
+        ao_arr * 255.0, str(path.with_name(path.stem + ".ao" + path.suffix)))
+
+
+def test_blur(filename, output_filename, amount=1):
+    print('{}()...'.format(inspect.currentframe().f_code.co_name))
+
+    print("load image...")
+    img = Image.open(filename).convert("L")
+    arr = np.array(img, dtype=np.float32)
+    print("height range: [{}, {}]".format(arr.min(), arr.max()))
+    print("blur...")
+
+    cuda_texture_gen.blur(arr, amount=1, wrap=True)
+
+    save_array_as_image(arr, output_filename)
+
+# LICENSE 
 def test_resample():
 
-    noise = get_fractal_noise(base_period=7)
+    # noise = get_fractal_noise(width=1024, height=1024, octaves=6, base_period=2, base_seed=0, gain=0.8, lacunarity=2.0)
+    noise = get_fractal_noise(width=1024, height=1024, octaves=3, base_period=7, base_seed=0, gain=0.8, lacunarity=1.9)
     normalize_array(noise)
 
     save_array_as_image(noise * 255, "output/00_noise.png")
@@ -346,72 +384,34 @@ def test_resample():
     eroded = erosion.height_map
     save_array_as_image(eroded * 255, "output/04_eroded.png")
 
-
     shader_maps = cuda_texture_gen.ShaderMaps
 
     print(shader_maps)
+
+    test_shader_maps("output/04_eroded.png")
 
     # normal_map = shader_maps.generate_normal_map(eroded, 1.0, True)
 
     # normal_map = shader_maps.generate_normal_map(eroded)
     # ao_map = shader_maps.generate_ao_map(eroded * 0.5, 2.0, True)
-    
-    
+
     # print("Type:", type(eroded))
     # print("Dtype:", eroded.dtype)
     # print("Shape:", eroded.shape)
     # print("Flags:", eroded.flags)
-    
+
     # arr = np.array(eroded * 0.5, dtype=np.float32)
     # print("Final Type:", type(arr))
     # print("Final Dtype:", arr.dtype)
     # print("Final Flags:", arr.flags)
 
     # ao_map = shader_maps.generate_ao_map(eroded * 0.5, 2, True)
-    ao_map = shader_maps.generate_ao_map(resampled)
-
-
+    # ao_map = shader_maps.generate_ao_map(resampled)
 
     # save_array_as_image(normal_map * 255, "output/05_normal_map.png")
-    save_array_as_image(ao_map * 255, "output/06_ao_map.png")
+    # save_array_as_image(ao_map * 255, "output/06_ao_map.png")
+
+    test_blur("output/04_eroded.ao.png", "output/04_eroded.ao.blur.png")
 
 
-
-
-
-
-# test_resample()
-
-
-from pathlib import Path
-
-
-# gen some gradient noise, and make a normal map and ao map
-def test_shader_maps(filename = "output/04_eroded.png"):
-    # print('{}()...'.format(inspect.currentframe().f_code.co_name))
-
-    # for t in cuda_texture_gen.NoiseGenerator.Type:
-    #     print(t.name, t.value)
-
-    # test_noise_generator(512, 512, filename,
-    #                      cuda_texture_gen.NoiseGenerator.Type.Gradient2D.value)
-
-    shader_maps = cuda_texture_gen.ShaderMaps()
-
-    print(shader_maps)
-    print(dir(shader_maps))
-
-    print("load image...")
-    img = Image.open(filename).convert("L")
-    arr = np.array(img, dtype=np.float32)
-
-    normal_arr = shader_maps.generate_normal_map(arr)
-    ao_arr = shader_maps.generate_ao_map(arr * 0.5, radius=2)
-
-    path = Path(filename)
-    save_array_as_image(
-        normal_arr * 255.0, str(path.with_name(path.stem + ".normal" + path.suffix)))
-    save_array_as_image(
-        ao_arr * 255.0, str(path.with_name(path.stem + ".ao" + path.suffix)))
-
-test_shader_maps()
+test_resample()
