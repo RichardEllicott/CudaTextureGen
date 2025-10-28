@@ -230,23 +230,23 @@ void TEMPLATE_CLASS_NAME::process() {
     for (int s = 0; s < pars.steps; ++s) {
         switch (pars.mode) {
         case 0:
-            erode_kernel_01<<<grid, block, 0, stream.get()>>>(gpu_pars.device_ptr, pars.width, pars.height,
-                                                              height_map.device_ptr,
-                                                              sediment_map.device_ptr,
+            erode_kernel_01<<<grid, block, 0, stream.get()>>>(gpu_pars.device_ptr(), pars.width, pars.height,
+                                                              height_map.device_ptr(),
+                                                              sediment_map.device_ptr(),
                                                               nullptr);
             break;
         case 1:
-            my_erode_kernel_01<<<grid, block, 0, stream.get()>>>(gpu_pars.device_ptr, pars.width, pars.height,
-                                                                 height_map.device_ptr,
-                                                                 sediment_map.device_ptr,
-                                                                 water_map.device_ptr);
+            my_erode_kernel_01<<<grid, block, 0, stream.get()>>>(gpu_pars.device_ptr(), pars.width, pars.height,
+                                                                 height_map.device_ptr(),
+                                                                 sediment_map.device_ptr(),
+                                                                 water_map.device_ptr());
 
             break;
 
         case 2:
             simple_erode<<<grid, block, 0, stream.get()>>>(pars.width, pars.height,
-                                                           height_map.device_ptr,
-                                                           sediment_map.device_ptr,
+                                                           height_map.device_ptr(),
+                                                           sediment_map.device_ptr(),
                                                            nullptr,
                                                            pars.wrap,
                                                            pars.jitter,

@@ -22,44 +22,119 @@ template <typename T>
 class CudaArray2D : public Array2D<T> {
 
   private:
-  public:
-    T *device_ptr = nullptr;
-    size_t device_width;
-    size_t device_height;
+    T *_device_ptr = nullptr;
+    size_t _device_width = 0;
+    size_t _device_height = 0;
+    size_t _device_allocated_bytes = 0;
 
+    bool _array_dim_match_dev_dim() {
+        return this->get_width() == _device_width && this->get_height() == _device_height;
+    }
+
+  public:
     CudaArray2D() = default;
 
-    // Conversion constructor
+    // Conversion constructor (build this class from an Array2D)
     CudaArray2D(const Array2D<T> &src) {
         this->resize(src.get_width(), src.get_height());
         std::copy(src.data(), src.data() + src.size(), this->data());
     }
 
-    size_t size_bytes() {
-        return this->size() * sizeof(T);
+    // Move Constructor (probabally not needed really)
+    // ⚠️ AI generated, might need to double check
+    //
+    //
+    // CudaArray2D<float> a;
+    // a.resize(1024, 1024);
+    // a.upload();
+    // CudaArray2D<float> b = std::move(a); // move constructor
+    //
+    //
+    CudaArray2D(CudaArray2D &&other) noexcept {
+        *static_cast<Array2D<T> *>(this) = std::move(other); // move base
+        _device_ptr = other._device_ptr;
+        _device_width = other._device_width;
+        _device_height = other._device_height;
+        _device_allocated_bytes = other._device_allocated_bytes;
+
+        other._device_ptr = nullptr;
+        other._device_width = 0;
+        other._device_height = 0;
+        other._device_allocated_bytes = 0;
     }
 
+    // Move Assignment Operator ⚠️ AI gen
+    CudaArray2D &operator=(CudaArray2D &&other) noexcept {
+        if (this != &other) {
+            free_device(); // free current device memory
+
+            *static_cast<Array2D<T> *>(this) = std::move(other); // move base
+            _device_ptr = other._device_ptr;
+            _device_width = other._device_width;
+            _device_height = other._device_height;
+            _device_allocated_bytes = other._device_allocated_bytes;
+
+            other._device_ptr = nullptr;
+            other._device_width = 0;
+            other._device_height = 0;
+            other._device_allocated_bytes = 0;
+        }
+        return *this;
+    }
+
+    // Delete Copy Operations (prevents accidental shallow copies of _device_ptr)
+    // will give a compile error if we try to copy this
+    CudaArray2D(const CudaArray2D &) = delete;
+    CudaArray2D &operator=(const CudaArray2D &) = delete;
+
+    // Return the ptr, read only
+    T *device_ptr() const {
+        return _device_ptr;
+    }
+
+    // allocate device memory (if not already allocated at correct size and this array is not empty)
     void allocate_device() {
-        free_device(); // ultra safe pattern (otherwise need to track size changes better)
-        cudaMalloc(&device_ptr, size_bytes());
+
+        if (this->empty()) {
+            // if empty, ensure device memory freed
+            free_device();
+
+        } else if (!_array_dim_match_dev_dim()) {
+            // if the size/width has changed since last allocation, ensure free and allocate
+            free_device();
+            _device_width = this->get_width();
+            _device_height = this->get_height();
+            _device_allocated_bytes = this->size() * sizeof(T);
+            cudaMalloc(&_device_ptr, _device_allocated_bytes);
+        }
     }
 
+    // upload data to the device (will allocate memory if required)
     void upload() {
         allocate_device();
-        cudaMemcpy(device_ptr, this->data(), size_bytes(), cudaMemcpyHostToDevice);
+        if (!this->empty()) {
+            cudaMemcpy(_device_ptr, this->data(), _device_allocated_bytes, cudaMemcpyHostToDevice);
+        }
     }
 
+    // download the data back from the device to the host
     void download() {
-
-        if (device_ptr) {
-            cudaMemcpy(this->data(), device_ptr, size_bytes(), cudaMemcpyDeviceToHost); // note that linux is more script and needs this-> for inherited
+        if (_device_ptr) {
+            if (!_array_dim_match_dev_dim()) {
+                this->resize(_device_width, _device_height); // on size missmatch resize our host array
+            }
+            cudaMemcpy(this->data(), _device_ptr, _device_allocated_bytes, cudaMemcpyDeviceToHost);
         }
     }
 
     // free allocated device memory
     void free_device() {
-        if (device_ptr) {
-            cudaFree(device_ptr);
+        if (_device_ptr) {
+            cudaFree(_device_ptr);
+            _device_ptr = nullptr;
+            _device_width = 0;
+            _device_height = 0;
+            _device_allocated_bytes = 0;
         }
     }
 
@@ -73,27 +148,43 @@ template <typename T>
 class CudaStruct {
     static_assert(std::is_trivially_copyable<T>::value, "CudaStruct requires a trivially copyable type");
 
+    T *_device_ptr = nullptr;
+
   public:
     T host_data{}; // zero data
-    T *device_ptr = nullptr;
 
     CudaStruct() = default;
 
-    explicit CudaStruct(const T &value) : host_data(value) {
-        upload(); // automaticly upload to device
+    // public get pointer
+    T *device_ptr() const {
+        return _device_ptr;
     }
 
+    // automaticly upload to device if we create with pars, eg:
+    //
+    // core::CudaStruct<Parameters> gpu_pars(pars); // automaticly uploads and free
+    //
+    explicit CudaStruct(const T &value) : host_data(value) {
+        upload();
+    }
+
+    // Non‑copyable, non‑movable (prevents any memory issues)
+    CudaStruct(const CudaStruct &) = delete;
+    CudaStruct &operator=(const CudaStruct &) = delete;
+    CudaStruct(CudaStruct &&) = delete;
+    CudaStruct &operator=(CudaStruct &&) = delete;
+
     void upload() {
-        if (!device_ptr)
-            cudaMalloc(&device_ptr, sizeof(T));
-        cudaMemcpy(device_ptr, &host_data, sizeof(T), cudaMemcpyHostToDevice);
+        if (!_device_ptr)
+            cudaMalloc(&_device_ptr, sizeof(T));
+        cudaMemcpy(_device_ptr, &host_data, sizeof(T), cudaMemcpyHostToDevice);
     }
 
     void download() {
         // if (!device_ptr)
         //     throw std::runtime_error("No device memory allocated");
-        if (device_ptr)
-            cudaMemcpy(&host_data, device_ptr, sizeof(T), cudaMemcpyDeviceToHost);
+        if (_device_ptr)
+            cudaMemcpy(&host_data, _device_ptr, sizeof(T), cudaMemcpyDeviceToHost);
     }
 
     // T *device() const { return device_ptr; }
@@ -102,9 +193,9 @@ class CudaStruct {
     // T &host() { return host_data; }
 
     void free_device() {
-        if (device_ptr) {
-            cudaFree(device_ptr);
-            device_ptr = nullptr;
+        if (_device_ptr) {
+            cudaFree(_device_ptr);
+            _device_ptr = nullptr;
         }
     }
 

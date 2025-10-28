@@ -11,6 +11,12 @@ also special Array2D
 #include <cmath>
 #include <vector>
 
+// Move semantics: If
+
+
+
+
+
 namespace core {
 
 struct Vector2i {
@@ -52,7 +58,8 @@ struct Color {
     Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {}
 };
 
-// special 2D array for maps
+// special 2D array for maps, stores data in a std::vector in "row major" (row * width + col)
+//
 template <typename T>
 class Array2D {
     std::vector<T> _vector;
@@ -79,6 +86,9 @@ class Array2D {
     // Size of the underlying flat array
     size_t size() const { return _vector.size(); }
 
+    // Is empty (contains no data)
+    bool empty() const { return _vector.empty(); }
+
     // Dimensions
     size_t get_width() const { return _width; }
     size_t get_height() const { return _height; }
@@ -99,6 +109,5 @@ class Array2D {
     T &operator[](size_t i) { return _vector[i]; }
     const T &operator[](size_t i) const { return _vector[i]; }
 };
-
 
 } // namespace core

@@ -413,5 +413,11 @@ def test_resample():
 
     test_blur("output/04_eroded.ao.png", "output/04_eroded.ao.blur.png")
 
+# test_resample()
 
-test_resample()
+
+print(dir(cuda_texture_gen))
+template_base_1_test = cuda_texture_gen.TemplateBase1Test()
+print(dir(template_base_1_test))
+template_base_1_test.process()
+

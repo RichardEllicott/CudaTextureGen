@@ -47,6 +47,7 @@ target_include_directories(cuda_texture_gen_py PRIVATE
     # ${PROJECT_SOURCE_DIR}/include # ❓❓❓❓
     # ${PROJECT_SOURCE_DIR}/core # ❓❓❓❓
     ${CMAKE_CURRENT_SOURCE_DIR}/bindings
+    # ${CMAKE_CURRENT_SOURCE_DIR}/bindings/template_x
 )
 
 # Link against your CUDA static library

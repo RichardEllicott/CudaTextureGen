@@ -4,9 +4,6 @@ Erosion2 based on:
 
 🧜‍♀️ TEMPLATE VERSION 20251027-3
 
-
-
-
 */
 #pragma once
 

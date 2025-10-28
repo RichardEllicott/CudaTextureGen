@@ -93,5 +93,11 @@
         "xloctime": "cpp",
         "xmemory": "cpp"
     },
-    "C_Cpp.errorSquiggles": "enabled", // stop windows vs.code using windows line endings
+    "C_Cpp.errorSquiggles": "enabled",
+    "folder-color.pathColors": [
+        {
+            "folderPath": "cuda_texture_gen\\python\\bindings\\bindable.h\\",
+            "badge": "❌"
+        }
+    ], // stop windows vs.code using windows line endings
 }

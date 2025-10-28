@@ -38,7 +38,7 @@ void TEMPLATE_CLASS_NAME::process() {
     dim3 grid((pars.width + block.x - 1) / block.x,
               (pars.height + block.y - 1) / block.y);
 
-    process_texture<<<grid, block>>>(gpu_pars.device_ptr, image.device_ptr, pars.width, pars.height);
+    process_texture<<<grid, block>>>(gpu_pars.device_ptr(), image.device_ptr(), pars.width, pars.height);
 
     image.download();
     image.free_device();

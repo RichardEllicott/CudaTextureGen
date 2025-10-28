@@ -92,8 +92,8 @@ void Resample::process() {
               (height + block.y - 1) / block.y);
 
     resample_kernel<<<grid, block, 0, stream.get()>>>(
-        input.device_ptr, output.device_ptr,
-        width, height, width, height, map_x.device_ptr, map_y.device_ptr);
+        input.device_ptr(), output.device_ptr(),
+        width, height, width, height, map_x.device_ptr(), map_y.device_ptr());
 
     output.download();
 
