@@ -376,4 +376,4 @@ void ShaderMaps::generate_ao_map(
 
 #pragma endregion
 
-} // namespace shader_maps_c
+} // namespace shader_maps

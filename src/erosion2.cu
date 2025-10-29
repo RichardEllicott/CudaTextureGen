@@ -12,20 +12,28 @@
 
 namespace TEMPLATE_NAMESPACE {
 
-#pragma region WORKING_ORGINAL
+__device__ __forceinline__ int wrap_or_clamp(int i, int n, bool wrap) {
+    if (wrap) {
+        int m = i % n;
+        return m < 0 ? m + n : m;
+    }
+    return i < 0 ? 0 : (i >= n ? n - 1 : i);
+}
 
-// working basic erode, has no water just sediment redistribution
-__global__ void erode_kernel_01(
-    Parameters *pars,
+// calculates the changes that need to occur
+__global__ void flux_pass(
+    const Parameters pars,
     int width, int height,
-    float *heightmap, float *sediment,
-    curandState *rand_states
-
-) {
-
-#ifdef ENABLE_EROSION_TILED_MEMORY
-    __shared__ float tile[EROSION_BLOCK_SIZE + 2][EROSION_BLOCK_SIZE + 2]; // +2 for 1-cell border
-#endif
+    const float *__restrict__ height_in,
+    const float *__restrict__ water_in,
+    const float *__restrict__ sediment_in,
+    // outputs
+    float *__restrict__ flux0, // 8 fluxes per cell (neighbor order)
+    float *__restrict__ dh_out,
+    float *__restrict__ ds_out,
+    float *__restrict__ dw_out) {
+    const int2 offs[8] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
+    const float dist[8] = {1, 1, 1, 1, 1.41421356f, 1.41421356f, 1.41421356f, 1.41421356f};
 
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -33,75 +41,59 @@ __global__ void erode_kernel_01(
         return;
 
     int idx = y * width + x;
-    float h = heightmap[idx];
-    float s = sediment[idx];
+    float h = height_in[idx];
+    float w = water_in[idx] + pars.rain_rate;
+    float s_cur = sediment_in[idx];
 
-    // 8-way neighbor offsets
-    int dx[8] = {-1, 1, 0, 0, -1, -1, 1, 1};
-    int dy[8] = {0, 0, -1, 1, -1, 1, -1, 1};
+    float slopes[8];
+    float sum_slope = 0.f;
 
-    float total_slope = 0.0f;
-    float slopes[8] = {0};
-
-    // Compute slopes to neighbors
+    // neighbor heights and slopes
     for (int i = 0; i < 8; ++i) {
-
-        int nx;
-        int ny;
-
-        if (pars->wrap) {
-            nx = (x + dx[i] + width) % width;
-            ny = (y + dy[i] + height) % height;
-        } else {
-            nx = x + dx[i];
-            ny = y + dy[i];
-            if (nx < 0 || nx >= width || ny < 0 || ny >= height)
-                continue;
-        }
-
-        int nIdx = ny * width + nx;
-        float nh = heightmap[nIdx];
-        float slope = h - nh;
-
-        if (rand_states && pars->jitter && pars->jitter > 0.0f) {
-            float rand = curand_uniform(&rand_states[idx]); // [0,1)
-            slope += rand * pars->jitter;
-        }
-
-        if (slope > pars->slope_threshold) {
-            slopes[i] = slope;
-            total_slope += slope;
-        }
+        int nx = wrap_or_clamp(x + offs[i].x, width, pars.wrap);
+        int ny = wrap_or_clamp(y + offs[i].y, height, pars.wrap);
+        int nidx = ny * width + nx;
+        float nh = height_in[nidx];
+        float s = (h - nh) / dist[i];
+        float sd = s > 0.f ? s : 0.f;
+        slopes[i] = sd;
+        sum_slope += sd;
     }
 
-    // Erode and deposit based on slope
-    float eroded = pars->erosion_rate * total_slope;
-    h -= eroded;
-    s += eroded;
+    float outflow_cap = fminf(w, pars.w_max);
+    float outflow_sum = 0.f;
 
-    // Distribute sediment to neighbors
-    for (int i = 0; i < 8; ++i) {
-        if (slopes[i] > 0) {
-            int nx = x + dx[i];
-            int ny = y + dy[i];
-            if (nx < 0 || nx >= width || ny < 0 || ny >= height)
-                continue;
-
-            int nIdx = ny * width + nx;
-            float share = (slopes[i] / total_slope) * pars->deposition_rate * s;
-
-            // Atomic to avoid race conditions
-            atomicAdd(&heightmap[nIdx], share);
-            atomicAdd(&sediment[nIdx], -share);
+    // proportional flux
+    float *cell_flux = &flux0[idx * 8];
+    if (sum_slope > 1e-6f && outflow_cap > 0.f) {
+        for (int i = 0; i < 8; ++i) {
+            float q = (slopes[i] / sum_slope) * outflow_cap;
+            cell_flux[i] = q;
+            outflow_sum += q;
         }
+    } else {
+        for (int i = 0; i < 8; ++i)
+            cell_flux[i] = 0.f;
     }
 
-    // Write back
-    heightmap[idx] = h;
-    sediment[idx] = s;
+    // velocity proxy and capacity
+    float v = 0.f;
+    for (int i = 0; i < 8; ++i)
+        v += cell_flux[i] * slopes[i];
+    float C = pars.k_capacity * v;
+
+    float erode = 0.f, deposit = 0.f;
+    if (C > s_cur) {
+        erode = pars.k_erode * (C - s_cur);
+    } else {
+        deposit = pars.k_deposit * (s_cur - C);
+    }
+
+    // write deltas (applied in pass B)
+    dh_out[idx] = deposit - erode;              // positive = deposition raises height
+    ds_out[idx] = erode - deposit;              // sediment increases when eroding, decreases when depositing
+    dw_out[idx] = -outflow_sum - pars.evap * w; // water loss: outflow + evaporation
 }
-
-#pragma endregion
 
 // positive modulo wrap (note it might be faster to concider other wrap methods)
 __device__ __forceinline__ int posmod(int value, int mod) {
@@ -229,21 +221,14 @@ void TEMPLATE_CLASS_NAME::process() {
 
     for (int s = 0; s < pars.steps; ++s) {
         switch (pars.mode) {
+            // case 0:
+            //     erode_kernel_01<<<grid, block, 0, stream.get()>>>(gpu_pars.device_ptr(), pars.width, pars.height,
+            //                                                       height_map.device_ptr(),
+            //                                                       sediment_map.device_ptr(),
+            //                                                       nullptr);
+            //     break;
+
         case 0:
-            erode_kernel_01<<<grid, block, 0, stream.get()>>>(gpu_pars.device_ptr(), pars.width, pars.height,
-                                                              height_map.device_ptr(),
-                                                              sediment_map.device_ptr(),
-                                                              nullptr);
-            break;
-        case 1:
-            my_erode_kernel_01<<<grid, block, 0, stream.get()>>>(gpu_pars.device_ptr(), pars.width, pars.height,
-                                                                 height_map.device_ptr(),
-                                                                 sediment_map.device_ptr(),
-                                                                 water_map.device_ptr());
-
-            break;
-
-        case 2:
             simple_erode<<<grid, block, 0, stream.get()>>>(pars.width, pars.height,
                                                            height_map.device_ptr(),
                                                            sediment_map.device_ptr(),
@@ -253,6 +238,14 @@ void TEMPLATE_CLASS_NAME::process() {
                                                            pars.erosion_rate,
                                                            pars.slope_threshold,
                                                            pars.deposition_rate);
+
+            break;
+
+        case 1:
+            my_erode_kernel_01<<<grid, block, 0, stream.get()>>>(gpu_pars.device_ptr(), pars.width, pars.height,
+                                                                 height_map.device_ptr(),
+                                                                 sediment_map.device_ptr(),
+                                                                 water_map.device_ptr());
 
             break;
         }

@@ -1,7 +1,7 @@
 #pragma once
 
+#include "erosion3.cuh"
 #include "python_helper.h"
-#include "template_class_3.cuh"
 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
@@ -28,15 +28,12 @@ inline void bind(nb::module_ &m) {
     TEMPLATE_CLASS_MAPS
 #undef X
 
-    // 
     //
-
+    //
 
 // 🚧 bind Type enumerators (new pattern?? we could check for a def)
 #ifdef TEMPLATE_CLASS_TYPES
-    
     nb::enum_<TEMPLATE_CLASS_NAME::Type>(ngd, "Type")
-
 #define X(NAME) \
     .value(#NAME, TEMPLATE_CLASS_NAME::Type::NAME)
         TEMPLATE_CLASS_TYPES
@@ -49,20 +46,6 @@ inline void bind(nb::module_ &m) {
 
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
-
-        return python_helper::array2d_to_numpy_array(self.image); // optional return array
-
-    });
-
-    // optional overload
-    ngd.def("process", [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) {
-        if (arr.ndim() != 2)
-            throw std::runtime_error("Input must be a 2D float32 array");
-
-        self.image = python_helper::numpy_array_to_array2d(arr);
-        self.process();
-
-        return python_helper::array2d_to_numpy_array(self.image); // optional return array
     });
 }
 
@@ -72,6 +55,7 @@ inline void bind(nb::module_ &m) {
 #undef TEMPLATE_NAMESPACE
 #undef TEMPLATE_CLASS_PARAMETERS
 #undef TEMPLATE_CLASS_MAPS
-
 #undef STRINGIFY
 #undef EXPAND_AND_STRINGIFY
+
+

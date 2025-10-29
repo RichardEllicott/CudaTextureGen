@@ -16,19 +16,18 @@ concider rename to module.cpp
 
 // new pattern
 #include "blur.bind.h"
-#include "erosion.bind.h"
+// #include "erosion.bind.h"
 #include "noise_generator.bind.h"
 #include "resample.bind.h"    // 🚧 untested
 #include "shader_maps.bind.h" // 🚧 adding a new AO
 // #include "template_class.bind.h" // 🚧 template example
 // #include "template_class_2.bind.h" // 🚧 new template
 
-#include "erosion2.bind.h"         // 🚧 new test
+#include "erosion2.bind.h"         //
+#include "erosion3.bind.h"         //
 #include "template_class_3.bind.h" // 🚧 new test
 
-
 #include "x_template_test.bind.h" // 🚧 special auto gen type template test
-
 
 namespace nb = nanobind;
 
@@ -45,7 +44,7 @@ NB_MODULE(cuda_texture_gen, m) {
     bind_hello(m);
     bind_cuda_hello(m);
 
-    erosion::bind(m);
+    // erosion::bind(m);
     blur::bind(m);
     noise_generator::bind(m);
     resample::bind(m);
@@ -54,8 +53,8 @@ NB_MODULE(cuda_texture_gen, m) {
     // template_class_2::bind(m);
     template_class_3::bind(m);
 
-    erosion2::bind(m);
-
+    erosion_2::bind(m);
+    erosion_3::bind(m);
 
     x_template_test::bind(m);
 }

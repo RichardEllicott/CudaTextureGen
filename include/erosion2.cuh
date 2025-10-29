@@ -9,7 +9,7 @@ Erosion2 based on:
 
 // ════════════════════════════════════════════════ //
 #define TEMPLATE_CLASS_NAME Erosion2
-#define TEMPLATE_NAMESPACE erosion2
+#define TEMPLATE_NAMESPACE erosion_2
 
 #define TEMPLATE_CLASS_PARAMETERS    \
     X(size_t, width, 256)            \
@@ -27,7 +27,12 @@ Erosion2 based on:
     X(int, steps, 1024)              \
     X(int, block_size, 16)           \
     X(int, mode, 0)                  \
-    X(bool, wrap, true)
+    X(bool, wrap, true)              \
+    X(float, w_max, 1.0)             \
+    X(float, k_capacity, 0.1)        \
+    X(float, k_erode, 0.1)           \
+    X(float, k_deposit, 0.1)         \
+    X(float, evap, 0.1)
 
 #define TEMPLATE_CLASS_MAPS \
     X(float, height_map)    \

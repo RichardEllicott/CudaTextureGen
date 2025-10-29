@@ -92,6 +92,11 @@ class CudaArray2D : public Array2D<T> {
         return _device_ptr;
     }
 
+    // Return the ptr, read only
+    T *dev_ptr() const {
+        return _device_ptr;
+    }
+
     // allocate device memory (if not already allocated at correct size and this array is not empty)
     void allocate_device() {
 
@@ -155,7 +160,7 @@ class CudaStruct {
 
     CudaStruct() = default;
 
-    // public get pointer
+    // device pointer accessor
     T *device_ptr() const {
         return _device_ptr;
     }
@@ -218,10 +223,10 @@ Wrapper to handle the stream with auto freeing
 
 */
 class CudaStream {
-    cudaStream_t stream = nullptr;
+    cudaStream_t stream;
 
   public:
-    CudaStream(unsigned int flags = cudaStreamDefault) {
+    explicit CudaStream(unsigned int flags = cudaStreamDefault) {
         cudaError_t err = cudaStreamCreateWithFlags(&stream, flags);
         if (err != cudaSuccess) {
             throw std::runtime_error("Failed to create CUDA stream");
@@ -229,36 +234,156 @@ class CudaStream {
     }
 
     ~CudaStream() {
-        if (stream) {
-            cudaStreamDestroy(stream);
-        }
+        cudaStreamDestroy(stream);
     }
 
     // Non-copyable
     CudaStream(const CudaStream &) = delete;
     CudaStream &operator=(const CudaStream &) = delete;
 
-    // Movable
-    CudaStream(CudaStream &&other) noexcept : stream(other.stream) {
-        other.stream = nullptr;
-    }
-
-    CudaStream &operator=(CudaStream &&other) noexcept {
-        if (this != &other) {
-            if (stream)
-                cudaStreamDestroy(stream);
-            stream = other.stream;
-            other.stream = nullptr;
-        }
-        return *this;
-    }
+    // Non-movable
+    CudaStream(CudaStream &&) = delete;
+    CudaStream &operator=(CudaStream &&) = delete;
 
     // Accessor
     cudaStream_t get() const { return stream; }
 
-    // Convenience
     void sync() const {
-        cudaStreamSynchronize(stream);
+        cudaError_t err = cudaStreamSynchronize(stream);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("Stream sync failed");
+        }
+    }
+};
+
+template <typename T>
+class CudaArrayManager {
+  private:
+    T *_dev_ptr = nullptr;
+    size_t _size = 0;       // number of elements
+    size_t _size_bytes = 0; // cached byte size
+
+  public:
+    // disallow copy
+    CudaArrayManager(const CudaArrayManager &) = delete;
+    CudaArrayManager &operator=(const CudaArrayManager &) = delete;
+
+    // allow move
+    CudaArrayManager(CudaArrayManager &&other) noexcept {
+        *this = std::move(other);
+    }
+    CudaArrayManager &operator=(CudaArrayManager &&other) noexcept {
+        if (this != &other) {
+            free_device();
+            _dev_ptr = other._dev_ptr;
+            _size = other._size;
+            _size_bytes = other._size_bytes;
+            other._dev_ptr = nullptr;
+            other._size = 0;
+            other._size_bytes = 0;
+        }
+        return *this;
+    }
+
+    CudaArrayManager() = default;
+    ~CudaArrayManager() { free_device(); }
+
+    size_t size() const { return _size; }
+    bool empty() const { return _dev_ptr == nullptr; }
+    T *data() { return _dev_ptr; }
+    const T *data() const { return _dev_ptr; }
+
+    void resize(size_t n) {
+        _size = n;
+        allocate_device();
+    }
+
+    void allocate_device() {
+        if (_size == 0) {
+            // nothing to allocate
+            free_device();
+            return;
+        }
+
+        size_t new_size_bytes = _size * sizeof(T);
+
+        // if already allocated with correct size, do nothing
+        if (_dev_ptr && _size_bytes == new_size_bytes) {
+            return;
+        }
+
+        // otherwise, free and reallocate
+        free_device();
+
+        _size_bytes = new_size_bytes;
+        cudaError_t err = cudaMalloc(&_dev_ptr, _size_bytes);
+        if (err != cudaSuccess) {
+            _dev_ptr = nullptr;
+            _size = 0;
+            _size_bytes = 0;
+            throw std::runtime_error("cudaMalloc failed");
+        }
+    }
+
+    void zero_device() {
+        if (_size == 0) {
+            throw std::runtime_error("zero_device called with size == 0");
+        }
+
+        // allocate if not already allocated
+        if (!_dev_ptr) {
+            allocate_device();
+            if (!_dev_ptr) {
+                throw std::runtime_error("zero_device failed: allocation failed");
+            }
+        }
+
+        cudaError_t err = cudaMemset(_dev_ptr, 0, _size_bytes);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("cudaMemset failed");
+        }
+    }
+
+    void free_device() {
+        if (_dev_ptr) {
+            cudaError_t err = cudaFree(_dev_ptr);
+            if (err != cudaSuccess) {
+                // optional: log error
+            }
+            _dev_ptr = nullptr;
+            _size = 0;
+            _size_bytes = 0;
+        }
+    }
+
+    // -------------------------------
+    // Host <-> Device transfer methods
+    // -------------------------------
+
+    // Upload from host array to device
+    void upload(const T *host_ptr, size_t count) {
+        if (count > _size) {
+            throw std::runtime_error("Upload size exceeds device allocation");
+        }
+        cudaError_t err = cudaMemcpy(_dev_ptr, host_ptr,
+                                     count * sizeof(T),
+                                     cudaMemcpyHostToDevice);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("cudaMemcpy (Host->Device) failed");
+        }
+    }
+
+    // Download from device to host array
+    void download(T *host_ptr, size_t count) const {
+        if (count > _size) {
+            throw std::runtime_error("Download size exceeds device allocation");
+        }
+        cudaError_t err = cudaMemcpy(host_ptr, _dev_ptr,
+                                     count * sizeof(T),
+                                     cudaMemcpyDeviceToHost);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("cudaMemcpy (Device->Host) failed");
+        }
     }
 };
 

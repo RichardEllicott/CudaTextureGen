@@ -13,10 +13,6 @@ also special Array2D
 
 // Move semantics: If
 
-
-
-
-
 namespace core {
 
 struct Vector2i {
@@ -59,7 +55,6 @@ struct Color {
 };
 
 // special 2D array for maps, stores data in a std::vector in "row major" (row * width + col)
-//
 template <typename T>
 class Array2D {
     std::vector<T> _vector;

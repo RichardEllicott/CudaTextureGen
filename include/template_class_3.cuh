@@ -19,6 +19,12 @@ this one uses more clever types and classes, needing less horrible macros
 
 #define TEMPLATE_CLASS_MAPS \
     X(float, image)
+
+#define TEMPLATE_CLASS_TYPES \
+    X(APPLE)               \
+    X(ORANGE)              \
+    X(POTATO)
+
 // ════════════════════════════════════════════════ //
 
 #include "cuda_types.cuh"
@@ -51,6 +57,14 @@ class TEMPLATE_CLASS_NAME {
     core::CudaArray2D<TYPE> NAME;
     TEMPLATE_CLASS_MAPS
 #undef X
+
+    // make enumerators
+    enum class Type {
+#define X(NAME) \
+    NAME,
+        TEMPLATE_CLASS_TYPES
+#undef X
+    };
 
     void process();
 };

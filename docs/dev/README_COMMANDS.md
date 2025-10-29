@@ -150,3 +150,9 @@ sudo apt clean
 # apt update and fully upgrade all stuff
 sudo apt update; sudo apt full-upgrade; sudo apt autoremove; sudo apt clean
 ```
+
+```bash
+# get scipy
+sudo apt update
+sudo apt install python3-scipy
+```
