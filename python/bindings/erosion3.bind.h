@@ -29,6 +29,8 @@ inline void bind(nb::module_ &m) {
 #undef X
 
     //
+
+    //
     //
 
 // 🚧 bind Type enumerators (new pattern?? we could check for a def)
@@ -57,5 +59,3 @@ inline void bind(nb::module_ &m) {
 #undef TEMPLATE_CLASS_MAPS
 #undef STRINGIFY
 #undef EXPAND_AND_STRINGIFY
-
-

@@ -35,17 +35,17 @@ this one uses more clever types and classes, needing less horrible macros
 //     X(float, evap, 0.1)
 
 #define TEMPLATE_CLASS_PARAMETERS \
+    X(size_t, _block, 16)         \
     X(size_t, width, 256)         \
     X(size_t, height, 256)        \
     X(int, steps, 1024)           \
-    X(size_t, _block, 16)         \
-    X(float, rain_rate, 0.01f)      \
+    X(float, rain_rate, 0.01)      \
     X(bool, wrap, true)           \
-    X(float, w_max, 1.0f)          \
-    X(float, capacity, 0.1f)     \
-    X(float, erode, 0.1f)        \
-    X(float, deposit, 0.1f)      \
-    X(float, evap, 0.1f)
+    X(float, w_max, 1.0)          \
+    X(float, capacity, 0.1)     \
+    X(float, erode, 0.1)        \
+    X(float, deposit, 0.1)      \
+    X(float, evap, 0.1)
 
 // pars.rain_rate;
 // pars.evap_rate;

@@ -68,20 +68,6 @@ def test_shader_maps(filename="output/04_eroded.png"):
         ao_arr * 255.0, str(path.with_name(path.stem + ".ao" + path.suffix)))
 
 
-def test_blur(filename, output_filename, amount=1):
-    print('{}()...'.format(inspect.currentframe().f_code.co_name))
-
-    print("load image...")
-    img = Image.open(filename).convert("L")
-    arr = np.array(img, dtype=np.float32)
-    print("height range: [{}, {}]".format(arr.min(), arr.max()))
-    print("blur...")
-
-    cuda_texture_gen.blur(arr, amount=1, wrap=True)
-
-    save_array_as_image(arr, output_filename)
-
-
 def test_resample():
 
     shader_maps = cuda_texture_gen.ShaderMaps()
@@ -219,46 +205,64 @@ def test_template_class_3():
 # test_template_class_3()
 
 
+def test_blur(filename, output_filename, amount=1):
+    print('{}()...'.format(inspect.currentframe().f_code.co_name))
+
+    print("load image...")
+    img = Image.open(filename).convert("L")
+    arr = np.array(img, dtype=np.float32)
+    print("height range: [{}, {}]".format(arr.min(), arr.max()))
+    print("blur...")
+
+    cuda_texture_gen.blur(arr, amount=1, wrap=True)
+
+    save_array_as_image(arr, output_filename)
+
+
 def test_erosion_3():
     function_name = inspect.currentframe().f_code.co_name
     print("⛰️ {}()...".format(function_name))
     filename_base = function_name
 
-    # array = get_fractal_noise(1024, 1024, 6, 7)
+    array = get_fractal_noise(1024, 1024, 6, 7)
     array = get_fractal_noise(1024, 1024, 2, 7)
+    array = get_fractal_noise(1024, 1024, 2, 3)
     normalize_array(array)
-    array *= 4.0
+    save_array_as_image(array * 255, "output/{}_00.png".format(filename_base))
+    array *= 1.0
 
     print(dir(cuda_texture_gen))
 
-    save_array_as_image(array * 255, "output/{}_00.png".format(filename_base))
-
     erosion = cuda_texture_gen.Erosion3()
-    erosion.steps = 256
-    erosion.rain_rate = 0.005 * 0.1
-    erosion.evap = 0.002
-    erosion.capacity = 1.0 * 0.25
-    erosion.erode = 0.1 * 0.1
-    erosion.deposit = 0.1
-    erosion.w_max = 0.1
 
-    erosion.rain_rate = 0.002  # // 4× more rain
-    erosion.evap = 0.002  # // reduce evaporation 10×
-    erosion.capacity = 1.0    # // let water carry more sediment
-    erosion.erode = 0.02   # // modest erosion
-    erosion.deposit = 0.05   # // still stronger than erosion, but not 10×
-    erosion.w_max = 0.05 / 10   # // slower outflow, smoother flow
-    erosion.wrap = False
-
-
+    # BEST SO FAR BUT REALLY GETS VERY TALL!?!
+    erosion.steps = 512
     erosion.rain_rate = 0.01
-    erosion.evap = 0.1
-    erosion.erode = 0.05
-    erosion.deposit = 0.05
-    erosion.capacity = 1.0
+    erosion.w_max = 1.0
+    erosion.capacity = 0.1 / 10
+    erosion.erode = 0.1 / 100
+    erosion.deposit = 0.1 / 10
+    erosion.evap = 0.1 / 1000
+    erosion.wrap = True
 
-    erosion.steps = 256
+    # # test new trying to stop the terrain piling up
+    # erosion.steps = 512          # keep moderate
+    # erosion.rain_rate = 0.002        # lighter rain
+    # erosion.w_max = 0.05         # clamp outflow per step
+    # erosion.capacity = 1.0          # allow water to carry sediment
+    # erosion.erode = 0.02         # stronger erosion
+    # erosion.deposit = 0.01         # weaker than erosion
+    # erosion.evap = 0.002        # meaningful evaporation
+    # erosion.wrap = True
 
+    # test new trying to stop the terrain piling up again
+    erosion.rain_rate = 0.002
+    erosion.w_max = 0.05 / 10.0
+    erosion.capacity = 1.0 / 2.0
+    erosion.erode = 0.02
+    erosion.deposit = 0.005   # weaker than erosion
+    erosion.evap = 0.002 * 3.0
+    erosion.steps = 512 * 2
 
     print("⛰️", dir(erosion))
 
@@ -269,19 +273,94 @@ def test_erosion_3():
     water_map = erosion.water_map
     sediment_map = erosion.sediment_map
 
-
     print("height_map min: {}, max: {}".format(height_map.min(), height_map.max()))
     print("water_map min: {}, max: {}".format(water_map.min(), water_map.max()))
     print("sediment_map min: {}, max: {}".format(sediment_map.min(), sediment_map.max()))
 
-
     normalize_array(water_map)
     normalize_array(height_map)
-
 
     save_array_as_image(height_map * 255, "output/{}_01.png".format(filename_base))
     save_array_as_image(water_map * 255, "output/{}_01.water_map.png".format(filename_base))
     save_array_as_image(sediment_map * 255, "output/{}_01.sediment_map.png".format(filename_base))
 
+    cuda_texture_gen.blur(height_map, amount=1.0, wrap=True)
+    normalize_array(height_map)
+    save_array_as_image(height_map * 255, "output/{}_01.blur.png".format(filename_base))
 
-test_erosion_3()
+
+def test_erosion_3_2():
+    function_name = inspect.currentframe().f_code.co_name
+    print("⛰️ {}()...".format(function_name))
+    filename_base = function_name
+
+    map_width = 1024 * 2
+
+    # array = get_fractal_noise(map_width, map_width, 6, 7)
+    # array = get_fractal_noise(map_width, map_width, 2, 7)
+    # array = get_fractal_noise(map_width, map_width, 5, 1)
+    array = get_fractal_noise(map_width, map_width, 5, 7)
+
+    normalize_array(array)
+    save_array_as_image(array * 255, "output/{}_00.png".format(filename_base))
+    array *= 1.0
+
+    print(dir(cuda_texture_gen))
+
+    erosion = cuda_texture_gen.Erosion3()
+
+    # BEST SO FAR BUT REALLY GETS VERY TALL!?!
+    erosion.steps = 512
+    erosion.rain_rate = 0.01
+    erosion.w_max = 1.0
+    erosion.capacity = 0.1 / 10
+    erosion.erode = 0.1 / 100
+    erosion.deposit = 0.1 / 10
+    erosion.evap = 0.1 / 1000
+    erosion.wrap = True
+
+    # # test new trying to stop the terrain piling up
+    # erosion.steps = 512          # keep moderate
+    # erosion.rain_rate = 0.002        # lighter rain
+    # erosion.w_max = 0.05         # clamp outflow per step
+    # erosion.capacity = 1.0          # allow water to carry sediment
+    # erosion.erode = 0.02         # stronger erosion
+    # erosion.deposit = 0.01         # weaker than erosion
+    # erosion.evap = 0.002        # meaningful evaporation
+    # erosion.wrap = True
+
+    # test new trying to stop the terrain piling up again
+    erosion.rain_rate = 0.002
+    erosion.w_max = 0.05 / 10.0
+    erosion.capacity = 1.0 / 2.0
+    erosion.erode = 0.02
+    erosion.deposit = 0.005   # weaker than erosion
+    erosion.evap = 0.002 * 3.0
+    erosion.steps = 512 * 2
+
+    print("⛰️", dir(erosion))
+
+    erosion.height_map = array
+    erosion.process()
+
+    height_map = erosion.height_map
+    water_map = erosion.water_map
+    sediment_map = erosion.sediment_map
+
+    print("height_map min: {}, max: {}".format(height_map.min(), height_map.max()))
+    print("water_map min: {}, max: {}".format(water_map.min(), water_map.max()))
+    print("sediment_map min: {}, max: {}".format(sediment_map.min(), sediment_map.max()))
+
+    normalize_array(water_map)
+    normalize_array(height_map)
+
+    save_array_as_image(height_map * 255, "output/{}_01.png".format(filename_base))
+    save_array_as_image(water_map * 255, "output/{}_01.water_map.png".format(filename_base))
+    save_array_as_image(sediment_map * 255, "output/{}_01.sediment_map.png".format(filename_base))
+
+    cuda_texture_gen.blur(height_map, amount=1.0, wrap=True)
+    normalize_array(height_map)
+    save_array_as_image(height_map * 255, "output/{}_01.blur.png".format(filename_base))
+
+
+test_erosion_3_2()

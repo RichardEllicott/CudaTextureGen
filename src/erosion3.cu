@@ -1,6 +1,46 @@
 #include "erosion3.cuh"
+#include "noise_util.cuh"
+#include <chrono>
+
+#define OFFSET_ORDER 1 // 0 is the orginal WEIRD DOESSNT WORK, MIGHT BE THE OPPOSITE CODE, 1 modified
+#define HASH_INT_ORDER
 
 namespace TEMPLATE_NAMESPACE {
+
+
+    // Apply inverse-square crater imprint onto a heightmap.
+// h: heightmap (row-major), W,H: dimensions
+// cx,cy: impact center in pixels (float for subpixel)
+// k: excavation scale (meters per unit energy)
+// r0: softening radius in pixels (prevents singularities)
+// mask_radius: optional clamp for finite blast radius
+__global__ void crater_imprint(float* h, int W, int H,
+                               float cx, float cy,
+                               float k, float r0, float mask_radius)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= W || y >= H) return;
+
+    float dx = (x + 0.5f) - cx;
+    float dy = (y + 0.5f) - cy;
+    float r2 = dx*dx + dy*dy;
+
+    if (mask_radius > 0.0f && r2 > mask_radius*mask_radius) return;
+
+    float denom = r2 + r0*r0;        // softening
+    float E = 1.0f / denom;          // inverse-square
+    float dh = -k * E;               // excavation depth
+
+    // Optional: taper center to avoid a pixel spike when r0 is small
+    // dh *= (r2 / (r2 + r0*r0));
+
+    int idx = y * W + x;
+    h[idx] += dh;
+}
+
+
+
 
 __device__ __forceinline__ int wrap_or_clamp(int i, int n, bool wrap) {
     if (wrap) {
@@ -23,9 +63,28 @@ __global__ void flux_pass(
     float *__restrict__ ds_out,
     float *__restrict__ dw_out) {
 
-    const int2 offs[8] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
-    const float dist[8] = {1, 1, 1, 1, 1.41421356f, 1.41421356f, 1.41421356f, 1.41421356f};
+    //
+    //
 
+#if OFFSET_ORDER == 0
+    const float d_dist = 1.41421356;
+    // const float d_dist = 1.0;
+    const int2 offs[8] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
+    // const float dist[8] = {1, 1, 1, 1, 1.41421356f, 1.41421356f, 1.41421356f, 1.41421356f};
+    const float dist[8] = {1, 1, 1, 1, d_dist, d_dist, d_dist, d_dist};
+#elif OFFSET_ORDER == 1
+    const float d_dist = 1.41421356;
+    // const float d_dist = 1.0;
+    const int2 offs[8] = {{1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-1, 0}};
+    // const float dist[8] = {1, 1, 1, 1, 1.41421356f, 1.41421356f, 1.41421356f, 1.41421356f};
+    const float dist[8] = {1, 1, 1, d_dist, d_dist, d_dist, d_dist, 1};
+#endif
+
+    //
+    //
+
+    //
+    //
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= width || y >= height)
@@ -40,14 +99,21 @@ __global__ void flux_pass(
     float sum_slope = 0.f;
 
     // neighbor heights and slopes
-    for (int i = 0; i < 8; ++i) {
-        int nx = wrap_or_clamp(x + offs[i].x, width, pars.wrap);
-        int ny = wrap_or_clamp(y + offs[i].y, height, pars.wrap);
+    for (int n = 0; n < 8; ++n) {
+
+#ifdef HASH_INT_ORDER
+        auto i2 = (n + noise_util::hash_int(x, y, 0)) % 8;
+#else
+        auto i2 = n;
+#endif
+
+        int nx = wrap_or_clamp(x + offs[i2].x, width, pars.wrap);
+        int ny = wrap_or_clamp(y + offs[i2].y, height, pars.wrap);
         int nidx = ny * width + nx;
         float nh = height_in[nidx];
-        float s = (h - nh) / dist[i];
+        float s = (h - nh) / dist[i2];
         float sd = s > 0.f ? s : 0.f;
-        slopes[i] = sd;
+        slopes[i2] = sd;
         sum_slope += sd;
     }
 
@@ -88,6 +154,7 @@ __global__ void flux_pass(
 
 // apply the changes
 __global__ void apply_pass(
+    const Parameters pars,
     int width, int height,
     const float *__restrict__ water_in,
     const float *__restrict__ sediment_in,
@@ -99,7 +166,13 @@ __global__ void apply_pass(
     float *__restrict__ water_out,
     float *__restrict__ sediment_out,
     float *__restrict__ height_out) {
+
+#if OFFSET_ORDER == 0
     const int2 offs[8] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
+#elif OFFSET_ORDER == 1
+    const int2 offs[8] = {{1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-1, 0}};
+#endif
+
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= width || y >= height)
@@ -118,15 +191,44 @@ __global__ void apply_pass(
 
     // add incoming flux from neighbors
     float inflow = 0.f;
-    for (int i = 0; i < 8; ++i) {
-        int nx = x + offs[i].x;
-        int ny = y + offs[i].y;
-        if (nx < 0 || nx >= width || ny < 0 || ny >= height)
-            continue;
+
+    // #define MODIFY_THIS
+
+#ifndef MODIFY_THIS
+#else
+    float inflow = 0.f;
+#endif
+
+    for (int n = 0; n < 8; ++n) {
+
+#ifdef HASH_INT_ORDER
+        auto i2 = (n + noise_util::hash_int(x, y, 0)) % 8;
+#else
+        auto i2 = n;
+#endif
+
+        int nx = x + offs[i2].x;
+        int ny = y + offs[i2].y;
+
+        // if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+        // continue;
+
+        nx = wrap_or_clamp(x + offs[i2].x, width, pars.wrap); // note we lost continue
+        ny = wrap_or_clamp(y + offs[i2].y, height, pars.wrap);
+
         int nidx = ny * width + nx;
         // opposite direction index (neighbor sending to me)
-        int opp = i ^ 1; // crude: 0<->1, 2<->3, 4<->6, 5<->7
+
+#ifndef MODIFY_THIS
+        int opp = i2 ^ 1; // crude: 0<->1, 2<->3, 4<->6, 5<->7   // TRYING TO FIND OPPOSITE
         inflow += flux[nidx * 8 + opp];
+#else
+        int opp_i = opp[n];
+        float q_in = flux[nidx * 8 + opp_i];
+        float conc = sediment_in[nidx] / fmaxf(water_in[nidx], 1e-6f);
+        inflow_s += q_in * conc;
+
+#endif
     }
     w += inflow;
 
@@ -134,9 +236,6 @@ __global__ void apply_pass(
     water_out[idx] = fmaxf(0.f, w);
     sediment_out[idx] = fmaxf(0.f, s);
     height_out[idx] = fmaxf(0.f, h);
-
-
-    
 }
 
 // recomended stuff
@@ -240,6 +339,10 @@ void TEMPLATE_CLASS_NAME::process() {
     dim3 grid((pars.width + block.x - 1) / block.x,
               (pars.height + block.y - 1) / block.y);
 
+
+                  auto start_time = std::chrono::high_resolution_clock::now(); // ⏲️ Timer
+
+
     for (int i = 0; i < pars.steps; i += 2) {
         // --- timestep 1: in -> out ---
         flux_pass<<<grid, block>>>(
@@ -254,6 +357,7 @@ void TEMPLATE_CLASS_NAME::process() {
             dw_out.dev_ptr());
 
         apply_pass<<<grid, block>>>(
+            pars,
             pars.width, pars.height,
             height_map.dev_ptr(),
             water_map.dev_ptr(),
@@ -279,6 +383,7 @@ void TEMPLATE_CLASS_NAME::process() {
             dw_out.dev_ptr());
 
         apply_pass<<<grid, block>>>(
+            pars,
             pars.width, pars.height,
             height_map_out.data(),
             water_map_out.data(),
@@ -291,6 +396,11 @@ void TEMPLATE_CLASS_NAME::process() {
             water_map.dev_ptr(),
             sediment_map.dev_ptr());
     }
+
+    auto end_time = std::chrono::high_resolution_clock::now(); // ⏲️ Timer
+    std::chrono::duration<double> elapsed = end_time - start_time;
+    double seconds = elapsed.count();
+    printf("calculation time: %.2f ms\n", seconds * 1000.0); // ⏱️
 
     height_map.download();
     water_map.download();
