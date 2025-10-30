@@ -1,15 +1,9 @@
-// #include "core_api.h"
+#include "tests.cuh"
 #include <cstdio>
 
-#include "cuda_hello.cuh"
-
-
-
-// #include "core.h"
-
+namespace tests {
 
 void print_debug_info() {
-
 
     // Force runtime initialization
     cudaFree(0);
@@ -35,10 +29,6 @@ void print_debug_info() {
     printf("CUDA Devices Available: %d\n", device_count);
 }
 
-
-
-
-
 __global__ void hello_kernel() {
     printf("Hello from GPU thread %d\n", threadIdx.x);
 }
@@ -48,9 +38,7 @@ void cuda_hello() {
     // printf("🧙 testing printf...\n");
     // println("🧙 testing my print...");
 
-
     print_debug_info();
-
 
     printf("Hello from CPU\n");
 
@@ -58,20 +46,12 @@ void cuda_hello() {
     hello_kernel<<<1, 5>>>();
     cudaDeviceSynchronize();
 
-
     // debugging
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
         fprintf(stderr, "CUDA error: %s\n", cudaGetErrorString(err));
     }
-
-
-
-    
-
 }
-
-
 
 /*
 
@@ -134,5 +114,4 @@ extern "C" void cuda_hello() {
 
 */
 
-
-
+} // namespace tests

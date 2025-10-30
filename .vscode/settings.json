@@ -91,7 +91,8 @@
         "xlocmes": "cpp",
         "xlocnum": "cpp",
         "xloctime": "cpp",
-        "xmemory": "cpp"
+        "xmemory": "cpp",
+        "variant": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "folder-color.pathColors": [

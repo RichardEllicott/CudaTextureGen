@@ -92,7 +92,7 @@ class Array2D {
     void resize(size_t width, size_t height) {
         _width = width;
         _height = height;
-        _vector.resize(_width * _height);
+        _vector.resize(_width * _height); // the memory is not going to change if we resize the same
     }
 
     // Fill the array with a value

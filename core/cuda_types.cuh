@@ -1,8 +1,6 @@
 /*
 
-custom types trying to match Godot's patterns (might not be used due to preferance for flat float arrays)
-
-also special Array2D
+custom Cuda objects, designed to automaticly allocate and free memory, download etc
 
 */
 
@@ -87,10 +85,10 @@ class CudaArray2D : public Array2D<T> {
     CudaArray2D(const CudaArray2D &) = delete;
     CudaArray2D &operator=(const CudaArray2D &) = delete;
 
-    // Return the ptr, read only
-    T *device_ptr() const {
-        return _device_ptr;
-    }
+    // // Return the ptr, read only
+    // T *device_ptr() const {
+    //     return _device_ptr;
+    // }
 
     // Return the ptr, read only
     T *dev_ptr() const {
@@ -160,8 +158,13 @@ class CudaStruct {
 
     CudaStruct() = default;
 
+    // // device pointer accessor
+    // T *device_ptr() const {
+    //     return _device_ptr;
+    // }
+
     // device pointer accessor
-    T *device_ptr() const {
+    T *dev_ptr() const {
         return _device_ptr;
     }
 
@@ -290,8 +293,8 @@ class CudaArrayManager {
 
     size_t size() const { return _size; }
     bool empty() const { return _dev_ptr == nullptr; }
-    T *data() { return _dev_ptr; }
-    const T *data() const { return _dev_ptr; }
+    T *dev_ptr() { return _dev_ptr; }
+    const T *dev_ptr() const { return _dev_ptr; }
 
     void resize(size_t n) {
         _size = n;

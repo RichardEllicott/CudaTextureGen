@@ -1,9 +1,12 @@
 /*
 
+not yet used... 
+
+⚠️ calling this file math.h is not compatible with windows building!
 
 */
 #pragma once
 
-namespace math_utils {
+namespace core::math_utils {
 
 }

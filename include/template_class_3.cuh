@@ -21,8 +21,8 @@ this one uses more clever types and classes, needing less horrible macros
     X(float, image)
 
 #define TEMPLATE_CLASS_TYPES \
-    X(APPLE)               \
-    X(ORANGE)              \
+    X(APPLE)                 \
+    X(ORANGE)                \
     X(POTATO)
 
 // ════════════════════════════════════════════════ //
@@ -46,25 +46,31 @@ class TEMPLATE_CLASS_NAME {
 
   public:
     // make getter/setters for the pars
+#ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL)                \
     TYPE get_##NAME() const { return pars.NAME; } \
     void set_##NAME(TYPE value) { pars.NAME = value; }
     TEMPLATE_CLASS_PARAMETERS
 #undef X
+#endif
 
 // make maps
+#ifdef TEMPLATE_CLASS_MAPS
 #define X(TYPE, NAME) \
     core::CudaArray2D<TYPE> NAME;
     TEMPLATE_CLASS_MAPS
 #undef X
+#endif
 
     // make enumerators
+#ifdef TEMPLATE_CLASS_TYPES
     enum class Type {
 #define X(NAME) \
     NAME,
         TEMPLATE_CLASS_TYPES
 #undef X
     };
+#endif
 
     void process();
 };

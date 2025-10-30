@@ -1,41 +1,29 @@
 /*
 
-Erosion2 based on:
-
 🧜‍♀️ TEMPLATE VERSION 20251027-3
 
-
-this erosion works with a simple erosion pattern
-
+this one uses more clever types and classes, needing less horrible macros
 
 */
 #pragma once
 
 // ════════════════════════════════════════════════ //
-#define TEMPLATE_CLASS_NAME Erosion2
-#define TEMPLATE_NAMESPACE erosion_2
+#define TEMPLATE_CLASS_NAME AmbientOcclusion
+#define TEMPLATE_NAMESPACE ambient_occlusion
 
-#define TEMPLATE_CLASS_PARAMETERS    \
-    X(size_t, width, 256)            \
-    X(size_t, height, 256)           \
-    X(size_t, _block, 16)            \
-    X(float, min_height, 0.0)        \
-    X(float, max_height, 1.0)        \
-    X(float, jitter, 0.0)            \
-    X(float, rain_rate, 0.0)         \
-    X(float, evaporation_rate, 0.01) \
-    X(float, erosion_rate, 0.01)     \
-    X(float, deposition_rate, 0.01)  \
-    X(float, slope_threshold, 0.01)  \
-    X(float, flow_factor, 0.1)       \
-    X(int, steps, 1024)              \
-    X(int, block_size, 16)           \
-    X(int, mode, 0)                  \
-    X(bool, wrap, true)
+#define TEMPLATE_CLASS_PARAMETERS \
+    X(size_t, width, 256)         \
+    X(size_t, height, 256)        \
+    X(size_t, _block, 16)         \
+    X(float, test, 0.0)
 
 #define TEMPLATE_CLASS_MAPS \
-    X(float, height_map)    \
-    X(float, sediment_map)
+    X(float, image)
+
+// #define TEMPLATE_CLASS_TYPES \
+//     X(APPLE)               \
+//     X(ORANGE)              \
+//     X(POTATO)
 
 // ════════════════════════════════════════════════ //
 
@@ -58,17 +46,31 @@ class TEMPLATE_CLASS_NAME {
 
   public:
     // make getter/setters for the pars
+#ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL)                \
     TYPE get_##NAME() const { return pars.NAME; } \
     void set_##NAME(TYPE value) { pars.NAME = value; }
     TEMPLATE_CLASS_PARAMETERS
 #undef X
+#endif
 
 // make maps
+#ifdef TEMPLATE_CLASS_MAPS
 #define X(TYPE, NAME) \
     core::CudaArray2D<TYPE> NAME;
     TEMPLATE_CLASS_MAPS
 #undef X
+#endif
+
+    // make enumerators
+#ifdef TEMPLATE_CLASS_TYPES
+    enum class Type {
+#define X(NAME) \
+    NAME,
+        TEMPLATE_CLASS_TYPES
+#undef X
+    };
+#endif
 
     void process();
 };

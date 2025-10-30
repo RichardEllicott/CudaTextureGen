@@ -34,18 +34,19 @@ this one uses more clever types and classes, needing less horrible macros
 //     X(float, k_deposit, 0.1)         \
 //     X(float, evap, 0.1)
 
-#define TEMPLATE_CLASS_PARAMETERS \
-    X(size_t, _block, 16)         \
-    X(size_t, width, 256)         \
-    X(size_t, height, 256)        \
-    X(int, steps, 1024)           \
-    X(float, rain_rate, 0.01)      \
-    X(bool, wrap, true)           \
-    X(float, w_max, 1.0)          \
-    X(float, capacity, 0.1)     \
-    X(float, erode, 0.1)        \
-    X(float, deposit, 0.1)      \
-    X(float, evap, 0.1)
+#define TEMPLATE_CLASS_PARAMETERS    \
+    X(size_t, _block, 16)            \
+    X(size_t, width, 256)            \
+    X(size_t, height, 256)           \
+    X(int, steps, 1024)              \
+    X(float, rain_rate, 0.01)        \
+    X(bool, wrap, true)              \
+    X(float, max_water_outflow, 1.0) \
+    X(float, capacity, 0.1)          \
+    X(float, erode, 0.1)             \
+    X(float, deposit, 0.1)           \
+    X(float, evaporation_rate, 0.1)  \
+    X(bool, debug_hash_cell_order, false)
 
 // pars.rain_rate;
 // pars.evap_rate;
@@ -62,8 +63,9 @@ this one uses more clever types and classes, needing less horrible macros
     X(float, sediment_map)  \
     X(float, dh_out)        \
     X(float, ds_out)        \
-    X(float, dw_out)        \
-    // X(FluxCell, flux8)
+    X(float, dw_out)
+// X(int, cell_mapping)
+// X(FluxCell, flux8)
 
 // #define TEMPLATE_CLASS_TYPES \
 //     X(APPLE)                 \
@@ -92,6 +94,22 @@ class TEMPLATE_CLASS_NAME {
 
   private:
     Parameters pars;
+    bool device_allocated = false;
+
+    // pointers for swapping the maps around (ping/pong)
+    float *h_cur = nullptr;
+    float *w_cur = nullptr;
+    float *s_cur = nullptr;
+    float *h_next = nullptr;
+    float *w_next = nullptr;
+    float *s_next = nullptr;
+
+    core::CudaArrayManager<float> flux8;
+    core::CudaArrayManager<float> height_map_out;
+    core::CudaArrayManager<float> water_map_out;
+    core::CudaArrayManager<float> sediment_map_out;
+
+    size_t _count = 0; // count of passes
 
   public:
     // make getter/setters for the pars
@@ -117,7 +135,17 @@ class TEMPLATE_CLASS_NAME {
     };
 #endif
 
+    // core::CudaStruct<Parameters> gpu_pars; // automaticly uploads and free
+
+    void allocate_device(); // and upload
+    // void upload_device();
+    void deallocate_device(); // and download
+    // void download_device();
+
     void process();
+
+    TEMPLATE_CLASS_NAME();
+    ~TEMPLATE_CLASS_NAME();
 };
 
 } // namespace TEMPLATE_NAMESPACE

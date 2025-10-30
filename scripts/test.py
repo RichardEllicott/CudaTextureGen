@@ -238,30 +238,30 @@ def test_erosion_3():
     # BEST SO FAR BUT REALLY GETS VERY TALL!?!
     erosion.steps = 512
     erosion.rain_rate = 0.01
-    erosion.w_max = 1.0
+    erosion.max_water_outflow = 1.0
     erosion.capacity = 0.1 / 10
     erosion.erode = 0.1 / 100
     erosion.deposit = 0.1 / 10
-    erosion.evap = 0.1 / 1000
+    erosion.evaporation_rate = 0.1 / 1000
     erosion.wrap = True
 
     # # test new trying to stop the terrain piling up
     # erosion.steps = 512          # keep moderate
     # erosion.rain_rate = 0.002        # lighter rain
-    # erosion.w_max = 0.05         # clamp outflow per step
+    # erosion.max_water_outflow = 0.05         # clamp outflow per step
     # erosion.capacity = 1.0          # allow water to carry sediment
     # erosion.erode = 0.02         # stronger erosion
     # erosion.deposit = 0.01         # weaker than erosion
-    # erosion.evap = 0.002        # meaningful evaporation
+    # erosion.evaporation_rate = 0.002        # meaningful evaporation
     # erosion.wrap = True
 
     # test new trying to stop the terrain piling up again
     erosion.rain_rate = 0.002
-    erosion.w_max = 0.05 / 10.0
+    erosion.max_water_outflow = 0.05 / 10.0
     erosion.capacity = 1.0 / 2.0
     erosion.erode = 0.02
     erosion.deposit = 0.005   # weaker than erosion
-    erosion.evap = 0.002 * 3.0
+    erosion.evaporation_rate = 0.002 * 3.0
     erosion.steps = 512 * 2
 
     print("⛰️", dir(erosion))
@@ -312,11 +312,11 @@ def test_erosion_3_2():
     # BEST SO FAR BUT REALLY GETS VERY TALL!?!
     erosion.steps = 512
     erosion.rain_rate = 0.01
-    erosion.w_max = 1.0
+    erosion.max_water_outflow = 1.0
     erosion.capacity = 0.1 / 10
     erosion.erode = 0.1 / 100
     erosion.deposit = 0.1 / 10
-    erosion.evap = 0.1 / 1000
+    erosion.evaporation_rate = 0.1 / 1000
     erosion.wrap = True
 
     # # test new trying to stop the terrain piling up
@@ -326,16 +326,16 @@ def test_erosion_3_2():
     # erosion.capacity = 1.0          # allow water to carry sediment
     # erosion.erode = 0.02         # stronger erosion
     # erosion.deposit = 0.01         # weaker than erosion
-    # erosion.evap = 0.002        # meaningful evaporation
+    # erosion.evaporation_rate = 0.002        # meaningful evaporation
     # erosion.wrap = True
 
     # test new trying to stop the terrain piling up again
     erosion.rain_rate = 0.002
-    erosion.w_max = 0.05 / 10.0
+    erosion.max_water_outflow = 0.05 / 10.0
     erosion.capacity = 1.0 / 2.0
     erosion.erode = 0.02
     erosion.deposit = 0.005   # weaker than erosion
-    erosion.evap = 0.002 * 3.0
+    erosion.evaporation_rate = 0.002 * 3.0
     erosion.steps = 512 * 2
 
     # erosion.steps = 128

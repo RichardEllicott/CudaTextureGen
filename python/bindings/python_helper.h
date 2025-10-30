@@ -8,6 +8,7 @@ functions to covert numpy arrays back and forth to std::vector and core::Array2D
 #pragma once
 
 #include "core.h"
+#include "python_helper/numpy_array_helper.h"
 #include <cstring> // required for std::memcpy in linux (not windows)
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
@@ -47,5 +48,10 @@ nb::object get_list_of_lists(int h, int w);
 
 // 🚧 this was just a test 🚧
 void bind_python_helper(nb::module_ &m);
+
+//
+//
+//
+//
 
 } // namespace python_helper

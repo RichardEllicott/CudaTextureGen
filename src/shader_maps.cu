@@ -1,3 +1,5 @@
+// #include "core.h"
+#include "cuda_types.cuh"
 #include "shader_maps.cuh"
 
 namespace shader_maps {
@@ -326,42 +328,62 @@ void ShaderMaps::generate_ao_map(
 
     cudaMemcpy(d_in, host_in, in_size, cudaMemcpyHostToDevice);
 
+    // auto pars = HTAO_Pars::Low();
+    // core::CudaStruct<HTAO_Pars> gpu_pars(pars); // automaticly uploads and free
+
+    HTAO_Pars pars;
+
+    switch (mode) {
+    default:
+        pars = HTAO_Pars::Low();
+        break;
+    case 2:
+        pars = HTAO_Pars::Medium();
+        break;
+    case 3:
+        pars = HTAO_Pars::High();
+        break;
+    }
+    core::CudaStruct<HTAO_Pars> gpu_pars(pars);
+
     dim3 block(16, 16);
     dim3 grid((width + block.x - 1) / block.x,
               (height + block.y - 1) / block.y);
 
-    rtao_map_kernel<<<grid, block>>>(
-        d_in, d_out,
-        width, height,
-        radius, wrap);
+    switch (mode) {
+    case 0:
+        rtao_map_kernel<<<grid, block>>>(
+            d_in, d_out,
+            width, height,
+            radius, wrap);
 
-    // switch (mode) {
-    // case 0:
+        break;
+    case 1:
 
-    //     break;
-    // case 1:
-    //     htao_kernel<<<grid, block>>>(
-    //         d_in, d_out,
-    //         width, height,
-    //         wrap, HTAO_Pars::Low());
+        htao_kernel<<<grid, block>>>(
+            d_in, d_out,
+            width, height,
+            wrap, gpu_pars.dev_ptr());
 
-    //     break;
-    // case 2:
-    //     htao_kernel<<<grid, block>>>(
-    //         d_in, d_out,
-    //         width, height,
-    //         wrap, HTAO_Pars::Medium());
-    //     break;
-    // case 3:
-    //     htao_kernel<<<grid, block>>>(
-    //         d_in, d_out,
-    //         width, height,
-    //         wrap, HTAO_Pars::High());
-    //     break;
+        break;
+    case 2:
 
-    // default:
-    //     break;
-    // }
+        htao_kernel<<<grid, block>>>(
+            d_in, d_out,
+            width, height,
+            wrap, gpu_pars.dev_ptr());
+        break;
+    case 3:
+
+        htao_kernel<<<grid, block>>>(
+            d_in, d_out,
+            width, height,
+            wrap, gpu_pars.dev_ptr());
+        break;
+
+    default:
+        break;
+    }
 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {

@@ -1,5 +1,6 @@
 #include "erosion3.cuh"
 #include "noise_util.cuh"
+#include "core.h"
 #include <chrono>
 #include <cmath>
 
@@ -7,22 +8,23 @@
 // 1 works, but does't even seem to be opposite
 // 2 doesn't seem to give a good result but should be technically correct
 #define EROSION3_OFFSET_ORDER_HACK 1
-// #define EROSION3_HASH_INT_ORDER // randomizing which cell we check first, attempt to disrupt patterns
 
 namespace TEMPLATE_NAMESPACE {
 
+
 // constexpr float SQRT2 = 1.41421356f;
 constexpr float SQRT2 = 1.4142135623730950488f; // square root of 2 (diagonal accross a square)
+constexpr float DIAG_DIST = SQRT2;
 
 #if EROSION3_OFFSET_ORDER_HACK == 0
 __device__ __constant__ int2 offsets[8] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
-__device__ __constant__ float offset_distances[8] = {1, 1, 1, 1, SQRT2, SQRT2, SQRT2, SQRT2};
+__device__ __constant__ float offset_distances[8] = {1, 1, 1, 1, DIAG_DIST, DIAG_DIST, DIAG_DIST, DIAG_DIST};
 #elif EROSION3_OFFSET_ORDER_HACK == 1
 __device__ __constant__ int2 offsets[8] = {{1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-1, 0}};
-__device__ __constant__ float offset_distances[8] = {1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2, 1.0f};
+__device__ __constant__ float offset_distances[8] = {1.0f, 1.0f, 1.0f, DIAG_DIST, DIAG_DIST, DIAG_DIST, DIAG_DIST, 1.0f};
 #elif EROSION3_OFFSET_ORDER_HACK == 2
 __device__ __constant__ int2 offsets[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
-__device__ __constant__ float offset_distances[8] = {1, 1, 1, 1, SQRT2, SQRT2, SQRT2, SQRT2};
+__device__ __constant__ float offset_distances[8] = {1, 1, 1, 1, DIAG_DIST, DIAG_DIST, DIAG_DIST, DIAG_DIST};
 #endif
 
 __device__ __forceinline__ int wrap_or_clamp(int i, int n, bool wrap) {
@@ -33,10 +35,16 @@ __device__ __forceinline__ int wrap_or_clamp(int i, int n, bool wrap) {
     return i < 0 ? 0 : (i >= n ? n - 1 : i);
 }
 
+// positive modulo wrap (note it might be faster to concider other wrap methods)
+__device__ __forceinline__ int posmod(int value, int mod) {
+    int result = value % mod;
+    return result < 0 ? result + mod : result;
+}
+
 // calculates the changes that need to occur
 __global__ void flux_pass(
-    const Parameters pars,
-    int width, int height,
+    const Parameters *pars,
+    int map_width, int map_height,
     const float *__restrict__ height_in,
     const float *__restrict__ water_in,
     const float *__restrict__ sediment_in,
@@ -48,13 +56,13 @@ __global__ void flux_pass(
 
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= width || y >= height)
+    if (x >= map_width || y >= map_height)
         return;
 
-    int idx = y * width + x;
-    float h = height_in[idx];
-    float w = water_in[idx] + pars.rain_rate;
-    float s_cur = sediment_in[idx];
+    int idx = y * map_width + x;
+    float cell_height = height_in[idx];
+    float water = water_in[idx] + pars->rain_rate;
+    float sediment = sediment_in[idx];
 
     float slopes[8];
     float sum_slope = 0.f;
@@ -62,60 +70,61 @@ __global__ void flux_pass(
     // neighbor heights and slopes
     for (int n = 0; n < 8; ++n) {
 
-#ifdef EROSION3_HASH_INT_ORDER
-        auto i = (n + noise_util::hash_int(x, y, 0)) % 8;
-#else
-        auto i = n;
-#endif
+        int i = pars->debug_hash_cell_order
+                    ? (n + noise_util::hash_int(x, y, 0)) % 8
+                    : n;
 
-        int nx = wrap_or_clamp(x + offsets[i].x, width, pars.wrap);
-        int ny = wrap_or_clamp(y + offsets[i].y, height, pars.wrap);
-        int nidx = ny * width + nx;
+        int nx = wrap_or_clamp(x + offsets[i].x, map_width, pars->wrap);
+        int ny = wrap_or_clamp(y + offsets[i].y, map_height, pars->wrap);
+        int nidx = ny * map_width + nx;
         float nh = height_in[nidx];
-        float s = (h - nh) / offset_distances[i];
+        float s = (cell_height - nh) / offset_distances[i];
         float sd = s > 0.f ? s : 0.f;
         slopes[i] = sd;
         sum_slope += sd;
     }
 
-    float outflow_cap = fminf(w, pars.w_max);
+    float max_outflow_this_step = fminf(water, pars->max_water_outflow);
     float outflow_sum = 0.f;
+
+    const float EPSILON_SLOPE = 1e-6f; // prevents a divide by zero issue
 
     // proportional flux
     float *cell_flux = &flux8[idx * 8];
-    if (sum_slope > 1e-6f && outflow_cap > 0.f) {
+    if (sum_slope > EPSILON_SLOPE && max_outflow_this_step > 0.f) {
         for (int i = 0; i < 8; ++i) {
-            float q = (slopes[i] / sum_slope) * outflow_cap;
+            float q = (slopes[i] / sum_slope) * max_outflow_this_step;
             cell_flux[i] = q;
             outflow_sum += q;
         }
     } else {
-        for (int i = 0; i < 8; ++i)
-            cell_flux[i] = 0.f;
+        for (int i = 0; i < 8; ++i) {
+            cell_flux[i] = 0.f; // no flux at all
+        }
     }
 
     // velocity proxy and capacity
-    float v = 0.f;
+    float velocity_proxy = 0.f;
     for (int i = 0; i < 8; ++i)
-        v += cell_flux[i] * slopes[i];
-    float C = pars.capacity * v;
+        velocity_proxy += cell_flux[i] * slopes[i];
+    float sediment_capacity = pars->capacity * velocity_proxy; // C is the sediment carrying capacity of the water in this cell. (faster velocity is more sediment)
 
     float erode = 0.f, deposit = 0.f;
-    if (C > s_cur) {
-        erode = pars.erode * (C - s_cur);
+    if (sediment_capacity > sediment) {
+        erode = pars->erode * (sediment_capacity - sediment);
     } else {
-        deposit = pars.deposit * (s_cur - C);
+        deposit = pars->deposit * (sediment - sediment_capacity);
     }
 
     // write deltas (applied in pass B)
-    dh_out[idx] = deposit - erode;              // positive = deposition raises height
-    ds_out[idx] = erode - deposit;              // sediment increases when eroding, decreases when depositing
-    dw_out[idx] = -outflow_sum - pars.evap * w; // water loss: outflow + evaporation
+    dh_out[idx] = deposit - erode;                               // positive = deposition raises height
+    ds_out[idx] = erode - deposit;                               // sediment increases when eroding, decreases when depositing
+    dw_out[idx] = -outflow_sum - pars->evaporation_rate * water; // water loss: outflow + evaporation
 }
 
 // apply the changes
 __global__ void apply_pass(
-    const Parameters pars,
+    const Parameters *pars,
     int width, int height,
     const float *__restrict__ water_in,
     const float *__restrict__ sediment_in,
@@ -156,11 +165,9 @@ __global__ void apply_pass(
 
     for (int n = 0; n < 8; ++n) {
 
-#ifdef EROSION3_HASH_INT_ORDER
-        auto i = (n + noise_util::hash_int(x, y, 0)) % 8;
-#else
-        auto i = n;
-#endif
+        int i = pars->debug_hash_cell_order
+                    ? (n + noise_util::hash_int(x, y, 0)) % 8
+                    : n;
 
         int nx = x + offsets[i].x;
         int ny = y + offsets[i].y;
@@ -168,8 +175,8 @@ __global__ void apply_pass(
         // if (nx < 0 || nx >= width || ny < 0 || ny >= height)
         // continue;
 
-        nx = wrap_or_clamp(x + offsets[i].x, width, pars.wrap); // note we lost continue
-        ny = wrap_or_clamp(y + offsets[i].y, height, pars.wrap);
+        nx = wrap_or_clamp(x + offsets[i].x, width, pars->wrap); // note we lost continue
+        ny = wrap_or_clamp(y + offsets[i].y, height, pars->wrap);
 
         int nidx = ny * width + nx;
         // opposite direction index (neighbor sending to me)
@@ -193,42 +200,12 @@ __global__ void apply_pass(
     height_out[idx] = fmaxf(0.f, h);
 }
 
-// recomended stuff
+void TEMPLATE_CLASS_NAME::allocate_device() {
 
-// water_in.resize(...);
-// water_out.resize(...);
-// sediment_in.resize(...);
-// sediment_out.resize(...);
-// height_in.resize(...);
-// height_out.resize(...);
+    if (device_allocated)
+        return;
 
-// flux0.resize(width, height, 8); // 8 neighbors per cell
-// dh_out.resize(...);
-// ds_out.resize(...);
-// dw_out.resize(...);
-
-// pars.rain_rate;
-// pars.evap_rate;
-// pars.w_max;
-// pars.k_capacity;
-// pars.k_erode;
-// pars.k_deposit;
-// pars.wrap;
-// pars.epsilon;
-
-//
-//
-//
-//
-
-// we are currently talking about erosion here
-// https://copilot.microsoft.com/chats/fEfp39jA1SjQeW7yA4D4Y
-
-// but we need more advanced frameworking
-
-void TEMPLATE_CLASS_NAME::process() {
-
-    printf("<<< Erosion Process >>>\n");
+    device_allocated = true;
 
     height_map.upload();
 
@@ -237,135 +214,137 @@ void TEMPLATE_CLASS_NAME::process() {
 
     water_map.resize(pars.width, pars.height);
     sediment_map.resize(pars.width, pars.height);
-    // flux8.resize(pars.width, pars.height);
     dh_out.resize(pars.width, pars.height);
     ds_out.resize(pars.width, pars.height);
     dw_out.resize(pars.width, pars.height);
 
     water_map.clear();
     sediment_map.clear();
-    // flux8.clear();
     dh_out.clear();
     ds_out.clear();
     dw_out.clear();
 
     water_map.upload();
     sediment_map.upload();
-    // flux8.upload();
     dh_out.upload();
     ds_out.upload();
     dw_out.upload();
 
     size_t array_size = pars.width * pars.height;
 
-    // allocate a flux map 8x larger than the other maps
-    core::CudaArrayManager<float> flux8;
+    // resize private arrays
     flux8.resize(array_size * 8);
+    height_map_out.resize(array_size);
+    water_map_out.resize(array_size);
+    sediment_map_out.resize(array_size);
+
+    height_map_out.zero_device();
+    water_map_out.zero_device();
+    sediment_map_out.zero_device();
     flux8.zero_device();
 
-    //
-    //
+    h_cur = height_map.dev_ptr();
+    w_cur = water_map.dev_ptr();
+    s_cur = sediment_map.dev_ptr();
 
-    // out maps, will be freed when we go out of scope
-    core::CudaArrayManager<float> height_map_out;
-    height_map_out.resize(array_size);
-    height_map_out.zero_device();
+    h_next = height_map_out.dev_ptr();
+    w_next = water_map_out.dev_ptr();
+    s_next = sediment_map_out.dev_ptr();
+}
 
-    core::CudaArrayManager<float> water_map_out;
-    water_map_out.resize(array_size);
-    water_map_out.zero_device();
+void TEMPLATE_CLASS_NAME::deallocate_device() {
 
-    core::CudaArrayManager<float> sediment_map_out;
-    sediment_map_out.resize(array_size);
-    sediment_map_out.zero_device();
+    auto timer = core::Timer();
 
-    //
-    //
-    // core::CudaStruct<Parameters> gpu_pars(pars); // automaticly uploads and free
+    device_allocated = false;
 
-    // #define X(TYPE, NAME) \
-    //     NAME.upload_to_device();
-    //     TEMPLATE_CLASS_MAPS
-    // #undef X
+    // free all macroed maps
+#define X(TYPE, NAME)   \
+    NAME.free_device(); \
+    TEMPLATE_CLASS_MAPS
+#undef X
 
+    // free the extra arrays
+    height_map_out.free_device();
+    water_map_out.free_device();
+    sediment_map_out.free_device();
+    flux8.free_device();
+
+    h_cur = nullptr;
+    w_cur = nullptr;
+    s_cur = nullptr;
+
+    h_next = nullptr;
+    w_next = nullptr;
+    s_next = nullptr;
+
+    timer.mark_time();
+    printf("deallocate device time: %.3f seconds\n", timer.elapsed_seconds());
+}
+
+void TEMPLATE_CLASS_NAME::process() {
+
+    printf("<<< Erosion Process >>>\n");
+
+    auto timer = core::Timer();
+
+    allocate_device();
+    core::CudaStream stream;
     core::CudaStruct<Parameters> gpu_pars(pars); // automaticly uploads and free
+
+    timer.mark_time();
+    printf("allocate device time: %.3f seconds\n", timer.elapsed_seconds());
 
     dim3 block(pars._block, pars._block);
     dim3 grid((pars.width + block.x - 1) / block.x,
               (pars.height + block.y - 1) / block.y);
 
-    auto start_time = std::chrono::high_resolution_clock::now(); // ⏲️ Timer
-
-    for (int i = 0; i < pars.steps; i += 2) {
-        // --- timestep 1: in -> out ---
-        flux_pass<<<grid, block>>>(
-            pars,
+    for (int i = 0; i < pars.steps; ++i) {
+        // calculate changes
+        flux_pass<<<grid, block, 0, stream.get()>>>(
+            gpu_pars.dev_ptr(),
             pars.width, pars.height,
-            height_map.dev_ptr(),
-            water_map.dev_ptr(),
-            sediment_map.dev_ptr(),
-            flux8.data(),
-            dh_out.dev_ptr(),
-            ds_out.dev_ptr(),
-            dw_out.dev_ptr());
+            h_cur, w_cur, s_cur,
+            flux8.dev_ptr(),
+            dh_out.dev_ptr(), ds_out.dev_ptr(), dw_out.dev_ptr());
 
-        apply_pass<<<grid, block>>>(
-            pars,
+        // apply changes
+        apply_pass<<<grid, block, 0, stream.get()>>>(
+            gpu_pars.dev_ptr(),
             pars.width, pars.height,
-            height_map.dev_ptr(),
-            water_map.dev_ptr(),
-            sediment_map.dev_ptr(),
-            flux8.data(),
-            dh_out.dev_ptr(),
-            ds_out.dev_ptr(),
-            dw_out.dev_ptr(),
-            height_map_out.data(),
-            water_map_out.data(),
-            sediment_map_out.data());
+            h_cur, w_cur, s_cur,
+            flux8.dev_ptr(),
+            dh_out.dev_ptr(), ds_out.dev_ptr(), dw_out.dev_ptr(),
+            h_next, w_next, s_next);
 
-        // --- timestep 2: out -> in ---
-        flux_pass<<<grid, block>>>(
-            pars,
-            pars.width, pars.height,
-            height_map_out.data(),
-            water_map_out.data(),
-            sediment_map_out.data(),
-            flux8.data(),
-            dh_out.dev_ptr(),
-            ds_out.dev_ptr(),
-            dw_out.dev_ptr());
+        // swap roles
+        std::swap(h_cur, h_next);
+        std::swap(w_cur, w_next);
+        std::swap(s_cur, s_next);
 
-        apply_pass<<<grid, block>>>(
-            pars,
-            pars.width, pars.height,
-            height_map_out.data(),
-            water_map_out.data(),
-            sediment_map_out.data(),
-            flux8.data(),
-            dh_out.dev_ptr(),
-            ds_out.dev_ptr(),
-            dw_out.dev_ptr(),
-            height_map.dev_ptr(),
-            water_map.dev_ptr(),
-            sediment_map.dev_ptr());
+        _count++;
     }
 
-    auto end_time = std::chrono::high_resolution_clock::now(); // ⏲️ Timer
-    std::chrono::duration<double> elapsed = end_time - start_time;
-    double seconds = elapsed.count();
-    printf("calculation time: %.2f ms\n", seconds * 1000.0); // ⏱️
+    stream.sync(); // wait for the stream to finish
+
+    timer.mark_time();
+    printf("calculation time: %.3f seconds\n", timer.elapsed_seconds());
 
     height_map.download();
     water_map.download();
     sediment_map.download();
 
-    flux8.free_device();
+    timer.mark_time();
+    printf("download time: %.3f seconds\n", timer.elapsed_seconds());
 
-    // free all maps
-#define X(TYPE, NAME)   \
-    NAME.free_device(); \
-    TEMPLATE_CLASS_MAPS
-#undef X
+    // deallocate_device();
+}
+
+TEMPLATE_CLASS_NAME::TEMPLATE_CLASS_NAME() {
+}
+
+TEMPLATE_CLASS_NAME::~TEMPLATE_CLASS_NAME() {
+    deallocate_device();
 }
 
 } // namespace TEMPLATE_NAMESPACE

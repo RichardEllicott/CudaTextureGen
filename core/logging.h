@@ -1,6 +1,6 @@
 /*
 
-includes print functions
+includes print functions ... these functions printed emojee unicode on linux, but don't work on windows
 
 */
 
@@ -9,7 +9,7 @@ includes print functions
 #include <iostream>
 #include <string>
 
-namespace core {
+namespace core::logging {
 
 // Base case print (not needed if you skip empty println)
 static void print() {

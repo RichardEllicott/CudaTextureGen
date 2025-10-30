@@ -1,6 +1,6 @@
-#include "cuda_hello.cuh"
+#include "tests.cuh"
 
 int main() {
-    cuda_hello();
+    tests::cuda_hello();
     return 0;
 }

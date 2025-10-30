@@ -94,24 +94,23 @@ add_subdirectory(python)
 
 # 🚀🚀🚀🚀 Test Executables
 
-## MANUAL PATTERN:
-# add_executable(hello_cu_exec tests/hello_test.cpp) # Define the test executable
-# target_link_libraries(hello_cu_exec PRIVATE cuda_core) # Link it against your reusable CUDA core library
-# set_target_properties(hello_cu_exec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests) # Tell CMake to place the built binary in build/tests/
+option(ENABLE_TESTS "Build the test executables" OFF) # now disabled
 
-## Glob Version
-# Collect all .cpp files under tests/
-file(GLOB TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
+if(ENABLE_TESTS)
 
-foreach(test_src ${TEST_SOURCES})
-    # Get the filename without extension, e.g. hello_test.cpp → hello_test
-    get_filename_component(test_name ${test_src} NAME_WE)
+    file(GLOB TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp) # get each cpp file in tests
 
-    add_executable(${test_name} ${test_src})
-    target_link_libraries(${test_name} PRIVATE cuda_core)
-    set_target_properties(${test_name} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
-    )
-endforeach()
+    foreach(test_src ${TEST_SOURCES})
+        # Get the filename without extension, e.g. hello_test.cpp → hello_test
+        get_filename_component(test_name ${test_src} NAME_WE)
+
+        add_executable(${test_name} ${test_src})
+        target_link_libraries(${test_name} PRIVATE cuda_core)
+        set_target_properties(${test_name} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+        )
+    endforeach()
+
+endif()
 
 # 🚀🚀🚀🚀
