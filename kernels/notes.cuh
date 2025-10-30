@@ -8,6 +8,47 @@ JUST JUNK ABOUT SOBEL FILTER
 
 #pragma region NOTES
 
+
+
+
+// 🚧🚧🚧🚧🚧 UNTESTED AI GENERATED 🚧🚧🚧🚧🚧
+//
+// Apply inverse-square crater imprint onto a heightmap.
+// h: heightmap (row-major), W,H: dimensions
+// cx,cy: impact center in pixels (float for subpixel)
+// k: excavation scale (meters per unit energy)
+// r0: softening radius in pixels (prevents singularities)
+// mask_radius: optional clamp for finite blast radius
+__global__ void crater_imprint(float *h, int W, int H,
+                               float cx, float cy,
+                               float k, float r0, float mask_radius) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= W || y >= H)
+        return;
+
+    float dx = (x + 0.5f) - cx;
+    float dy = (y + 0.5f) - cy;
+    float r2 = dx * dx + dy * dy;
+
+    if (mask_radius > 0.0f && r2 > mask_radius * mask_radius)
+        return;
+
+    float denom = r2 + r0 * r0; // softening
+    float E = 1.0f / denom;     // inverse-square
+    float dh = -k * E;          // excavation depth
+
+    // Optional: taper center to avoid a pixel spike when r0 is small
+    // dh *= (r2 / (r2 + r0*r0));
+
+    int idx = y * W + x;
+    h[idx] += dh;
+}
+
+
+
+
+
 // 🚧 my personal design
 __global__ void notes(
     // Parameters *pars,

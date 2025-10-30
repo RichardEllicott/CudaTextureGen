@@ -338,6 +338,8 @@ def test_erosion_3_2():
     erosion.evap = 0.002 * 3.0
     erosion.steps = 512 * 2
 
+    # erosion.steps = 128
+
     print("⛰️", dir(erosion))
 
     erosion.height_map = array
