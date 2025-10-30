@@ -1,3 +1,3 @@
-# 🚧 Core Headers
+# core
 
-not sure if i will keep this pattern or not, may not be required but is currently included in the build
+contains common shared stuff, like Array2D various CUDA helpers that help with allocating and freeing memory
