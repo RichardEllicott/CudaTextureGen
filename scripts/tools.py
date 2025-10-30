@@ -1,5 +1,12 @@
 """
 
+standard tools interface
+
+pip install numpy
+pip install scipy
+pip install matplotlib
+pip install pillow
+
 """
 import python_bootstrap  # bootstrap to our fresh compiled module
 import cuda_texture_gen
@@ -179,5 +186,5 @@ def smooth_layered_gradient(height_map, band_colors=[
     return rgb_map
 
 
-def blur(input, amount = 1.0, wrap=True):
+def blur(input, amount=1.0, wrap=True):
     cuda_texture_gen.blur(input, amount, wrap)
