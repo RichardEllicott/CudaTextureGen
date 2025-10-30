@@ -74,6 +74,14 @@ inline nb::ndarray<nb::numpy, T> get_numpy_array(int height, int width, int dept
     return nb::cast<nb::ndarray<nb::numpy, T>>(arr_obj);
 }
 
+inline nb::ndarray<nb::numpy, float> get_numpy_float_array(int height, int width) {
+    return get_numpy_array<float>(height, width);
+}
+
+inline nb::ndarray<nb::numpy, float> get_numpy_float_array(int height, int width, int depth) {
+    return get_numpy_array<float>(height, width, depth);
+}
+
 #pragma endregion
 
 #pragma region VECTOR
@@ -92,8 +100,7 @@ inline std::vector<T> numpy_array_to_vector(nb::ndarray<T, nb::c_contig> arr) {
 
 // Convert std::vector<T> -> ndarray<T>
 template <typename T>
-inline nb::ndarray<nb::numpy, T> vector_to_numpy_array(const std::vector<T> &source,
-                                                       int height, int width) {
+inline nb::ndarray<nb::numpy, T> vector_to_numpy_array(const std::vector<T> &source, int height, int width) {
 
     size_t size = static_cast<size_t>(height) * static_cast<size_t>(width);
     if (source.size() != size)

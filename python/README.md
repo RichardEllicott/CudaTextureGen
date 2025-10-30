@@ -1,3 +1,5 @@
 # python
 
-your extension module, which links against the code in src/.
+python bindings folder, in this area we can now see the nanobind
+
+`bindings.cpp` is the main central bindings file that links files from `python/bindings`
