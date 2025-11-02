@@ -27,27 +27,22 @@ void TEMPLATE_CLASS_NAME::process() {
     pars.width = image.get_width();
     pars.height = image.get_height();
 
-    // #define X(TYPE, NAME) \
-    //     NAME.upload_to_device();
-    //     TEMPLATE_CLASS_MAPS
-    // #undef X
+    core::CudaStream stream;
 
-    core::CudaStruct<Parameters> gpu_pars(pars); // automaticly uploads and free
+    core::CudaStruct<Parameters> _pars(pars); // automaticly uploads and free
 
     dim3 block(pars._block, pars._block);
     dim3 grid((pars.width + block.x - 1) / block.x,
               (pars.height + block.y - 1) / block.y);
 
-    process_texture<<<grid, block>>>(gpu_pars.dev_ptr(), image.dev_ptr(), pars.width, pars.height);
+    process_texture<<<grid, block, 0, stream.get()>>>(
+        _pars.dev_ptr(), image.dev_ptr(),
+        pars.width, pars.height);
+
+    stream.sync();
 
     image.download();
     image.free_device();
-
-    // #define X(TYPE, NAME)            \
-    //     NAME.download_from_device(); \
-    //     NAME.free_device_memory();   \
-    //     TEMPLATE_CLASS_MAPS
-    // #undef X
 }
 
 } // namespace TEMPLATE_NAMESPACE

@@ -1,18 +1,29 @@
 /*
 
+resample
+
+
+sample_mode, bilinear (only one so far)
+
+function_mode 0 = use map_x and map_y (only one so far)
+
+
+
 
 
 */
 #pragma once
 
-#define RESAMPLE_PARAMETERS \
-    X(float, test1, 0.0f)   \
-    X(float, test2, 0.0f)   \
-    X(float, test3, 0.0f)
+#define RESAMPLE_PARAMETERS        \
+    X(size_t, _block, 16)          \
+    X(bool, relative_offset, true) \
+    X(bool, scale_by_output_size, true)\
+    X(int, sample_mode, 0)\
+    X(int, function_mode, 0)\
 
 #define RESAMPLE_MAPS \
     X(float, input)   \
-    X(float, output)   \
+    X(float, output)  \
     X(float, map_x)   \
     X(float, map_y)
 
@@ -51,11 +62,9 @@ class Resample {
     RESAMPLE_MAPS
 #undef X
 
-    void process_maps(
-        const int width, const int height,
-        const float *host_in, float *host_out,
-        const float *map_x, const float *map_y);
-
+    // process will take the input and resample to the output using map_x and map_y for offset
     void process();
+
+    void transform_process();
 };
 } // namespace resample

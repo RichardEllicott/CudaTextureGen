@@ -48,6 +48,6 @@ inline void bind(nb::module_ &m) {
 #undef TEMPLATE_NAMESPACE
 #undef TEMPLATE_CLASS_PARAMETERS
 #undef TEMPLATE_CLASS_MAPS
-
+#undef TEMPLATE_CLASS_TYPES
 #undef STRINGIFY
 #undef EXPAND_AND_STRINGIFY

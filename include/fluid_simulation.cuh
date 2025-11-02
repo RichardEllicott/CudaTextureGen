@@ -1,32 +1,30 @@
 /*
 
 🧜‍♀️ TEMPLATE VERSION 20251027-3
-🧜‍♀️ TEMPLATE VERSION 20251102-1 // added a structure for map pointers
 
 this one uses more clever types and classes, needing less horrible macros
-
-
-⚠️⚠️⚠️ THIS ONE DOESN'T SUPPORT ANY SORTS OF RGB NUMPY ARRAYS ETC ⚠️⚠️⚠️
 
 */
 #pragma once
 
 // ════════════════════════════════════════════════ //
-#define TEMPLATE_CLASS_NAME TemplateClass3
-#define TEMPLATE_NAMESPACE template_class_3
+#define TEMPLATE_CLASS_NAME FluidSimulation
+#define TEMPLATE_NAMESPACE fluid_simulation
 
 #define TEMPLATE_CLASS_PARAMETERS \
     X(size_t, width, 1024)        \
     X(size_t, height, 1024)       \
     X(size_t, _block, 16)         \
-    X(float, test, 0.0)
+    X(float, gravity, 9.8)        \
+    X(float, dt, 1.0)             \
+    X(float, cell_size, 1.0)      \
+    X(float, steps, 16)
 
-#define TEMPLATE_CLASS_MAPS \
-    X(float, image)
-
-// trying to support float3
-#define TEMPLATE_CLASS_MAPS2 \
-    X(float3, image)
+#define TEMPLATE_CLASS_MAPS  \
+    X(float, height_map)     \
+    X(float, height_map_out) \
+    X(float, velocity_map)   \
+    X(float, velocity_map_out)
 
 #define TEMPLATE_CLASS_TYPES \
     X(APPLE)                 \
@@ -36,11 +34,9 @@ this one uses more clever types and classes, needing less horrible macros
 // ════════════════════════════════════════════════ //
 
 #include "cuda_types.cuh"
-// #include <std>
 
 namespace TEMPLATE_NAMESPACE {
 
-// set to kernels as pointer
 struct Parameters {
 #ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL) \
@@ -49,10 +45,7 @@ struct Parameters {
 #undef X
 #endif
 };
-// OPTIONAL Compile‑time safety check
-static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
 
-// could be used with kernels
 struct MapPointers {
 #ifdef TEMPLATE_CLASS_MAPS
 #define X(TYPE, NAME) \
@@ -107,6 +100,13 @@ class TEMPLATE_CLASS_NAME {
         return result;
     }
 #endif
+
+      private:
+        core::CudaStruct<Parameters> dev_pars;
+
+      public:
+        void allocate_device();
+        void deallocate_device();
 
     void process();
 };

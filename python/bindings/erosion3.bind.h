@@ -53,9 +53,5 @@ inline void bind(nb::module_ &m) {
 
 } // namespace TEMPLATE_NAMESPACE
 
-#undef TEMPLATE_CLASS_NAME
-#undef TEMPLATE_NAMESPACE
-#undef TEMPLATE_CLASS_PARAMETERS
-#undef TEMPLATE_CLASS_MAPS
-#undef STRINGIFY
-#undef EXPAND_AND_STRINGIFY
+#include "template_macros_undef.h"
+

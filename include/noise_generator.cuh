@@ -25,9 +25,8 @@ z         -start position z (for 3D noise, useful for animation)
     X(float, y, 0.0f)              \
     X(float, z, 0.0f)              \
     X(float, warp_amp, 4.0f)       \
-    X(float, warp_scale, 1.0f)\
-    X(float, angle, 0.0f)\
-    
+    X(float, warp_scale, 1.0f)     \
+    X(float, angle, 0.0f)
 
 #define NOISE_GENERATOR_TYPES \
     X(Gradient2D)             \

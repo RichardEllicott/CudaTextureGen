@@ -44,9 +44,8 @@ __device__ float sample_bilinear(const float *img,
            dx * dy * v11;
 }
 
-#define RESAMPLE_RELATIVE
-
-__global__ void resample_kernel(const float *input, float *output,
+__global__ void resample_kernel(Parameters *pars,
+                                const float *input, float *output,
                                 int in_w, int in_h,
                                 int out_w, int out_h,
                                 const float *map_x, const float *map_y) {
@@ -58,18 +57,25 @@ __global__ void resample_kernel(const float *input, float *output,
 
     int idx = y * out_w + x;
 
-#ifdef RESAMPLE_RELATIVE
-    // Treat map_x/map_y as relative offsets from (x, y)
-    float src_x = x + map_x[idx];
-    float src_y = y + map_y[idx];
-#elif
-    // map_x/map_y give the input coords for this output pixel
+    // figure out the soruce x,y
     float src_x = map_x[idx];
     float src_y = map_y[idx];
 
-#endif
+    // scaling so that we're neutral to image resolution (0.5 would be half the output image width)
+    if (pars->scale_by_output_size) {
+        src_x *= out_w;
+        src_y *= out_h;
+    }
+    // relative offset (most logical and easiest to feed map into)
+    if (pars->relative_offset) {
+        src_x += x;
+        src_y += y;
+    }
 
     output[idx] = sample_bilinear(input, in_w, in_h, src_x, src_y, true);
+}
+
+void Resample::transform_process() {
 }
 
 void Resample::process() {
@@ -77,21 +83,24 @@ void Resample::process() {
     core::CudaStream stream; // create a stream
 
     size_t width = input.get_width();
-    size_t height = input.get_width();
-    size_t _block = 16;
+    size_t height = input.get_height();
+    // size_t _block = 16;
 
     input.upload();
     map_x.upload();
     map_y.upload();
 
+    core::CudaStruct<Parameters> dev_pars(pars); // automaticly uploads and free
+
     output.resize(input.get_width(), input.get_height());
     output.allocate_device(); // allocate memory (no upload)
 
-    dim3 block(_block, _block);
+    dim3 block(pars._block, pars._block);
     dim3 grid((width + block.x - 1) / block.x,
               (height + block.y - 1) / block.y);
 
     resample_kernel<<<grid, block, 0, stream.get()>>>(
+        dev_pars.dev_ptr(),
         input.dev_ptr(), output.dev_ptr(),
         width, height, width, height, map_x.dev_ptr(), map_y.dev_ptr());
 

@@ -25,7 +25,12 @@ concider rename to module.cpp
 #include "erosion2.bind.h" // ✔️ simple erode with sediment only
 #include "erosion3.bind.h" // ✔️ introducing water for caving of river like patterns
 
+#include "fluid_simulation.bind.h" // 🚧
+
 #include "tectonics.bind.h" // 🚧 testing the idea of propegating preassure waves to maybe create mountains or craters, also fluid sim here
+
+#include "noise.bind.h" // ✔️ noise generators, all support seamless noise!
+
 // #include "water_simulation.bind.h"
 
 namespace nb = nanobind;
@@ -43,4 +48,8 @@ NB_MODULE(cuda_texture_gen, m) {
 
     erosion_2::bind(m);
     erosion_3::bind(m);
+
+    fluid_simulation::bind(m);
+
+    noise::bind(m);
 }
