@@ -290,7 +290,7 @@ void TEMPLATE_CLASS_NAME::process() {
 
     allocate_device();
     core::cuda::Stream stream;
-    core::CudaStruct<Parameters> gpu_pars(pars); // automaticly uploads and free
+    core::cuda::Struct<Parameters> gpu_pars(pars); // automaticly uploads and free
 
     timer.mark_time();
     printf("allocate device time: %.3f seconds\n", timer.elapsed_seconds());

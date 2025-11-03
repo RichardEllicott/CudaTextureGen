@@ -31,7 +31,7 @@ void TEMPLATE_CLASS_NAME::process() {
     //     TEMPLATE_CLASS_MAPS
     // #undef X
 
-    core::CudaStruct<Parameters> gpu_pars(pars); // automaticly uploads and free
+    core::cuda::Struct<Parameters> gpu_pars(pars); // automaticly uploads and free
 
     dim3 block(pars._block, pars._block);
     dim3 grid((pars.width + block.x - 1) / block.x,

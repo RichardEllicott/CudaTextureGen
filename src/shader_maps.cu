@@ -328,8 +328,6 @@ void ShaderMaps::generate_ao_map(
 
     cudaMemcpy(d_in, host_in, in_size, cudaMemcpyHostToDevice);
 
-    // auto pars = HTAO_Pars::Low();
-    // core::CudaStruct<HTAO_Pars> gpu_pars(pars); // automaticly uploads and free
 
     HTAO_Pars pars;
 
@@ -344,7 +342,7 @@ void ShaderMaps::generate_ao_map(
         pars = HTAO_Pars::High();
         break;
     }
-    core::CudaStruct<HTAO_Pars> gpu_pars(pars);
+    core::cuda::Struct<HTAO_Pars> gpu_pars(pars);
 
     dim3 block(16, 16);
     dim3 grid((width + block.x - 1) / block.x,

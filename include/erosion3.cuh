@@ -135,7 +135,6 @@ class TEMPLATE_CLASS_NAME {
     };
 #endif
 
-    // core::CudaStruct<Parameters> gpu_pars; // automaticly uploads and free
 
     void allocate_device(); // and upload
     // void upload_device();

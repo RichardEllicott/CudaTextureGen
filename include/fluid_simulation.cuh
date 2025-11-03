@@ -102,7 +102,7 @@ class TEMPLATE_CLASS_NAME {
 #endif
 
       private:
-        core::CudaStruct<Parameters> dev_pars;
+        core::cuda::Struct<Parameters> dev_pars;
 
       public:
         void allocate_device();

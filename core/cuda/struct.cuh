@@ -4,43 +4,36 @@
 #pragma once
 // #include "types.h"
 
-namespace core {
+namespace core::cuda {
 
 // template to allow easy automatic upload/download to cuda, will clear the memory when it goes free
 template <typename T>
-class CudaStruct {
-    static_assert(std::is_trivially_copyable<T>::value, "CudaStruct requires a trivially copyable type");
+class Struct {
+    static_assert(std::is_trivially_copyable<T>::value, "Struct requires a trivially copyable type");
 
     T *_device_ptr = nullptr;
 
   public:
     T host_data{}; // zero data
 
-    CudaStruct() = default;
+    Struct() = default;
 
-    // // device pointer accessor
-    // T *device_ptr() const {
-    //     return _device_ptr;
-    // }
 
     // device pointer accessor
     T *dev_ptr() const {
         return _device_ptr;
     }
 
-    // automaticly upload to device if we create with pars, eg:
-    //
-    // core::CudaStruct<Parameters> gpu_pars(pars); // automaticly uploads and free
-    //
-    explicit CudaStruct(const T &value) : host_data(value) {
+    // automaticly upload if we create with a existing struct
+    explicit Struct(const T &value) : host_data(value) {
         upload();
     }
 
     // Non‑copyable, non‑movable (prevents any memory issues)
-    CudaStruct(const CudaStruct &) = delete;
-    CudaStruct &operator=(const CudaStruct &) = delete;
-    CudaStruct(CudaStruct &&) = delete;
-    CudaStruct &operator=(CudaStruct &&) = delete;
+    Struct(const Struct &) = delete;
+    Struct &operator=(const Struct &) = delete;
+    Struct(Struct &&) = delete;
+    Struct &operator=(Struct &&) = delete;
 
     void upload() {
         if (!_device_ptr)
@@ -67,9 +60,9 @@ class CudaStruct {
         }
     }
 
-    ~CudaStruct() {
+    ~Struct() {
         free_device();
     }
 };
 
-} // namespace core
+} // namespace core::cuda
