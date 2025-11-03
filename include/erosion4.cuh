@@ -1,12 +1,8 @@
 /*
 
-🧜‍♀️ TEMPLATE VERSION 20251027-3
-🧜‍♀️ TEMPLATE VERSION 20251102-1 // added a structure for map pointers
+simple erosion that distributes sediment to neighbours
 
-this one uses more clever types and classes, needing less horrible macros
-
-
-⚠️⚠️⚠️ THIS ONE DOESN'T SUPPORT ANY SORTS OF RGB NUMPY ARRAYS ETC ⚠️⚠️⚠️
+🧜‍♀️ TEMPLATE VERSION 20251102-1
 
 */
 #pragma once
@@ -15,19 +11,25 @@ this one uses more clever types and classes, needing less horrible macros
 #define TEMPLATE_CLASS_NAME Erosion4
 #define TEMPLATE_NAMESPACE erosion4
 
-#define TEMPLATE_CLASS_PARAMETERS \
-    X(size_t, width, 1024)        \
-    X(size_t, height, 1024)       \
-    X(size_t, _block, 16)         \
-    X(float, test, 0.0)
+#define TEMPLATE_CLASS_PARAMETERS   \
+    X(size_t, width, 1024)          \
+    X(size_t, height, 1024)         \
+    X(size_t, _block, 16)           \
+    X(int, steps, 512)              \
+    X(bool, wrap, true)             \
+    X(float, jitter, 0.0)           \
+    X(float, erosion_rate, 0.01)    \
+    X(float, slope_threshold, 0.01) \
+    X(float, deposition_rate, 0.01) \
+    X(int, mode, 0)
 
 #define TEMPLATE_CLASS_MAPS \
-    X(float, height_map)\
-    X(float, sediment_map)\
+    X(float, height_map)    \
+    X(float, sediment_map)
 
-// trying to support float3
-#define TEMPLATE_CLASS_MAPS2 \
-    X(float3, image)
+// // trying to support float3
+// #define TEMPLATE_CLASS_MAPS2 \
+//     X(float3, image)
 
 // #define TEMPLATE_CLASS_TYPES \
 //     X(APPLE)                 \
