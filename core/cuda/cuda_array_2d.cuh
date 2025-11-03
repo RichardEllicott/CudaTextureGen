@@ -7,7 +7,7 @@ Cuda version of Array2D, allows automatic device allocation
 #pragma once
 #include "types.h"
 
-namespace core {
+namespace core::cuda {
 
 // added Cuda features
 template <typename T>

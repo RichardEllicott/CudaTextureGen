@@ -58,7 +58,7 @@ class Resample {
 
 // make maps
 #define X(TYPE, NAME) \
-    core::CudaArray2D<TYPE> NAME;
+    core::cuda::CudaArray2D<TYPE> NAME;
     RESAMPLE_MAPS
 #undef X
 

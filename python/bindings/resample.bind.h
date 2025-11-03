@@ -25,7 +25,7 @@ inline void bind(nb::module_ &m) {
     // bind maps
 #define X(TYPE, NAME)                                                                                                                                                \
     auto get_##NAME = [](Resample &self) { return python_helper::array2d_to_numpy_array(self.NAME); };                                                               \
-    auto set_##NAME = [](Resample &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = core::CudaArray2D<TYPE>(python_helper::numpy_array_to_array2d(arr)); }; \
+    auto set_##NAME = [](Resample &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = core::cuda::CudaArray2D<TYPE>(python_helper::numpy_array_to_array2d(arr)); }; \
     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME);
     RESAMPLE_MAPS
 #undef X

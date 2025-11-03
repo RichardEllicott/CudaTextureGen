@@ -97,7 +97,7 @@ void TEMPLATE_CLASS_NAME::process() {
 
 
 
-    // core::CudaArrayManager
+    // core::cuda::DeviceArray
 
 
     core::cuda::Stream stream;

@@ -104,10 +104,10 @@ class TEMPLATE_CLASS_NAME {
     float *w_next = nullptr;
     float *s_next = nullptr;
 
-    core::CudaArrayManager<float> flux8;
-    core::CudaArrayManager<float> height_map_out;
-    core::CudaArrayManager<float> water_map_out;
-    core::CudaArrayManager<float> sediment_map_out;
+    core::cuda::DeviceArray<float> flux8;
+    core::cuda::DeviceArray<float> height_map_out;
+    core::cuda::DeviceArray<float> water_map_out;
+    core::cuda::DeviceArray<float> sediment_map_out;
 
     size_t _count = 0; // count of passes
 
@@ -121,7 +121,7 @@ class TEMPLATE_CLASS_NAME {
 
     // make maps
 #define X(TYPE, NAME) \
-    core::CudaArray2D<TYPE> NAME;
+    core::cuda::CudaArray2D<TYPE> NAME;
     TEMPLATE_CLASS_MAPS
 #undef X
 

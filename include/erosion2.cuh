@@ -66,7 +66,7 @@ class TEMPLATE_CLASS_NAME {
 
 // make maps
 #define X(TYPE, NAME) \
-    core::CudaArray2D<TYPE> NAME;
+    core::cuda::CudaArray2D<TYPE> NAME;
     TEMPLATE_CLASS_MAPS
 #undef X
 

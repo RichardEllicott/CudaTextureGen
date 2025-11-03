@@ -8,10 +8,10 @@ normally i use the Array2D one instead, this one keeps no local copy however
 #pragma once
 #include <stdexcept>
 
-namespace core {
+namespace core::cuda {
 
 template <typename T>
-class CudaArrayManager {
+class DeviceArray {
   private:
     T *_dev_ptr = nullptr;
     size_t _size = 0;       // number of elements
@@ -19,14 +19,14 @@ class CudaArrayManager {
 
   public:
     // disallow copy
-    CudaArrayManager(const CudaArrayManager &) = delete;
-    CudaArrayManager &operator=(const CudaArrayManager &) = delete;
+    DeviceArray(const DeviceArray &) = delete;
+    DeviceArray &operator=(const DeviceArray &) = delete;
 
     // allow move
-    CudaArrayManager(CudaArrayManager &&other) noexcept {
+    DeviceArray(DeviceArray &&other) noexcept {
         *this = std::move(other);
     }
-    CudaArrayManager &operator=(CudaArrayManager &&other) noexcept {
+    DeviceArray &operator=(DeviceArray &&other) noexcept {
         if (this != &other) {
             free_device();
             _dev_ptr = other._dev_ptr;
@@ -39,8 +39,8 @@ class CudaArrayManager {
         return *this;
     }
 
-    CudaArrayManager() = default;
-    ~CudaArrayManager() { free_device(); }
+    DeviceArray() = default;
+    ~DeviceArray() { free_device(); }
 
     size_t size() const { return _size; }
     bool empty() const { return _dev_ptr == nullptr; }
