@@ -106,6 +106,10 @@ class CudaArray2D : public Array2D<T> {
         }
     }
 
+    bool is_allocated() {
+        return _device_ptr != nullptr;
+    }
+
     // upload data to the device (will allocate memory if required)
     void upload() {
         allocate_device();

@@ -92,7 +92,8 @@
         "xlocnum": "cpp",
         "xloctime": "cpp",
         "xmemory": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "array_2d": "c"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "folder-color.pathColors": [

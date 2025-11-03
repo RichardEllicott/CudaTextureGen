@@ -24,6 +24,8 @@ concider rename to module.cpp
 // erosion
 #include "erosion2.bind.h" // ✔️ simple erode with sediment only
 #include "erosion3.bind.h" // ✔️ introducing water for caving of river like patterns
+#include "erosion4.bind.h" // 🚧 refine simple erode
+
 
 #include "fluid_simulation.bind.h" // 🚧
 
@@ -46,8 +48,9 @@ NB_MODULE(cuda_texture_gen, m) {
     resample::bind(m);
     shader_maps::bind(m);
 
-    erosion_2::bind(m);
-    erosion_3::bind(m);
+    erosion2::bind(m);
+    erosion3::bind(m);
+    erosion4::bind(m);
 
     fluid_simulation::bind(m);
 

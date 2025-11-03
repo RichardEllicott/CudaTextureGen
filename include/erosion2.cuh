@@ -13,7 +13,7 @@ this erosion works with a simple erosion pattern
 
 // ════════════════════════════════════════════════ //
 #define TEMPLATE_CLASS_NAME Erosion2
-#define TEMPLATE_NAMESPACE erosion_2
+#define TEMPLATE_NAMESPACE erosion2
 
 #define TEMPLATE_CLASS_PARAMETERS    \
     X(size_t, width, 256)            \

@@ -80,7 +80,7 @@ void Resample::transform_process() {
 
 void Resample::process() {
 
-    core::CudaStream stream; // create a stream
+    core::cuda::Stream stream; // create a stream
 
     size_t width = input.get_width();
     size_t height = input.get_height();

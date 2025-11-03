@@ -54,7 +54,7 @@ void TEMPLATE_CLASS_NAME::process() {
 
     allocate_device();
 
-    core::CudaStream stream;
+    core::cuda::Stream stream;
 
     core::CudaStruct<Parameters> _pars(pars); // automaticly uploads and free
 

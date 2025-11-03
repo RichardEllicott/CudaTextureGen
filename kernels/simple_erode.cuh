@@ -1,6 +1,8 @@
 /*
 
-saving a simple working erosion kernel
+
+slope‑based sediment redistribution kernel
+
 
 */
 #pragma once

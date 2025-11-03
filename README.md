@@ -1,5 +1,11 @@
 # CudaTextureGen
 
+## ⚠️ WARNING
+
+CudaTextureGen is currently still in a prototype state, so far it achives various seamless noise generators, very basic seamless erosion, seamless bluring... still undergoing major refactoring but does compile!
+
+## ℹ️ About
+
 CudaTextureGen is a Python-based framework for procedural texture generation and erosion simulation, accelerated with CUDA. It provides modular tools for crafting realistic surface patterns, simulating terrain wear, and integrating GPU-powered workflows into creative or scientific pipelines.
 
 ## ⚙️ Requirements
@@ -24,7 +30,7 @@ software stack. It has been tested on the following configurations:
 > ⚠️ **A CUDA-compatible GPU is required.** This project will not run on systems without NVIDIA hardware and drivers.  
 > 🧪 *Note: Future support for non-CUDA backends may be possible via [AdaptiveCpp](https://github.com/AdaptiveCpp/AdaptiveCpp), a SYCL-based compiler targeting multiple accelerators.*
 
-## Structure
+## 📁 Structure
 
 This repository is organized as follows:
 

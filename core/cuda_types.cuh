@@ -14,7 +14,11 @@ custom Cuda objects, designed to automaticly allocate and free memory, download 
 #include <stdexcept>
 
 #include "cuda_types/cuda_array_2d.cuh"
-#include "cuda_types/cuda_stream.cuh"
+// #include "cuda_types/cuda_stream.cuh"
+
+#include "cuda/stream.cuh"
+
+
 #include "cuda_types/cuda_struct.cuh"
 #include "cuda_types/cuda_array_manager.cuh"
 

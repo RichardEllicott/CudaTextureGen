@@ -9,7 +9,7 @@ this one uses more clever types and classes, needing less horrible macros
 
 // ════════════════════════════════════════════════ //
 #define TEMPLATE_CLASS_NAME Erosion3
-#define TEMPLATE_NAMESPACE erosion_3
+#define TEMPLATE_NAMESPACE erosion3
 
 // #define TEMPLATE_CLASS_PARAMETERS    \
 //     X(size_t, width, 256)            \

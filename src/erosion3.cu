@@ -289,7 +289,7 @@ void TEMPLATE_CLASS_NAME::process() {
     auto timer = core::Timer();
 
     allocate_device();
-    core::CudaStream stream;
+    core::cuda::Stream stream;
     core::CudaStruct<Parameters> gpu_pars(pars); // automaticly uploads and free
 
     timer.mark_time();

@@ -11,7 +11,7 @@ namespace TEMPLATE_NAMESPACE {
 
 void TEMPLATE_CLASS_NAME::process() {
 
-    core::CudaStream stream; // create a stream
+    core::cuda::Stream stream; // create a stream
 
     height_map.upload();
     pars.width = height_map.get_width();

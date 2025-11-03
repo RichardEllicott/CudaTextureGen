@@ -8,40 +8,26 @@ this one uses more clever types and classes, needing less horrible macros
 
 ⚠️⚠️⚠️ THIS ONE DOESN'T SUPPORT ANY SORTS OF RGB NUMPY ARRAYS ETC ⚠️⚠️⚠️
 
-
-
-🎃 this noise generator was trying to work on 3D, also investigating animation and periodicity
-
-
 */
 #pragma once
 
 // ════════════════════════════════════════════════ //
-#define TEMPLATE_CLASS_NAME Noise
-#define TEMPLATE_NAMESPACE noise
+#define TEMPLATE_CLASS_NAME Erosion4
+#define TEMPLATE_NAMESPACE erosion4
 
 #define TEMPLATE_CLASS_PARAMETERS \
     X(size_t, width, 1024)        \
     X(size_t, height, 1024)       \
     X(size_t, _block, 16)         \
-    X(int, type, 0)               \
-    X(int, seed, 0)               \
-    X(float, period_x, 7.0f)      \
-    X(float, period_y, 7.0f)      \
-    X(float, period_z, 7.0f)      \
-    X(float, x, 0.0f)             \
-    X(float, y, 0.0f)             \
-    X(float, z, 0.0f)             \
-    X(float, warp_amp, 4.0f)      \
-    X(float, warp_scale, 1.0f)    \
-    X(float, angle, 0.0f)
+    X(float, test, 0.0)
 
 #define TEMPLATE_CLASS_MAPS \
-    X(float, image)
+    X(float, height_map)\
+    X(float, sediment_map)\
 
-// // trying to support float3
+// trying to support float3
 #define TEMPLATE_CLASS_MAPS2 \
-    X(float3, image_rgb)
+    X(float3, image)
 
 // #define TEMPLATE_CLASS_TYPES \
 //     X(APPLE)                 \
@@ -122,17 +108,6 @@ class TEMPLATE_CLASS_NAME {
         return result;
     }
 #endif
-
-
-// custom set all period's at once
-    float get_period() {
-        return get_period_x();
-    };
-    void set_period(float value) {
-        set_period_x(value);
-        set_period_y(value);
-        set_period_z(value);
-    };
 
     void process();
 };

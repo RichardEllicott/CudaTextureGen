@@ -27,7 +27,7 @@ void TEMPLATE_CLASS_NAME::process() {
     pars.width = image.get_width();
     pars.height = image.get_height();
 
-    core::CudaStream stream;
+    core::cuda::Stream stream;
 
     core::CudaStruct<Parameters> _pars(pars); // automaticly uploads and free
 
