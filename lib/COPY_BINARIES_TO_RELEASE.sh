@@ -1,6 +1,6 @@
 #!/bin/bash
 
-src="../build/linux/python/cuda_texture_gen.cpython-312-x86_64-linux-gnu.so"
+src="../build/linux/src/python/cuda_texture_gen.cpython-312-x86_64-linux-gnu.so"
 dst="./cuda_texture_gen/cuda_texture_gen.cpython-312-x86_64-linux-gnu.so"
 
 # Ensure destination folder exists

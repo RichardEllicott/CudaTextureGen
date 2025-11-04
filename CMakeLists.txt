@@ -52,8 +52,8 @@ endif()
 # # Recursively find all .cu and .cpp files in src/
 # #
 file(GLOB_RECURSE CUDA_CPP_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/src/*.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/src/*.cpp"
     # "${CMAKE_CURRENT_SOURCE_DIR}/python/bindings/*.cpp"
 )
 # Create a static library from all collected sources
@@ -73,9 +73,9 @@ add_library(cuda_core STATIC ${CUDA_CPP_SOURCES}) # NOTE "cuda_core"
 # search path (-I flag). You still need to #include the headers you want in your .cpp files.
 
 target_include_directories(cuda_core PUBLIC
-    include
-    core
-    kernels
+    src/include
+    src/core
+    src/kernels
 )
 
 
@@ -87,7 +87,11 @@ set_target_properties(cuda_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Descend into the `python/` subdirectory and process its CMakeLists.txt.
 # That’s where you define your Python extension module (`cuda_hello_py`).
-add_subdirectory(python)
+add_subdirectory(src/python)
+
+# add_subdirectory(external/nanobind) maybe move this here??
+
+
 
 # 📦📦📦📦
 
@@ -98,7 +102,7 @@ option(ENABLE_TESTS "Build the test executables" OFF) # now disabled
 
 if(ENABLE_TESTS)
 
-    file(GLOB TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp) # get each cpp file in tests
+    file(GLOB TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/*.cpp) # get each cpp file in tests
 
     foreach(test_src ${TEST_SOURCES})
         # Get the filename without extension, e.g. hello_test.cpp → hello_test
