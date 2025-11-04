@@ -4,12 +4,12 @@
       "name": "Win32",
       "includePath": [
         // "${workspaceFolder}/**", // HOVER IT ALL UP (bad idea)
-        "${workspaceFolder}/core",
-        "${workspaceFolder}/include",
-        "${workspaceFolder}/kernels",
-        "${workspaceFolder}/src",
-        "${workspaceFolder}/python/bindings",
-        "${workspaceFolder}/python/nanobind/include",
+        "${workspaceFolder}/src/core",
+        "${workspaceFolder}/src/include",
+        "${workspaceFolder}/src/kernels",
+        "${workspaceFolder}/src/src",
+        "${workspaceFolder}/src/python/bindings",
+        "${workspaceFolder}/src/python/nanobind/include",
         "C:/Users/Richard/AppData/Local/Programs/Python/Python313/include",
         "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/include/",
         "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5/include"
