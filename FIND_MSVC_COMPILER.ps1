@@ -1,5 +1,5 @@
 
-# script to locate MSVC compiler
+# script to locate MSVC compiler ... might use this for automatic setup or something later
 
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
