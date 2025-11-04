@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -e # Exit on error
 
 export CPLUS_INCLUDE_PATH=/usr/include/python3.12

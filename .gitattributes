@@ -1,2 +1,12 @@
-# Auto detect text files and perform LF normalization
+# all these options are trying to stop windows line endings, which break some unix scripts
+
+# Default: normalize text files
 * text=auto
+
+# Force LF for shell scripts
+*.sh text eol=lf
+
+# Optionally enforce LF for other Unix-y files
+*.py text eol=lf
+*.cmake text eol=lf
+*.yml text eol=lf
