@@ -16,5 +16,5 @@ ENV/
 /__pycache__/
 
 # UNUSED ATM!!!
-/godot/
+# /godot/cuda_texture_gen
 /blender/

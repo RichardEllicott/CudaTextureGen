@@ -1,0 +1,53 @@
+[gd_resource type="AnimatedTexture" load_steps=17 format=3 uid="uid://h5o4hlpkqmkv"]
+
+[ext_resource type="Texture2D" uid="uid://dpm5ofkpono6w" path="res://textures/animation_test/noise_frame_00.png" id="1_swso8"]
+[ext_resource type="Texture2D" uid="uid://d2mkc4xbiuwc5" path="res://textures/animation_test/noise_frame_01.png" id="2_qpwub"]
+[ext_resource type="Texture2D" uid="uid://xi7wdhomwuf5" path="res://textures/animation_test/noise_frame_10.png" id="3_hkg3x"]
+[ext_resource type="Texture2D" uid="uid://divks2643yqfi" path="res://textures/animation_test/noise_frame_11.png" id="4_8krra"]
+[ext_resource type="Texture2D" uid="uid://b8vhx8cwsu2iv" path="res://textures/animation_test/noise_frame_12.png" id="5_oh7g2"]
+[ext_resource type="Texture2D" uid="uid://bkjjicpkfl3tq" path="res://textures/animation_test/noise_frame_13.png" id="6_poka5"]
+[ext_resource type="Texture2D" uid="uid://cuh20b2y2b0s6" path="res://textures/animation_test/noise_frame_14.png" id="7_iu04j"]
+[ext_resource type="Texture2D" uid="uid://b43wulrbtqc2y" path="res://textures/animation_test/noise_frame_15.png" id="8_qvx2j"]
+[ext_resource type="Texture2D" uid="uid://cfae5uueyolo3" path="res://textures/animation_test/noise_frame_02.png" id="9_g7qlt"]
+[ext_resource type="Texture2D" uid="uid://ch25g1rivv58r" path="res://textures/animation_test/noise_frame_03.png" id="10_hij18"]
+[ext_resource type="Texture2D" uid="uid://do2rkrgtvi4er" path="res://textures/animation_test/noise_frame_04.png" id="11_g7hum"]
+[ext_resource type="Texture2D" uid="uid://bu1xphmh7qx8c" path="res://textures/animation_test/noise_frame_05.png" id="12_5cwfn"]
+[ext_resource type="Texture2D" uid="uid://brti2ppygs738" path="res://textures/animation_test/noise_frame_06.png" id="13_som7m"]
+[ext_resource type="Texture2D" uid="uid://dui5hvbymdgsn" path="res://textures/animation_test/noise_frame_07.png" id="14_y34b8"]
+[ext_resource type="Texture2D" uid="uid://thtxyu7p8n4m" path="res://textures/animation_test/noise_frame_08.png" id="15_5pnkg"]
+[ext_resource type="Texture2D" uid="uid://bsjvf1w7eipgo" path="res://textures/animation_test/noise_frame_09.png" id="16_habfj"]
+
+[resource]
+frames = 16
+speed_scale = 5.0
+frame_0/texture = ExtResource("1_swso8")
+frame_1/texture = ExtResource("2_qpwub")
+frame_1/duration = 1.0
+frame_2/texture = ExtResource("9_g7qlt")
+frame_2/duration = 1.0
+frame_3/texture = ExtResource("10_hij18")
+frame_3/duration = 1.0
+frame_4/texture = ExtResource("11_g7hum")
+frame_4/duration = 1.0
+frame_5/texture = ExtResource("12_5cwfn")
+frame_5/duration = 1.0
+frame_6/texture = ExtResource("13_som7m")
+frame_6/duration = 1.0
+frame_7/texture = ExtResource("14_y34b8")
+frame_7/duration = 1.0
+frame_8/texture = ExtResource("15_5pnkg")
+frame_8/duration = 1.0
+frame_9/texture = ExtResource("16_habfj")
+frame_9/duration = 1.0
+frame_10/texture = ExtResource("3_hkg3x")
+frame_10/duration = 1.0
+frame_11/texture = ExtResource("4_8krra")
+frame_11/duration = 1.0
+frame_12/texture = ExtResource("5_oh7g2")
+frame_12/duration = 1.0
+frame_13/texture = ExtResource("6_poka5")
+frame_13/duration = 1.0
+frame_14/texture = ExtResource("7_iu04j")
+frame_14/duration = 1.0
+frame_15/texture = ExtResource("8_qvx2j")
+frame_15/duration = 1.0

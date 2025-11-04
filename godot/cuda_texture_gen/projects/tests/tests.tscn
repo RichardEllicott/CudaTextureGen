@@ -1,0 +1,42 @@
+[gd_scene load_steps=9 format=3 uid="uid://ehcnwlmxl1ru"]
+
+[ext_resource type="Texture2D" uid="uid://fas4beuia3r2" path="res://textures/test_erosion_3_2_01.blur.normal.png" id="1_pdf4d"]
+[ext_resource type="Texture2D" uid="uid://2sm1unkyrkuc" path="res://textures/test_erosion_3_2_01.blur.albedo.png" id="1_soec6"]
+[ext_resource type="Texture2D" uid="uid://b4u7lug8xn3q" path="res://textures/test_erosion_3_2_01.blur.png" id="3_76pm4"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ipkew"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_soec6"]
+albedo_texture = ExtResource("1_soec6")
+roughness_texture = ExtResource("3_76pm4")
+normal_enabled = true
+normal_texture = ExtResource("1_pdf4d")
+uv1_scale = Vector3(0.125, 0.125, 0.125)
+uv1_triplanar = true
+uv1_world_triplanar = true
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_pdf4d"]
+sky_top_color = Color(0.14765625, 0.17477678, 0.2109375, 1)
+
+[sub_resource type="Sky" id="Sky_ipkew"]
+sky_material = SubResource("ProceduralSkyMaterial_pdf4d")
+
+[sub_resource type="Environment" id="Environment_soec6"]
+background_mode = 2
+sky = SubResource("Sky_ipkew")
+fog_enabled = true
+fog_light_color = Color(0.35517398, 0.3947995, 0.47801313, 1)
+fog_density = 0.0348
+
+[node name="Tests" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(128, 0, 0, 0, 128, 0, 0, 0, 128, 0, 0, 0)
+mesh = SubResource("PlaneMesh_ipkew")
+surface_material_override/0 = SubResource("StandardMaterial3D_soec6")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.48216593, 0.121376485, 0.86763114, -0.8759089, 0.08635433, 0.4746857, -0.017308023, -0.98884314, 0.14795187, 0, 50.920143, 0)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_soec6")

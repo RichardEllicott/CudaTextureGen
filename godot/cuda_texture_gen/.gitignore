@@ -1,0 +1,18 @@
+# Godot build artifacts
+.import/
+*.import
+*.tmp
+*.log
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Optional: ignore binaries or generated assets
+*.exe
+*.dll
+*.so
+*.pck
+
+.godot/
+*.png # WARNING, we're ignoring all png images

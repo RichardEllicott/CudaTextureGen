@@ -1,0 +1,162 @@
+[gd_scene load_steps=11 format=3 uid="uid://7gbwq76p8pim"]
+
+[ext_resource type="Texture2D" uid="uid://y1ufptrjafl5" path="res://textures/test_erosion_3_2_01.blur.albedo.png" id="1_7xofq"]
+[ext_resource type="Texture2D" uid="uid://dhphyw1igw2cw" path="res://textures/test2.png" id="2_7xofq"]
+[ext_resource type="Texture2D" uid="uid://bo6efm5jqdlc5" path="res://textures/test2.normal.png" id="3_uvk61"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ipkew"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7xofq"]
+albedo_texture = ExtResource("1_7xofq")
+roughness_texture = ExtResource("2_7xofq")
+normal_enabled = true
+normal_texture = ExtResource("3_uvk61")
+heightmap_enabled = true
+heightmap_deep_parallax = true
+heightmap_min_layers = 32
+heightmap_max_layers = 32
+heightmap_texture = ExtResource("2_7xofq")
+uv1_scale = Vector3(0.125, 0.125, 0.125)
+uv1_world_triplanar = true
+
+[sub_resource type="Shader" id="Shader_7xofq"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.5.1.stable's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+
+uniform sampler2D texture_normal : hint_roughness_normal, filter_linear_mipmap, repeat_enable;
+uniform float normal_scale : hint_range(-16.0, 16.0);
+
+uniform sampler2D texture_heightmap : hint_default_black, filter_linear_mipmap, repeat_enable;
+uniform float heightmap_scale : hint_range(-16.0, 16.0, 0.001);
+uniform int heightmap_min_layers : hint_range(1, 64);
+uniform int heightmap_max_layers : hint_range(1, 64);
+uniform vec2 heightmap_flip;
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+void vertex() {
+	UV = UV * uv1_scale.xy + uv1_offset.xy;
+}
+
+void fragment() {
+	vec2 base_uv = UV;
+
+	{
+		// Height: Enabled
+		vec3 view_dir = normalize(normalize(-VERTEX + EYE_OFFSET) * mat3(TANGENT * heightmap_flip.x, -BINORMAL * heightmap_flip.y, NORMAL));
+
+		// Height Deep Parallax: Enabled
+		float num_layers = mix(float(heightmap_max_layers), float(heightmap_min_layers), abs(dot(vec3(0.0, 0.0, 1.0), view_dir)));
+		float layer_depth = 1.0 / num_layers;
+		float current_layer_depth = 0.0;
+		vec2 p = view_dir.xy * heightmap_scale * 0.01;
+		vec2 delta = p / num_layers;
+		vec2 ofs = base_uv;
+		float depth = 1.0 - texture(texture_heightmap, ofs).r;
+
+		float current_depth = 0.0;
+		while (current_depth < depth) {
+			ofs -= delta;
+			depth = 1.0 - texture(texture_heightmap, ofs).r;
+
+			current_depth += layer_depth;
+		}
+
+		vec2 prev_ofs = ofs + delta;
+		float after_depth = depth - current_depth;
+		float before_depth = (1.0 - texture(texture_heightmap, prev_ofs).r) - current_depth + layer_depth;
+
+		float weight = after_depth / (after_depth - before_depth);
+		ofs = mix(ofs, prev_ofs, weight);
+		base_uv = ofs;
+	}
+
+	vec4 albedo_tex = texture(texture_albedo, base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+
+	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
+	METALLIC = metallic_tex * metallic;
+	SPECULAR = specular;
+
+	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
+	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
+	ROUGHNESS = roughness_tex * roughness;
+
+	// Normal Map: Enabled
+	NORMAL_MAP = texture(texture_normal, base_uv).rgb;
+	NORMAL_MAP_DEPTH = normal_scale;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_uvk61"]
+render_priority = 0
+shader = SubResource("Shader_7xofq")
+shader_parameter/albedo = Color(1, 1, 1, 1)
+shader_parameter/texture_albedo = ExtResource("1_7xofq")
+shader_parameter/albedo_texture_size = Vector2i(2048, 2048)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/texture_roughness = ExtResource("2_7xofq")
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/texture_normal = ExtResource("3_uvk61")
+shader_parameter/normal_scale = 1.0
+shader_parameter/texture_heightmap = ExtResource("2_7xofq")
+shader_parameter/heightmap_scale = 5.0
+shader_parameter/heightmap_min_layers = 32
+shader_parameter/heightmap_max_layers = 32
+shader_parameter/heightmap_flip = Vector2(1, 1)
+shader_parameter/uv1_scale = Vector3(0.125, 0.125, 0.125)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_pdf4d"]
+sky_top_color = Color(0.14765625, 0.17477678, 0.2109375, 1)
+
+[sub_resource type="Sky" id="Sky_ipkew"]
+sky_material = SubResource("ProceduralSkyMaterial_pdf4d")
+
+[sub_resource type="Environment" id="Environment_soec6"]
+background_mode = 2
+sky = SubResource("Sky_ipkew")
+fog_light_color = Color(0.35517398, 0.3947995, 0.47801313, 1)
+fog_density = 0.0348
+
+[node name="Tests" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0)
+visible = false
+mesh = SubResource("PlaneMesh_ipkew")
+surface_material_override/0 = SubResource("StandardMaterial3D_7xofq")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, -0.7278662, 2.2757454, 2.4374251)
+mesh = SubResource("PlaneMesh_ipkew")
+surface_material_override/0 = SubResource("ShaderMaterial_uvk61")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.48216593, 0.121376485, 0.86763114, -0.8759089, 0.08635433, 0.4746857, -0.017308023, -0.98884314, 0.14795187, 0, 50.920143, 0)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_soec6")
