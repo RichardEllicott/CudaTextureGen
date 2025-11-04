@@ -1,7 +1,5 @@
 """
-
-
-
+testing 
 
 """
 # from pathlib import Path
@@ -23,6 +21,8 @@ from tools import *
 # import matplotlib.pyplot as plt
 # from matplotlib.colors import ListedColormap
 
+print(dir(cuda_texture_gen))
+
 
 def test_erosion4():
 
@@ -36,8 +36,7 @@ def test_erosion4():
     print("min: {}, max: {}".format(array.min(), array.max()))
     normalize_array(array)
 
-    save_array_as_image(array * 255, "{}/{}.png".format(folder, base_filename + "_noise"))
-
+    save_array_as_image(array * 255, "{}/{}.png".format(folder, base_filename + ".noise"))
 
     erosion.steps = 256 * 4
     erosion.mode = 1
@@ -47,13 +46,25 @@ def test_erosion4():
     array = erosion.height_map
     print("min: {}, max: {}".format(array.min(), array.max()))
 
-    save_array_as_image(array * 255, "{}/{}.png".format(folder, base_filename + "_erode_1"))
+    normalize_array(array)
+
+    save_array_as_image(array * 255, "{}/{}.png".format(folder, base_filename + ".erode"))
+
+    normal_map = generate_normal_map(array, strength=4.0)
+    save_array_as_image(normal_map * 255, "{}/{}.png".format(folder, base_filename + ".erode.normal"))
+
+    ao_map = generate_ao_map(array * 64, radius=3.0, mode=0)
+    save_array_as_image(ao_map * 255, "{}/{}.png".format(folder, base_filename + ".erode.ao"))
+
+
+
+    albedo = apply_color_map(array)
+    save_array_as_image(albedo * 255, "{}/{}.png".format(folder, base_filename + ".albedo"))
+
 
     array = erosion.sediment_map
     print("min: {}, max: {}".format(array.min(), array.max()))
-    save_array_as_image(array * 255, "{}/{}.png".format(folder, base_filename + "_sediment"))
-
-
+    save_array_as_image(array * 255, "{}/{}.png".format(folder, base_filename + ".sediment"))
 
 
 test_erosion4()

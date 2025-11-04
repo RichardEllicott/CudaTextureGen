@@ -75,7 +75,7 @@ __global__ void generate_normal_map_kernel(const float *__restrict__ heightmap,
 
 // host_in: pointer to heightmap data (width*height floats)
 // host_out: pointer to output normal map (width*height*3 floats)
-void ShaderMaps::generate_normal_map(
+void generate_normal_map(
     const float *host_in, float *host_out,
     int width, int height,
     float scale, bool wrap) {
@@ -312,7 +312,7 @@ htao_kernel(
     ao_map[base_idx] = ao;
 }
 
-void ShaderMaps::generate_ao_map(
+void generate_ao_map(
     const float *host_in, float *host_out,
     int width, int height,
     int radius, bool wrap, int mode) {
@@ -342,7 +342,7 @@ void ShaderMaps::generate_ao_map(
         pars = HTAO_Pars::High();
         break;
     }
-    core::cuda::Struct<HTAO_Pars> gpu_pars(pars);
+    core::cuda::Struct<HTAO_Pars> _pars(pars);
 
     dim3 block(16, 16);
     dim3 grid((width + block.x - 1) / block.x,
@@ -361,7 +361,7 @@ void ShaderMaps::generate_ao_map(
         htao_kernel<<<grid, block>>>(
             d_in, d_out,
             width, height,
-            wrap, gpu_pars.dev_ptr());
+            wrap, _pars.dev_ptr());
 
         break;
     case 2:
@@ -369,14 +369,14 @@ void ShaderMaps::generate_ao_map(
         htao_kernel<<<grid, block>>>(
             d_in, d_out,
             width, height,
-            wrap, gpu_pars.dev_ptr());
+            wrap, _pars.dev_ptr());
         break;
     case 3:
 
         htao_kernel<<<grid, block>>>(
             d_in, d_out,
             width, height,
-            wrap, gpu_pars.dev_ptr());
+            wrap, _pars.dev_ptr());
         break;
 
     default:

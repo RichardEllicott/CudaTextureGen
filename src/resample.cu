@@ -2,6 +2,10 @@
 
 namespace resample {
 
+constexpr float PI = 3.14159265358979323846f;
+constexpr float DEG_TO_RAD = PI / 180.0f;
+constexpr float RAD_TO_DEG = 180.0f / PI;
+
 __device__ __forceinline__ int wrap_coord(float v, float max) {
     float m = fmodf(v, max);
     return (m < 0.0f) ? m + max : m;
@@ -57,25 +61,54 @@ __global__ void resample_kernel(Parameters *pars,
 
     int idx = y * out_w + x;
 
-    // figure out the soruce x,y
-    float src_x = map_x[idx];
-    float src_y = map_y[idx];
+    if (pars->function_mode == 0) {
 
-    // scaling so that we're neutral to image resolution (0.5 would be half the output image width)
-    if (pars->scale_by_output_size) {
-        src_x *= out_w;
-        src_y *= out_h;
+        // figure out the soruce x,y
+        float src_x = map_x[idx];
+        float src_y = map_y[idx];
+
+        // scaling so that we're neutral to image resolution (0.5 would be half the output image width)
+        if (pars->scale_by_output_size) {
+            src_x *= out_w;
+            src_y *= out_h;
+        }
+        // relative offset (most logical and easiest to feed map into)
+        if (pars->relative_offset) {
+            src_x += x;
+            src_y += y;
+        }
+
+        output[idx] = sample_bilinear(input, in_w, in_h, src_x, src_y, true);
+
+    } else if (pars->function_mode == 1) {
+        // --- plain rotation around center ---
+        // angle is stored in degrees
+        float angle = pars->angle * DEG_TO_RAD;
+        float cosA = cosf(angle);
+        float sinA = sinf(angle);
+
+        // center of output image
+        float cx = 0.5f * out_w;
+        float cy = 0.5f * out_h;
+
+        // coordinates relative to center
+        float dx = (float)x - cx;
+        float dy = (float)y - cy;
+
+        // apply inverse rotation (output -> input mapping)
+        float src_x = cosA * dx + sinA * dy + cx;
+        float src_y = -sinA * dx + cosA * dy + cy;
+
+        // --- apply normalized offset ---
+        // offset_x = 0.5 means half the width, offset_y = 0.5 means half the height
+        float offset_px = pars->offset_x * out_w;
+        float offset_py = pars->offset_y * out_h;
+        src_x += offset_px;
+        src_y += offset_py;
+
+        // sample from input
+        output[idx] = sample_bilinear(input, in_w, in_h, src_x, src_y, true);
     }
-    // relative offset (most logical and easiest to feed map into)
-    if (pars->relative_offset) {
-        src_x += x;
-        src_y += y;
-    }
-
-    output[idx] = sample_bilinear(input, in_w, in_h, src_x, src_y, true);
-}
-
-void Resample::transform_process() {
 }
 
 void Resample::process() {

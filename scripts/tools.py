@@ -1,6 +1,6 @@
 """
 
-standard tools interface
+standard tools interface, load our library and hook up to it
 
 pip install numpy
 pip install scipy
@@ -14,6 +14,10 @@ import numpy as np
 from PIL import Image
 import inspect
 from matplotlib.colors import to_rgb
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 
 
 def print_current_function():
@@ -80,7 +84,7 @@ def offset_array(array):
     array[:] = np.roll(array, shift=(dy, dx), axis=(0, 1))
 
 
-def get_fractal_noise(width=1024, height=1024, octaves=6, base_period=2, base_seed=0, gain=0.8, lacunarity=2.0):
+def get_fractal_noise(width=1024, height=1024, octaves=6, base_period=2, base_seed=12345, gain=0.8, lacunarity=2.0):
     """
     get_fractal_noise
     """
@@ -145,18 +149,14 @@ def generate_normal_map(array, strength=1.0, wrap=True):
     """
     generate normal map
     """
-    shader_maps = cuda_texture_gen.ShaderMaps()
-    normal_map = shader_maps.generate_normal_map(array, strength, wrap)
-    return normal_map
+    return cuda_texture_gen.generate_normal_map(array, strength, wrap)
 
 
-def generate_ao_map(array, strength=1.0, wrap=True):
+def generate_ao_map(array, radius=1.0, wrap=True, mode=0):
     """
     generate ambient occlusion
     """
-    shader_maps = cuda_texture_gen.ShaderMaps()
-    ao_map = shader_maps.generate_ao_map(array)
-    return ao_map
+    return cuda_texture_gen.generate_ao_map(array, radius, wrap, mode)
 
 
 def smooth_layered_gradient(height_map, band_colors=[
@@ -188,3 +188,13 @@ def smooth_layered_gradient(height_map, band_colors=[
 
 def blur(input, amount=1.0, wrap=True):
     cuda_texture_gen.blur(input, amount, wrap)
+
+
+def apply_color_map(height_map, cmap="terrain"):
+    """
+    apply matplotlib colormap
+
+    Choose a colormap (e.g., 'terrain', 'viridis', 'plasma', or define your own)
+    """
+    colormap = plt.get_cmap(cmap)
+    return colormap(height_map)

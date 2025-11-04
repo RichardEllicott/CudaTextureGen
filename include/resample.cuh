@@ -14,12 +14,15 @@ function_mode 0 = use map_x and map_y (only one so far)
 */
 #pragma once
 
-#define RESAMPLE_PARAMETERS        \
-    X(size_t, _block, 16)          \
-    X(bool, relative_offset, true) \
-    X(bool, scale_by_output_size, true)\
-    X(int, sample_mode, 0)\
-    X(int, function_mode, 0)\
+#define RESAMPLE_PARAMETERS             \
+    X(size_t, _block, 16)               \
+    X(bool, relative_offset, true)      \
+    X(bool, scale_by_output_size, true) \
+    X(int, sample_mode, 0)              \
+    X(int, function_mode, 0)            \
+    X(float, angle, 0.0f)               \
+    X(float, offset_x, 0.0f)            \
+    X(float, offset_y, 0.0f)
 
 #define RESAMPLE_MAPS \
     X(float, input)   \

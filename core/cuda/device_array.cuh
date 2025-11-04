@@ -39,6 +39,20 @@ class DeviceArray {
         return *this;
     }
 
+    // Explicit deep copy via clone()... could have used the copy sematics but this is more explicit
+    DeviceArray clone() const {
+        DeviceArray copy;
+        if (_size > 0) {
+            copy.resize(_size);
+            cudaError_t err = cudaMemcpy(copy._dev_ptr, _dev_ptr,
+                                         _size_bytes, cudaMemcpyDeviceToDevice);
+            if (err != cudaSuccess) {
+                throw std::runtime_error("cudaMemcpy (Device->Device) failed in clone()");
+            }
+        }
+        return copy;
+    }
+
     DeviceArray() = default;
     ~DeviceArray() { free_device(); }
 
@@ -48,6 +62,10 @@ class DeviceArray {
     const T *dev_ptr() const { return _dev_ptr; }
 
     void resize(size_t n) {
+
+        if (n == _size) // skip if the same size
+            return;
+
         _size = n;
         allocate_device();
     }
@@ -114,31 +132,29 @@ class DeviceArray {
     // Host <-> Device transfer methods
     // -------------------------------
 
-    // Upload from host array to device
+    // Upload from host pointer
     void upload(const T *host_ptr, size_t count) {
-        if (count > _size) {
-            throw std::runtime_error("Upload size exceeds device allocation");
-        }
-        cudaError_t err = cudaMemcpy(_dev_ptr, host_ptr,
-                                     count * sizeof(T),
-                                     cudaMemcpyHostToDevice);
-        if (err != cudaSuccess) {
+
+        resize(count); // resize, will reallocate if the size changes
+        if (count == 0)
+            return;
+
+        cudaError_t err = cudaMemcpy(_dev_ptr, host_ptr, _size_bytes, cudaMemcpyHostToDevice);
+        if (err != cudaSuccess)
             throw std::runtime_error("cudaMemcpy (Host->Device) failed");
-        }
     }
 
-    // Download from device to host array
-    void download(T *host_ptr, size_t count) const {
-        if (count > _size) {
-            throw std::runtime_error("Download size exceeds device allocation");
-        }
-        cudaError_t err = cudaMemcpy(host_ptr, _dev_ptr,
-                                     count * sizeof(T),
-                                     cudaMemcpyDeviceToHost);
+    // Download to host pointer (dangerous if the sizes don't match!)
+    void download(T *host_ptr) const {
+
+        if (_size <= 0) // skip if no data
+            return;
+
+        cudaError_t err = cudaMemcpy(host_ptr, _dev_ptr, _size_bytes, cudaMemcpyDeviceToHost);
         if (err != cudaSuccess) {
             throw std::runtime_error("cudaMemcpy (Device->Host) failed");
         }
     }
 };
 
-} // namespace core
+} // namespace core::cuda

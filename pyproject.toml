@@ -1,3 +1,5 @@
+# i think i only added this file for the max_line_length autopep
+
 [build-system]
 requires = ["scikit-build-core", "nanobind"]
 build-backend = "scikit_build_core.build"
