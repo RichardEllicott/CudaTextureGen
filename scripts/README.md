@@ -1,3 +1,3 @@
 # scripts
 
-python scripts testing out our framework
+python scripts testing out the framework
