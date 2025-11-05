@@ -81,8 +81,11 @@ void TEMPLATE_CLASS_NAME::process() {
 
 #elif TEMPLATE_DEMO_OPTION == 1
 
-    auto curand_array = core::cuda::CurandArray();
-    curand_array.init(pars.width, pars.height, grid, block, stream.get());
+    // auto curand_array = core::cuda::CurandArray();
+    // curand_array.init(pars.width, pars.height, grid, block, stream.get());
+    // stream.sync(); // important??
+
+    auto curand_array = core::cuda::CurandArray(pars.width, pars.height, stream.get());
     stream.sync(); // important??
 
     generate_noise<<<grid, block, 0, stream.get()>>>(

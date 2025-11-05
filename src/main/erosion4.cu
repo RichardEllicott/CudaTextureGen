@@ -147,7 +147,7 @@ void TEMPLATE_CLASS_NAME::process() {
     core::cuda::DeviceArray<curandState> rng_states;
     if (pars.jitter > 0.0f) {
         rng_states.resize(height_map.size());                                             // resize and allocate
-        init_rand_states<<<block, grid, 0, stream.get()>>>(rng_states.dev_ptr(), 1234UL); // init the rand states with a seed
+        init_rand_states<<<grid, block, 0, stream.get()>>>(rng_states.dev_ptr(), 1234UL); // init the rand states with a seed
     }
 
     switch (pars.mode) {

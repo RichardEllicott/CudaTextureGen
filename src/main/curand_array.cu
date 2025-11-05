@@ -33,4 +33,16 @@ void CurandArray::init(size_t width, size_t height, dim3 grid, dim3 block, cudaS
     // cudaDeviceSynchronize();
 }
 
+void CurandArray::init(size_t width, size_t height, cudaStream_t stream) {
+
+    // calculate grid and block
+    dim3 block(16, 16);
+    dim3 grid((width + block.x - 1) / block.x,
+              (height + block.y - 1) / block.y);
+
+    rng_states.resize(width * height);
+    init_rand_states<<<grid, block, 0, stream>>>(rng_states.dev_ptr(), 1234UL, width, height); // init the rand states with a seed
+    cudaStreamSynchronize(stream);
+}
+
 } // namespace core::cuda
