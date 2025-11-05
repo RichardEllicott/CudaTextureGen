@@ -1,101 +1,127 @@
-# Windows Build Script
+param(
+    # [switch]$sccache,
+    [string]$config = "Release"
+)
 #
-# REQUIREMENTS:
+# 🪟 Windows Build Script
 #
-# Visual Studio Installer:
+# ⚠️ run from "Developer PowerShell for VS 2022"
+#
+# requirements:
+# 
 # https://visualstudio.microsoft.com/visual-cpp-build-tools/
-#
 # from the installer, get:
 #   - Desktop development with C++
 #   - tick the Windows 11 SDK also
-#
 # should be ~12.35 GB
 #
-# load the dev shell from the start menu:
-#   - "Developer PowerShell for VS 2022"
+# get CUDA Toolkit
+# https://developer.nvidia.com/cuda-12-5-0-download-archive
 #
 #
-# CUDA Toolkit, must be downloaded from Nvidia, currently working on CUDA 12.5 as this is the minimum version working with the 
-#   - https://developer.nvidia.com/cuda-12-5-0-download-archive
+# other tools can be got from scoop
+# https://scoop.sh/
 #
-# i use scoop to install my tools, get scoop:
-#   - https://scoop.sh/
+# scoop install cmake
+# scoop install ninja
+# scoop install sccache # optional
 #
-#   - scoop install cmake
-#   - scoop install ninja
-#   
-# Python would need to be installed as admin, this could still be a problem with scoop
-#   - scoop uninstall python # if python was not installed global
-#   - scoop install python --global
+# python from scoop has issues, best to install from website:
+# https://www.python.org/downloads/ (tested on 3.13.7)
 #
-#  so i removed it from scoop and use the python website:
-#   - https://www.python.org/downloads/ 
-#   MAKE SURE TO ADD PYTHON TO PATH!
-#
-#
-
-# ⚠️ WARNING ⚠️
-# getting windows to compile took a lot of added paths to find the right compilers
 
 $ErrorActionPreference = "Stop" # like "set -e" in bash (will exit if we crash)
 
 
-# ❓❓❓ MAY HAVE BEEN REQUIRED WITHOUT DEV SHELL
-$env:WindowsSdkDir = "C:\Program Files (x86)\Windows Kits\10"
-$env:INCLUDE = @(
-    "$env:WindowsSdkDir\Include\10.0.26100.0\ucrt",
-    "$env:WindowsSdkDir\Include\10.0.26100.0\shared",
-    "$env:WindowsSdkDir\Include\10.0.26100.0\um",
-    "$env:WindowsSdkDir\Include\10.0.26100.0\winrt"
-) -join ';'
+# ----------------------------------------------------------------
+# ensure build directory exists
+$build_dir = "build/windows"
+mkdir -Force $build_dir # make a build folder
+# ----------------------------------------------------------------
 
 
-# ❓❓❓ MAY HAVE BEEN REQUIRED WITHOUT DEV SHELL
-$env:LIB = @(
-    "$env:WindowsSdkDir\Lib\10.0.26100.0\ucrt\x64",
-    "$env:WindowsSdkDir\Lib\10.0.26100.0\um\x64"
-) -join ';'
-
-
-# ❓❓❓ MAY HAVE BEEN REQUIRED WITHOUT DEV SHELL
-$msvcLibPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\lib\x64"
-$env:LIB = "$env:LIB;$msvcLibPath"
-
-
-
-
-# ❓❓❓ MAY HAVE BEEN REQUIRED WITHOUT DEV SHELL
-$env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5"
+# ----------------------------------------------------------------
+# ⚙️ we need to manually point to the CUDA compiler, this is not found by the VS environment automaticly
+if (-not $env:CUDA_PATH) {
+    # fallback if not defined but normally a $env:CUDA_PATH should exist
+    $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5"
+}
 $env:PATH = "$env:CUDA_PATH\bin;$env:CUDA_PATH\libnvvp;" + $env:PATH
 $env:INCLUDE = "$env:CUDA_PATH\include;" + $env:INCLUDE
 $env:LIB = "$env:CUDA_PATH\lib\x64;" + $env:LIB
-$env:CUDACXX = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin\nvcc.exe"
+$env:CUDACXX = Join-Path $env:CUDA_PATH "bin\nvcc.exe"
+# ----------------------------------------------------------------
 
 
-$build_dir = "build/windows"
+# ----------------------------------------------------------------
+# ⚙️ this is like running the "x64 Native Tools Command Prompt for VS 2022" and solves most windows build issues
+# the following allows me to run from "Developer PowerShell for VS 2022"
 
-# Remove-Item -Recurse -Force .\$buildDir # ⚠️ for debug (force a full rebuild)
-mkdir -Force $build_dir # make a build folder
+# Path to the VS environment setup script
+$vcvars = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
+# Run it with the x64 argument
+cmd /c "`"$vcvars`" x64 && set" | ForEach-Object {
+    if ($_ -match "^(.*?)=(.*)$") {
+        Set-Item -Force -Path "env:$($matches[1])" -Value $matches[2]
+    }
+}
 
-# custom windows toolchain to make work on windows
-$toolchain = Resolve-Path ./toolchain-msvc.cmake
+# ⚠️ this part is optional, if the above runs each time we build, it will create duplicates
+$env:PATH = ($env:PATH -split ';' | Select-Object -Unique) -join ';'
+$env:INCLUDE = ($env:INCLUDE -split ';' | Select-Object -Unique) -join ';'
+$env:LIB = ($env:LIB -split ';' | Select-Object -Unique) -join ';'
+
+# ----------------------------------------------------------------
 
 
+# ----------------------------------------------------------------
+if (Get-Command cmake -ErrorAction SilentlyContinue) {
+    Write-Host "cmake found!"
+    $cmake_found = $true
+}
+if (Get-Command ninja -ErrorAction SilentlyContinue) {
+    Write-Host "ninja found!"
+    $ninja_found = $true
+}
+
+if (Get-Command sccache -ErrorAction SilentlyContinue) {
+    Write-Host "sccache found!"
+    $sccache_found = $true
+}
+# ----------------------------------------------------------------
 
 
-# attempting "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" ... note this didn't help my intelisense
-# i needed to run windows code from dev console, this also would likely not support CUDA?
-# cmake -S . -B build -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+# ----------------------------------------------------------------
+# cmake base starting arguments
+$cmake_args = @(
+    "-S", ".", "-B", $build_dir,
+    "-G", "Ninja",
+    "-DCMAKE_BUILD_TYPE=$config"
+)
 
+# conditionally add sccache launchers
+if ($sccache_found) {
+    $cmake_args += @(
+        "-DCMAKE_C_COMPILER_LAUNCHER=sccache",
+        "-DCMAKE_CXX_COMPILER_LAUNCHER=sccache",
+        "-DCMAKE_CUDA_COMPILER_LAUNCHER=sccache"
+    )
+}
+else {
+    Write-Host "*WARNING* sccache not found, building without it"
+}
 
+# run cmake
+cmake @cmake_args
 
-cmake -S . -B $build_dir -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Release
-# cmake -S . -B $build_dir -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE_BUILD_TYPE=Debug # 🚧 DEBUG (not working i think)
+# ❓ old command, kept as notes
+# cmake -S . -B $build_dir -G "Ninja" `
+#     "-DCMAKE_BUILD_TYPE=$config" `
+#     -DCMAKE_C_COMPILER_LAUNCHER=sccache `
+#     -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
+#     -DCMAKE_CUDA_COMPILER_LAUNCHER=sccache
 
+# 🏗️ finally compile
 ninja -C $build_dir
-
-
-
-
-
+# ----------------------------------------------------------------
 
