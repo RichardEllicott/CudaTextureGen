@@ -1,4 +1,3 @@
 #!/bin/sh
 set -e
-# python test.py
-python ./scripts/test.py
+python3 ./scripts/basic_test.py

@@ -1,40 +1,36 @@
 
-## Linux Build Instructions (Ubuntu 24.04 via WSL)
+# Linux Build Instructions (Ubuntu 24.04 via WSL)
 
-
-install Ubuntu 24.04
+## tested full install 05/11/2025
 
 ```powershell
+# install linux
 wsl --install -d Ubuntu-24.04 
 ```
 
-install build tools
-
-```bash
-sudo apt update
-sudo apt install -y build-essential cmake ninja-build
-sudo apt install -y python3 python3-venv python3-dev
-sudo apt install -y nvidia-cuda-toolkit
+```sh
+# navigate to repo and run script to install build tools
+sudo sh GET_TOOLS.sh
 ```
 
-get python libraries
-
-```bash
-sudo apt install python3-pil
-sudo apt install python3-numpy
-```
-
-to build run
-
-```bash
+```sh
+# run build script
 sh BUILD.sh
 ```
 
-### Setup VS.code to work with WSL
+```sh
+# run test script to confirm build
+sh TEST.sh
+```
 
-install the "WSL" extension in VS.code
+```sh
+# optionally run this to copy the build to the ./lib/ and generate a stub
+sh COPY_TO_RELEASE.sh
+```
 
-Linux will need clang-format
+## Setup VS.code to work with WSL (optional)
+
+install the "WSL" extension in VS.code, this is if you want to have the repo stored inside linux and work from linux (i tend to work from windows and test on linux)
 
 ```bash
 sudo apt update
