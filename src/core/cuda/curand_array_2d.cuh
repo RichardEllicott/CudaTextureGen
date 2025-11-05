@@ -27,8 +27,9 @@ class CurandArray2D {
     core::cuda::DeviceArray<curandState> rng_states;
 
   public:
-    void init(size_t width, size_t height, dim3 block, dim3 grid, cudaStream_t stream);
+    // void init(size_t width, size_t height, dim3 block, dim3 grid, cudaStream_t stream);
     void init(size_t width, size_t height, cudaStream_t stream);
+    void init(size_t width, size_t height);
 
     CurandArray2D() {
     }
@@ -36,6 +37,11 @@ class CurandArray2D {
     CurandArray2D(size_t width, size_t height, cudaStream_t stream) {
         init(width, height, stream);
     }
+
+        CurandArray2D(size_t width, size_t height) {
+        init(width, height);
+    }
+
 
     curandState *dev_ptr() {
         return rng_states.dev_ptr();

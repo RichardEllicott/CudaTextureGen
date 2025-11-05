@@ -21,28 +21,35 @@ __global__ void init_rand_states(curandState *states,
     curand_init(seed, idx, 0, &states[idx]);
 }
 
-void CurandArray2D::init(size_t width, size_t height, dim3 grid, dim3 block, cudaStream_t stream) {
+// void CurandArray2D::init(size_t width, size_t height, dim3 grid, dim3 block, cudaStream_t stream) {
 
-    rng_states.resize(width * height);
+//     rng_states.resize(width * height);
 
-    // resize and allocate
-    init_rand_states<<<grid, block, 0, stream>>>(rng_states.dev_ptr(), 1234UL, width, height); // init the rand states with a seed
-    cudaStreamSynchronize(stream);
-
-    // init_rand_states<<<grid, block>>>(rng_states.dev_ptr(), 1234UL, width, height);
-    // cudaDeviceSynchronize();
-}
+//     init_rand_states<<<grid, block, 0, stream>>>(rng_states.dev_ptr(), 1234UL, width, height); // init the rand states with a seed
+//     cudaStreamSynchronize(stream);
+// }
 
 void CurandArray2D::init(size_t width, size_t height, cudaStream_t stream) {
 
-    // calculate grid and block
     dim3 block(16, 16);
     dim3 grid((width + block.x - 1) / block.x,
               (height + block.y - 1) / block.y);
 
     rng_states.resize(width * height);
     init_rand_states<<<grid, block, 0, stream>>>(rng_states.dev_ptr(), 1234UL, width, height); // init the rand states with a seed
-    cudaStreamSynchronize(stream);
+    // cudaStreamSynchronize(stream);
+}
+
+void CurandArray2D::init(size_t width, size_t height) {
+
+    dim3 block(16, 16);
+    dim3 grid((width + block.x - 1) / block.x,
+              (height + block.y - 1) / block.y);
+
+    rng_states.resize(width * height);
+
+    init_rand_states<<<grid, block>>>(rng_states.dev_ptr(), 1234UL, width, height); // init the rand states with a seed
+    // cudaDeviceSynchronize();
 }
 
 } // namespace core::cuda

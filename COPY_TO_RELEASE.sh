@@ -1,20 +1,9 @@
-#!/bin/bash
+#!/bin/sh
 
 src="./build/linux/src/python/cuda_texture_gen.cpython-312-x86_64-linux-gnu.so"
 dst="./lib/cuda_texture_gen/cuda_texture_gen.cpython-312-x86_64-linux-gnu.so"
-
-# Ensure destination folder exists
-mkdir -p "$(dirname "$dst")"
-
-# Check if destination file exists
-if [ -f "$dst" ]; then
-    read -p "File already exists at $dst. Overwrite? (y/n): " confirm
-    if [ "$confirm" != "y" ]; then
-        echo "Copy aborted."
-        exit 1
-    fi
-fi
-
-# Copy the file
 cp "$src" "$dst"
-echo "File copied to $dst."
+
+cd ./lib/cuda_texture_gen
+stubgen -m cuda_texture_gen --include-private -o . # ends up here
+cd ../..
