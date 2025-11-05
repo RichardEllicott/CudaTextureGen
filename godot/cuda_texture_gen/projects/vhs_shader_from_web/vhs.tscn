@@ -1,0 +1,45 @@
+[gd_scene load_steps=6 format=3 uid="uid://8uu42313i2dl"]
+
+[ext_resource type="Shader" uid="uid://bmoj604vu0qpv" path="res://vhs.gdshader" id="1_ehh26"]
+[ext_resource type="Texture2D" uid="uid://y1ufptrjafl5" path="res://textures/test_erosion_3_2_01.blur.albedo.png" id="1_fnxf3"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_fwswd"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_ct8uy"]
+noise = SubResource("FastNoiseLite_fwswd")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fnxf3"]
+shader = ExtResource("1_ehh26")
+shader_parameter/noise_texture = SubResource("NoiseTexture2D_ct8uy")
+shader_parameter/chromatic_aberration = 4.32
+shader_parameter/lens_distortion = 1.18
+shader_parameter/line_amount = 200.0
+shader_parameter/lines_speed = 1.0
+shader_parameter/lines_displacement = 0.64
+shader_parameter/sine_lines_amount = 14.9
+shader_parameter/sine_lines_speed = 20.0
+shader_parameter/sine_lines_displacement = 10.5
+shader_parameter/sine_lines_threshold = 0.055
+shader_parameter/contrast = 0.924
+shader_parameter/noise_strength = 0.15
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TestErosion3201_blur_albedo" type="Sprite2D" parent="."]
+position = Vector2(725, 628)
+texture = ExtResource("1_fnxf3")
+
+[node name="TextureRect" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_fnxf3")
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 0
+offset_left = 26.0
+offset_top = 31.0
+offset_right = 466.0
+offset_bottom = 280.0

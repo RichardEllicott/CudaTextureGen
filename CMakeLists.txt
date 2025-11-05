@@ -52,8 +52,8 @@ endif()
 # # Recursively find all .cu and .cpp files in src/
 # #
 file(GLOB_RECURSE CUDA_CPP_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/src/*.cu"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/main/*.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/main/*.cpp"
     # "${CMAKE_CURRENT_SOURCE_DIR}/python/bindings/*.cpp"
 )
 # Create a static library from all collected sources
