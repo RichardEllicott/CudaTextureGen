@@ -1,11 +1,16 @@
 param(
-    # [switch]$sccache,
-    [string]$config = "Release"
+    [string]$build_type = "Release",
+    [string]$build_dir = "build/windows"
 )
-#
+$ErrorActionPreference = "Stop" # exit script if any commands crash
+
+
+#region 📝 Docs
+# ================================================================================================================================
 # 🪟 Windows Build Script
+# --------------------------------------------------------------------------------------------------------------------------------
 #
-# ⚠️ run from "Developer PowerShell for VS 2022"
+# ⚠️ may run from "Developer PowerShell for VS 2022" (but might be okay in normal powershell now)
 #
 # requirements:
 # 
@@ -29,33 +34,55 @@ param(
 # python from scoop has issues, best to install from website:
 # https://www.python.org/downloads/ (tested on 3.13.7)
 #
+# ================================================================================================================================
+#endregion
 
-$ErrorActionPreference = "Stop" # like "set -e" in bash (will exit if we crash)
+
+#region ✅ Checks
+# ================================================================================================================================
+if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
+    throw "Required command 'cmake' not found in PATH. Please install it before continuing."
+}
+if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
+    throw "Required command 'ninja' not found in PATH. Please install it before continuing."
+}
+if (Get-Command sccache -ErrorAction SilentlyContinue) { $sccache_found = $true }
+# ================================================================================================================================
+#endregion
 
 
-# ----------------------------------------------------------------
-# ensure build directory exists
-$build_dir = "build/windows"
+#region 📁 Create Build Folder
+
 mkdir -Force $build_dir # make a build folder
-# ----------------------------------------------------------------
+
+#endregion
 
 
-# ----------------------------------------------------------------
-# ⚙️ we need to manually point to the CUDA compiler, this is not found by the VS environment automaticly
+#region 🔍 Find Cuda Compiler
+# ================================================================================================================================
+
+# manually point to the CUDA compiler, if not found by the VS environment automaticly
 if (-not $env:CUDA_PATH) {
     # fallback if not defined but normally a $env:CUDA_PATH should exist
     $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5"
+    Write-Warning "CUDA_PATH was not defined. Fallback applied: $env:CUDA_PATH"
 }
+
+# set up enviroment vars
 $env:PATH = "$env:CUDA_PATH\bin;$env:CUDA_PATH\libnvvp;" + $env:PATH
+$env:CUDACXX = Join-Path $env:CUDA_PATH "bin\nvcc.exe"
 $env:INCLUDE = "$env:CUDA_PATH\include;" + $env:INCLUDE
 $env:LIB = "$env:CUDA_PATH\lib\x64;" + $env:LIB
-$env:CUDACXX = Join-Path $env:CUDA_PATH "bin\nvcc.exe"
-# ----------------------------------------------------------------
+
+# ================================================================================================================================
+
+#endregion
 
 
-# ----------------------------------------------------------------
-# ⚙️ this is like running the "x64 Native Tools Command Prompt for VS 2022" and solves most windows build issues
-# the following allows me to run from "Developer PowerShell for VS 2022"
+#region ⚙️ Setup Environment
+# ================================================================================================================================
+# run VS environment setup script (this is like running "x64 Native Tools Command Prompt for VS 2022")
+# --------------------------------------------------------------------------------------------------------------------------------
 
 # Path to the VS environment setup script
 $vcvars = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
@@ -66,37 +93,21 @@ cmd /c "`"$vcvars`" x64 && set" | ForEach-Object {
     }
 }
 
-# ⚠️ this part is optional, if the above runs each time we build, it will create duplicates
+# ⚠️ optional, if the above runs each time we build, it will create duplicates eventually causing an error
 $env:PATH = ($env:PATH -split ';' | Select-Object -Unique) -join ';'
 $env:INCLUDE = ($env:INCLUDE -split ';' | Select-Object -Unique) -join ';'
 $env:LIB = ($env:LIB -split ';' | Select-Object -Unique) -join ';'
-
-# ----------------------------------------------------------------
-
-
-# ----------------------------------------------------------------
-if (Get-Command cmake -ErrorAction SilentlyContinue) {
-    Write-Host "cmake found!"
-    $cmake_found = $true
-}
-if (Get-Command ninja -ErrorAction SilentlyContinue) {
-    Write-Host "ninja found!"
-    $ninja_found = $true
-}
-
-if (Get-Command sccache -ErrorAction SilentlyContinue) {
-    Write-Host "sccache found!"
-    $sccache_found = $true
-}
-# ----------------------------------------------------------------
+#endregion
 
 
-# ----------------------------------------------------------------
+#region 🔨 Run CMake and Compile
+# ================================================================================================================================
+
 # cmake base starting arguments
 $cmake_args = @(
     "-S", ".", "-B", $build_dir,
     "-G", "Ninja",
-    "-DCMAKE_BUILD_TYPE=$config"
+    "-DCMAKE_BUILD_TYPE=$build_type"
 )
 
 # conditionally add sccache launchers
@@ -114,14 +125,8 @@ else {
 # run cmake
 cmake @cmake_args
 
-# ❓ old command, kept as notes
-# cmake -S . -B $build_dir -G "Ninja" `
-#     "-DCMAKE_BUILD_TYPE=$config" `
-#     -DCMAKE_C_COMPILER_LAUNCHER=sccache `
-#     -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
-#     -DCMAKE_CUDA_COMPILER_LAUNCHER=sccache
-
-# 🏗️ finally compile
+# compile with ninja
 ninja -C $build_dir
-# ----------------------------------------------------------------
 
+# ================================================================================================================================
+#endregion

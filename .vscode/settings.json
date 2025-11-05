@@ -100,6 +100,42 @@
         {
             "folderPath": "cuda_texture_gen\\python\\bindings\\bindable.h\\",
             "badge": "❌"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\erosion2.cuh\\",
+            "badge": "❌"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\erosion3.cuh\\",
+            "badge": "✔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\erosion4.cuh\\",
+            "badge": "✔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\blur.cuh\\",
+            "badge": "✔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\resample.cuh\\",
+            "badge": "✔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\fluid_simulation.cuh\\",
+            "badge": "🚧"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\tectonics.cuh\\",
+            "badge": "🚧"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\template_class_3.cuh\\",
+            "badge": "👑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\TRASH\\",
+            "badge": "🗑️"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe", // stop windows vs.code using windows line endings
