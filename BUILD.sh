@@ -10,9 +10,3 @@ BUILD_DIR="build/linux"
 mkdir -p $BUILD_DIR
 cmake -S . -B "$BUILD_DIR" -G Ninja -DCMAKE_BUILD_TYPE=Release
 ninja -C "$BUILD_DIR"
-
-
-
-
-
-

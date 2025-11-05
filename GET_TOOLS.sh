@@ -1,24 +1,21 @@
-
 #!/bin/sh
-# Script for Ubuntu/Debian systems
-# Requires apt, systemd, and bash
 
-# prevent script on non Ubuntu|Debian
-if ! grep -q -E 'Ubuntu|Debian' /etc/os-release; then
-  echo "This script is intended for Ubuntu or Debian only."
-  exit 1
-fi
+# get all tools for linux script, designed for Ubuntu, should work on Debian based
 
+# build tools
 sudo apt update
+sudo apt install -y build-essential cmake ninja-build
+sudo apt install -y python3 python3-venv python3-dev
+sudo apt install -y nvidia-cuda-toolkit # tested with 12.0.140~12.0.1-4build4
 
+
+# python tools
 sudo apt install python3-numpy
 sudo apt install python3-pillow
 sudo apt install python3-scipy
 sudo apt install python3-matplotlib
 sudo apt install mypy
 
-# more difficult to see what's installed than with pip
-# apt list --installed | grep python3
 
 # 🧹 UPDATE EVERYTHNG! (may as well)
 sudo apt update         # Refresh package lists from repositories
@@ -26,5 +23,3 @@ sudo apt full-upgrade   # Upgrade all packages, resolving dependencies and repla
 sudo apt install -f     # Fix broken dependencies (if any)
 sudo apt autoremove     # Remove packages no longer needed
 sudo apt clean          # Clear cached .deb files to free up space
-
-
