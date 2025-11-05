@@ -1,4 +1,4 @@
-#include "cuda/curand_array.cuh"
+#include "cuda/curand_array_2d.cuh"
 
 namespace core::cuda {
 
@@ -21,7 +21,7 @@ __global__ void init_rand_states(curandState *states,
     curand_init(seed, idx, 0, &states[idx]);
 }
 
-void CurandArray::init(size_t width, size_t height, dim3 grid, dim3 block, cudaStream_t stream) {
+void CurandArray2D::init(size_t width, size_t height, dim3 grid, dim3 block, cudaStream_t stream) {
 
     rng_states.resize(width * height);
 
@@ -33,7 +33,7 @@ void CurandArray::init(size_t width, size_t height, dim3 grid, dim3 block, cudaS
     // cudaDeviceSynchronize();
 }
 
-void CurandArray::init(size_t width, size_t height, cudaStream_t stream) {
+void CurandArray2D::init(size_t width, size_t height, cudaStream_t stream) {
 
     // calculate grid and block
     dim3 block(16, 16);

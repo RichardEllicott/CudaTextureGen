@@ -21,7 +21,7 @@ namespace core::cuda {
 //     // states[idx] = local_state; // Save updated state
 // }
 
-class CurandArray {
+class CurandArray2D {
 
   private:
     core::cuda::DeviceArray<curandState> rng_states;
@@ -30,10 +30,10 @@ class CurandArray {
     void init(size_t width, size_t height, dim3 block, dim3 grid, cudaStream_t stream);
     void init(size_t width, size_t height, cudaStream_t stream);
 
-    CurandArray() {
+    CurandArray2D() {
     }
 
-    CurandArray(size_t width, size_t height, cudaStream_t stream) {
+    CurandArray2D(size_t width, size_t height, cudaStream_t stream) {
         init(width, height, stream);
     }
 

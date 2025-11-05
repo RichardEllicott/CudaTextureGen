@@ -1,4 +1,4 @@
-#include "cuda/curand_array.cuh"
+#include "cuda/curand_array_2d.cuh"
 #include "template_class_3.cuh"
 
 #define TEMPLATE_DEMO_OPTION 1
@@ -85,7 +85,7 @@ void TEMPLATE_CLASS_NAME::process() {
     // curand_array.init(pars.width, pars.height, grid, block, stream.get());
     // stream.sync(); // important??
 
-    auto curand_array = core::cuda::CurandArray(pars.width, pars.height, stream.get());
+    auto curand_array = core::cuda::CurandArray2D(pars.width, pars.height, stream.get());
     stream.sync(); // important??
 
     generate_noise<<<grid, block, 0, stream.get()>>>(
