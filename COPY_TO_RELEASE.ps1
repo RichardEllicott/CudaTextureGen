@@ -1,22 +1,22 @@
-
-
-# $src = ".\build\windows\src\python\cuda_texture_gen.cp313-win_amd64.pyd"
-# $dst = ".\lib\cuda_texture_gen\cuda_texture_gen.cp313-win_amd64.pyd"
-
-# Copy-Item $src -Destination $dst -Force
-
-
-
-# stubgen -m cuda_texture_gen --include-private -o ./cuda_texture_gen
-
-
-# Copy the built extension into lib/
+# ⚠️ works but i need the cd for generating the sub, just can't get that working
 $src = ".\build\windows\src\python\cuda_texture_gen.cp313-win_amd64.pyd"
 $dst = ".\lib\cuda_texture_gen\cuda_texture_gen.cp313-win_amd64.pyd"
 Copy-Item $src -Destination $dst -Force
 
-# Make sure Python can see lib/
-$env:PYTHONPATH = ".\lib"
+cd .\lib\cuda_texture_gen
+stubgen -m cuda_texture_gen --include-private -o . # ends up here
+cd ..\..
 
-# Generate stubs into a stubs/ folder at root
-stubgen -m cuda_texture_gen --include-private -o .\stubs
+
+
+# ⚠️ this just doesn't want to work!!
+# # Copy the built extension into lib/
+# $src = ".\build\windows\src\python\cuda_texture_gen.cp313-win_amd64.pyd"
+# $dst = ".\lib\cuda_texture_gen\cuda_texture_gen.cp313-win_amd64.pyd"
+# Copy-Item $src -Destination $dst -Force
+
+# # Ensure Python can import from lib/
+# $env:PYTHONPATH = ".\lib"
+
+# # Generate stubs directly into the package folder
+# stubgen -m cuda_texture_gen --include-private -o .\lib\cuda_texture_gen
