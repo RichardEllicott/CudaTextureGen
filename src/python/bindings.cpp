@@ -33,6 +33,8 @@ concider rename to module.cpp
 
 #include "noise.bind.h" // ✔️ noise generators, all support seamless noise!
 
+#include "py_native_object_test.h"
+
 // #include "water_simulation.bind.h"
 
 namespace nb = nanobind;
@@ -56,4 +58,6 @@ NB_MODULE(cuda_texture_gen, m) {
     fluid_simulation::bind(m);
 
     noise::bind(m);
+
+    py_native_object_test::PyNativeObjectTest::bind(m);
 }

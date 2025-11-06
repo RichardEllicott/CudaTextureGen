@@ -30,19 +30,17 @@ this is a copy of Erosion3, which works so this is fine to mess around with
 #define TEMPLATE_CLASS_MAPS \
     X(float, height_map)    \
     X(float, water_map)     \
-    X(float, sediment_map)  \
-    X(float, dh_out)        \
-    X(float, ds_out)        \
-    X(float, dw_out)
+    X(float, sediment_map)
 
-// // trying to support float3
-// #define TEMPLATE_CLASS_MAPS2 \
-//     X(float3, image)
-
-// #define TEMPLATE_CLASS_TYPES \
-//     X(APPLE)                 \
-//     X(ORANGE)                \
-//     X(POTATO)
+// private device arrays
+#define TEMPLATE_CLASS_DEVICE_ARRAYS \
+    X(float, height_map_out)         \
+    X(float, water_map_out)          \
+    X(float, sediment_map_out)       \
+    X(float, flux8)                  \
+    X(float, dh_out)                 \
+    X(float, dw_out)                 \
+    X(float, ds_out)
 
 // ════════════════════════════════════════════════ //
 
@@ -96,29 +94,6 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
-    // make enumerators
-#ifdef TEMPLATE_CLASS_TYPES
-    enum class Type {
-#define X(NAME) \
-    NAME,
-        TEMPLATE_CLASS_TYPES
-#undef X
-    };
-#endif
-
-// get all the map pointers in a structure
-#ifdef TEMPLATE_CLASS_MAPS
-    MapPointers get_map_pointers() {
-        MapPointers result;
-
-#define X(TYPE, NAME) result.NAME = NAME.dev_ptr();
-        TEMPLATE_CLASS_MAPS
-#undef X
-
-        return result;
-    }
-#endif
-
     //
     //
     //
@@ -134,10 +109,11 @@ class TEMPLATE_CLASS_NAME {
     float *w_next = nullptr;
     float *s_next = nullptr;
 
-    core::cuda::DeviceArray<float> flux8; // details movement to the adjacent cells
-    core::cuda::DeviceArray<float> height_map_out;
-    core::cuda::DeviceArray<float> water_map_out;
-    core::cuda::DeviceArray<float> sediment_map_out;
+    // declare private arrays
+#define X(TYPE, NAME) \
+    core::cuda::DeviceArray<TYPE> NAME;
+    TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
 
     size_t _count = 0; // count of passes
 

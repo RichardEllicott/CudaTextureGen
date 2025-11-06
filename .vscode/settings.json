@@ -143,15 +143,15 @@
         },
         {
             "folderPath": "cuda_texture_gen\\src\\python\\bindings\\erosion5.bind.h\\",
-            "badge": "⭐"
+            "badge": "⛰️"
         },
         {
             "folderPath": "cuda_texture_gen\\src\\main\\erosion5.cu\\",
-            "badge": "⭐"
+            "badge": "⛰️"
         },
         {
             "folderPath": "cuda_texture_gen\\src\\include\\erosion5.cuh\\",
-            "badge": "⭐"
+            "badge": "⛰️"
         },
         {
             "folderPath": "cuda_texture_gen\\src\\main\\template_class_3.cu\\",

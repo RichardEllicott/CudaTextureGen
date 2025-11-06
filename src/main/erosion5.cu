@@ -17,7 +17,9 @@ If exceeded, grains slide downhill until equilibrium is restored.
 #include <chrono>
 #include <cmath>
 
-#define EROSION5_OFFSET_ORDER_HACK 2 // we are still broken in the in/out orders
+#pragma region TYPE_0
+
+#define EROSION5_OFFSET_ORDER_HACK 1 // we are still broken in the in/out orders
 
 namespace TEMPLATE_NAMESPACE {
 
@@ -50,20 +52,21 @@ __device__ __forceinline__ int posmod(int value, int mod) {
     return result < 0 ? result + mod : result;
 }
 
-#pragma region TYPE_0
-
 // calculates the changes that need to occur
 __global__ void flux_pass(
     const Parameters *pars,
     int map_width, int map_height,
+
     const float *__restrict__ height_in,
     const float *__restrict__ water_in,
     const float *__restrict__ sediment_in,
-    // outputs
+
     float *__restrict__ flux8, // 8 fluxes per cell (neighbor order)
     float *__restrict__ dh_out,
-    float *__restrict__ ds_out,
-    float *__restrict__ dw_out) {
+    float *__restrict__ dw_out,
+    float *__restrict__ ds_out
+
+) {
 
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -137,16 +140,20 @@ __global__ void flux_pass(
 __global__ void apply_pass(
     const Parameters *pars,
     int width, int height,
+
+    const float *__restrict__ height_in,
     const float *__restrict__ water_in,
     const float *__restrict__ sediment_in,
-    const float *__restrict__ height_in,
-    const float *__restrict__ flux, // 8 fluxes per cell
-    const float *__restrict__ dh,   // erosion/deposition delta
-    const float *__restrict__ ds,   // sediment delta
-    const float *__restrict__ dw,   // water delta (loss)
+
+    float *__restrict__ height_out,
     float *__restrict__ water_out,
     float *__restrict__ sediment_out,
-    float *__restrict__ height_out) {
+
+    const float *__restrict__ flux, // 8 fluxes per cell
+    const float *__restrict__ dh,   // erosion/deposition delta
+    const float *__restrict__ dw,   // water delta (loss)
+    const float *__restrict__ ds    // sediment delta
+) {
 
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -213,6 +220,10 @@ __global__ void apply_pass(
 
 #pragma endregion
 
+#pragma region TYPE_1
+
+#pragma endregion
+
 void TEMPLATE_CLASS_NAME::allocate_device() {
 
     if (device_allocated)
@@ -220,42 +231,49 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     device_allocated = true;
 
+    // upload heightmap and get dimensions
     height_map.upload();
-
     pars.width = height_map.get_width();
     pars.height = height_map.get_height();
 
+    // clear main maps
     water_map.resize(pars.width, pars.height);
-    sediment_map.resize(pars.width, pars.height);
-    dh_out.resize(pars.width, pars.height);
-    ds_out.resize(pars.width, pars.height);
-    dw_out.resize(pars.width, pars.height);
-
     water_map.clear();
-    sediment_map.clear();
-    dh_out.clear();
-    ds_out.clear();
-    dw_out.clear();
+    water_map.upload(); // zeroes
 
-    water_map.upload();
-    sediment_map.upload();
-    dh_out.upload();
-    ds_out.upload();
-    dw_out.upload();
+    sediment_map.resize(pars.width, pars.height);
+    sediment_map.clear();
+    sediment_map.upload(); // zeroes
 
     size_t array_size = pars.width * pars.height;
 
-    // resize private arrays
-    flux8.resize(array_size * 8);
+    // ping pong arrays
     height_map_out.resize(array_size);
+    // height_map_out.zero_device();
     water_map_out.resize(array_size);
-    sediment_map_out.resize(array_size);
-
-    height_map_out.zero_device();
     water_map_out.zero_device();
+    sediment_map_out.resize(array_size);
     sediment_map_out.zero_device();
+
+    // copy data
+    size_t array_size_bytes = array_size * sizeof(float);
+    cudaMemcpy(height_map_out.dev_ptr(), height_map.dev_ptr(), array_size_bytes, cudaMemcpyDeviceToDevice);
+    // cudaMemcpy(water_map_out.dev_ptr(), water_map.dev_ptr(), array_size_bytes, cudaMemcpyDeviceToDevice);
+    // cudaMemcpy(sediment_map_out.dev_ptr(), sediment_map.dev_ptr(), array_size_bytes, cudaMemcpyDeviceToDevice);
+
+    // flux array (3D)
+    flux8.resize(array_size * 8);
     flux8.zero_device();
 
+    // delta arrays
+    dh_out.resize(array_size);
+    dh_out.zero_device();
+    ds_out.resize(array_size);
+    ds_out.zero_device();
+    dw_out.resize(array_size);
+    dw_out.zero_device();
+
+    // set ping pongs
     h_cur = height_map.dev_ptr();
     w_cur = water_map.dev_ptr();
     s_cur = sediment_map.dev_ptr();
@@ -320,18 +338,22 @@ void TEMPLATE_CLASS_NAME::process() {
             flux_pass<<<grid, block, 0, stream.get()>>>(
                 gpu_pars.dev_ptr(),
                 pars.width, pars.height,
+
                 h_cur, w_cur, s_cur,
+
                 flux8.dev_ptr(),
-                dh_out.dev_ptr(), ds_out.dev_ptr(), dw_out.dev_ptr());
+                dh_out.dev_ptr(), dw_out.dev_ptr(), ds_out.dev_ptr());
 
             // apply changes
             apply_pass<<<grid, block, 0, stream.get()>>>(
                 gpu_pars.dev_ptr(),
                 pars.width, pars.height,
+
                 h_cur, w_cur, s_cur,
+                h_next, w_next, s_next,
+
                 flux8.dev_ptr(),
-                dh_out.dev_ptr(), ds_out.dev_ptr(), dw_out.dev_ptr(),
-                h_next, w_next, s_next);
+                dh_out.dev_ptr(), dw_out.dev_ptr(), ds_out.dev_ptr());
 
             // swap roles
             std::swap(h_cur, h_next);

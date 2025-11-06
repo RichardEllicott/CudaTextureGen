@@ -11,7 +11,12 @@ print(dir(cuda_texture_gen))
 
 def test_erosion5():
 
-    erosion = cuda_texture_gen.Erosion5()
+    # erosion = cuda_texture_gen.Erosion5()
+    erosion = cuda_texture_gen.Erosion3() # the old working one TEST
+
+
+
+
 
     folder = "output"
     # folder = "godot/cuda_texture_gen/textures/animation_test"
@@ -23,7 +28,7 @@ def test_erosion5():
 
     save_array_as_image(array * 255, "{}/{}.png".format(folder, base_filename + ".noise"))
 
-    erosion.steps = 256
+    erosion.steps = 1024
 
     erosion.height_map = array
     erosion.process()
