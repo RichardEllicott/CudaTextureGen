@@ -11,10 +11,9 @@ If exceeded, grains slide downhill until equilibrium is restored.
 
 */
 
-
+#include "core.h"
 #include "erosion3.cuh"
 #include "noise_util.cuh"
-#include "core.h"
 #include <chrono>
 #include <cmath>
 
@@ -24,7 +23,6 @@ If exceeded, grains slide downhill until equilibrium is restored.
 #define EROSION3_OFFSET_ORDER_HACK 1
 
 namespace TEMPLATE_NAMESPACE {
-
 
 // constexpr float SQRT2 = 1.41421356f;
 constexpr float SQRT2 = 1.4142135623730950488f; // square root of 2 (diagonal accross a square)
@@ -222,12 +220,12 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     device_allocated = true;
 
     height_map.upload();
-
     pars.width = height_map.get_width();
     pars.height = height_map.get_height();
 
     water_map.resize(pars.width, pars.height);
     sediment_map.resize(pars.width, pars.height);
+
     dh_out.resize(pars.width, pars.height);
     ds_out.resize(pars.width, pars.height);
     dw_out.resize(pars.width, pars.height);
@@ -246,6 +244,8 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     size_t array_size = pars.width * pars.height;
 
+    // ================================================================
+
     // resize private arrays
     flux8.resize(array_size * 8);
     height_map_out.resize(array_size);
@@ -257,13 +257,20 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     sediment_map_out.zero_device();
     flux8.zero_device();
 
-    h_cur = height_map.dev_ptr();
-    w_cur = water_map.dev_ptr();
-    s_cur = sediment_map.dev_ptr();
+    // ================================================================
 
-    h_next = height_map_out.dev_ptr();
-    w_next = water_map_out.dev_ptr();
-    s_next = sediment_map_out.dev_ptr();
+    //     // private device arrays
+    // #define X(TYPE, NAME)        \
+//     NAME.resize(array_size); \
+//     NAME.zero_device();
+    //     TEMPLATE_CLASS_DEVICE_ARRAYS
+    // #undef X
+
+    //     // flux 8 is special case
+    //     flux8.resize(array_size * 8);
+    //     flux8.zero_device();
+
+    // ================================================================
 }
 
 void TEMPLATE_CLASS_NAME::deallocate_device() {
@@ -283,14 +290,6 @@ void TEMPLATE_CLASS_NAME::deallocate_device() {
     water_map_out.free_device();
     sediment_map_out.free_device();
     flux8.free_device();
-
-    h_cur = nullptr;
-    w_cur = nullptr;
-    s_cur = nullptr;
-
-    h_next = nullptr;
-    w_next = nullptr;
-    s_next = nullptr;
 
     timer.mark_time();
     printf("deallocate device time: %.3f seconds\n", timer.elapsed_seconds());
@@ -312,6 +311,15 @@ void TEMPLATE_CLASS_NAME::process() {
     dim3 block(pars._block, pars._block);
     dim3 grid((pars.width + block.x - 1) / block.x,
               (pars.height + block.y - 1) / block.y);
+
+    // pointers for swapping the maps around (ping/pong)
+    float *h_cur = height_map.dev_ptr();
+    float *w_cur = water_map.dev_ptr();
+    float *s_cur = sediment_map.dev_ptr();
+
+    float *h_next = height_map_out.dev_ptr();
+    float *w_next = water_map_out.dev_ptr();
+    float *s_next = sediment_map_out.dev_ptr();
 
     for (int i = 0; i < pars.steps; ++i) {
         // calculate changes
