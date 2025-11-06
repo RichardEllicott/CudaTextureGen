@@ -4,7 +4,6 @@ param(
 )
 $ErrorActionPreference = "Stop" # exit script if any commands crash
 
-
 #region 📝 Docs
 # ================================================================================================================================
 # 🪟 Windows Build Script
@@ -36,7 +35,6 @@ $ErrorActionPreference = "Stop" # exit script if any commands crash
 #
 # ================================================================================================================================
 #endregion
-
 
 #region ✅ Checks
 # ================================================================================================================================
@@ -84,19 +82,23 @@ $env:LIB = "$env:CUDA_PATH\lib\x64;" + $env:LIB
 # run VS environment setup script (this is like running "x64 Native Tools Command Prompt for VS 2022")
 # --------------------------------------------------------------------------------------------------------------------------------
 
-# Path to the VS environment setup script
-$vcvars = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
-# Run it with the x64 argument
-cmd /c "`"$vcvars`" x64 && set" | ForEach-Object {
-    if ($_ -match "^(.*?)=(.*)$") {
-        Set-Item -Force -Path "env:$($matches[1])" -Value $matches[2]
+# we only run this script once, which speeds up the second running of this script
+if (-not $env:VCVARS_LOADED) {
+    $vcvars = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
+    # Run it with the x64 argument
+    cmd /c "`"$vcvars`" x64 && set" | ForEach-Object {
+        if ($_ -match "^(.*?)=(.*)$") {
+            Set-Item -Force -Path "env:$($matches[1])" -Value $matches[2]
+        }
     }
+    $env:VCVARS_LOADED = "1"
 }
 
-# ⚠️ optional, if the above runs each time we build, it will create duplicates eventually causing an error
-$env:PATH = ($env:PATH -split ';' | Select-Object -Unique) -join ';'
-$env:INCLUDE = ($env:INCLUDE -split ';' | Select-Object -Unique) -join ';'
-$env:LIB = ($env:LIB -split ';' | Select-Object -Unique) -join ';'
+# # ⚠️ optional, if the above runs each time we build, it will create duplicates eventually causing an error
+# $env:PATH = ($env:PATH -split ';' | Select-Object -Unique) -join ';'
+# $env:INCLUDE = ($env:INCLUDE -split ';' | Select-Object -Unique) -join ';'
+# $env:LIB = ($env:LIB -split ';' | Select-Object -Unique) -join ';'
+
 #endregion
 
 

@@ -17,7 +17,10 @@ apt install -y nvidia-cuda-toolkit # tested with 12.0.140~12.0.1-4build4
 # ================================================================================================================================
 apt install mypy -y # required for stubgen (allowing python code inteligence)
 apt install python3-numpy -y # required
-apt install python3-pillow -y # recommended (to save images)
+apt install python3-imageio -y # used to save images
+apt install python3-pil -y # sometimes pillow is used by imageio for png
+
+
 # apt install python3-scipy -y # optional, useful for manipulating arrays
 # apt install python3-matplotlib -y # optional, useful for it's color gradients
 # ================================================================================================================================

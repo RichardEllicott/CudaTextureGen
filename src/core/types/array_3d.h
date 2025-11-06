@@ -35,48 +35,47 @@ m.def("make_array", [](Array2D<double>& arr) {
 
 namespace core {
 
-// special 2D array for maps, stores data in a std::vector in "row major" (row * width + col)
+// Special 3D array for volumes, row-major layout
 template <typename T>
-class Array2D {
+class Array3D {
     std::vector<T> _vector;
-    size_t _width, _height;
+    size_t _width, _height, _depth;
 
   public:
-    Array2D(size_t width = 0, size_t height = 0)
-        : _width(width), _height(height), _vector(width * height) {}
+    Array3D(size_t width = 0, size_t height = 0, size_t depth = 0)
+        : _width(width), _height(height), _depth(depth),
+          _vector(width * height * depth) {}
 
     // Mutable element access
-    T &operator()(size_t row, size_t col) {
-        return _vector[row * _width + col];
+    T &operator()(size_t z, size_t y, size_t x) {
+        return _vector[(z * _height + y) * _width + x];
     }
 
     // Const element access
-    const T &operator()(size_t row, size_t col) const {
-        return _vector[row * _width + col];
+    const T &operator()(size_t z, size_t y, size_t x) const {
+        return _vector[(z * _height + y) * _width + x];
     }
 
     // Raw pointer access
     T *data() { return _vector.data(); }
     const T *data() const { return _vector.data(); }
 
-    // Size of the underlying flat array
+    // Size and dimensions
     size_t size() const { return _vector.size(); }
-
-    // Is empty (contains no data)
     bool empty() const { return _vector.empty(); }
-
-    // Dimensions
     size_t get_width() const { return _width; }
     size_t get_height() const { return _height; }
+    size_t get_depth() const { return _depth; }
 
-    // Resize and reallocate
-    void resize(size_t width, size_t height) {
+    // Resize
+    void resize(size_t width, size_t height, size_t depth) {
         _width = width;
         _height = height;
-        _vector.resize(_width * _height); // the memory is not going to change if we resize the same
+        _depth = depth;
+        _vector.resize(_width * _height * _depth);
     }
 
-    // Fill the array with a value
+    // Fill
     void clear(const T &value = T{}) {
         std::fill(_vector.begin(), _vector.end(), value);
     }
@@ -85,11 +84,12 @@ class Array2D {
     T &operator[](size_t i) { return _vector[i]; }
     const T &operator[](size_t i) const { return _vector[i]; }
 
-    // swap method
-    void swap(Array2D &other) noexcept {
+    // Swap
+    void swap(Array3D &other) noexcept {
         std::swap(_vector, other._vector);
         std::swap(_width, other._width);
         std::swap(_height, other._height);
+        std::swap(_depth, other._depth);
     }
 };
 

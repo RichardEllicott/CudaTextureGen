@@ -1,7 +1,7 @@
 #pragma once
 
 #include "python_helper.h"
-#include "template_class_3.cuh"
+#include "erosion5.cuh"
 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
@@ -21,20 +21,27 @@ inline void bind(nb::module_ &m) {
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
-
+    //
+    //
+    //
     // bind maps
 #ifdef TEMPLATE_CLASS_MAPS
-#define X(TYPE, NAME)                                                                                                                                                                 \
-    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::array2d_to_numpy_array(self.NAME); };                                                                     \
+#define X(TYPE, NAME)                                                                                                                                                           \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::array2d_to_numpy_array(self.NAME); };                                                               \
     auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = core::cuda::CudaArray2D<TYPE>(python_helper::numpy_array_to_array2d(arr)); }; \
     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME);
     TEMPLATE_CLASS_MAPS
 #undef X
 #endif
 
+    // 
+    //
+    //
+
+
 // 🚧 bind Type enumerators (new pattern?? we could check for a def)
 #ifdef TEMPLATE_CLASS_TYPES
-
+    
     nb::enum_<TEMPLATE_CLASS_NAME::Type>(ngd, "Type")
 
 #define X(NAME) \
@@ -43,34 +50,34 @@ inline void bind(nb::module_ &m) {
 #undef X
             .export_values();
 #endif
+    //
+    //
+    //
+    //
+    //
 
-    // default process function
+
+
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
 
-        return python_helper::array2d_to_numpy_array(self.image); // optional return array
-    });
-
-    // optional overload
-    ngd.def("process", [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) {
-        if (arr.ndim() != 2)
-            throw std::runtime_error("Input must be a 2D float32 array");
-
-        self.image = python_helper::numpy_array_to_array2d(arr);
-        self.process();
-
-        return python_helper::array2d_to_numpy_array(self.image); // optional return array
-    });
-
-    // test array 3d
-    ngd.def("test_array3d", [](TEMPLATE_CLASS_NAME &self) {
-
-        // self.array3d_test.resize()
-
+        // return python_helper::array2d_to_numpy_array(self.image); // optional return array
 
     });
+
+    // // optional overload
+    // ngd.def("process", [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) {
+    //     if (arr.ndim() != 2)
+    //         throw std::runtime_error("Input must be a 2D float32 array");
+
+    //     self.image = python_helper::numpy_array_to_array2d(arr);
+    //     self.process();
+
+    //     return python_helper::array2d_to_numpy_array(self.image); // optional return array
+    // });
 }
 
 } // namespace TEMPLATE_NAMESPACE
 
 #include "template_macros_undef.h"
+

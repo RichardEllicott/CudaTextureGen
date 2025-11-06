@@ -5,7 +5,9 @@ Cuda version of Array2D, allows automatic device allocation
 
 */
 #pragma once
-#include "types.h"
+#include "types/array_2d.h"
+#include <cuda_runtime.h>
+#include <utility> // for std::move
 
 namespace core::cuda {
 
@@ -19,7 +21,7 @@ class CudaArray2D : public Array2D<T> {
     size_t _device_height = 0;
     size_t _device_allocated_bytes = 0;
 
-    bool _array_dim_match_dev_dim() {
+    bool _dims_match() {
         return this->get_width() == _device_width && this->get_height() == _device_height;
     }
 
@@ -32,16 +34,7 @@ class CudaArray2D : public Array2D<T> {
         std::copy(src.data(), src.data() + src.size(), this->data());
     }
 
-    // Move Constructor (probabally not needed really)
-    // ⚠️ AI generated, might need to double check
-    //
-    //
-    // CudaArray2D<float> a;
-    // a.resize(1024, 1024);
-    // a.upload();
-    // CudaArray2D<float> b = std::move(a); // move constructor
-    //
-    //
+    // Move Constructor
     CudaArray2D(CudaArray2D &&other) noexcept {
         *static_cast<Array2D<T> *>(this) = std::move(other); // move base
         _device_ptr = other._device_ptr;
@@ -55,7 +48,7 @@ class CudaArray2D : public Array2D<T> {
         other._device_allocated_bytes = 0;
     }
 
-    // Move Assignment Operator ⚠️ AI gen
+    // Move Assignment Operator
     CudaArray2D &operator=(CudaArray2D &&other) noexcept {
         if (this != &other) {
             free_device(); // free current device memory
@@ -96,7 +89,7 @@ class CudaArray2D : public Array2D<T> {
             // if empty, ensure device memory freed
             free_device();
 
-        } else if (!_array_dim_match_dev_dim()) {
+        } else if (!_dims_match()) {
             // if the size/width has changed since last allocation, ensure free and allocate
             free_device();
             _device_width = this->get_width();
@@ -121,7 +114,7 @@ class CudaArray2D : public Array2D<T> {
     // download the data back from the device to the host
     void download() {
         if (_device_ptr) {
-            if (!_array_dim_match_dev_dim()) {
+            if (!_dims_match()) {
                 this->resize(_device_width, _device_height); // on size missmatch resize our host array
             }
             cudaMemcpy(this->data(), _device_ptr, _device_allocated_bytes, cudaMemcpyDeviceToHost);
@@ -133,8 +126,7 @@ class CudaArray2D : public Array2D<T> {
         if (_device_ptr) {
             cudaFree(_device_ptr);
             _device_ptr = nullptr;
-            _device_width = 0;
-            _device_height = 0;
+            _device_width = _device_height = 0;
             _device_allocated_bytes = 0;
         }
     }
@@ -144,4 +136,4 @@ class CudaArray2D : public Array2D<T> {
     }
 };
 
-} // namespace core
+} // namespace core::cuda

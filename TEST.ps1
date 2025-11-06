@@ -1,3 +1,6 @@
 $ErrorActionPreference = "Stop"
 # python test.py
-python .\scripts\test.py
+
+Write-Host "🧙 Launching Test..."
+
+python .\scripts\basic_test.py

@@ -1,6 +1,5 @@
 /*
 
-🧜‍♀️ TEMPLATE VERSION 20251027-3
 🧜‍♀️ TEMPLATE VERSION 20251102-1 // added a structure for map pointers
 
 this one uses more clever types and classes, needing less horrible macros
@@ -11,7 +10,7 @@ this one uses more clever types and classes, needing less horrible macros
 */
 #pragma once
 
-// ════════════════════════════════════════════════ //
+// ================================================================
 #define TEMPLATE_CLASS_NAME TemplateClass3
 #define TEMPLATE_NAMESPACE template_class_3
 
@@ -21,22 +20,23 @@ this one uses more clever types and classes, needing less horrible macros
     X(size_t, _block, 16)         \
     X(float, test, 0.0)
 
+// 2D arrays
 #define TEMPLATE_CLASS_MAPS \
     X(float, image)
 
-// trying to support float3
-#define TEMPLATE_CLASS_MAPS2 \
-    X(float3, image)
+// 3D arrays
+#define TEMPLATE_CLASS_ARRAY3D \
+    X(float, image)
 
+// enumerators
 #define TEMPLATE_CLASS_TYPES \
     X(APPLE)                 \
     X(ORANGE)                \
     X(POTATO)
 
-// ════════════════════════════════════════════════ //
+// ================================================================
 
 #include "cuda_types.cuh"
-// #include <std>
 
 namespace TEMPLATE_NAMESPACE {
 
@@ -99,14 +99,16 @@ class TEMPLATE_CLASS_NAME {
 #ifdef TEMPLATE_CLASS_MAPS
     MapPointers get_map_pointers() {
         MapPointers result;
-
 #define X(TYPE, NAME) result.NAME = NAME.dev_ptr();
         TEMPLATE_CLASS_MAPS
 #undef X
-
         return result;
     }
 #endif
+
+    // testing new object:
+
+    core::cuda::CudaArray3D<float> array3d_test;
 
     void process();
 };

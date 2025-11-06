@@ -11,32 +11,27 @@ If exceeded, grains slide downhill until equilibrium is restored.
 
 */
 
-
-#include "erosion3.cuh"
-#include "noise_util.cuh"
 #include "core.h"
+#include "erosion5.cuh"
+#include "noise_util.cuh"
 #include <chrono>
 #include <cmath>
 
-// 0 is the orginal (broken!)
-// 1 works, but does't even seem to be opposite
-// 2 doesn't seem to give a good result but should be technically correct
-#define EROSION3_OFFSET_ORDER_HACK 1
+#define EROSION5_OFFSET_ORDER_HACK 2 // we are still broken in the in/out orders
 
 namespace TEMPLATE_NAMESPACE {
-
 
 // constexpr float SQRT2 = 1.41421356f;
 constexpr float SQRT2 = 1.4142135623730950488f; // square root of 2 (diagonal accross a square)
 constexpr float DIAG_DIST = SQRT2;
 
-#if EROSION3_OFFSET_ORDER_HACK == 0
+#if EROSION5_OFFSET_ORDER_HACK == 0 // orginal
 __device__ __constant__ int2 offsets[8] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
 __device__ __constant__ float offset_distances[8] = {1, 1, 1, 1, DIAG_DIST, DIAG_DIST, DIAG_DIST, DIAG_DIST};
-#elif EROSION3_OFFSET_ORDER_HACK == 1
+#elif EROSION5_OFFSET_ORDER_HACK == 1 // lucky hack
 __device__ __constant__ int2 offsets[8] = {{1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-1, 0}};
 __device__ __constant__ float offset_distances[8] = {1.0f, 1.0f, 1.0f, DIAG_DIST, DIAG_DIST, DIAG_DIST, DIAG_DIST, 1.0f};
-#elif EROSION3_OFFSET_ORDER_HACK == 2
+#elif EROSION5_OFFSET_ORDER_HACK == 2 // in theory correct but just seems to smooth
 __device__ __constant__ int2 offsets[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
 __device__ __constant__ float offset_distances[8] = {1, 1, 1, 1, DIAG_DIST, DIAG_DIST, DIAG_DIST, DIAG_DIST};
 #endif
@@ -54,6 +49,8 @@ __device__ __forceinline__ int posmod(int value, int mod) {
     int result = value % mod;
     return result < 0 ? result + mod : result;
 }
+
+#pragma region TYPE_0
 
 // calculates the changes that need to occur
 __global__ void flux_pass(
@@ -214,6 +211,8 @@ __global__ void apply_pass(
     height_out[idx] = fmaxf(0.f, h);
 }
 
+#pragma endregion
+
 void TEMPLATE_CLASS_NAME::allocate_device() {
 
     if (device_allocated)
@@ -314,27 +313,35 @@ void TEMPLATE_CLASS_NAME::process() {
               (pars.height + block.y - 1) / block.y);
 
     for (int i = 0; i < pars.steps; ++i) {
-        // calculate changes
-        flux_pass<<<grid, block, 0, stream.get()>>>(
-            gpu_pars.dev_ptr(),
-            pars.width, pars.height,
-            h_cur, w_cur, s_cur,
-            flux8.dev_ptr(),
-            dh_out.dev_ptr(), ds_out.dev_ptr(), dw_out.dev_ptr());
 
-        // apply changes
-        apply_pass<<<grid, block, 0, stream.get()>>>(
-            gpu_pars.dev_ptr(),
-            pars.width, pars.height,
-            h_cur, w_cur, s_cur,
-            flux8.dev_ptr(),
-            dh_out.dev_ptr(), ds_out.dev_ptr(), dw_out.dev_ptr(),
-            h_next, w_next, s_next);
+        switch (pars.mode) {
+        case 0:
+            // calculate changes
+            flux_pass<<<grid, block, 0, stream.get()>>>(
+                gpu_pars.dev_ptr(),
+                pars.width, pars.height,
+                h_cur, w_cur, s_cur,
+                flux8.dev_ptr(),
+                dh_out.dev_ptr(), ds_out.dev_ptr(), dw_out.dev_ptr());
 
-        // swap roles
-        std::swap(h_cur, h_next);
-        std::swap(w_cur, w_next);
-        std::swap(s_cur, s_next);
+            // apply changes
+            apply_pass<<<grid, block, 0, stream.get()>>>(
+                gpu_pars.dev_ptr(),
+                pars.width, pars.height,
+                h_cur, w_cur, s_cur,
+                flux8.dev_ptr(),
+                dh_out.dev_ptr(), ds_out.dev_ptr(), dw_out.dev_ptr(),
+                h_next, w_next, s_next);
+
+            // swap roles
+            std::swap(h_cur, h_next);
+            std::swap(w_cur, w_next);
+            std::swap(s_cur, s_next);
+            break;
+
+        case 1:
+            break;
+        }
 
         _count++;
     }

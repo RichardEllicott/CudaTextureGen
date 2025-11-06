@@ -58,7 +58,7 @@ struct numpy_dtype<bool> {
 
 #pragma region CREATE_EMPTY
 
-// Generic factory
+// get a numpy array (2D)
 template <typename T>
 inline nb::ndarray<nb::numpy, T> get_numpy_array(int height, int width) {
     nb::module_ np = nb::module_::import_("numpy");
@@ -68,7 +68,7 @@ inline nb::ndarray<nb::numpy, T> get_numpy_array(int height, int width) {
     return nb::cast<nb::ndarray<nb::numpy, T>>(arr_obj);
 }
 
-// Generic factory
+// get a numpy array (3D)
 template <typename T>
 inline nb::ndarray<nb::numpy, T> get_numpy_array(int height, int width, int depth) {
     nb::module_ np = nb::module_::import_("numpy");
@@ -78,13 +78,13 @@ inline nb::ndarray<nb::numpy, T> get_numpy_array(int height, int width, int dept
     return nb::cast<nb::ndarray<nb::numpy, T>>(arr_obj);
 }
 
-inline nb::ndarray<nb::numpy, float> get_numpy_float_array(int height, int width) {
-    return get_numpy_array<float>(height, width);
-}
+// inline nb::ndarray<nb::numpy, float> get_numpy_float_array(int height, int width) {
+//     return get_numpy_array<float>(height, width);
+// }
 
-inline nb::ndarray<nb::numpy, float> get_numpy_float_array(int height, int width, int depth) {
-    return get_numpy_array<float>(height, width, depth);
-}
+// inline nb::ndarray<nb::numpy, float> get_numpy_float_array(int height, int width, int depth) {
+//     return get_numpy_array<float>(height, width, depth);
+// }
 
 #pragma endregion
 
@@ -145,6 +145,53 @@ inline nb::ndarray<nb::numpy, T> array2d_to_numpy_array(const core::Array2D<T> &
 
     std::memcpy(arr.data(), source.data(), size * sizeof(T));
     return arr;
+}
+
+#pragma endregion
+
+#pragma region ARRAY3D
+
+// ndarray<T> -> core::Array3D<T>
+template <typename T>
+inline core::Array3D<T> numpy_array_to_array3d(nb::ndarray<T, nb::c_contig> arr) {
+    if (arr.ndim() != 3)
+        throw std::runtime_error("Input must be a 3D array");
+
+    size_t height = arr.shape(0);
+    size_t width = arr.shape(1);
+    size_t depth = arr.shape(2);
+
+    core::Array3D<T> result(width, height, depth);
+    std::memcpy(result.data(), arr.data(), width * height * depth * sizeof(T));
+    return result;
+}
+
+// core::Array3D<T> -> ndarray<T>
+template <typename T>
+inline nb::ndarray<nb::numpy, T> array3d_to_numpy_array(const core::Array3D<T> &source) {
+    size_t width = source.get_width();
+    size_t height = source.get_height();
+    size_t depth = source.get_depth();
+    size_t size = width * height * depth;
+
+    auto arr = get_numpy_array<T>(height, width, depth); // overload for 3D
+
+    std::memcpy(arr.data(), source.data(), size * sizeof(T));
+    return arr;
+}
+
+#pragma endregion
+
+#pragma region SHARED_MEMORY_NUMPY_EXPERIMENT
+
+template <typename T>
+nb::ndarray<nb::numpy, T> array3d_to_numpy_view(core::Array3D<T> &source) {
+    return nb::ndarray<nb::numpy, T>(
+        source.data(),
+        {source.get_height(), source.get_width(), source.get_depth()},
+        {sizeof(T) * source.get_width() * source.get_depth(),
+         sizeof(T) * source.get_depth(),
+         sizeof(T)});
 }
 
 #pragma endregion

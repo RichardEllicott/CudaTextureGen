@@ -8,12 +8,11 @@ also special Array2D
 
 #pragma once
 
-#include <cmath>
-#include <vector>
-
+// #include <cmath>
+// #include <vector>
 #include "types/array_2d.h"
+#include "types/array_3d.h"
 
-// Move semantics: If
 
 namespace core {
 
