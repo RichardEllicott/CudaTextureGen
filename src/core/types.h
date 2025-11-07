@@ -8,7 +8,7 @@ also special Array2D
 
 #pragma once
 
-// #include <cmath>
+#include <cmath>
 // #include <vector>
 #include "types/array_2d.h"
 #include "types/array_3d.h"

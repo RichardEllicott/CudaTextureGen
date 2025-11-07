@@ -63,8 +63,8 @@ __global__ void flux_pass(
     // outputs
     float *__restrict__ flux8, // 8 fluxes per cell (neighbor order)
     float *__restrict__ dh_out,
-    float *__restrict__ ds_out,
-    float *__restrict__ dw_out) {
+    float *__restrict__ dw_out,
+    float *__restrict__ ds_out) {
 
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -145,9 +145,15 @@ __global__ void apply_pass(
     const float *__restrict__ dh,   // erosion/deposition delta
     const float *__restrict__ ds,   // sediment delta
     const float *__restrict__ dw,   // water delta (loss)
-    float *__restrict__ water_out,
+
+    
+    float *__restrict__ water_out,  // WARNING THIS IS THE WRONG WAY AROUND!!!
     float *__restrict__ sediment_out,
-    float *__restrict__ height_out) {
+    float *__restrict__ height_out
+
+
+
+) {
 
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -226,21 +232,21 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     water_map.resize(pars.width, pars.height);
     sediment_map.resize(pars.width, pars.height);
 
-    dh_out.resize(pars.width, pars.height);
-    ds_out.resize(pars.width, pars.height);
-    dw_out.resize(pars.width, pars.height);
+    // dh_out.resize(pars.width, pars.height);
+    // ds_out.resize(pars.width, pars.height);
+    // dw_out.resize(pars.width, pars.height);
 
     water_map.clear();
     sediment_map.clear();
-    dh_out.clear();
-    ds_out.clear();
-    dw_out.clear();
+    // dh_out.clear();
+    // ds_out.clear();
+    // dw_out.clear();
 
     water_map.upload();
     sediment_map.upload();
-    dh_out.upload();
-    ds_out.upload();
-    dw_out.upload();
+    // dh_out.upload();
+    // ds_out.upload();
+    // dw_out.upload();
 
     size_t array_size = pars.width * pars.height;
 
@@ -256,6 +262,14 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     water_map_out.zero_device();
     sediment_map_out.zero_device();
     flux8.zero_device();
+
+
+    dh_out.resize(array_size);
+    dh_out.zero_device();
+    dw_out.resize(array_size);
+    dw_out.zero_device();
+    ds_out.resize(array_size);
+    ds_out.zero_device();
 
     // ================================================================
 
@@ -328,16 +342,21 @@ void TEMPLATE_CLASS_NAME::process() {
             pars.width, pars.height,
             h_cur, w_cur, s_cur,
             flux8.dev_ptr(),
-            dh_out.dev_ptr(), ds_out.dev_ptr(), dw_out.dev_ptr());
+            dh_out.dev_ptr(), dw_out.dev_ptr(), ds_out.dev_ptr());
 
         // apply changes
         apply_pass<<<grid, block, 0, stream.get()>>>(
             gpu_pars.dev_ptr(),
             pars.width, pars.height,
             h_cur, w_cur, s_cur,
+
+
             flux8.dev_ptr(),
             dh_out.dev_ptr(), ds_out.dev_ptr(), dw_out.dev_ptr(),
-            h_next, w_next, s_next);
+            h_next, w_next, s_next)
+            
+            
+            ;
 
         // swap roles
         std::swap(h_cur, h_next);

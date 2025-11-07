@@ -1,9 +1,12 @@
 /*
 
-🧜‍♀️ TEMPLATE VERSION 20251102-1
+🧜‍♀️ TEMPLATE VERSION 20251027-3
 
 
-this is a copy of Erosion3, which works so this is fine to mess around with
+
+THE ERROSION WE HAD WORKING... SEEMS TO BREAL WITH THE CORRECT PARS!!
+
+
 
 */
 #pragma once
@@ -16,7 +19,6 @@ this is a copy of Erosion3, which works so this is fine to mess around with
     X(size_t, _block, 16)            \
     X(size_t, width, 256)            \
     X(size_t, height, 256)           \
-    X(int, mode, 0)                  \
     X(int, steps, 1024)              \
     X(float, rain_rate, 0.01)        \
     X(bool, wrap, true)              \
@@ -39,91 +41,61 @@ this is a copy of Erosion3, which works so this is fine to mess around with
     X(float, sediment_map_out)       \
     X(float, flux8)                  \
     X(float, dh_out)                 \
-    X(float, dw_out)                 \
-    X(float, ds_out)
+    X(float, ds_out)                 \
+    X(float, dw_out)
 
 // ════════════════════════════════════════════════ //
 
 #include "cuda_types.cuh"
-// #include <std>
 
 namespace TEMPLATE_NAMESPACE {
 
-// set to kernels as pointer
+// struct FluxCell {
+//     float f[8];
+// };
+
 struct Parameters {
-#ifdef TEMPLATE_CLASS_PARAMETERS
+    // declare pars on structures
 #define X(TYPE, NAME, DEFAULT_VAL) \
     TYPE NAME = DEFAULT_VAL;
     TEMPLATE_CLASS_PARAMETERS
 #undef X
-#endif
-};
-// OPTIONAL Compile‑time safety check
-static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
-
-// could be used with kernels
-struct MapPointers {
-#ifdef TEMPLATE_CLASS_MAPS
-#define X(TYPE, NAME) \
-    TYPE *NAME = nullptr;
-    TEMPLATE_CLASS_MAPS
-#undef X
-#endif
 };
 
 class TEMPLATE_CLASS_NAME {
 
-// make getter/setters for the pars
-#ifdef TEMPLATE_CLASS_PARAMETERS
   private:
     Parameters pars;
+    bool device_allocated = false;
+
+    size_t _count = 0; // count of passes
 
   public:
+    // make getter/setters for the pars
 #define X(TYPE, NAME, DEFAULT_VAL)                \
     TYPE get_##NAME() const { return pars.NAME; } \
     void set_##NAME(TYPE value) { pars.NAME = value; }
     TEMPLATE_CLASS_PARAMETERS
 #undef X
-#endif
 
-// make maps as CudaArray2D
-#ifdef TEMPLATE_CLASS_MAPS
+    // make maps
 #define X(TYPE, NAME) \
     core::cuda::CudaArray2D<TYPE> NAME;
     TEMPLATE_CLASS_MAPS
 #undef X
-#endif
 
-    //
-    //
-    //
-    //
-  private:
-    bool device_allocated = false;
-
-    // pointers for swapping the maps around (ping/pong)
-    float *h_cur = nullptr;
-    float *w_cur = nullptr;
-    float *s_cur = nullptr;
-    float *h_next = nullptr;
-    float *w_next = nullptr;
-    float *s_next = nullptr;
-
-    // declare private arrays
+    // private device arrays
 #define X(TYPE, NAME) \
     core::cuda::DeviceArray<TYPE> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
 
-    size_t _count = 0; // count of passes
-
-  public:
-    void process();
-
     void allocate_device(); // and upload
     // void upload_device();
     void deallocate_device(); // and download
     // void download_device();
+
+    void process();
 
     TEMPLATE_CLASS_NAME();
     ~TEMPLATE_CLASS_NAME();

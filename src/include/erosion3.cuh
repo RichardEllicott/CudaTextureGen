@@ -11,7 +11,6 @@ this one uses more clever types and classes, needing less horrible macros
 #define TEMPLATE_CLASS_NAME Erosion3
 #define TEMPLATE_NAMESPACE erosion3
 
-
 #define TEMPLATE_CLASS_PARAMETERS    \
     X(size_t, _block, 16)            \
     X(size_t, width, 256)            \
@@ -26,27 +25,20 @@ this one uses more clever types and classes, needing less horrible macros
     X(float, evaporation_rate, 0.1)  \
     X(bool, debug_hash_cell_order, false)
 
-
-
 #define TEMPLATE_CLASS_MAPS \
     X(float, height_map)    \
     X(float, water_map)     \
-    X(float, sediment_map)  \
-    X(float, dh_out)        \
-    X(float, ds_out)        \
-    X(float, dw_out)
+    X(float, sediment_map)
 
-
-
-    // private device arrays
+// private device arrays
 #define TEMPLATE_CLASS_DEVICE_ARRAYS \
     X(float, height_map_out)         \
     X(float, water_map_out)          \
     X(float, sediment_map_out)       \
     X(float, flux8)                  \
-
-
-
+    X(float, dh_out)                 \
+    X(float, ds_out)                 \
+    X(float, dw_out)
 
 // ════════════════════════════════════════════════ //
 
@@ -72,10 +64,6 @@ class TEMPLATE_CLASS_NAME {
     Parameters pars;
     bool device_allocated = false;
 
-
-
-
-
     size_t _count = 0; // count of passes
 
   public:
@@ -97,8 +85,6 @@ class TEMPLATE_CLASS_NAME {
     core::cuda::DeviceArray<TYPE> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
-
-
 
     void allocate_device(); // and upload
     // void upload_device();
