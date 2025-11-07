@@ -34,15 +34,15 @@ THE ERROSION WE HAD WORKING... SEEMS TO BREAL WITH THE CORRECT PARS!!
     X(float, water_map)     \
     X(float, sediment_map)
 
-// private device arrays
+// private device arrays X(TYPE, NAME, Z_SIZE)
 #define TEMPLATE_CLASS_DEVICE_ARRAYS \
-    X(float, height_map_out)         \
-    X(float, water_map_out)          \
-    X(float, sediment_map_out)       \
-    X(float, flux8)                  \
-    X(float, dh_out)                 \
-    X(float, ds_out)                 \
-    X(float, dw_out)
+    X(float, height_map_out, 1)      \
+    X(float, water_map_out, 1)       \
+    X(float, sediment_map_out, 1)    \
+    X(float, dh_out, 1)              \
+    X(float, ds_out, 1)              \
+    X(float, dw_out, 1)              \
+    X(float, flux8, 8)
 
 // ════════════════════════════════════════════════ //
 
@@ -85,7 +85,7 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 
     // private device arrays
-#define X(TYPE, NAME) \
+#define X(TYPE, NAME, Z_SIZE) \
     core::cuda::DeviceArray<TYPE> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X

@@ -210,40 +210,14 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     size_t array_size = pars.width * pars.height;
 
-    // resize private arrays
-    flux8.resize(array_size * 8);
-    height_map_out.resize(array_size);
-    water_map_out.resize(array_size);
-    sediment_map_out.resize(array_size);
-
-    height_map_out.zero_device();
-    water_map_out.zero_device();
-    sediment_map_out.zero_device();
-    flux8.zero_device();
-
-    dh_out.resize(array_size);
-    dh_out.zero_device();
-    dw_out.resize(array_size);
-    dw_out.zero_device();
-    ds_out.resize(array_size);
-    ds_out.zero_device();
-
-    // ================================================================
-
-    //     // private device arrays
-    // #define X(TYPE, NAME)        \
-//     NAME.resize(array_size); \
-//     NAME.zero_device();
-    //     TEMPLATE_CLASS_DEVICE_ARRAYS
-    // #undef X
+    // private device arrays
+#define X(TYPE, NAME, Z_SIZE)        \
+    NAME.resize(array_size *Z_SIZE); \
+    NAME.zero_device();
+    TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
 
     //     cudaDeviceSynchronize();
-
-    //     // // flux 8 is special case
-    //     // flux8.resize(array_size * 8);
-    //     // flux8.zero_device();
-
-    // ================================================================
 }
 
 void TEMPLATE_CLASS_NAME::deallocate_device() {
@@ -259,7 +233,7 @@ void TEMPLATE_CLASS_NAME::deallocate_device() {
 #undef X
 
     // free device arrays
-#define X(TYPE, NAME) \
+#define X(TYPE, NAME, Z_SIZE) \
     NAME.free_device();
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X

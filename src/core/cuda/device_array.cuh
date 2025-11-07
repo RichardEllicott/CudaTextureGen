@@ -1,8 +1,12 @@
 /*
 
-pure 1D array manager, allocates and manages a standard array on the device
+cuda array manager, allocates and manages a standard array on the device
 
-normally i use the Array2D one instead, this one keeps no local copy however
+this object keeps no local copy
+
+⚠️ this was mostly written by copilot, as a result it's a little more repatative than how i'd write it
+i'd concider it slightly "vibe coded"
+
 
 */
 #pragma once
@@ -61,13 +65,41 @@ class DeviceArray {
     T *dev_ptr() { return _dev_ptr; }
     const T *dev_ptr() const { return _dev_ptr; }
 
-    void resize(size_t n) {
+    // this resize had an issue
+    // void resize(size_t n) {
 
-        if (n == _size) // skip if the same size
+    //     if (n == _size) // skip if the same size
+    //         return;
+
+    //     _size = n;
+    //     allocate_device();
+    // }
+
+    void resize(size_t n) {
+        if (n == _size)
             return;
 
-        _size = n;
-        allocate_device();
+        size_t new_size_bytes = n * sizeof(T);
+        if (_dev_ptr && _size_bytes == new_size_bytes) {
+            _size = n; // only update size if reallocation is skipped
+            return;
+        }
+
+        free_device(); // always free before reallocating
+        if (n > 0) {
+            cudaError_t err = cudaMalloc(&_dev_ptr, new_size_bytes);
+            if (err != cudaSuccess) {
+                _dev_ptr = nullptr;
+                _size = 0;
+                _size_bytes = 0;
+                throw std::runtime_error("cudaMalloc failed");
+            }
+            _size = n;
+            _size_bytes = new_size_bytes;
+        } else {
+            _size = 0;
+            _size_bytes = 0;
+        }
     }
 
     void allocate_device() {
