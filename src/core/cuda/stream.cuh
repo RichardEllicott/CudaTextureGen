@@ -104,7 +104,7 @@ struct StreamData {
     }
 
     ~StreamData() {
-        printf("⊂(◉‿◉)つ [StreamData] Destroying CUDA stream: %p\n", (void *)stream);
+        printf("[StreamData] Destroying CUDA stream: %p\n", (void *)stream);
 
         cudaStreamDestroy(stream);
     }
@@ -122,24 +122,22 @@ class Stream {
     // Stream(const Stream &) = default;
     // Stream &operator=(const Stream &) = default;
 
-
     // these two are the same as hthe defaults above, just add debug messages
-Stream(const Stream& other) : handle(other.handle) {
-    printf("[Stream] Copied (ref count = %ld)\n", handle.use_count());
-}
-
-Stream& operator=(const Stream& other) {
-    if (this != &other) {
-        handle = other.handle;
-        printf("[Stream] Assigned (ref count = %ld)\n", handle.use_count());
+    Stream(const Stream &other) : handle(other.handle) {
+        printf("[Stream] Copied (ref count = %ld)\n", handle.use_count());
     }
-    return *this;
-}
 
-//
-//
-//
+    Stream &operator=(const Stream &other) {
+        if (this != &other) {
+            handle = other.handle;
+            printf("[Stream] Assigned (ref count = %ld)\n", handle.use_count());
+        }
+        return *this;
+    }
 
+    //
+    //
+    //
 
     // Accessor
     cudaStream_t get() const {

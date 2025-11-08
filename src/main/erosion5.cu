@@ -24,7 +24,7 @@ constexpr float SQRT2 = 1.4142135623730950488f;
 // 0=E, 1=W, 2=N, 3=S, 4=NE, 5=NW, 6=SE, 7=SW
 __device__ __constant__ int2 offsets[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
 __device__ __constant__ float offset_distances[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
-__device__ __constant__ int OPPOSITE[8] = {1, 0, 3, 2, 5, 4, 7, 6};
+__device__ __constant__ int opposite_offsets[8] = {1, 0, 3, 2, 5, 4, 7, 6};
 
 __device__ __constant__ int2 offsets4[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
@@ -68,9 +68,10 @@ __global__ void rain_pass(
 }
 
 // 8-neighbor flow calculation (no erosion, no sediment)
-__global__ void calculate_flow(
+__global__ void calculate_flux(
     const Parameters *pars,
     const int map_width, const int map_height,
+    const int step,
 
     const float *__restrict__ height_map,
     const float *__restrict__ water_map,
@@ -92,7 +93,7 @@ __global__ void calculate_flow(
     float slopes[8];        // positive slope to neighbours
     float sum_slope = 0.0f; // total slope
 
-    // calculate slopes
+    // 1. calculate slopes
     for (int n = 0; n < 8; ++n) {
 
         // new pos
@@ -101,17 +102,29 @@ __global__ void calculate_flow(
         int nidx = ny * map_width + nx;
 
         float n_surface = height_map[nidx] + water_map[nidx]; // new surface
-        float difference = surface - n_surface;               // positive means
+        float difference = surface - n_surface;               // positive means we are higher
+
+        if (pars->slope_jitter > 0.0f) {
+            float jitter = pars->slope_jitter * noise_util::trig_hash(x, y, n + 1234, step);
+            difference += jitter;
+        }
+
+        // ❓ make sure diagonals are further, normally true
+        if (pars->correct_diagonal_distance) {
+            difference /= offset_distances[n];
+        }
 
         float sd = difference > 0.0f ? difference : 0.0f; // amount higher we are than neighbour (or 0 if we are lower)
+
+        //
 
         slopes[n] = sd;
         sum_slope += sd;
     }
 
+    // 2. slope based flux
     float max_outflow = fminf(water, pars->max_water_outflow); // slows outflow if above threshold
-
-    float *cell_flux = &flux8[idx * 8]; // pointer to this cell’s 8‑flux slice
+    float *cell_flux = &flux8[idx * 8];                        // pointer to this cell’s 8‑flux slice
 
     if (sum_slope > 1e-6f && max_outflow > 0.f) {
         for (int n = 0; n < 8; ++n) {
@@ -121,6 +134,22 @@ __global__ void calculate_flow(
     } else {
         for (int n = 0; n < 8; ++n) {
             cell_flux[n] = 0.f; // no downhill slope or no water: zero flux
+        }
+    }
+
+    // 3. Add isotropic diffusion, recommend ~0.001
+    if (pars->diffusion_rate > 0.0f) {
+
+        for (int n = 0; n < 8; ++n) {
+            int nx = wrap_or_clamp(x + offsets[n].x, map_width, pars->wrap);
+            int ny = wrap_or_clamp(y + offsets[n].y, map_height, pars->wrap);
+            int nidx = ny * map_width + nx;
+
+            float neighbor_water = water_map[nidx];
+            float delta = neighbor_water - water; // positive if neighbor has more
+            float diffusion_flux = pars->diffusion_rate * delta;
+
+            cell_flux[n] += diffusion_flux;
         }
     }
 }
@@ -137,45 +166,77 @@ That’s the “opposite” index. Without it, you’d never add incoming water,
 
 */
 
-// WARNING USED AI FOR THIS CONFUSING BIT
-__global__ void apply_flow(
-    const Parameters *pars,
-    const int width, const int height,
+__device__ __forceinline__ float clampf(float v, float lo, float hi) {
+    return fminf(fmaxf(v, lo), hi);
+}
 
+__device__ __forceinline__ int clampi(int v, int lo, int hi) {
+    return min(max(v, lo), hi);
+}
+
+// WARNING USED AI FOR THIS CONFUSING BIT
+__global__ void apply_flux(
+    const Parameters *pars,
+    const int map_width, const int map_height,
+
+    const float *__restrict__ height_map,
     const float *__restrict__ water_map,
+    const float *__restrict__ sediment_map,
     const float *__restrict__ flux8, // 8 fluxes per cell
 
-    float *__restrict__ water_map_out) {
+    float *__restrict__ height_map_out,
+    float *__restrict__ water_map_out,
+    float *__restrict__ sediment_map_out
+
+) {
+    // ================================================================
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= width || y >= height)
+    if (x >= map_width || y >= map_height)
         return;
+    int idx = y * map_width + x;
+    // ================================================================
 
-    int idx = y * width + x;
-
-    float w = water_map[idx];
+    float height = height_map[idx];
+    float water = water_map[idx];
+    float sediment = sediment_map[idx];
 
     // subtract my outflows
     float outflow_sum = 0.f;
     for (int n = 0; n < 8; ++n) {
         outflow_sum += flux8[idx * 8 + n];
     }
-    w -= outflow_sum;
+    water -= outflow_sum;
+
+    // optional carving by outflow
+    if (pars->outflow_erode > 0.0f) {
+        height -= pars->outflow_erode * outflow_sum;
+    }
 
     // add inflows from neighbors
     float inflow_sum = 0.f;
     for (int n = 0; n < 8; ++n) {
-        int nx = wrap_or_clamp(x + offsets[n].x, width, pars->wrap);
-        int ny = wrap_or_clamp(y + offsets[n].y, height, pars->wrap);
-        int nidx = ny * width + nx;
+        int nx = wrap_or_clamp(x + offsets[n].x, map_width, pars->wrap);
+        int ny = wrap_or_clamp(y + offsets[n].y, map_height, pars->wrap);
+        int nidx = ny * map_width + nx;
 
-        int opp = OPPOSITE[n];
+        int opp = opposite_offsets[n];
         inflow_sum += flux8[nidx * 8 + opp];
     }
-    w += inflow_sum;
+    water += inflow_sum;
 
-    // clamp to nonnegative
-    water_map_out[idx] = fmaxf(0.f, w);
+    water -= pars->evaporation_rate; // evaporation
+
+    // optional carving by inflow
+    if (pars->inflow_erode > 0.0f) {
+        height -= pars->inflow_erode * inflow_sum;
+    }
+
+    height = clampf(height, pars->min_height, pars->max_height); // clamp height
+
+    height_map_out[idx] = height;
+    water_map_out[idx] = fmaxf(0.f, water);       // no negative water
+    sediment_map_out[idx] = fmaxf(0.f, sediment); // no negative sediment
 }
 
 //
@@ -275,25 +336,39 @@ void TEMPLATE_CLASS_NAME::process() {
 
     // ================================================================
 
-    for (int i = 0; i < pars.steps; ++i) {
-        rain_pass<<<grid, block, 0, stream.get()>>>(
-            dev_pars.dev_ptr(), pars.width, pars.height,
-            curand_array_2d.dev_ptr(),
-            dev_water_map_in);
+    for (int step = 0; step < pars.steps; ++step) {
 
-        calculate_flow<<<grid, block, 0, stream.get()>>>(
+        // if we have rain
+        if (pars.rain_rate > 0.0f) {
+            rain_pass<<<grid, block, 0, stream.get()>>>(
+                dev_pars.dev_ptr(), pars.width, pars.height,
+                curand_array_2d.dev_ptr(),
+                dev_water_map_in);
+        }
+
+        calculate_flux<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(), pars.width, pars.height,
+            step,
+
             dev_height_map_in,
             dev_water_map_in,
             flux8.dev_ptr());
 
-        apply_flow<<<grid, block, 0, stream.get()>>>(
+        apply_flux<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(), pars.width, pars.height,
-            dev_water_map_in,
-            flux8.dev_ptr(),
-            dev_water_map_out);
 
+            dev_height_map_in,
+            dev_water_map_in,
+            dev_sediment_map_in,
+            flux8.dev_ptr(),
+
+            dev_height_map_out,
+            dev_water_map_out,
+            dev_sediment_map_out);
+
+        std::swap(dev_height_map_in, dev_height_map_out);
         std::swap(dev_water_map_in, dev_water_map_out);
+        std::swap(dev_sediment_map_in, dev_sediment_map_out);
     }
 
     // ================================================================
@@ -321,3 +396,5 @@ TEMPLATE_CLASS_NAME::~TEMPLATE_CLASS_NAME() {
 }
 
 } // namespace TEMPLATE_NAMESPACE
+
+#include "template_macros_undef.h"

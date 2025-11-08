@@ -16,7 +16,7 @@ inline void bind(nb::module_ &m) {
 
     // bind erosion parameters
 #ifdef TEMPLATE_CLASS_PARAMETERS
-#define X(TYPE, NAME, DEFAULT_VAL) \
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), &TEMPLATE_CLASS_NAME::get_##NAME, &TEMPLATE_CLASS_NAME::set_##NAME);
     TEMPLATE_CLASS_PARAMETERS
 #undef X

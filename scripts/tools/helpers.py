@@ -34,10 +34,18 @@ def print_current_function():
 
 def normalize_array(array):
     """
-    normalize array in place (make from 0 to 1)
+    Normalize array in place to [0,1].
+    If all values are equal, returns zeros.
     """
-    array -= array.min()
-    array /= array.max()
+    min_val = array.min()
+    max_val = array.max()
+    range_val = max_val - min_val
+
+    if range_val == 0:  # guard against div by zero
+        array[:] = 0.0
+    else:
+        array -= min_val
+        array /= range_val
 
 
 def offset_array(array):

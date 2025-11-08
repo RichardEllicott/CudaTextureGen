@@ -59,18 +59,24 @@ mkdir -Force $build_dir # make a build folder
 #region 🔍 Find Cuda Compiler
 # ================================================================================================================================
 
-# manually point to the CUDA compiler, if not found by the VS environment automaticly
-if (-not $env:CUDA_PATH) {
-    # fallback if not defined but normally a $env:CUDA_PATH should exist
-    $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5"
-    Write-Warning "CUDA_PATH was not defined. Fallback applied: $env:CUDA_PATH"
+if (-not $env:CUDA_VARS_LOADED) {
+
+    # manually point to the CUDA compiler, if not found by the VS environment automaticly
+    if (-not $env:CUDA_PATH) {
+        # fallback if not defined but normally a $env:CUDA_PATH should exist
+        $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5"
+        Write-Warning "CUDA_PATH was not defined. Fallback applied: $env:CUDA_PATH"
+    }
+
+    # set up enviroment vars
+    $env:PATH = "$env:CUDA_PATH\bin;$env:CUDA_PATH\libnvvp;" + $env:PATH
+    $env:CUDACXX = Join-Path $env:CUDA_PATH "bin\nvcc.exe"
+    $env:INCLUDE = "$env:CUDA_PATH\include;" + $env:INCLUDE
+    $env:LIB = "$env:CUDA_PATH\lib\x64;" + $env:LIB
+
+    $env:CUDA_VARS_LOADED = "1"
 }
 
-# set up enviroment vars
-$env:PATH = "$env:CUDA_PATH\bin;$env:CUDA_PATH\libnvvp;" + $env:PATH
-$env:CUDACXX = Join-Path $env:CUDA_PATH "bin\nvcc.exe"
-$env:INCLUDE = "$env:CUDA_PATH\include;" + $env:INCLUDE
-$env:LIB = "$env:CUDA_PATH\lib\x64;" + $env:LIB
 
 # ================================================================================================================================
 
@@ -83,7 +89,7 @@ $env:LIB = "$env:CUDA_PATH\lib\x64;" + $env:LIB
 # --------------------------------------------------------------------------------------------------------------------------------
 
 # we only run this script once, which speeds up the second running of this script
-if (-not $env:VCVARS_LOADED) {
+if (-not $env:VC_VARS_LOADED) {
     $vcvars = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
     # Run it with the x64 argument
     cmd /c "`"$vcvars`" x64 && set" | ForEach-Object {
@@ -91,7 +97,7 @@ if (-not $env:VCVARS_LOADED) {
             Set-Item -Force -Path "env:$($matches[1])" -Value $matches[2]
         }
     }
-    $env:VCVARS_LOADED = "1"
+    $env:VC_VARS_LOADED = "1"
 }
 
 # # ⚠️ optional, if the above runs each time we build, it will create duplicates eventually causing an error
