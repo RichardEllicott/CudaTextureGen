@@ -62,6 +62,9 @@ def merge_numpy_arrays_to_rgba(r=None, g=None, b=None, a=None, shape=None, dtype
 
 def test_erosion5(width=512, height=512, folder="output", filename="erosion5"):
 
+    width *= 2
+    height *= 2
+
     octaves = 7
     heightmap_scale = 16.0
 
@@ -70,15 +73,18 @@ def test_erosion5(width=512, height=512, folder="output", filename="erosion5"):
 
     # erosion.debug_diagonal_distance = False
     erosion.steps = 1024
-    # erosion.rain_rate = 0.01
+    erosion.rain_rate = 0.5
     # erosion.rain_rate = 0.0
     # erosion.diffusion_rate = 0.003 * 0.0
     erosion.max_water_outflow = 1.0
 
     # erosion.slope_jitter = 1.0 / 10.0
 
-    erosion.outflow_erode = 0.002
+    erosion.outflow_carve = 0.002 * 0.0 # looked nice
     # erosion.inflow_erode = 0.0005
+    erosion.erosion_rate = 0.0004
+
+
 
     # erosion.min_height = 0.0
 

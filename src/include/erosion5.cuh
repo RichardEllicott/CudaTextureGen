@@ -28,11 +28,12 @@ THE ERROSION WE HAD WORKING... SEEMS TO BREAL WITH THE CORRECT PARS!!
     X(float, diffusion_rate, 0.0, "try to diffuse water away from the slops, 0.0 is off") \
     X(bool, correct_diagonal_distance, true, "")                                          \
     X(float, slope_jitter, 0.0, "")                                                       \
-    X(float, outflow_erode, 0.0, "reduce height based on outflow")                        \
-    X(float, inflow_erode, 0.0, "reduce height based on inflow")                          \
+    X(float, outflow_carve, 0.0, "reduce height based on outflow (no sediment)")          \
+    X(float, inflow_carve, 0.0, "reduce height based on inflow (no sediment)")            \
     X(float, min_height, -1000000.0, "minimum height the terrain can erode down to")      \
     X(float, max_height, 1000000.0, "maximum height the terrain can erode down to")       \
-    X(float, evaporation_rate, 0.0, "")
+    X(float, evaporation_rate, 0.0, "")                                                   \
+    X(float, erosion_rate, 0.0, "")
 
 // X(float, capacity, 0.1)          \
     // X(float, erode, 0.1)             \
@@ -40,20 +41,19 @@ THE ERROSION WE HAD WORKING... SEEMS TO BREAL WITH THE CORRECT PARS!!
     // X(float, evaporation_rate, 0.1)  \
     // X(bool, debug_hash_cell_order, false)\
 
-#define TEMPLATE_CLASS_MAPS \
-    X(float, height_map)    \
-    X(float, water_map)     \
-    X(float, sediment_map)
+#define TEMPLATE_CLASS_MAPS                 \
+    X(float, height_map, "starting height") \
+    X(float, water_map, "starting water")   \
+    X(float, sediment_map, "starting sediment")
 
 // private device arrays X(TYPE, NAME, Z_SIZE)
-#define TEMPLATE_CLASS_DEVICE_ARRAYS \
-    X(float, height_map_out, 1)      \
-    X(float, water_map_out, 1)       \
-    X(float, sediment_map_out, 1)    \
-    X(float, dh_out, 1)              \
-    X(float, ds_out, 1)              \
-    X(float, dw_out, 1)              \
-    X(float, flux8, 8)
+#define TEMPLATE_CLASS_DEVICE_ARRAYS                                 \
+    X(float, 1, height_map_out, "second height buffer")              \
+    X(float, 1, water_map_out, "second water buffer")                \
+    X(float, 1, sediment_map_out, "second sediment buffer")          \
+    X(float, 8, flux8, "water flow out to 8 neighbours")             \
+    X(float, 8, sediment_flux8, "sediment flow out to 8 neighbours") \
+    X(float, 1, slope_map, "strength of slope")
 
 // ════════════════════════════════════════════════ //
 
@@ -90,13 +90,13 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 
     // make maps
-#define X(TYPE, NAME) \
+#define X(TYPE, NAME, DESCRIPTION) \
     core::cuda::CudaArray2D<TYPE> NAME;
     TEMPLATE_CLASS_MAPS
 #undef X
 
     // private device arrays
-#define X(TYPE, NAME, Z_SIZE) \
+#define X(TYPE, DIM, NAME, DESCRIPTION) \
     core::cuda::DeviceArray<TYPE> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X

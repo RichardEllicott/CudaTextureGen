@@ -43,6 +43,14 @@ __device__ __forceinline__ int posmod(int value, int mod) {
     return result < 0 ? result + mod : result;
 }
 
+__device__ __forceinline__ float clampf(float v, float lo, float hi) {
+    return fminf(fmaxf(v, lo), hi);
+}
+
+__device__ __forceinline__ int clampi(int v, int lo, int hi) {
+    return min(max(v, lo), hi);
+}
+
 __global__ void rain_pass(
     const Parameters *pars,
     const int map_width, const int map_height,
@@ -75,8 +83,11 @@ __global__ void calculate_flux(
 
     const float *__restrict__ height_map,
     const float *__restrict__ water_map,
+    const float *__restrict__ sediment_map,
 
-    float *__restrict__ flux8 // 8 fluxes per cell
+    float *__restrict__ flux8,          // 8 fluxes per cell
+    float *__restrict__ sediment_flux8, // 8 fluxes per cell
+    float *__restrict__ slope_map       // 8 fluxes per cell
 ) {
     // ================================================================
     int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -88,6 +99,8 @@ __global__ void calculate_flux(
 
     float height = height_map[idx];
     float water = water_map[idx];
+    float sediment = sediment_map[idx];
+
     float surface = height + water;
 
     float slopes[8];        // positive slope to neighbours
@@ -122,6 +135,8 @@ __global__ void calculate_flux(
         sum_slope += sd;
     }
 
+    slope_map[idx] = sum_slope; // OUT
+
     // 2. slope based flux
     float max_outflow = fminf(water, pars->max_water_outflow); // slows outflow if above threshold
     float *cell_flux = &flux8[idx * 8];                        // pointer to this cell’s 8‑flux slice
@@ -152,6 +167,13 @@ __global__ void calculate_flux(
             cell_flux[n] += diffusion_flux;
         }
     }
+
+    // sediment concentration (sediment per unit water)
+    float sediment_concentration = (water > 1e-6f) ? (sediment / water) : 0.0f;
+    for (int n = 0; n < 8; ++n) {
+        float q = flux8[idx * 8 + n];                             // water flux to neighbor
+        sediment_flux8[idx * 8 + n] = sediment_concentration * q; // sediment carried with that water
+    }
 }
 
 /*
@@ -166,14 +188,6 @@ That’s the “opposite” index. Without it, you’d never add incoming water,
 
 */
 
-__device__ __forceinline__ float clampf(float v, float lo, float hi) {
-    return fminf(fmaxf(v, lo), hi);
-}
-
-__device__ __forceinline__ int clampi(int v, int lo, int hi) {
-    return min(max(v, lo), hi);
-}
-
 // WARNING USED AI FOR THIS CONFUSING BIT
 __global__ void apply_flux(
     const Parameters *pars,
@@ -182,38 +196,42 @@ __global__ void apply_flux(
     const float *__restrict__ height_map,
     const float *__restrict__ water_map,
     const float *__restrict__ sediment_map,
-    const float *__restrict__ flux8, // 8 fluxes per cell
+    const float *__restrict__ flux8,
+    const float *__restrict__ sediment_flux8,
+    const float *__restrict__ slope_map,
 
     float *__restrict__ height_map_out,
     float *__restrict__ water_map_out,
     float *__restrict__ sediment_map_out
 
 ) {
-    // ================================================================
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= map_width || y >= map_height)
         return;
     int idx = y * map_width + x;
     // ================================================================
-
     float height = height_map[idx];
     float water = water_map[idx];
     float sediment = sediment_map[idx];
 
-    // subtract my outflows
+    // calculate and subtract outflow
     float outflow_sum = 0.f;
     for (int n = 0; n < 8; ++n) {
         outflow_sum += flux8[idx * 8 + n];
     }
     water -= outflow_sum;
 
-    // optional carving by outflow
-    if (pars->outflow_erode > 0.0f) {
-        height -= pars->outflow_erode * outflow_sum;
-    }
+    // ❓ optional carving by outflow
+    height -= outflow_sum * pars->outflow_carve;
 
-    // add inflows from neighbors
+    // 🚧 erosion to sediment
+    float eroded = outflow_sum * pars->erosion_rate; // amount of sediment created by erosion
+    eroded *= slope_map[idx];                        // ❓ should be correct, but potentially optional?
+    sediment += eroded;                              // ⚠️ we should check there is some rock actually left to erode
+    height -= eroded;
+
+    // add inflows from neighbors to get our new water value
     float inflow_sum = 0.f;
     for (int n = 0; n < 8; ++n) {
         int nx = wrap_or_clamp(x + offsets[n].x, map_width, pars->wrap);
@@ -225,15 +243,30 @@ __global__ void apply_flux(
     }
     water += inflow_sum;
 
-    water -= pars->evaporation_rate; // evaporation
+    // apply evaporation
+    water -= pars->evaporation_rate;
 
-    // optional carving by inflow
-    if (pars->inflow_erode > 0.0f) {
-        height -= pars->inflow_erode * inflow_sum;
+    // ❌ optional carving by inflow
+    height -= pars->inflow_carve * inflow_sum;
+
+    // ================================================================
+
+    // 🚧 sediment transport
+    float sediment_change = 0.0f;
+    for (int n = 0; n < 8; ++n) {
+        int nx = wrap_or_clamp(x + offsets[n].x, map_width, pars->wrap);
+        int ny = wrap_or_clamp(y + offsets[n].y, map_height, pars->wrap);
+        int nidx = ny * map_width + nx;
+        int opp = opposite_offsets[n];
+
+        sediment_change -= sediment_flux8[idx * 8 + n];    // outflow
+        sediment_change += sediment_flux8[nidx * 8 + opp]; // inflow
     }
+    sediment += sediment_change;
+
+    // ================================================================
 
     height = clampf(height, pars->min_height, pars->max_height); // clamp height
-
     height_map_out[idx] = height;
     water_map_out[idx] = fmaxf(0.f, water);       // no negative water
     sediment_map_out[idx] = fmaxf(0.f, sediment); // no negative sediment
@@ -272,8 +305,8 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     size_t array_size = pars.width * pars.height;
 
     // private device arrays
-#define X(TYPE, NAME, Z_SIZE)        \
-    NAME.resize(array_size *Z_SIZE); \
+#define X(TYPE, DIM, NAME, DESCRIPTION) \
+    NAME.resize(array_size *DIM);       \
     NAME.zero_device();
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
@@ -288,13 +321,13 @@ void TEMPLATE_CLASS_NAME::deallocate_device() {
     device_allocated = false;
 
     // free maps
-#define X(TYPE, NAME)   \
-    NAME.free_device(); \
+#define X(TYPE, NAME, DESCRIPTION) \
+    NAME.free_device();            \
     TEMPLATE_CLASS_MAPS
 #undef X
 
     // free device arrays
-#define X(TYPE, NAME, Z_SIZE) \
+#define X(TYPE, DIM, NAME, DESCRIPTION) \
     NAME.free_device();
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
@@ -342,30 +375,43 @@ void TEMPLATE_CLASS_NAME::process() {
         if (pars.rain_rate > 0.0f) {
             rain_pass<<<grid, block, 0, stream.get()>>>(
                 dev_pars.dev_ptr(), pars.width, pars.height,
-                curand_array_2d.dev_ptr(),
-                dev_water_map_in);
+
+                curand_array_2d.dev_ptr(), // in/out
+                dev_water_map_in           // out
+
+            );
         }
 
         calculate_flux<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(), pars.width, pars.height,
             step,
 
-            dev_height_map_in,
-            dev_water_map_in,
-            flux8.dev_ptr());
+            dev_height_map_in,   // in
+            dev_water_map_in,    // in
+            dev_sediment_map_in, // in
+
+            flux8.dev_ptr(),          // out
+            sediment_flux8.dev_ptr(), // out
+            slope_map.dev_ptr()       // out
+
+        );
 
         apply_flux<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(), pars.width, pars.height,
 
-            dev_height_map_in,
-            dev_water_map_in,
-            dev_sediment_map_in,
-            flux8.dev_ptr(),
+            dev_height_map_in,        // in
+            dev_water_map_in,         // in
+            dev_sediment_map_in,      // in
+            flux8.dev_ptr(),          // in
+            sediment_flux8.dev_ptr(), // in
+            slope_map.dev_ptr(),      // in
 
-            dev_height_map_out,
-            dev_water_map_out,
-            dev_sediment_map_out);
+            dev_height_map_out,  // out
+            dev_water_map_out,   // out
+            dev_sediment_map_out // out
+        );
 
+        // flip the in/out maps
         std::swap(dev_height_map_in, dev_height_map_out);
         std::swap(dev_water_map_in, dev_water_map_out);
         std::swap(dev_sediment_map_in, dev_sediment_map_out);
