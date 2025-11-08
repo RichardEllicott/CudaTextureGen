@@ -66,27 +66,27 @@ def test_erosion5(width=512, height=512, folder="output", filename="erosion5"):
     height *= 2
 
     octaves = 7
-    heightmap_scale = 16.0
+    heightmap_scale = 2.0
 
     erosion = cuda_texture_gen.Erosion5()
     print("erosion:", dir(erosion))
 
     # erosion.debug_diagonal_distance = False
-    erosion.steps = 1024
-    erosion.rain_rate = 0.5
+    erosion.steps = 1024 * 2
+    erosion.rain_rate = 0.001
     # erosion.rain_rate = 0.0
     # erosion.diffusion_rate = 0.003 * 0.0
-    erosion.max_water_outflow = 1.0
+    erosion.max_water_outflow = 100.0
 
     # erosion.slope_jitter = 1.0 / 10.0
 
-    erosion.outflow_carve = 0.002 * 0.0 # looked nice
+    # erosion.outflow_carve = 0.002
     # erosion.inflow_erode = 0.0005
-    erosion.erosion_rate = 0.0004
+    erosion.erosion_rate = 0.00004
 
 
 
-    # erosion.min_height = 0.0
+    erosion.min_height = 0.0
 
 
     # ⛰️ height_map
@@ -97,10 +97,10 @@ def test_erosion5(width=512, height=512, folder="output", filename="erosion5"):
     erosion.height_map = height_map
 
     # 💧 start_water
-    water_map = get_fractal_noise(width=width, height=height, octaves=3, base_seed=2567)
-    normalize_array(water_map)
-    save_array_as_image(water_map * 255, "{}/{}.png".format(folder, filename + ".water"))
-    erosion.water_map = water_map
+    # water_map = get_fractal_noise(width=width, height=height, octaves=3, base_seed=2567)
+    # normalize_array(water_map)
+    # save_array_as_image(water_map * 255, "{}/{}.png".format(folder, filename + ".water"))
+    # erosion.water_map = water_map
 
     # 🚀 launch process
     erosion.process()
