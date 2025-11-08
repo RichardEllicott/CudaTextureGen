@@ -9,10 +9,10 @@ namespace nb = nanobind;
 
 inline void bind(nb::module_ &m) {
 
-    m.def("blur", [](nb::ndarray<float, nb::ndim<2>, nb::c_contig> arr, float amount, bool wrap) {
-        int h = arr.shape(0);
-        int w = arr.shape(1);
-        blur::blur(arr.data(), w, h, amount, wrap); }, nb::arg("arr"), nb::arg("amount"), nb::arg("wrap") = true);
+    m.def("blur", [](nb::ndarray<float, nb::ndim<2>, nb::c_contig> array, float amount, bool wrap) {
+        int height = array.shape(0);
+        int width = array.shape(1);
+        blur::blur(array.data(), width, height, amount, wrap); }, nb::arg("array"), nb::arg("amount"), nb::arg("wrap") = true);
 }
 
 } // namespace blur

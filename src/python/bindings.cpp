@@ -24,7 +24,7 @@ central file for the python bindings
 // ================================================================
 // erosion
 // ----------------------------------------------------------------
-#include "erosion3.bind.h" // ✔️ introducing water for caving of river like patterns
+// #include "erosion3.bind.h" // ✔️ introducing water for caving of river like patterns
 #include "erosion4.bind.h" // ✔️ simple erode refactored
 #include "erosion5.bind.h" // 🚧 erosion 3 working on changes
 
@@ -33,6 +33,8 @@ central file for the python bindings
 // ----------------------------------------------------------------
 #include "fluid_simulation.bind.h" // 🚧
 #include "tectonics.bind.h"        // 🚧 testing the idea of propegating preassure waves to maybe create mountains or craters, also fluid sim here
+
+#include "misc.bind.h" //
 
 namespace nb = nanobind;
 
@@ -50,10 +52,11 @@ NB_MODULE(cuda_texture_gen, m) {
 
     noise::bind(m);
 
-    erosion3::bind(m);
+    // erosion3::bind(m);
     erosion4::bind(m);
     erosion5::bind(m);
 
     fluid_simulation::bind(m);
     tectonics::bind(m);
+    misc::bind(m);
 }

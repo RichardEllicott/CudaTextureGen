@@ -3,6 +3,9 @@
 */
 #pragma once
 
+#include <curand_kernel.h>
+
+
 namespace kernels {
 
 // 🚧🚧🚧🚧🚧 UNTESTED AI GENERATED 🚧🚧🚧🚧🚧
