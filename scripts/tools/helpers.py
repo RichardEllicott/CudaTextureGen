@@ -2,14 +2,7 @@
 
 standard tools interface, load our library and hook up to it
 
-pip install numpy
-pip install scipy
-pip install matplotlib
 
-
-pip install pillow
-
-pip install imageio
 
 """
 import python_bootstrap  # bootstrap to our fresh compiled module
@@ -19,6 +12,10 @@ import inspect
 from matplotlib.colors import to_rgb
 import matplotlib.pyplot as plt
 # from matplotlib.colors import ListedColormap
+
+
+from .array_helpers import *
+
 
 
 def print_current_function():
@@ -32,34 +29,6 @@ def print_current_function():
     print(f"{func_name}({arg_str})...")
 
 
-def normalize_array(array):
-    """
-    Normalize array in place to [0,1].
-    If all values are equal, returns zeros.
-    """
-    min_val = array.min()
-    max_val = array.max()
-    range_val = max_val - min_val
-
-    if range_val == 0:  # guard against div by zero
-        array[:] = 0.0
-    else:
-        array -= min_val
-        array /= range_val
-
-
-def offset_array(array):
-    """
-    offset array by half (to test tiling)
-    """
-
-    # Compute half offsets
-    dx = array.shape[1] // 2  # width
-    dy = array.shape[0] // 2  # height
-
-    # Apply toroidal (wraparound) shift
-    # shifted = np.roll(arr, shift=(dy, dx), axis=(0, 1))
-    array[:] = np.roll(array, shift=(dy, dx), axis=(0, 1))
 
 
 def get_fractal_noise(width=1024, height=1024, octaves=6, base_period=2, base_seed=12345, gain=0.8, lacunarity=2.0):
@@ -176,3 +145,7 @@ def apply_color_map(height_map, cmap="terrain"):
     """
     colormap = plt.get_cmap(cmap)
     return colormap(height_map)
+
+
+
+

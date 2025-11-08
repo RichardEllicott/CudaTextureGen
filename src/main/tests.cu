@@ -29,9 +29,32 @@ void print_debug_info() {
     printf("CUDA Devices Available: %d\n", device_count);
 }
 
+
+
+// tested pos mod that wraps the map
+__device__ __forceinline__ int posmod(int value, int mod) {
+    int result = value % mod;
+    return result < 0 ? result + mod : result;
+}
+
+
+
 __global__ void hello_kernel() {
     printf("Hello from GPU thread %d\n", threadIdx.x);
+
+    // mod test
+    int mod = 4;
+    for (int i = 0; i < 16; i++) {
+
+        int i2 = i - 8;
+        // int i3 = i2 % mod;
+        int i3 = posmod(i2, 4);
+
+        printf("mod(%d, %d)=>%d\n", i2, mod, i3);
+    }
 }
+
+
 
 void cuda_hello() {
 
@@ -43,7 +66,8 @@ void cuda_hello() {
     printf("Hello from CPU\n");
 
     // Launch kernel with 5 threads
-    hello_kernel<<<1, 5>>>();
+    // hello_kernel<<<1, 5>>>();
+    hello_kernel<<<1, 1>>>();
     cudaDeviceSynchronize();
 
     // debugging

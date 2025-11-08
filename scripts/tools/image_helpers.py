@@ -1,49 +1,11 @@
 """
-
 image helpers
-
 """
-
 import numpy as np
-# from PIL import Image
 import imageio.v2 as imageio
 
 
-# OLD PILLOW
-# def save_array_as_image(array, filename):
-#     """
-#     save numpy 2d array as an image (supports .png or .tif)
-#     """
-
-#     if isinstance(filename, (list, tuple)):
-#         for fname in filename:
-#             self.save_array_as_image(array, fname)
-#         return
-
-#     if filename.endswith(".png"):
-#         img = Image.fromarray(array.astype(np.uint8))
-#         img.save(filename)
-
-#     elif filename.endswith((".tif", ".tiff")):
-#         img = Image.fromarray(array.astype(np.float32))
-#         img.save(filename)
-
-#     else:
-#         raise ValueError(f"Unsupported format: {filename}")
-
-
-# def load_array_from_image(filename):
-#     """
-#     load image as black and white array
-#     """
-#     img = Image.open(filename).convert("L")
-#     array = np.array(img, dtype=np.float32)
-#     return array
-
-
-# new imageio
-
-def save_array_as_image(array: np.ndarray, filename):
+def save_array_as_image(array: np.ndarray, filename) -> None:
     """
     Save a NumPy 2D array as an image.
     Supports .png (uint8) or .tif/.tiff (float32).

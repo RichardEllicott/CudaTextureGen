@@ -7,86 +7,37 @@ from tools import *
 import numpy as np
 
 
-def merge_numpy_arrays_to_rgba(r=None, g=None, b=None, a=None, shape=None, dtype=np.uint8):
-    """
-    Merge separate R, G, B (and optional A) numpy arrays into a single RGBA image.
-    Missing channels default to black (0). Alpha defaults to fully opaque.
-
-    Parameters
-    ----------
-    r, g, b, a : np.ndarray or None
-        Arrays of the same shape, representing channels. Any can be None.
-    shape : tuple or None
-        Shape to use if some channels are None. If None, inferred from the first non-None channel.
-    dtype : np.dtype
-        Data type of the output array (default uint8).
-
-    Returns
-    -------
-    rgba : np.ndarray
-        Combined array of shape (H, W, 4).
-    """
-    # infer shape from first non-None channel
-    if shape is None:
-        for ch in (r, g, b, a):
-            if ch is not None:
-                shape = ch.shape
-                dtype = ch.dtype
-                break
-    if shape is None:
-        raise ValueError("Must provide at least one channel or a shape")
-
-    def ensure_channel(ch, fill_value):
-        if ch is None:
-            return np.full(shape, fill_value, dtype=dtype)
-        if ch.shape != shape:
-            raise ValueError("Channel shape mismatch")
-        return ch
-
-    r = ensure_channel(r, 0)
-    g = ensure_channel(g, 0)
-    b = ensure_channel(b, 0)
-
-    if a is None:
-        # opaque: max for integers, 1.0 for floats
-        if np.issubdtype(dtype, np.integer):
-            fill = np.iinfo(dtype).max
-        else:
-            fill = 1.0
-        a = np.full(shape, fill, dtype=dtype)
-    else:
-        a = ensure_channel(a, 0)
-
-    return np.stack([r, g, b, a], axis=-1)
-
-
 def test_erosion5(width=512, height=512, folder="output", filename="erosion5"):
 
-    width *= 2
-    height *= 2
+    # width *= 2
+    # height *= 2
 
     octaves = 7
-    heightmap_scale = 2.0
+    heightmap_scale = 16.0
 
     erosion = cuda_texture_gen.Erosion5()
     print("erosion:", dir(erosion))
 
     # erosion.debug_diagonal_distance = False
-    erosion.steps = 1024 * 2
-    erosion.rain_rate = 0.001
-    # erosion.rain_rate = 0.0
-    # erosion.diffusion_rate = 0.003 * 0.0
-    erosion.max_water_outflow = 100.0
+    erosion.steps = 1024
+    erosion.rain_rate = 0.05
+
+
+    # erosion.diffusion_rate = 0.003
+    erosion.max_water_outflow = 1.0
+
+    erosion.erosion_mode = 1
+
+    erosion.deposition_rate = 0.5
 
     # erosion.slope_jitter = 1.0 / 10.0
 
-    # erosion.outflow_carve = 0.002
-    # erosion.inflow_erode = 0.0005
-    erosion.erosion_rate = 0.00004
+    erosion.erosion_rate = 0.002 * 3.0
 
-
+    erosion.evaporation_rate = 0.03
 
     erosion.min_height = 0.0
+    # erosion.min_height = -16.0
 
 
     # ⛰️ height_map
@@ -105,10 +56,28 @@ def test_erosion5(width=512, height=512, folder="output", filename="erosion5"):
     # 🚀 launch process
     erosion.process()
 
+    erosion.erosion_mode = 1
+
     # ⛰️ height_map
     eroded_map = erosion.height_map
     print("eroded_map min: {}, max: {}".format(eroded_map.min(), eroded_map.max()))
+    # eroded_map = np.nan_to_num(eroded_map, nan=0.0, posinf=255.0, neginf=0.0)
+
+    print("NaNs:", np.isnan(eroded_map).any())
+    print("Infs:", np.isinf(eroded_map).any())
+
+
+
+
     normalize_array(eroded_map)
+
+
+    print(type(eroded_map))
+
+    print("eroded_map min: {}, max: {}".format(eroded_map.min(), eroded_map.max()))
+
+    
+
     save_array_as_image(eroded_map * 255, "{}/{}.png".format(folder, filename + ".final_height"))
 
     # normal_map = generate_normal_map(array, strength=4.0)

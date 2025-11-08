@@ -15,6 +15,9 @@ ENV/
 
 /__pycache__/
 
-# UNUSED ATM!!!
-# /godot/cuda_texture_gen
 /blender/
+/scripts/tools/__pycache__/
+
+# ignore all __pycache__ folders?
+__pycache__/ 
+*.pyc
