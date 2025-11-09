@@ -19,6 +19,8 @@ If exceeded, grains slide downhill until equilibrium is restored.
 
 namespace TEMPLATE_NAMESPACE {
 
+#pragma region HELPERS
+
 constexpr float SQRT2 = 1.4142135623730950488f;
 
 // 8 offsets with the opposites in pairs
@@ -50,11 +52,18 @@ __device__ __forceinline__ float clampf(float value, float minimum, float maximu
     return fminf(fmaxf(value, minimum), maximum);
 }
 
+#pragma endregion
+
+#pragma region KERNELS
+
 __global__ void rain_pass(
     const Parameters *pars,
     const int map_width, const int map_height,
     curandState *rand_states,
-    float *__restrict__ water_map
+
+    const float *__restrict__ rain_map, // 🚧 optional in
+
+    float *__restrict__ water_map // out
 
 ) {
     // ================================================================
@@ -188,6 +197,8 @@ __global__ void apply_flux(
     const float *__restrict__ flux8,          // in
     const float *__restrict__ sediment_flux8, // in
     const float *__restrict__ slope_map,      // in
+
+    const float *__restrict__ hardness_map, // 🚧 optional in
 
     float *__restrict__ height_map_out,  // out
     float *__restrict__ water_map_out,   // out
@@ -392,6 +403,10 @@ __global__ void debug_pass(
     // }
 }
 
+#pragma endregion
+
+#pragma region MAIN
+
 // allocate memory
 void TEMPLATE_CLASS_NAME::allocate_device() {
 
@@ -401,24 +416,32 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     device_allocated = true;
 
     height_map.upload();
-    pars.width = height_map.get_width();
-    pars.height = height_map.get_height();
+    pars._width = height_map.get_width();
+    pars._height = height_map.get_height();
 
     if (water_map.size() != height_map.size()) { // if we don't start with a map clear
-        water_map.resize(pars.width, pars.height);
+        water_map.resize(pars._width, pars._height);
         water_map.clear();
     }
     water_map.upload();
 
     if (sediment_map.size() != height_map.size()) { // if we don't start with a map clear
-        sediment_map.resize(pars.width, pars.height);
+        sediment_map.resize(pars._width, pars._height);
         sediment_map.clear();
     }
     sediment_map.upload();
 
+    // optional map
+    if (hardness_map.get_width() == pars._width && hardness_map.get_height() == pars._height) {
+        hardness_map.upload();
+    }
+    if (rain_map.get_width() == pars._width && rain_map.get_height() == pars._height) {
+        rain_map.upload();
+    }
+
     // ================================================================
 
-    size_t array_size = pars.width * pars.height;
+    size_t array_size = pars._width * pars._height;
 
     // private device arrays
 #define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
@@ -464,7 +487,7 @@ void TEMPLATE_CLASS_NAME::process() {
     core::cuda::Stream stream;
     core::cuda::Struct<Parameters> dev_pars(pars); // automaticly uploads and free
 
-    auto curand_array_2d = core::cuda::CurandArray2D(pars.width, pars.height, stream.get());
+    auto curand_array_2d = core::cuda::CurandArray2D(pars._width, pars._height, stream.get());
     stream.sync(); // important??
 
     timer.mark_time();
@@ -489,8 +512,8 @@ void TEMPLATE_CLASS_NAME::process() {
 
     // block/grid size
     dim3 block(pars._block, pars._block);
-    dim3 grid((pars.width + block.x - 1) / block.x,
-              (pars.height + block.y - 1) / block.y);
+    dim3 grid((pars._width + block.x - 1) / block.x,
+              (pars._height + block.y - 1) / block.y);
 
     // ================================================================
 
@@ -499,16 +522,18 @@ void TEMPLATE_CLASS_NAME::process() {
         // if we have rain
         if (pars.rain_rate > 0.0f) {
             rain_pass<<<grid, block, 0, stream.get()>>>(
-                dev_pars.dev_ptr(), pars.width, pars.height,
+                dev_pars.dev_ptr(), pars._width, pars._height,
 
                 curand_array_2d.dev_ptr(), // in/out
-                dev_water_map_in           // out
 
+                rain_map.dev_ptr(), // optional in
+
+                dev_water_map_in // out
             );
         }
 
         calculate_flux<<<grid, block, 0, stream.get()>>>(
-            dev_pars.dev_ptr(), pars.width, pars.height,
+            dev_pars.dev_ptr(), pars._width, pars._height,
             step,
 
             dev_height_map_in,   // in
@@ -522,7 +547,7 @@ void TEMPLATE_CLASS_NAME::process() {
         );
 
         apply_flux<<<grid, block, 0, stream.get()>>>(
-            dev_pars.dev_ptr(), pars.width, pars.height,
+            dev_pars.dev_ptr(), pars._width, pars._height,
 
             dev_height_map_in,        // in
             dev_water_map_in,         // in
@@ -531,6 +556,8 @@ void TEMPLATE_CLASS_NAME::process() {
             sediment_flux8.dev_ptr(), // in
             slope_map.dev_ptr(),      // in
 
+            hardness_map.dev_ptr(), // optional in
+
             dev_height_map_out,  // out
             dev_water_map_out,   // out
             dev_sediment_map_out // out
@@ -538,7 +565,7 @@ void TEMPLATE_CLASS_NAME::process() {
 
         if (pars.debug) {
             debug_pass<<<grid, block, 0, stream.get()>>>(
-                dev_pars.dev_ptr(), pars.width, pars.height,
+                dev_pars.dev_ptr(), pars._width, pars._height,
                 step,
 
                 dev_height_map_out,   // in
@@ -607,6 +634,8 @@ TEMPLATE_CLASS_NAME::TEMPLATE_CLASS_NAME() {
 TEMPLATE_CLASS_NAME::~TEMPLATE_CLASS_NAME() {
     deallocate_device();
 }
+
+#pragma endregion
 
 } // namespace TEMPLATE_NAMESPACE
 

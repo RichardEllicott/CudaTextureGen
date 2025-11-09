@@ -22,8 +22,8 @@ THE ERROSION WE HAD WORKING... SEEMS TO BREAL WITH THE CORRECT PARS!!
     X(bool, debug, false, "track certain information for monitoring")                               \
     X(int, debug_mod, 1, "frequency to print the debug output")                                     \
     X(size_t, _block, 16, "gpu block size (best at 16)")                                            \
-    X(size_t, width, 512, "map width")                                                              \
-    X(size_t, height, 512, "map height")                                                            \
+    X(size_t, _width, 512, "map width")                                                             \
+    X(size_t, _height, 512, "map height")                                                           \
     X(int, steps, 1024, "simulation steps to run")                                                  \
     X(float, rain_rate, 0.0, "")                                                                    \
     X(bool, wrap, true, "wrap the errosion from one side to the other (making result tileable)")    \
@@ -50,10 +50,12 @@ THE ERROSION WE HAD WORKING... SEEMS TO BREAL WITH THE CORRECT PARS!!
     // X(bool, debug_hash_cell_order, false)\
 
 // (TYPE, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_MAPS                 \
-    X(float, height_map, "starting height") \
-    X(float, water_map, "starting water")   \
-    X(float, sediment_map, "starting sediment")
+#define TEMPLATE_CLASS_MAPS                         \
+    X(float, height_map, "starting height")         \
+    X(float, water_map, "starting water")           \
+    X(float, sediment_map, "starting sediment")     \
+    X(float, hardness_map, "optional hardness map") \
+    X(float, rain_map, "optional rain map")
 
 // (TYPE, DIMENSION, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAYS                                 \
