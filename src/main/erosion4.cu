@@ -25,7 +25,7 @@ __global__ void simple_erode(
     Parameters *pars,
     const int width, const int height,
     const float *heightmap, const float *sediment,
-    float *heightmap_out, float *sediment_out, // unused
+    float *heightmap_out, float *sediment_out, // seems to make no difference using ping pong
     curandState *rand_states = nullptr
 
 ) {
@@ -110,11 +110,11 @@ void TEMPLATE_CLASS_NAME::process() {
     height_map.upload();
 
     // set width/height
-    pars.width = height_map.get_width();
-    pars.height = height_map.get_height();
+    pars._width = height_map.get_width();
+    pars._height = height_map.get_height();
 
     // match sediment map
-    sediment_map.resize(pars.width, pars.height);
+    sediment_map.resize(pars._width, pars._height);
     sediment_map.clear();
     sediment_map.upload();
 
@@ -134,8 +134,8 @@ void TEMPLATE_CLASS_NAME::process() {
 
     // calculate grid and block
     dim3 block(pars._block, pars._block);
-    dim3 grid((pars.width + block.x - 1) / block.x,
-              (pars.height + block.y - 1) / block.y);
+    dim3 grid((pars._width + block.x - 1) / block.x,
+              (pars._height + block.y - 1) / block.y);
 
     // pointers to swap
     auto h1 = height_map.dev_ptr();
@@ -156,7 +156,7 @@ void TEMPLATE_CLASS_NAME::process() {
         for (int i = 0; i < pars.steps; i++) {
             simple_erode<<<grid, block, 0, stream.get()>>>(
                 _pars.dev_ptr(),
-                pars.width, pars.height,
+                pars._width, pars._height,
                 height_map.dev_ptr(), sediment_map.dev_ptr(),
                 height_map.dev_ptr(), sediment_map.dev_ptr(),
                 rng_states.dev_ptr());
@@ -167,7 +167,7 @@ void TEMPLATE_CLASS_NAME::process() {
         for (int i = 0; i < pars.steps; i++) {
             simple_erode<<<grid, block, 0, stream.get()>>>(
                 _pars.dev_ptr(),
-                pars.width, pars.height,
+                pars._width, pars._height,
                 h1, s1,
                 h2, s2,
                 rng_states.dev_ptr());

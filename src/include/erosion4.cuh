@@ -12,8 +12,8 @@ simple erosion that distributes sediment to neighbours
 #define TEMPLATE_NAMESPACE erosion4
 
 #define TEMPLATE_CLASS_PARAMETERS   \
-    X(size_t, width, 1024)          \
-    X(size_t, height, 1024)         \
+    X(size_t, _width, 1024)          \
+    X(size_t, _height, 1024)         \
     X(size_t, _block, 16)           \
     X(int, steps, 512)              \
     X(bool, wrap, true)             \
