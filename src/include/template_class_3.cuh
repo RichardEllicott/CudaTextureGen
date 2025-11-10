@@ -14,19 +14,17 @@ this one uses more clever types and classes, needing less horrible macros
 #define TEMPLATE_CLASS_NAME TemplateClass3
 #define TEMPLATE_NAMESPACE template_class_3
 
+// paramaters
 #define TEMPLATE_CLASS_PARAMETERS \
     X(size_t, width, 1024)        \
     X(size_t, height, 1024)       \
     X(size_t, _block, 16)         \
     X(float, test, 0.0)
 
-// 2D arrays
+// 2D arrays with local copies
 #define TEMPLATE_CLASS_MAPS \
     X(float, image)
 
-// 3D arrays
-#define TEMPLATE_CLASS_ARRAY3D \
-    X(float, image)
 
 // enumerators
 #define TEMPLATE_CLASS_TYPES \

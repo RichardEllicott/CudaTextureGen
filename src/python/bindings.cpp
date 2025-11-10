@@ -8,8 +8,9 @@ central file for the python bindings
 // ----------------------------------------------------------------
 #include "py_native_object_test.h" // ✔️ testing a more python based object
 #include "template_class_3.bind.h" // ✔️ example template
+#include "template_class_4.bind.h" // ✔️ adding more template features
 #include "tests.bind.h"            // ✔️ simple hello from gpu
-#include "x_template_test.bind.h"  // ✔️ auto generating template test
+// #include "x_template_test.bind.h" //  auto generating template test // BROKEN!
 
 // ================================================================
 // image processing
@@ -42,8 +43,10 @@ NB_MODULE(cuda_texture_gen, m) {
 
     tests::bind(m);
     template_class_3::bind(m);
-    x_template_test::bind(m);
+    template_class_4::bind(m);
     py_native_object_test::PyNativeObjectTest::bind(m);
+
+    // x_template_test::bind(m); // BROKEN!
 
     blur::bind(m);
     noise_generator::bind(m);

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "erosion5.cuh"
 #include "python_helper.h"
+#include "template_class_4.cuh"
 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
@@ -21,9 +21,7 @@ inline void bind(nb::module_ &m) {
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
-    //
-    //
-    //
+
     // bind maps
 #ifdef TEMPLATE_CLASS_MAPS
 #define X(TYPE, NAME, DESCRIPTION)                                                                                                                                                    \
@@ -34,43 +32,34 @@ inline void bind(nb::module_ &m) {
 #undef X
 #endif
 
-    //
-    //
-    //
-
-// 🚧 bind Type enumerators (new pattern?? we could check for a def)
+// enumerators
 #ifdef TEMPLATE_CLASS_TYPES
-
     nb::enum_<TEMPLATE_CLASS_NAME::Type>(ngd, "Type")
 
-#define X(NAME) \
+#define X(NAME, DESCRIPTION) \
     .value(#NAME, TEMPLATE_CLASS_NAME::Type::NAME)
         TEMPLATE_CLASS_TYPES
 #undef X
             .export_values();
 #endif
-    //
-    //
-    //
-    //
-    //
 
+    // default process function
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
 
-        // return python_helper::array2d_to_numpy_array(self.image); // optional return array
+        return python_helper::array2d_to_numpy_array(self.image); // optional return array
     });
 
-    // // optional overload
-    // ngd.def("process", [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) {
-    //     if (arr.ndim() != 2)
-    //         throw std::runtime_error("Input must be a 2D float32 array");
+    // optional overload
+    ngd.def("process", [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) {
+        if (arr.ndim() != 2)
+            throw std::runtime_error("Input must be a 2D float32 array");
 
-    //     self.image = python_helper::numpy_array_to_array2d(arr);
-    //     self.process();
+        self.image = python_helper::numpy_array_to_array2d(arr);
+        self.process();
 
-    //     return python_helper::array2d_to_numpy_array(self.image); // optional return array
-    // });
+        return python_helper::array2d_to_numpy_array(self.image); // optional return array
+    });
 }
 
 } // namespace TEMPLATE_NAMESPACE

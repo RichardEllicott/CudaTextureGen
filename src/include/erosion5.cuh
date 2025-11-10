@@ -1,14 +1,19 @@
 /*
 
+Erosion5
+
+Water and Sediment Flow based erosion with seperate flux and apply pass
+
+
+
+other ideas..
+
+Diffusion Blur (Heat Equation) ... similar to basic bank erosion
+
+
+
+
 🧜‍♀️ TEMPLATE VERSION 20251027-3
-
-
-
-THE ERROSION WE HAD WORKING... SEEMS TO BREAL WITH THE CORRECT PARS!!
-
-
-
-
 
 */
 #pragma once
@@ -50,12 +55,12 @@ THE ERROSION WE HAD WORKING... SEEMS TO BREAL WITH THE CORRECT PARS!!
     // X(bool, debug_hash_cell_order, false)\
 
 // (TYPE, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_MAPS                         \
-    X(float, height_map, "starting height")         \
-    X(float, water_map, "starting water")           \
-    X(float, sediment_map, "starting sediment")     \
-    X(float, hardness_map, "optional hardness map") \
-    X(float, rain_map, "optional rain map")
+#define TEMPLATE_CLASS_MAPS                                        \
+    X(float, height_map, "starting height")                        \
+    X(float, water_map, "starting water")                          \
+    X(float, sediment_map, "starting sediment")                    \
+    X(float, hardness_map, "optional hardness map (not yet used)") \
+    X(float, rain_map, "optional rain map (not yet used)")
 
 // (TYPE, DIMENSION, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAYS                                 \
@@ -67,9 +72,9 @@ THE ERROSION WE HAD WORKING... SEEMS TO BREAL WITH THE CORRECT PARS!!
     X(float, 1, slope_map, "strength of slope")
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_TRACKING_VARS \
-    X(float, total_height, 0.0, "")  \
-    X(float, total_water, 0.0, "")   \
+#define TEMPLATE_CLASS_DEBUG_DATA   \
+    X(float, total_height, 0.0, "") \
+    X(float, total_water, 0.0, "")  \
     X(float, total_sediment, 0.0, "")
 
 // ════════════════════════════════════════════════ //
@@ -85,14 +90,18 @@ struct Parameters {
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 };
+// OPTIONAL Compile‑time safety check
+static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
 
 // tracking vars for debug
-struct TrackingVars {
+struct DebugData {
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
-    TEMPLATE_CLASS_TRACKING_VARS
+    TEMPLATE_CLASS_DEBUG_DATA
 #undef X
 };
+// OPTIONAL Compile‑time safety check
+static_assert(std::is_trivially_copyable<DebugData>::value, "Parameters must remain trivially copyable for CUDA memcpy");
 
 class TEMPLATE_CLASS_NAME {
 

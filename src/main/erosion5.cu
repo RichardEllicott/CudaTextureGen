@@ -309,65 +309,6 @@ __global__ void apply_flux(
     sediment_map_out[idx] = fmaxf(0.f, sediment); // no negative sediment
 }
 
-// __global__ void debug_pass(
-//     const Parameters *pars,
-//     const int map_width, const int map_height,
-//     const int step,
-
-//     float *__restrict__ height_map_out,   // in
-//     float *__restrict__ water_map_out,    // in
-//     float *__restrict__ sediment_map_out, // in
-
-//     TrackingVars *debug_array) {
-// }
-
-__global__ void debug_pass_SHARED_MEMORY(
-    const Parameters *pars,
-    const int map_width, const int map_height,
-    const int step,
-    const float *__restrict__ height_map_out,
-    const float *__restrict__ water_map_out,
-    const float *__restrict__ sediment_map_out,
-    TrackingVars *debug_array) {
-    extern __shared__ float shmem[]; // dynamic shared memory
-    float *sh_height = shmem;
-    float *sh_water = shmem + blockDim.x;
-    float *sh_sediment = shmem + 2 * blockDim.x;
-
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int N = map_width * map_height;
-
-    float h = 0.0f, w = 0.0f, s = 0.0f;
-    if (idx < N) {
-        h = height_map_out[idx];
-        w = water_map_out[idx];
-        s = sediment_map_out[idx];
-    }
-
-    // store into shared memory
-    sh_height[threadIdx.x] = h;
-    sh_water[threadIdx.x] = w;
-    sh_sediment[threadIdx.x] = s;
-    __syncthreads();
-
-    // reduction within block
-    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        if (threadIdx.x < stride) {
-            sh_height[threadIdx.x] += sh_height[threadIdx.x + stride];
-            sh_water[threadIdx.x] += sh_water[threadIdx.x + stride];
-            sh_sediment[threadIdx.x] += sh_sediment[threadIdx.x + stride];
-        }
-        __syncthreads();
-    }
-
-    // one thread per block writes to global
-    if (threadIdx.x == 0) {
-        atomicAdd(&debug_array[step].total_height, sh_height[0]);
-        atomicAdd(&debug_array[step].total_water, sh_water[0]);
-        atomicAdd(&debug_array[step].total_sediment, sh_sediment[0]);
-    }
-}
-
 // very simple with no shared memory
 __global__ void debug_pass(
     const Parameters *pars,
@@ -378,7 +319,7 @@ __global__ void debug_pass(
     const float *__restrict__ water_map,
     const float *__restrict__ sediment_map,
 
-    TrackingVars *debug_array) {
+    DebugData *debug_array) {
     // ================================================================
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -503,7 +444,7 @@ void TEMPLATE_CLASS_NAME::process() {
     float *dev_sediment_map_out = sediment_map_out.dev_ptr();
 
     // debug output
-    core::cuda::DeviceArray<TrackingVars> debug_array;
+    core::cuda::DeviceArray<DebugData> debug_array;
     if (pars.debug) {
         debug_array.resize(pars.steps);
         debug_array.zero_device();
@@ -602,10 +543,10 @@ void TEMPLATE_CLASS_NAME::process() {
 
         float map_size = height_map.size();
 
-        std::vector<TrackingVars> host_debug(pars.steps);
+        std::vector<DebugData> host_debug(pars.steps);
         cudaMemcpy(host_debug.data(),
                    debug_array.dev_ptr(),
-                   pars.steps * sizeof(TrackingVars),
+                   pars.steps * sizeof(DebugData),
                    cudaMemcpyDeviceToHost);
         printf("================================================================\n");
         printf("%s\t%s\t%s\t%s\n", "step", "height\n", "water", "sediment");
@@ -639,4 +580,4 @@ TEMPLATE_CLASS_NAME::~TEMPLATE_CLASS_NAME() {
 
 } // namespace TEMPLATE_NAMESPACE
 
-#include "template_macros_undef.h"
+#include "template_macro_undef.h"

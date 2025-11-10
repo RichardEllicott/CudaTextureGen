@@ -111,7 +111,7 @@
         },
         {
             "folderPath": "cuda_texture_gen\\src\\include\\erosion4.cuh\\",
-            "badge": "✔️"
+            "badge": "🏔️"
         },
         {
             "folderPath": "cuda_texture_gen\\src\\include\\blur.cuh\\",
@@ -120,10 +120,6 @@
         {
             "folderPath": "cuda_texture_gen\\src\\include\\resample.cuh\\",
             "badge": "✔️"
-        },
-        {
-            "folderPath": "cuda_texture_gen\\src\\include\\fluid_simulation.cuh\\",
-            "badge": "🚧"
         },
         {
             "folderPath": "cuda_texture_gen\\src\\include\\tectonics.cuh\\",
@@ -160,6 +156,34 @@
         {
             "folderPath": "cuda_texture_gen\\src\\python\\bindings\\template_class_3.bind.h\\",
             "badge": "🧜‍♀️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\template_class_4.cuh\\",
+            "badge": "🧜‍♀️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\template_macros_undef.h\\",
+            "badge": "🧜‍♀️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\x_template_test.cuh\\",
+            "badge": "🧚‍♀️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\x_template\\x_template.cuh\\",
+            "badge": "🧚‍♀️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\x_template\\x_template.bind.h\\",
+            "badge": "🧚‍♀️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\x_template_test.bind.h\\",
+            "badge": "🧚‍♀️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\main\\erosion4.cu\\",
+            "badge": "🏔️"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe", // stop windows vs.code using windows line endings

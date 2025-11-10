@@ -75,5 +75,5 @@ inline void bind(nb::module_ &m) {
 
 } // namespace TEMPLATE_NAMESPACE
 
-#include "template_macros_undef.h"
+#include "template_macro_undef.h"
 

@@ -1,16 +1,22 @@
 /*
 
-cuda array manager, allocates and manages a standard array on the device
+cuda array manager, allocates and manages an array on the device
 
-this object keeps no local copy
 
-⚠️ this was mostly written by copilot, as a result it's a little more repatative than how i'd write it
-i'd concider it slightly "vibe coded"
+⚠️ much written by co-pilot, i'm pretty sure it's all good, still slightly learning about the swap/copy/move sematics however
 
 
 */
 #pragma once
-#include <stdexcept>
+
+#include <cstddef>        // size_t
+#include <cuda_runtime.h> // cudaMalloc, cudaFree, cudaMemcpy, cudaMemset, cudaError_t
+#include <stdexcept>      // std::runtime_error
+#include <utility>        // std::swap (needed for your swap implementation)
+#include <vector>         // std::vector<T>
+
+#include <iostream>
+#include <memory> // smart pointer
 
 namespace core::cuda {
 
@@ -22,14 +28,38 @@ class DeviceArray {
     size_t _size_bytes = 0; // cached byte size
 
   public:
-    // disallow copy
-    DeviceArray(const DeviceArray &) = delete;
-    DeviceArray &operator=(const DeviceArray &) = delete;
+    // deep copy
+    // if there is memory allocated to the GPU it will be copied quickly inside the GPU
+    DeviceArray(const DeviceArray &other) {
+        if (other._size > 0) {
+            resize(other._size);
+            cudaError_t err = cudaMemcpy(_dev_ptr, other._dev_ptr,
+                                         _size_bytes, cudaMemcpyDeviceToDevice);
+            if (err != cudaSuccess) {
+                throw std::runtime_error("cudaMemcpy (Device->Device) failed in copy ctor");
+            }
+        }
+    }
+    // deep copy
+    DeviceArray &operator=(const DeviceArray &other) {
+        if (this != &other) {
+            resize(other._size);
+            if (_size > 0) {
+                cudaError_t err = cudaMemcpy(_dev_ptr, other._dev_ptr,
+                                             _size_bytes, cudaMemcpyDeviceToDevice);
+                if (err != cudaSuccess) {
+                    throw std::runtime_error("cudaMemcpy (Device->Device) failed in copy assign");
+                }
+            }
+        }
+        return *this;
+    }
 
-    // allow move
+    // move
     DeviceArray(DeviceArray &&other) noexcept {
         *this = std::move(other);
     }
+    // move
     DeviceArray &operator=(DeviceArray &&other) noexcept {
         if (this != &other) {
             free_device();
@@ -43,18 +73,16 @@ class DeviceArray {
         return *this;
     }
 
-    // Explicit deep copy via clone()... could have used the copy sematics but this is more explicit
-    DeviceArray clone() const {
-        DeviceArray copy;
-        if (_size > 0) {
-            copy.resize(_size);
-            cudaError_t err = cudaMemcpy(copy._dev_ptr, _dev_ptr,
-                                         _size_bytes, cudaMemcpyDeviceToDevice);
-            if (err != cudaSuccess) {
-                throw std::runtime_error("cudaMemcpy (Device->Device) failed in clone()");
-            }
-        }
-        return copy;
+    // swap member function
+    void swap(DeviceArray &other) noexcept {
+        std::swap(_dev_ptr, other._dev_ptr);
+        std::swap(_size, other._size);
+        std::swap(_size_bytes, other._size_bytes);
+    }
+
+    // swap, need a Friend free function for ADL
+    friend void swap(DeviceArray &a, DeviceArray &b) noexcept {
+        a.swap(b);
     }
 
     DeviceArray() = default;
@@ -65,16 +93,7 @@ class DeviceArray {
     T *dev_ptr() { return _dev_ptr; }
     const T *dev_ptr() const { return _dev_ptr; }
 
-    // this resize had an issue
-    // void resize(size_t n) {
-
-    //     if (n == _size) // skip if the same size
-    //         return;
-
-    //     _size = n;
-    //     allocate_device();
-    // }
-
+    // resize the array, if we to a size larger than 0, will assign memory to the GPU
     void resize(size_t n) {
         if (n == _size)
             return;
@@ -129,6 +148,7 @@ class DeviceArray {
         }
     }
 
+    // set the device to clear zero data (floats as 0.0, structs as empty etc)
     void zero_device() {
         if (_size == 0) {
             throw std::runtime_error("zero_device called with size == 0");
@@ -148,6 +168,7 @@ class DeviceArray {
         }
     }
 
+    // free the device, return the size to 0
     void free_device() {
         if (_dev_ptr) {
             cudaError_t err = cudaFree(_dev_ptr);
@@ -187,6 +208,83 @@ class DeviceArray {
             throw std::runtime_error("cudaMemcpy (Device->Host) failed");
         }
     }
+
+    // -------------------------------
+    // Vector-based Host <-> Device transfer methods
+    // -------------------------------
+
+    // Upload from std::vector<T>
+    void upload(const std::vector<T> &host_vec) {
+        resize(host_vec.size());
+        if (host_vec.empty())
+            return;
+
+        cudaError_t err = cudaMemcpy(_dev_ptr, host_vec.data(),
+                                     _size_bytes, cudaMemcpyHostToDevice);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("cudaMemcpy (Host->Device) failed in vector upload");
+        }
+    }
+
+    // Download into std::vector<T>
+    void download(std::vector<T> &host_vec) const {
+        if (_size == 0)
+            return;
+
+        host_vec.resize(_size);
+        cudaError_t err = cudaMemcpy(host_vec.data(), _dev_ptr,
+                                     _size_bytes, cudaMemcpyDeviceToHost);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("cudaMemcpy (Device->Host) failed in vector download");
+        }
+    }
+
+    // Convenience: return a new vector with contents
+    std::vector<T> download() const {
+        std::vector<T> host_vec;
+        download(host_vec);
+        return host_vec;
+    }
 };
+
+static void example() {
+
+    int width = 16, height = 16;
+    auto device_array = core::cuda::DeviceArray<float>(); // create array
+    device_array.resize(width * height);                  // resizing allocates memory
+    device_array.zero_device();                           // ensure memory is initialized as 0
+}
+
+static void smart_pointer_example() {
+
+    // Create a shared DeviceArray<float> with 10 elements
+    auto arr = std::make_shared<DeviceArray<float>>();
+    arr->resize(10);
+
+    // Fill a host vector with some values
+    std::vector<float> host_data(10);
+    for (int i = 0; i < 10; ++i) {
+        host_data[i] = static_cast<float>(i) * 0.5f;
+    }
+
+    // Upload to device
+    arr->upload(host_data);
+
+    // Share the same device array with another smart pointer
+    std::shared_ptr<DeviceArray<float>> arr2 = arr;
+
+    // Download from arr2 (same underlying device memory)
+    std::vector<float> result;
+    arr2->download(result);
+
+    // Print results
+    for (float f : result) {
+        std::cout << f << " ";
+    }
+    std::cout << "\n";
+
+    // Both arr and arr2 go out of scope here.
+    // Device memory is freed automatically once the last shared_ptr is destroyed.
+}
 
 } // namespace core::cuda

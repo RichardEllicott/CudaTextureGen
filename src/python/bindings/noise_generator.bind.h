@@ -47,4 +47,4 @@ inline void bind(nb::module_ &m) {
 
 } // namespace noise_generator
 
-#include "template_macros_undef.h"
+#include "template_macro_undef.h"
