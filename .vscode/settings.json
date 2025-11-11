@@ -1,4 +1,8 @@
 {
+    "cmake.configureOnEdit": false, // stop cmake being triggered on editing CMakeLists.txt (maybe change this later to support clangd or visual studio)
+    "cmake.configureOnOpen": false, // stop cmake being triggered on editing CMakeLists.txt (maybe change this later to support clangd or visual studio)
+    //
+    //
     "workbench.colorTheme": "Monokai",
     "C_Cpp.intelliSenseEngine": "default",
     "files.eol": "\n",

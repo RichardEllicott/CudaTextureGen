@@ -6,11 +6,8 @@ set(CMAKE_CUDA_STANDARD 17)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # will generate compile_commands.json for vs.code
 
-
-
 # testing debug 🚧
 # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -lineinfo -DDEBUG") # 🚧
-
 
 # 🪟🪟🪟🪟 Python workaround for Windows
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
@@ -24,33 +21,10 @@ if(WIN32 AND NOT TARGET Python::Module)
 endif()
 # 🪟🪟🪟🪟
 
+# 🍅🍅🍅🍅 Add cu/cpp source files
 
-
-
-
-
-
-
-# 🍅🍅🍅🍅 Add .cu files
-
-# # Core CUDA library (no glob here can be safer)
-# add_library(cuda_core STATIC
-#     src/hello.cu
-#     src/scale_kernel.cu
-# )
-
-# # Auto-glob version (find all .cu files)
-# # slightly dangerous if we delete source files without full rebuild
-# file(GLOB CUDA_SOURCES CONFIGURE_DEPENDS
-#     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu"
-# )
-# add_library(cuda_core STATIC ${CUDA_SOURCES})
-
-
-
-# NEW
-# # Recursively find all .cu and .cpp files in src/
-# #
+# Recursively find all .cu and .cpp files in src/main/
+# note GLOB_RECURSE instead of GLOB
 file(GLOB_RECURSE CUDA_CPP_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/main/*.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/main/*.cpp"
@@ -59,23 +33,18 @@ file(GLOB_RECURSE CUDA_CPP_SOURCES CONFIGURE_DEPENDS
 # Create a static library from all collected sources
 add_library(cuda_core STATIC ${CUDA_CPP_SOURCES}) # NOTE "cuda_core"
 
-
-
-
-
 # 🍅🍅🍅🍅
 
-
-# 📦📦📦📦
+# 📦📦📦📦 add include directories and our python bits
 
 # Tell CMake that the target `cuda_core` should look for headers in the `include/` folder.
 # This does NOT "grab all headers" automatically — it just adds that directory to the compiler's
 # search path (-I flag). You still need to #include the headers you want in your .cpp files.
 
 target_include_directories(cuda_core PUBLIC
-    src/include
-    src/core
-    src/kernels
+    src/include # headers
+    src/core # core helpers, mainly templates to manage cuda
+    src/kernels # some extra kernel only files
 )
 
 
@@ -89,16 +58,13 @@ set_target_properties(cuda_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # That’s where you define your Python extension module (`cuda_hello_py`).
 add_subdirectory(src/python)
 
-# add_subdirectory(external/nanobind) maybe move this here??
-
-
 
 # 📦📦📦📦
 
 
-# 🚀🚀🚀🚀 Test Executables
+# 🚀🚀🚀🚀 Test Executables (don't rely on python at all)
 
-option(ENABLE_TESTS "Build the test executables" OFF) # now disabled
+option(ENABLE_TESTS "Build the test executables" ON)
 
 if(ENABLE_TESTS)
 
