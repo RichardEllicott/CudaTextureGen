@@ -5,7 +5,7 @@ standard tools interface, load our library and hook up to it
 
 
 """
-import python_bootstrap  # bootstrap to our fresh compiled module
+# import python_bootstrap  # bootstrap to our fresh compiled module
 import cuda_texture_gen
 import numpy as np
 import inspect
