@@ -18,10 +18,18 @@ simple erosion that distributes sediment to neighbours
     X(int, steps, 512)              \
     X(bool, wrap, true)             \
     X(float, jitter, 0.0)           \
-    X(float, erosion_rate, 0.01)    \
-    X(float, slope_threshold, 0.01) \
-    X(float, deposition_rate, 0.01) \
+    X(float, erosion_rate, 0.0)    \
+    X(float, slope_threshold, 0.0) \
+    X(float, deposition_rate, 0.0) \
     X(int, mode, 0)
+
+
+    // good settings
+// heightmap_scale = 16.0 * 4
+// erosion.erosion_rate = 0.01
+// erosion.deposition_rate = 0.01
+// erosion.slope_threshold = 1.0
+
 
 #define TEMPLATE_CLASS_MAPS \
     X(float, height_map)    \

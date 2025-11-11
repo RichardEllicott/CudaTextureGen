@@ -106,10 +106,6 @@
             "badge": "❌"
         },
         {
-            "folderPath": "cuda_texture_gen\\src\\include\\erosion3.cuh\\",
-            "badge": "⭐"
-        },
-        {
             "folderPath": "cuda_texture_gen\\src\\include\\erosion4.cuh\\",
             "badge": "🏔️"
         },
@@ -132,10 +128,6 @@
         {
             "folderPath": "cuda_texture_gen\\TRASH\\",
             "badge": "🗑️"
-        },
-        {
-            "folderPath": "cuda_texture_gen\\src\\main\\erosion3.cu\\",
-            "badge": "⭐"
         },
         {
             "folderPath": "cuda_texture_gen\\src\\python\\bindings\\erosion5.bind.h\\",
@@ -183,6 +175,34 @@
         },
         {
             "folderPath": "cuda_texture_gen\\src\\main\\erosion4.cu\\",
+            "badge": "🏔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\template_class_4.bind.h\\",
+            "badge": "🧜‍♀️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\main\\template_class_4.cu\\",
+            "badge": "🧜‍♀️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\template_macro_undef.h\\",
+            "badge": "🧜‍♀️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\erosion6.bind.h\\",
+            "badge": "🏔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\erosion4.bind.h\\",
+            "badge": "🏔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\erosion6.cuh\\",
+            "badge": "🏔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\main\\erosion6.cu\\",
             "badge": "🏔️"
         }
     ],

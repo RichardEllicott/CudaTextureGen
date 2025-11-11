@@ -64,7 +64,7 @@ __global__ void simple_erode(
 
         int nIdx = ny * width + nx;
         float nh = heightmap[nIdx];
-        float slope = h - nh;
+        float slope = h - nh; // amount higher than this neighbour
 
         if (rand_states && pars->jitter && pars->jitter > 0.0f) {
             float rand = curand_uniform(&rand_states[idx]); // [0,1)

@@ -35,18 +35,19 @@ Diffusion Blur (Heat Equation) ... similar to basic bank erosion
     X(float, max_water_outflow, 1000000.0, "max outflow from a cell per a turn")                    \
     X(float, diffusion_rate, 0.0, "try to diffuse water away from the slops, 0.0 is off")           \
     X(bool, correct_diagonal_distance, true, "normally true, makes sure diagonals are ~1.4 away")   \
-    X(float, slope_jitter, 0.0, "")                                                                 \
+    X(float, slope_jitter, 0.0, "added jitter to the calculate slope values")                       \
     X(float, outflow_carve, 0.0, "reduce height based on outflow (no sediment)")                    \
-    X(float, inflow_carve, 0.0, "reduce height based on inflow (no sediment)")                      \
     X(float, min_height, -1000000.0, "minimum height the terrain can erode down to")                \
     X(float, max_height, 1000000.0, "maximum height the terrain can erode down to")                 \
-    X(float, evaporation_rate, 0.0, "")                                                             \
-    X(float, erosion_rate, 0.0, "")                                                                 \
+    X(float, evaporation_rate, 0.0, "speed at which water disappears")                              \
+    X(float, erosion_rate, 0.0, "rate at which height becomes sediment based on water outflow")     \
     X(int, erosion_mode, 0, "0 *slope; 1 *slope soft sat; 2 exp slope")                             \
     X(float, slope_exponent, 0.5, "erosion mode 2 only, < 1 soften, > 1 exaggerate")                \
     X(float, deposition_rate, 0.0, "rate sediment becomes height or rock again, deposition_mode 0") \
     X(int, deposition_mode, 0, "0 = basic, 1 =  capacity based")                                    \
-    X(float, sediment_capacity, 1.0, "capacity for deposition_mode 1")
+    X(float, sediment_capacity, 1.0, "capacity for deposition_mode 1")                              \
+    X(float, simple_erosion_rate, 0.0, "simply lower based on the total slope (like Erosion4)")     \
+    X(float, slope_threshold, 0.0, "don't count any slope under this value (like Erosion4)")
 
 // X(float, capacity, 0.1)          \
     // X(float, erode, 0.1)             \

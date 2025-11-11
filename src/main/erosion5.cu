@@ -134,7 +134,8 @@ __global__ void calculate_flux(
             difference /= offset_distances[n];
         }
 
-        float positive_difference = difference > 0.0f ? difference : 0.0f; // amount higher we are than neighbour (or 0 if we are lower)
+        // amount higher than we are than neighbour (but 0.0 if difference is below slope_threshold)
+        float positive_difference = difference > pars->slope_threshold ? difference : 0.0f; // amount higher we are than neighbour (or 0 if we are lower)
 
         slopes[n] = positive_difference;
         sum_slope += positive_difference;
@@ -214,6 +215,7 @@ __global__ void apply_flux(
     float height = height_map[idx];
     float water = water_map[idx];
     float sediment = sediment_map[idx];
+    float slope_factor = slope_map[idx]; // the strength of the slope from previous pass
 
     // ================================================================
     // [Calculate and Apply Flow]
@@ -241,9 +243,13 @@ __global__ void apply_flux(
     height -= water_outflow * pars->outflow_carve;
 
     // ================================================================
+    // [Simple Erode (like previous model)]
+    // ----------------------------------------------------------------
+    height -= slope_factor * pars->simple_erosion_rate;
+
+    // ================================================================
     // [Erosion]
     // ----------------------------------------------------------------
-    float slope_factor = slope_map[idx];                // the strength of the slope from previous pass
     float erosion = water_outflow * pars->erosion_rate; // proposed erosion
 
     switch (pars->erosion_mode) {
