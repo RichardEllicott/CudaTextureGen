@@ -1,6 +1,15 @@
 {
-    "cmake.configureOnEdit": false, // stop cmake being triggered on editing CMakeLists.txt (maybe change this later to support clangd or visual studio)
-    "cmake.configureOnOpen": false, // stop cmake being triggered on editing CMakeLists.txt (maybe change this later to support clangd or visual studio)
+    //
+    //
+    // this would make VS.Code put the project files in the correct build folder
+    "cmake.buildDirectory": "${workspaceFolder}/build/windows",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/build/windows"
+    ],
+    "cmake.configureOnEdit": false, // but i disable it anyway here
+    "cmake.configureOnOpen": false, // but i disable it anyway here
+    //
+    //
     //
     //
     "workbench.colorTheme": "Monokai",

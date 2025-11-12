@@ -22,7 +22,6 @@
 
 
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # will generate compile_commands.json for vs.code
 
 
 # --- python/CMakeLists.txt ---

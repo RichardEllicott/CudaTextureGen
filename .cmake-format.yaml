@@ -1,0 +1,11 @@
+# Don't reflow long argument lists
+# line_width: 0        # 0 disables line wrapping entirely
+# max_subargs_per_line: 999  # keep all arguments on one line
+
+# # Keep your manual layout
+# dangle_parens: false
+# separate_ctrl_name_with_space: false
+# separate_fn_name_with_space: false
+
+# # Don't split function calls across lines
+# always_wrap: []      # list of commands to always wrap, leave empty
