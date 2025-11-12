@@ -2,6 +2,10 @@
 #include <cstdio>
 #include <cuda_runtime.h>
 
+#include "core/logging.h"
+#include <iostream>
+#include <string>
+
 namespace tests {
 
 void print_debug_info() {
@@ -89,65 +93,19 @@ void cuda_hello() {
     }
 }
 
-/*
+void print_unicode_test() {
 
-#include <cstdio>
-#include <cuda_runtime.h>
+    core::logging::println("🐌 core::logging::println ", " test ", " test...");
 
-__global__ void hello_kernel(int* out) {
-    int tid = threadIdx.x;
-    out[tid] = tid * 10;
+    printf("🐌 cuda printf\n");
+
+    std::cout << "🐌 std::cout test\n";
+
+    // Print using std::cout
+    std::cout << u8"🐌 std::cout test\n";
+
+    // Print using printf
+    printf(u8"🐌 cuda printf\n");
 }
-
-extern "C" void cuda_hello() {
-    printf("Hello from CPU\n");
-
-    int* d_out = nullptr;
-    int* h_out = new int[5];
-
-    cudaError_t err;
-
-    // Allocate device memory
-    err = cudaMalloc(&d_out, 5 * sizeof(int));
-    if (err != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed: %s\n", cudaGetErrorString(err));
-        delete[] h_out;
-        return;
-    }
-
-    // Launch kernel
-    hello_kernel<<<1, 5>>>(d_out);
-
-    // Synchronize to ensure kernel has finished
-    err = cudaDeviceSynchronize();
-    if (err != cudaSuccess) {
-        fprintf(stderr, "Kernel launch failed: %s\n", cudaGetErrorString(err));
-        cudaFree(d_out);
-        delete[] h_out;
-        return;
-    }
-
-    // Copy results back to host
-    err = cudaMemcpy(h_out, d_out, 5 * sizeof(int), cudaMemcpyDeviceToHost);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed: %s\n", cudaGetErrorString(err));
-        cudaFree(d_out);
-        delete[] h_out;
-        return;
-    }
-
-    // Print results
-    for (int i = 0; i < 5; ++i)
-        printf("out[%d] = %d\n", i, h_out[i]);
-
-    // Clean up
-    cudaFree(d_out);
-    delete[] h_out;
-}
-
-
-
-
-*/
 
 } // namespace tests

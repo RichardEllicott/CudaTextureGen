@@ -106,7 +106,14 @@
         "xloctime": "cpp",
         "xmemory": "cpp",
         "variant": "cpp",
-        "array_2d": "c"
+        "array_2d": "c",
+        "any": "cpp",
+        "codecvt": "cpp",
+        "condition_variable": "cpp",
+        "fstream": "cpp",
+        "numeric": "cpp",
+        "source_location": "cpp",
+        "valarray": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "folder-color.pathColors": [

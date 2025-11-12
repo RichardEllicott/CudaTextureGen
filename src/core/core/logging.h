@@ -9,7 +9,21 @@ includes print functions ... these functions printed emojee unicode on linux, bu
 #include <iostream>
 #include <string>
 
+// block to support unicode in windows
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN // reduces stuff windows.h drags in
+#define NOMINMAX
+#include <windows.h>
+#endif
+
 namespace core::logging {
+
+// required for windows to show unicode strings with emojees
+inline void init_console() {
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+}
 
 // Base case print (not needed if you skip empty println)
 static void print() {
@@ -36,4 +50,20 @@ inline void println(const Args &...args) {
     std::cout << std::endl;
 }
 
-} // namespace core
+} // namespace core::logging
+
+/*
+
+vardic template used
+
+template<typename... Args>
+void printAll(Args... args) {
+    (std::cout << ... << args) << "\n";  // fold expression (C++17)
+}
+
+int main() {
+    printAll(10, "hello", 3.14);  // works with mixed types
+}
+
+
+*/

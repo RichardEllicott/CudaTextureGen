@@ -18,5 +18,9 @@ inline void bind(nb::module_ &m) {
     m.def("cuda_hello", []() {
         tests::cuda_hello();
     });
+
+    m.def("test", []() {
+        tests::print_unicode_test();
+    });
 }
 } // namespace tests

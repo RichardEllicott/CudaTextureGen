@@ -38,9 +38,23 @@ central file for the python bindings
 
 #include "misc.bind.h" //
 
+// #ifdef _WIN32
+// #include <windows.h> // windows only
+// #endif
+
+#include "core/logging.h"
+
+
 namespace nb = nanobind;
 
 NB_MODULE(cuda_texture_gen, m) {
+
+// #ifdef _WIN32
+//     SetConsoleOutputCP(CP_UTF8); // Force UTF-8 output for std::cout / printf
+// #endif
+
+    core::logging::init_console(); // ensure windows console supports unicode
+
 
     tests::bind(m);
     template_class_3::bind(m);

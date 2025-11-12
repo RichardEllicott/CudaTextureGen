@@ -8,6 +8,7 @@ cuda_hello: nanobind.nb_func
 generate_ao_map: nanobind.nb_func
 generate_normal_map: nanobind.nb_func
 print_debug_info: nanobind.nb_func
+test: nanobind.nb_func
 test123: nanobind.nb_func
 
 class Erosion4:
