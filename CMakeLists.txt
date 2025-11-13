@@ -10,7 +10,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # will generate compile_commands.json for 
 # -DDEBUG") # 🚧
 
 
-
+# # ⚠️⚠️⚠️⚠️ ATTEMPT TO SUPPORT clangd.. this actually did add the library path to the 
+# include_directories("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5/include")
+# # ⚠️⚠️⚠️⚠️
 
 # ================================================================================================================================
 # 🐍 Find Python
