@@ -120,23 +120,23 @@ inline nb::ndarray<nb::numpy, T> vector_to_numpy_array(const std::vector<T> &sou
 
 #pragma region ARRAY2D
 
-// ndarray<T> -> core::Array2D<T>
+// ndarray<T> -> core::types::Array2D<T>
 template <typename T>
-inline core::Array2D<T> numpy_array_to_array2d(nb::ndarray<T, nb::c_contig> arr) {
+inline core::types::Array2D<T> numpy_array_to_array2d(nb::ndarray<T, nb::c_contig> arr) {
     if (arr.ndim() != 2)
         throw std::runtime_error("Input must be a 2D array");
 
     size_t height = arr.shape(0);
     size_t width = arr.shape(1);
 
-    core::Array2D<T> result(width, height);
+    core::types::Array2D<T> result(width, height);
     std::memcpy(result.data(), arr.data(), width * height * sizeof(T));
     return result;
 }
 
-// core::Array2D<T> -> ndarray<T>
+// core::types::Array2D<T> -> ndarray<T>
 template <typename T>
-inline nb::ndarray<nb::numpy, T> array2d_to_numpy_array(const core::Array2D<T> &source) {
+inline nb::ndarray<nb::numpy, T> array2d_to_numpy_array(const core::types::Array2D<T> &source) {
     size_t width = source.get_width();
     size_t height = source.get_height();
     size_t size = width * height;
@@ -151,9 +151,9 @@ inline nb::ndarray<nb::numpy, T> array2d_to_numpy_array(const core::Array2D<T> &
 
 #pragma region ARRAY3D
 
-// ndarray<T> -> core::Array3D<T>
+// ndarray<T> -> core::types::Array3D<T>
 template <typename T>
-inline core::Array3D<T> numpy_array_to_array3d(nb::ndarray<T, nb::c_contig> arr) {
+inline core::types::Array3D<T> numpy_array_to_array3d(nb::ndarray<T, nb::c_contig> arr) {
     if (arr.ndim() != 3)
         throw std::runtime_error("Input must be a 3D array");
 
@@ -161,14 +161,14 @@ inline core::Array3D<T> numpy_array_to_array3d(nb::ndarray<T, nb::c_contig> arr)
     size_t width = arr.shape(1);
     size_t depth = arr.shape(2);
 
-    core::Array3D<T> result(width, height, depth);
+    core::types::Array3D<T> result(width, height, depth);
     std::memcpy(result.data(), arr.data(), width * height * depth * sizeof(T));
     return result;
 }
 
-// core::Array3D<T> -> ndarray<T>
+// core::types::Array3D<T> -> ndarray<T>
 template <typename T>
-inline nb::ndarray<nb::numpy, T> array3d_to_numpy_array(const core::Array3D<T> &source) {
+inline nb::ndarray<nb::numpy, T> array3d_to_numpy_array(const core::types::Array3D<T> &source) {
     size_t width = source.get_width();
     size_t height = source.get_height();
     size_t depth = source.get_depth();
@@ -185,7 +185,7 @@ inline nb::ndarray<nb::numpy, T> array3d_to_numpy_array(const core::Array3D<T> &
 #pragma region SHARED_MEMORY_NUMPY_EXPERIMENT
 
 template <typename T>
-nb::ndarray<nb::numpy, T> array3d_to_numpy_view(core::Array3D<T> &source) {
+nb::ndarray<nb::numpy, T> array3d_to_numpy_view(core::types::Array3D<T> &source) {
     return nb::ndarray<nb::numpy, T>(
         source.data(),
         {source.get_height(), source.get_width(), source.get_depth()},

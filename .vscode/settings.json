@@ -12,7 +12,7 @@
     //
     //
     //
-    "workbench.colorTheme": "Monokai",
+    "workbench.colorTheme": "Default Dark Modern",
     "C_Cpp.intelliSenseEngine": "default",
     "files.eol": "\n",
     "files.associations": {
@@ -226,5 +226,6 @@
             "badge": "🏔️"
         }
     ],
-    "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe", // stop windows vs.code using windows line endings
+    "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",
+    "window.autoDetectColorScheme": false, // stop windows vs.code using windows line endings
 }

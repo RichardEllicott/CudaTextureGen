@@ -1,7 +1,6 @@
 /*
 
-not yet used? have some generic macros?
-
+some generic macros
 
 */
 #pragma once

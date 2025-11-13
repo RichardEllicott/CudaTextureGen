@@ -1,4 +1,4 @@
-#include "cuda/curand_array_2d.cuh"
+#include "core/cuda/curand_array_2d.cuh"
 #include "template_class_3.cuh"
 
 #define TEMPLATE_DEMO_OPTION 1

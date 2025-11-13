@@ -36,8 +36,10 @@ $ErrorActionPreference = "Stop" # exit script if any commands crash
 # ================================================================================================================================
 #endregion
 
+
 #region ✅ Checks
 # ================================================================================================================================
+Write-Output "✅ Run checks..."
 if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
     throw "Required command 'cmake' not found in PATH. Please install it before continuing."
 }
@@ -50,15 +52,14 @@ if (Get-Command sccache -ErrorAction SilentlyContinue) { $sccache_found = $true 
 
 
 #region 📁 Create Build Folder
-
+Write-Output "📁 Make folder..."
 mkdir -Force $build_dir # make a build folder
-
 #endregion
 
 
 #region 🔍 Find Cuda Compiler
 # ================================================================================================================================
-
+Write-Output "🔍 Find Cuda Compiler..."
 if (-not $env:CUDA_VARS_LOADED) {
 
     # manually point to the CUDA compiler, if not found by the VS environment automaticly
@@ -76,10 +77,7 @@ if (-not $env:CUDA_VARS_LOADED) {
 
     $env:CUDA_VARS_LOADED = "1"
 }
-
-
 # ================================================================================================================================
-
 #endregion
 
 
@@ -89,6 +87,7 @@ if (-not $env:CUDA_VARS_LOADED) {
 # --------------------------------------------------------------------------------------------------------------------------------
 
 # we only run this script once, which speeds up the second running of this script
+Write-Output "⚙️ Setup Environment..."
 if (-not $env:VC_VARS_LOADED) {
     $vcvars = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
     # Run it with the x64 argument
@@ -110,6 +109,7 @@ if (-not $env:VC_VARS_LOADED) {
 
 #region 🔨 Run CMake and Compile
 # ================================================================================================================================
+Write-Output "🔨 Run CMake and Compile..."
 
 # cmake base starting arguments
 $cmake_args = @(

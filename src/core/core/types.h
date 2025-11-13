@@ -10,11 +10,11 @@ also special Array2D
 
 #include <cmath>
 // #include <vector>
-#include "types/array_2d.h"
-#include "types/array_3d.h"
+#include "core/types/array_2d.h"
+#include "core/types/array_3d.h"
 
 
-namespace core {
+namespace core::types {
 
 struct Vector2i {
     int x = 0;

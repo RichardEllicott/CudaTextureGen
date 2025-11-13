@@ -1,4 +1,4 @@
-#include "cuda/curand_array_2d.cuh"
+#include "core/cuda/curand_array_2d.cuh"
 
 namespace core::cuda {
 
