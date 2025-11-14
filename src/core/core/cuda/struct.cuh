@@ -12,20 +12,20 @@ namespace core::cuda {
 
 // template to allow easy automatic upload/download to cuda, will clear the memory when it goes free
 template <typename T>
-class Struct {
+class DeviceStruct {
     static_assert(std::is_trivially_copyable<T>::value,
-                  "Struct requires a trivially copyable type");
+                  "DeviceStruct requires a trivially copyable type");
 
     T *_device_ptr = nullptr;
     T _host_data{};
 
   public:
-    Struct() = default;
-    explicit Struct(const T &value) : _host_data(value) { upload(); }
+    DeviceStruct() = default;
+    explicit DeviceStruct(const T &value) : _host_data(value) { upload(); }
 
     // Copy
-    Struct(const Struct &other) : _host_data(other._host_data) { upload(); }
-    Struct &operator=(const Struct &other) {
+    DeviceStruct(const DeviceStruct &other) : _host_data(other._host_data) { upload(); }
+    DeviceStruct &operator=(const DeviceStruct &other) {
         if (this != &other) {
             free_device();
             _host_data = other._host_data;
@@ -35,12 +35,12 @@ class Struct {
     }
 
     // Move
-    Struct(Struct &&other) noexcept
+    DeviceStruct(DeviceStruct &&other) noexcept
         : _host_data(std::move(other._host_data)),
           _device_ptr(other._device_ptr) {
         other._device_ptr = nullptr;
     }
-    Struct &operator=(Struct &&other) noexcept {
+    DeviceStruct &operator=(DeviceStruct &&other) noexcept {
         if (this != &other) {
             free_device();                            // free device data if we have any
             _host_data = std::move(other._host_data); // results in a copy in this case
@@ -51,7 +51,7 @@ class Struct {
     }
 
     // Swap
-    friend void swap(Struct &a, Struct &b) noexcept {
+    friend void swap(DeviceStruct &a, DeviceStruct &b) noexcept {
         using std::swap;
         swap(a._host_data, b._host_data);
         swap(a._device_ptr, b._device_ptr);
@@ -90,7 +90,14 @@ class Struct {
         }
     }
 
-    ~Struct() { free_device(); }
+    ~DeviceStruct() { free_device(); }
 };
+
+
+    // Alias: Struct<T> is just another name for DeviceStruct<T>
+    template <typename T>
+    using Struct = DeviceStruct<T>;
+
+
 
 } // namespace core::cuda
