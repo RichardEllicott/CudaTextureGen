@@ -102,3 +102,5 @@ void TEMPLATE_CLASS_NAME::process() {
 }
 
 } // namespace TEMPLATE_NAMESPACE
+
+#include "template_macro_undef.h"

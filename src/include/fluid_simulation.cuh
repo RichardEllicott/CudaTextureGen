@@ -19,23 +19,14 @@ this one uses more clever types and classes, needing less horrible macros
     X(float, gravity, 9.8, "")    \
     X(float, dt, 1.0, "")         \
     X(float, cell_size, 1.0, "")  \
-    X(float, frame_steps, 16, "") \
-    X(float, frame_count, 8, "")  \
+    X(float, steps, 1, "")        \
     X(float, wave_speed, 1.0, "")
 
 // (TYPE, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_MAPS  \
-    X(float, height_map, "") \
-    X(float, water_map, "")
-
-// (TYPE, DIMENSION, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_DEVICE_ARRAYS \
-    X(float, 1, water_map_out, "second water map")
-
-// NEW
-// (TYPE, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_DEVICE_ARRAY_2DS \
-    X(float, device_array_2d_test, "testing device array")
+#define TEMPLATE_CLASS_DEVICE_ARRAY_2DS             \
+    X(float, water_map, "testing device array")     \
+    X(float, water_map_out, "testing device array") \
+    X(float, height_map, "testing device array")
 
 // ================================================================ //
 
@@ -54,43 +45,24 @@ struct Parameters {
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
 #endif
 
-// tracking vars for debug
-#ifdef TEMPLATE_CLASS_DEBUG_DATA
-struct DebugData {
-#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    TYPE NAME = DEFAULT_VAL;
-    TEMPLATE_CLASS_DEBUG_DATA
-#undef X
-};
-static_assert(std::is_trivially_copyable<DebugData>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
-#endif
-
-// could be used with kernels
-struct MapPointers {
-#ifdef TEMPLATE_CLASS_MAPS
-#define X(TYPE, NAME, DESCRIPTION) \
-    TYPE *NAME = nullptr;
-    TEMPLATE_CLASS_MAPS
-#undef X
-#endif
-};
-
 class TEMPLATE_CLASS_NAME {
 
 // make getter/setters for the pars
 #ifdef TEMPLATE_CLASS_PARAMETERS
   private:
     Parameters pars;
-    bool pars_synced = false; // record if the pars have been synced with the device
-
     core::cuda::DeviceStruct<Parameters> dev_pars;
 
+    bool pars_synced = false; // record if the pars have been synced since update
     void sync_pars() {
-        if (!pars_synced)
+        if (!pars_synced) {
             dev_pars.upload(pars);
+            pars_synced = true;
+        }
     }
 
   public:
+    // create get/set pars
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)   \
     TYPE get_##NAME() const { return pars.NAME; } \
     void set_##NAME(TYPE value) {                 \
@@ -100,44 +72,6 @@ class TEMPLATE_CLASS_NAME {
     }
     TEMPLATE_CLASS_PARAMETERS
 #undef X
-#endif
-
-// make maps as CudaArray2D
-#ifdef TEMPLATE_CLASS_MAPS
-#define X(TYPE, NAME, DESCRIPTION) \
-    core::cuda::CudaArray2D<TYPE> NAME;
-    TEMPLATE_CLASS_MAPS
-#undef X
-#endif
-
-// private device arrays
-#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
-    core::cuda::DeviceArray<TYPE> NAME;
-    TEMPLATE_CLASS_DEVICE_ARRAYS
-#undef X
-#endif
-
-    // make enumerators
-#ifdef TEMPLATE_CLASS_TYPES
-    enum class Type {
-#define X(NAME, DESCRIPTION) \
-    NAME,
-        TEMPLATE_CLASS_TYPES
-#undef X
-    };
-#endif
-
-// get all the map pointers in a structure (not yet used generally)
-#ifdef TEMPLATE_CLASS_MAPS
-    MapPointers get_map_pointers() {
-        MapPointers result;
-#define X(TYPE, NAME, DESCRIPTION) \
-    result.NAME = NAME.dev_ptr();
-        TEMPLATE_CLASS_MAPS
-#undef X
-        return result;
-    }
 #endif
 
 // NEW DeviceArray2D hooks
@@ -152,8 +86,6 @@ class TEMPLATE_CLASS_NAME {
     void deallocate_device();
 
     void process();
-
-    core::cuda::DeviceArray2D<float> device_array_2d;
 };
 
 } // namespace TEMPLATE_NAMESPACE

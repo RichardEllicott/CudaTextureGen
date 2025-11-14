@@ -46,25 +46,26 @@ __global__ void update_wave(
 
 void TEMPLATE_CLASS_NAME::allocate_device() {
 
-    // heightmap
+    // if water map empty, fill it with zeros
     if (water_map.empty()) {
         water_map.resize(pars.width, pars.height);
-        water_map.clear(); // set as 0
-    } else {
-        pars.width = water_map.get_width();
-        pars.height = water_map.get_height();
+        water_map.zero_device();
     }
-    water_map.upload();
+    // ensure pars match dimensions
+    pars.width = water_map.width();
+    pars.height = water_map.height();
 
-    // heightmap_out (match the same size)
-    water_map_out.resize(pars.width * pars.height);
-    water_map_out.zero_device();
+    // resize second array to match (this array will be written to, uninitialized memory no problem)
+    water_map_out.resize(pars.width, pars.height);
 
-
+    // if heightmap not empty but dimensions wrong, free this array to avoid errors
+    if (!height_map.empty()) {
+        if (height_map.width() != pars.width || height_map.height() != pars.height) {
+            height_map.free_device();
+        }
+    }
 }
 void TEMPLATE_CLASS_NAME::deallocate_device() {
-
-    water_map.download();
 
     water_map.free_device();
     water_map_out.free_device();
@@ -76,34 +77,27 @@ void TEMPLATE_CLASS_NAME::process() {
 
     core::cuda::Stream stream;
 
-    // core::cuda::DeviceStruct<Parameters> _pars(pars); // automaticly uploads and free
-
-    
-
-
+    sync_pars();
 
     dim3 block(pars._block, pars._block);
     dim3 grid((pars.width + block.x - 1) / block.x,
               (pars.height + block.y - 1) / block.y);
 
-    // ping pong pointers
-    float *_water_map = water_map.dev_ptr();
-    float *_water_map_out = water_map_out.dev_ptr();
-
-    for (int i = 0; i < pars.frame_count; i++) {
+    for (int i = 0; i < pars.steps; i++) {
 
         update_wave<<<grid, block, 0, stream.get()>>>(
             pars.width, pars.height, dev_pars.dev_ptr(),
-            _water_map, _water_map_out,
-            nullptr);
+            water_map.dev_ptr(), water_map_out.dev_ptr(),
+            height_map.dev_ptr());
 
-        std::swap(_water_map, _water_map_out);
+        std::swap(water_map, water_map_out);
     }
-
 
     stream.sync();
 
-    deallocate_device();
+    // deallocate_device();
 }
 
 } // namespace TEMPLATE_NAMESPACE
+
+#include "template_macro_undef.h"
