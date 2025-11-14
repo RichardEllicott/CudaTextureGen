@@ -96,12 +96,15 @@ class Erosion6:
 class FluidSimulation:
     _block: Incomplete
     cell_size: Incomplete
+    device_array_2d_test: Incomplete
     dt: Incomplete
+    frame_count: Incomplete
+    frame_steps: Incomplete
     gravity: Incomplete
     height: Incomplete
     height_map: Incomplete
-    steps: Incomplete
     water_map: Incomplete
+    wave_speed: Incomplete
     width: Incomplete
     def __init__(self) -> None: ...
     def process(self) -> None: ...
@@ -257,6 +260,7 @@ class TemplateClass4:
     _block: Incomplete
     _height: Incomplete
     _width: Incomplete
+    device_array_2d_test: Incomplete
     height_map: Incomplete
     image: Incomplete
     test_bool: Incomplete

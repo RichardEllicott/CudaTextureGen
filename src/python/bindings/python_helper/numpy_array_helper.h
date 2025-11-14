@@ -12,6 +12,8 @@ these allow converting to and from the custom Array2D type and numpy arrays, als
 #pragma once
 
 #include "core.h"
+#include "cuda_types.cuh"
+
 #include <cstring> // required for std::memcpy in linux (not windows)
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
@@ -192,6 +194,29 @@ nb::ndarray<nb::numpy, T> array3d_to_numpy_view(core::types::Array3D<T> &source)
         {sizeof(T) * source.get_width() * source.get_depth(),
          sizeof(T) * source.get_depth(),
          sizeof(T)});
+}
+
+#pragma endregion
+
+#pragma region DEVICE_ARRAY_2D
+
+// download a DeviceArray2D's data to a numpy array
+template <typename T>
+inline nb::ndarray<nb::numpy, T> device_array_2d_to_numpy(const core::cuda::DeviceArray2D<T> &device_array_2d) {
+    auto array = python_helper::get_numpy_array<T>(device_array_2d.height(), device_array_2d.width());
+    device_array_2d.download(array.data());
+    return array;
+}
+
+// upload a numpy array's data to a DeviceArray2D
+template <typename T>
+inline void numpy_to_device_array_2d(
+    const nb::ndarray<T, nb::c_contig> &array,
+    core::cuda::DeviceArray2D<T> &device_array_2d) {
+    if (array.ndim() != 2) {
+        throw std::runtime_error("Input must be a 2D NumPy array");
+    }
+    device_array_2d.upload(array.data(), array.shape(1), array.shape(0)); // Upload raw pointer data into device array
 }
 
 #pragma endregion

@@ -57,6 +57,11 @@ map pointer structure (UNUSED, i prefer to hardcode map pars allowing extra cons
     X(float, total_water, 0.0, "")  \
     X(float, total_sediment, 0.0, "")
 
+// DeviceArray2D ... new array that just exists on the device
+// (TYPE, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_DEVICE_ARRAY_2DS \
+    X(float, device_array_2d_test, "testing device array")
+
 // ================================================================ //
 
 #include "cuda_types.cuh"
@@ -146,6 +151,14 @@ class TEMPLATE_CLASS_NAME {
 #undef X
         return result;
     }
+#endif
+
+// NEW DeviceArray2D's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    core::cuda::DeviceArray2D<TYPE> NAME;
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#undef X
 #endif
 
     void process();

@@ -6,6 +6,10 @@
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
 
+namespace python_helper {
+
+} // namespace python_helper
+
 namespace TEMPLATE_NAMESPACE {
 
 namespace nb = nanobind;
@@ -48,6 +52,25 @@ inline void bind(nb::module_ &m) {
 
         // return python_helper::array2d_to_numpy_array(self.image); // optional return array
     });
+
+    //
+    //
+
+
+    // NEW DeviceArray2D hooks
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION)                                                                                                                          \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_2d_to_numpy(self.NAME); };                                         \
+    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> array) { python_helper::numpy_to_device_array_2d(array, self.NAME); }; \
+    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME);
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#undef X
+#endif
+
+    //
+    //
+    //
+    //
 }
 
 } // namespace TEMPLATE_NAMESPACE

@@ -34,48 +34,24 @@ class CudaArray2D : public core::types::Array2D<T> {
         std::copy(src.data(), src.data() + src.size(), this->data());
     }
 
-    // Move Constructor
-    CudaArray2D(CudaArray2D &&other) noexcept {
-        *static_cast<core::types::Array2D<T> *>(this) = std::move(other); // move base
-        _device_ptr = other._device_ptr;
-        _device_width = other._device_width;
-        _device_height = other._device_height;
-        _device_allocated_bytes = other._device_allocated_bytes;
+    // // Move Constructor
+    // CudaArray2D(CudaArray2D &&other) noexcept {
+    //     *static_cast<core::types::Array2D<T> *>(this) = std::move(other); // move base
+    //     _device_ptr = other._device_ptr;
+    //     _device_width = other._device_width;
+    //     _device_height = other._device_height;
+    //     _device_allocated_bytes = other._device_allocated_bytes;
 
-        other._device_ptr = nullptr;
-        other._device_width = 0;
-        other._device_height = 0;
-        other._device_allocated_bytes = 0;
-    }
-
-    // Move Assignment Operator
-    CudaArray2D &operator=(CudaArray2D &&other) noexcept {
-        if (this != &other) {
-            free_device(); // free current device memory
-
-            *static_cast<core::types::Array2D<T> *>(this) = std::move(other); // move base
-            _device_ptr = other._device_ptr;
-            _device_width = other._device_width;
-            _device_height = other._device_height;
-            _device_allocated_bytes = other._device_allocated_bytes;
-
-            other._device_ptr = nullptr;
-            other._device_width = 0;
-            other._device_height = 0;
-            other._device_allocated_bytes = 0;
-        }
-        return *this;
-    }
+    //     other._device_ptr = nullptr;
+    //     other._device_width = 0;
+    //     other._device_height = 0;
+    //     other._device_allocated_bytes = 0;
+    // }
 
     // Delete Copy Operations (prevents accidental shallow copies of _device_ptr)
     // will give a compile error if we try to copy this
     CudaArray2D(const CudaArray2D &) = delete;
     CudaArray2D &operator=(const CudaArray2D &) = delete;
-
-    // // Return the ptr, read only
-    // T *device_ptr() const {
-    //     return _device_ptr;
-    // }
 
     // Return the ptr, read only
     T *dev_ptr() const {
@@ -133,6 +109,32 @@ class CudaArray2D : public core::types::Array2D<T> {
 
     ~CudaArray2D() {
         free_device();
+    }
+
+    // swap
+    void swap(CudaArray2D &other) noexcept {
+        // swap base part
+        core::types::Array2D<T>::swap(other);
+
+        // swap device part
+        std::swap(_device_ptr, other._device_ptr);
+        std::swap(_device_width, other._device_width);
+        std::swap(_device_height, other._device_height);
+        std::swap(_device_allocated_bytes, other._device_allocated_bytes);
+    }
+
+    friend void swap(CudaArray2D &a, CudaArray2D &b) noexcept {
+        a.swap(b);
+    }
+
+    // move by reusing swap
+    CudaArray2D(CudaArray2D &&other) noexcept {
+        swap(other);
+    }
+
+    CudaArray2D &operator=(CudaArray2D &&other) noexcept {
+        swap(other);
+        return *this;
     }
 };
 

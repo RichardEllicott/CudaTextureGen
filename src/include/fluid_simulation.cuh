@@ -19,7 +19,9 @@ this one uses more clever types and classes, needing less horrible macros
     X(float, gravity, 9.8, "")    \
     X(float, dt, 1.0, "")         \
     X(float, cell_size, 1.0, "")  \
-    X(float, steps, 16, "")
+    X(float, frame_steps, 16, "") \
+    X(float, frame_count, 8, "")  \
+    X(float, wave_speed, 1.0, "")
 
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_MAPS  \
@@ -29,6 +31,11 @@ this one uses more clever types and classes, needing less horrible macros
 // (TYPE, DIMENSION, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAYS \
     X(float, 1, water_map_out, "second water map")
+
+// NEW
+// (TYPE, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_DEVICE_ARRAY_2DS \
+    X(float, device_array_2d_test, "testing device array")
 
 // ================================================================ //
 
@@ -121,10 +128,20 @@ class TEMPLATE_CLASS_NAME {
     }
 #endif
 
+// NEW DeviceArray2D hooks
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    core::cuda::DeviceArray2D<TYPE> NAME;
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#undef X
+#endif
+
     void allocate_device();
     void deallocate_device();
 
     void process();
+
+    core::cuda::DeviceArray2D<float> device_array_2d;
 };
 
 } // namespace TEMPLATE_NAMESPACE

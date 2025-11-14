@@ -84,12 +84,17 @@ class Array3D {
     T &operator[](size_t i) { return _vector[i]; }
     const T &operator[](size_t i) const { return _vector[i]; }
 
-    // Swap
+    // Member swap
     void swap(Array3D &other) noexcept {
         std::swap(_vector, other._vector);
         std::swap(_width, other._width);
         std::swap(_height, other._height);
         std::swap(_depth, other._depth);
+    }
+
+    // ADL-friendly free swap
+    friend void swap(Array3D &a, Array3D &b) noexcept {
+        a.swap(b);
     }
 };
 

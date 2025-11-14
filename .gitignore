@@ -18,10 +18,13 @@ ENV/
 /blender/
 /scripts/tools/__pycache__/
 
-# ignore all __pycache__ folders?
+# ignore all __pycache__ folders
 __pycache__/ 
 *.pyc
 
 lib/cuda_texture_gen/cuda_texture_gen.cp313-win_amd64.pyd
 lib/cuda_texture_gen/cuda_texture_gen.cpython-312-x86_64-linux-gnu.so
 lib/cuda_texture_gen/cuda_texture_gen.pyi
+
+# ignore compile flags, they are auto generated and to try and help clangd find cuda
+compile_flags.txt

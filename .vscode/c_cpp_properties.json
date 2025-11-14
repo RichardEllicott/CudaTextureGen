@@ -5,14 +5,15 @@
       "includePath": [
         // "${workspaceFolder}/**", // HOVER IT ALL UP (bad idea)
         //
-        // "${workspaceFolder}/src/core",
-        // "${workspaceFolder}/src/include",
-        // "${workspaceFolder}/src/kernels",
-        // "${workspaceFolder}/src/src",
-        // "${workspaceFolder}/src/python/bindings",
-        // "${workspaceFolder}/src/python/nanobind/include",
-        // "C:/Users/Richard/AppData/Local/Programs/Python/Python313/include",
-        // "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/include/",
+        "${workspaceFolder}/src/core",
+        "${workspaceFolder}/src/include",
+        "${workspaceFolder}/src/kernels",
+        "${workspaceFolder}/src/main",
+        "${workspaceFolder}/src/python/bindings",
+        "${workspaceFolder}/src/python/nanobind/include",
+        "C:/Users/Richard/AppData/Local/Programs/Python/Python313/include",
+        "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/include/",
+
         "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5/include"
       ],
       "defines": [
@@ -25,23 +26,8 @@
       "cStandard": "c17",
       "cppStandard": "c++17",
       "intelliSenseMode": "windows-msvc-x64",
-      "compileCommands": "${workspaceFolder}/build/windows/compile_commands.json" // 🚧 this instead of the manual paths, needs a build to get the json
+      // "compileCommands": "${workspaceFolder}/build/windows/compile_commands.json" // 🚧 this instead of the manual paths, needs a build to get the json
     }
   ],
   "version": 4
 }
-// 🚧 TRYING TO USE compile_commands.json
-// {
-//   "configurations": [
-//     {
-//       "name": "Win32",
-//       "includePath": [
-//         "C:/Users/Richard/AppData/Local/Programs/Python/Python313/include",
-//         "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.5/include"
-//       ],
-//       "compileCommands": "${workspaceFolder}/build/windows/compile_commands.json", // 🚧 doesn't seem to work? (and breaks it)
-//       "intelliSenseMode": "windows-msvc-x64"
-//     }
-//   ],
-//   "version": 4
-// }

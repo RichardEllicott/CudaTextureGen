@@ -91,6 +91,11 @@ class Array2D {
         std::swap(_width, other._width);
         std::swap(_height, other._height);
     }
+
+    // friend free function for ADL
+    friend void swap(Array2D &a, Array2D &b) noexcept {
+        a.swap(b);
+    }
 };
 
-} // namespace core
+} // namespace core::types
