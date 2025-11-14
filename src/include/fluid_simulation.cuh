@@ -83,12 +83,11 @@ class TEMPLATE_CLASS_NAME {
     Parameters pars;
     bool pars_synced = false; // record if the pars have been synced with the device
 
-
-    // core::cuda::DeviceStruct<Parameters> dev_struct;
+    core::cuda::DeviceStruct<Parameters> dev_pars;
 
     void sync_pars() {
-        if (!pars_synced) {
-        }
+        if (!pars_synced)
+            dev_pars.upload(pars);
     }
 
   public:

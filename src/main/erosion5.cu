@@ -432,7 +432,7 @@ void TEMPLATE_CLASS_NAME::process() {
 
     allocate_device();
     core::cuda::Stream stream;
-    core::cuda::Struct<Parameters> dev_pars(pars); // automaticly uploads and free
+    core::cuda::DeviceStruct<Parameters> dev_pars(pars); // automaticly uploads and free
 
     auto curand_array_2d = core::cuda::CurandArray2D(pars._width, pars._height, stream.get());
     stream.sync(); // important??

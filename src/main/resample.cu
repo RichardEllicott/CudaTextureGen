@@ -123,7 +123,7 @@ void Resample::process() {
     map_x.upload();
     map_y.upload();
 
-    core::cuda::Struct<Parameters> dev_pars(pars); // automaticly uploads and free
+    core::cuda::DeviceStruct<Parameters> dev_pars(pars); // automaticly uploads and free
 
     output.resize(input.get_width(), input.get_height());
     output.allocate_device(); // allocate memory (no upload)

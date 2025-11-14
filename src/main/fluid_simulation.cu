@@ -76,7 +76,11 @@ void TEMPLATE_CLASS_NAME::process() {
 
     core::cuda::Stream stream;
 
-    core::cuda::Struct<Parameters> _pars(pars); // automaticly uploads and free
+    // core::cuda::DeviceStruct<Parameters> _pars(pars); // automaticly uploads and free
+
+    
+
+
 
     dim3 block(pars._block, pars._block);
     dim3 grid((pars.width + block.x - 1) / block.x,
@@ -89,7 +93,7 @@ void TEMPLATE_CLASS_NAME::process() {
     for (int i = 0; i < pars.frame_count; i++) {
 
         update_wave<<<grid, block, 0, stream.get()>>>(
-            pars.width, pars.height, _pars.dev_ptr(),
+            pars.width, pars.height, dev_pars.dev_ptr(),
             _water_map, _water_map_out,
             nullptr);
 

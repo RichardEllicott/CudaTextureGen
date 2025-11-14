@@ -342,7 +342,7 @@ void generate_ao_map(
         pars = HTAO_Pars::High();
         break;
     }
-    core::cuda::Struct<HTAO_Pars> _pars(pars);
+    core::cuda::DeviceStruct<HTAO_Pars> _pars(pars);
 
     dim3 block(16, 16);
     dim3 grid((width + block.x - 1) / block.x,

@@ -130,7 +130,7 @@ void TEMPLATE_CLASS_NAME::process() {
     cudaMemcpy(sediment_map_out.dev_ptr(), sediment_map.dev_ptr(), num_bytes, cudaMemcpyDeviceToDevice);
 
     core::cuda::Stream stream;                  // create stream
-    core::cuda::Struct<Parameters> _pars(pars); // upload pars
+    core::cuda::DeviceStruct<Parameters> _pars(pars); // upload pars
 
     // calculate grid and block
     dim3 block(pars._block, pars._block);

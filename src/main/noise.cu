@@ -153,7 +153,7 @@ void TEMPLATE_CLASS_NAME::process() {
 
     core::cuda::Stream stream;
 
-    core::cuda::Struct<Parameters> _pars(pars); // automaticly uploads and free
+    core::cuda::DeviceStruct<Parameters> _pars(pars); // automaticly uploads and free
 
     dim3 block(pars._block, pars._block);
     dim3 grid((pars.width + block.x - 1) / block.x,
