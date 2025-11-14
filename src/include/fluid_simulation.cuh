@@ -81,11 +81,24 @@ class TEMPLATE_CLASS_NAME {
 #ifdef TEMPLATE_CLASS_PARAMETERS
   private:
     Parameters pars;
+    bool pars_synced = false; // record if the pars have been synced with the device
+
+
+    // core::cuda::DeviceStruct<Parameters> dev_struct;
+
+    void sync_pars() {
+        if (!pars_synced) {
+        }
+    }
 
   public:
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)   \
     TYPE get_##NAME() const { return pars.NAME; } \
-    void set_##NAME(TYPE value) { pars.NAME = value; }
+    void set_##NAME(TYPE value) {                 \
+        if (pars.NAME != value)                   \
+            pars_synced = false;                  \
+        pars.NAME = value;                        \
+    }
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
