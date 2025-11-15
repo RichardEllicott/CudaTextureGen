@@ -7,8 +7,8 @@ central file for the python bindings
 // tests and templates
 // ----------------------------------------------------------------
 #include "py_native_object_test.h" // ✔️ testing a more python based object
-#include "template_class_3.bind.h" // ✔️ example template
 #include "template_class_4.bind.h" // ✔️ adding more template features
+#include "template_darray_1.bind.h" // ✔️ adding more template features
 #include "tests.bind.h"            // ✔️ simple hello from gpu
 // #include "x_template_test.bind.h" //  auto generating template test // BROKEN!
 
@@ -49,16 +49,11 @@ namespace nb = nanobind;
 
 NB_MODULE(cuda_texture_gen, m) {
 
-// #ifdef _WIN32
-//     SetConsoleOutputCP(CP_UTF8); // Force UTF-8 output for std::cout / printf
-// #endif
-
     core::logging::init_console(); // ensure windows console supports unicode
 
-
     tests::bind(m);
-    template_class_3::bind(m);
     template_class_4::bind(m);
+    template_darray_1::bind(m);
     py_native_object_test::PyNativeObjectTest::bind(m);
 
     // x_template_test::bind(m); // BROKEN!

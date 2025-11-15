@@ -1,19 +1,9 @@
 /*
 
-Erosion5
-
-Water and Sediment Flow based erosion with seperate flux and apply pass
+THIS WAS A COPY DESIGNED FOR EDITING
 
 
-
-other ideas..
-
-Diffusion Blur (Heat Equation) ... similar to basic bank erosion
-
-
-
-
-🧜‍♀️ TEMPLATE VERSION 20251027-3
+MAYBE DROPPED
 
 */
 #pragma once

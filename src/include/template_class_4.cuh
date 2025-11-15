@@ -75,9 +75,9 @@ struct Parameters {
     TYPE NAME = DEFAULT_VAL;
     TEMPLATE_CLASS_PARAMETERS
 #undef X
-#endif
 };
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
+#endif
 
 // tracking vars for debug
 #ifdef TEMPLATE_CLASS_DEBUG_DATA
@@ -87,8 +87,8 @@ struct DebugData {
     TEMPLATE_CLASS_DEBUG_DATA
 #undef X
 };
-#endif
 static_assert(std::is_trivially_copyable<DebugData>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
+#endif
 
 // could be used with kernels
 #ifdef TEMPLATE_CLASS_MAPS
