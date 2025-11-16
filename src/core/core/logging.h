@@ -50,6 +50,17 @@ inline void println(const Args &...args) {
     std::cout << std::endl;
 }
 
+
+// ✅ New: printf-style
+inline void printf(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    std::vprintf(fmt, args);   // vprintf handles the varargs safely
+    va_end(args);
+}
+
+
+
 } // namespace core::logging
 
 /*

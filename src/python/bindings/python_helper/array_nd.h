@@ -1,16 +1,11 @@
 /*
-
-supporting 
-
-
+convert numpy arrays to and from Array2D and Array3D's
 */
 #pragma once
 
-// #include "core.h"
-
 #include "core/types/array_2d.h"
 #include "core/types/array_3d.h"
-
+#include "numpy.h"
 
 #include <cstring> // required for std::memcpy in linux (not windows)
 #include <nanobind/nanobind.h>
@@ -19,7 +14,6 @@ supporting
 namespace python_helper {
 
 namespace nb = nanobind; // shortcut
-
 
 #pragma region ARRAY2D
 
@@ -84,7 +78,5 @@ inline nb::ndarray<nb::numpy, T> array3d_to_numpy_array(const core::types::Array
 }
 
 #pragma endregion
-
-
 
 } // namespace python_helper

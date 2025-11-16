@@ -403,7 +403,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 // deallocate memory
 void TEMPLATE_CLASS_NAME::deallocate_device() {
 
-    auto timer = core::Timer();
+    auto timer = core::util::Timer();
 
     device_allocated = false;
 
@@ -428,7 +428,7 @@ void TEMPLATE_CLASS_NAME::process() {
 
     printf("<<< Erosion Process >>>\n");
 
-    auto timer = core::Timer();
+    auto timer = core::util::Timer();
 
     allocate_device();
     core::cuda::Stream stream;

@@ -5,6 +5,7 @@ random wrapper
 */
 #pragma once
 #include "core/cuda/device_array.cuh"
+#include "core/cuda/device_array_nd.cuh"
 #include <curand_kernel.h>
 
 // #include "types.h"
@@ -38,10 +39,28 @@ class CurandArray2D {
         init(width, height, stream);
     }
 
-        CurandArray2D(size_t width, size_t height) {
+    CurandArray2D(size_t width, size_t height) {
         init(width, height);
     }
 
+    curandState *dev_ptr() {
+        return rng_states.dev_ptr();
+    }
+};
+
+class CurandArray2D_2 {
+
+    core::cuda::DeviceArray2D<curandState> rng_states;
+
+  public:
+    CurandArray2D_2() {
+    }
+
+    void resize(size_t width, size_t height, cudaStream_t stream = nullptr);
+
+    void free_device() {
+        resize(0, 0);
+    }
 
     curandState *dev_ptr() {
         return rng_states.dev_ptr();

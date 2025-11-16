@@ -18,15 +18,14 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
     X(size_t, _width, 1024, "map width")                      \
     X(size_t, _height, 1024, "map height")                    \
     X(size_t, _block, 16, "block size (best to leave at 16)") \
-    X(bool, test_bool, 0.0, "test bool")                      \
-    X(float, test_float, 0.0, "test float")                   \
-    X(int, test_int, 0.0, "test int")
+    X(bool, test_bool, 0.0, "a test bool")                    \
+    X(float, test_float, 0.0, "a test float")                 \
+    X(int, test_int, 0.0, "a test int")
 
 // DeviceArray2D ... abstraction of DeviceArray that will be visible in python
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAY_2DS \
-    X(float, device_array_2d, "testing DeviceArray2D")
-
+    X(float, height_map, "testing DeviceArray2D")
 
 // DeviceArray2D ... abstraction of DeviceArray that will be visible in python
 // (TYPE, NAME, DESCRIPTION)
@@ -41,6 +40,13 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
     X(float, 1, water_map_out, "second water buffer")       \
     X(float, 1, sediment_map_out, "second sediment buffer") \
     X(float, 8, flux8, "water flow out to 8 neighbours")
+
+// methods  (⚠️ Experimental)
+// these can be multi-dimensional and are GPU side only
+// (TYPE, NAME, ...)
+#define TEMPLATE_CLASS_METHODS \
+    X(void, test_process)      \
+    X(void, test_process2)
 
 // ================================================================ //
 
@@ -59,6 +65,17 @@ struct Parameters {
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
 #endif
 
+// tracking vars for debug
+#ifdef TEMPLATE_CLASS_DEBUG_DATA
+struct DebugData {
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    TYPE NAME = DEFAULT_VAL;
+    TEMPLATE_CLASS_DEBUG_DATA
+#undef X
+};
+static_assert(std::is_trivially_copyable<DebugData>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
+#endif
+
 class TEMPLATE_CLASS_NAME {
 
     Parameters pars;                               // local pars
@@ -73,6 +90,7 @@ class TEMPLATE_CLASS_NAME {
     }
 
     core::cuda::Stream stream; // will be allocated along with object
+    bool device_allocated = false;
 
   public:
     // getter/setters for the pars
@@ -112,6 +130,16 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
+// Method's (⚠️ Experimental)
+#ifdef TEMPLATE_CLASS_METHODS
+#define X(TYPE, NAME) \
+    TYPE NAME();
+    TEMPLATE_CLASS_METHODS
+#undef X
+#endif
+
+    void allocate_device();
+    void deallocate_device();
 
     void process();
 };

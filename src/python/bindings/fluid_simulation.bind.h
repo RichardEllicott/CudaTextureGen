@@ -60,8 +60,8 @@ inline void bind(nb::module_ &m) {
     // NEW DeviceArray2D hooks
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
 #define X(TYPE, NAME, DESCRIPTION)                                                                                                                          \
-    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_2d_to_numpy(self.NAME); };                                         \
-    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> array) { python_helper::numpy_to_device_array_2d(array, self.NAME); }; \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_to_numpy(self.NAME); };                                         \
+    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> array) { python_helper::numpy_to_device_array(array, self.NAME); }; \
     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME);
     TEMPLATE_CLASS_DEVICE_ARRAY_2DS
 #undef X

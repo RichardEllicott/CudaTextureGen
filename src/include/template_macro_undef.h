@@ -12,8 +12,10 @@ included at the bottom of the bind headers that use the template pattern
 #undef TEMPLATE_CLASS_DEVICE_ARRAYS    // 1d private device arrays
 #undef TEMPLATE_CLASS_TYPES            // enumerators
 #undef TEMPLATE_CLASS_DEBUG_DATA       // used to record debug data
-#undef TEMPLATE_CLASS_DEVICE_ARRAY_2DS // new device side only 2d array
-#undef TEMPLATE_CLASS_DEVICE_ARRAY_3DS // new device side only 3d array
+#undef TEMPLATE_CLASS_DEVICE_ARRAY_2DS // device side only 2d array
+#undef TEMPLATE_CLASS_DEVICE_ARRAY_3DS // device side only 3d array
 
 #undef STRINGIFY
 #undef EXPAND_AND_STRINGIFY
+
+#undef TEMPLATE_CLASS_METHODS // new device side only 3d array

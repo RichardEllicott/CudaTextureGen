@@ -1,7 +1,6 @@
 #include "core/cuda/curand_array_2d.cuh"
 #include "template_darray_1.cuh"
 
-
 namespace TEMPLATE_NAMESPACE {
 
 // a kernel example makes a chequer pattern
@@ -22,8 +21,71 @@ __global__ void process_texture(const Parameters *pars, const size_t width, cons
     }
 }
 
+// example allocation
+void TEMPLATE_CLASS_NAME::allocate_device() {
+    if (device_allocated)
+        return;
+
+    device_allocated = true;
+
+    pars._width = height_map.width();
+    pars._height = height_map.height();
+
+    size_t array_size = pars._width * pars._height;
+
+// allocate DeviceArray2D's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION)              \
+    if (NAME.empty()) {                         \
+        NAME.resize(pars._width, pars._height); \
+        NAME.zero_device();                     \
+    }
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#undef X
+#endif
+
+// allocate DeviceArray's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+    NAME.resize(array_size *DIMENSION);       \
+    NAME.zero_device();
+    TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
+}
+
+// example deallocation
+void TEMPLATE_CLASS_NAME::deallocate_device() {
+
+    // deallocate DeviceArray2D's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    NAME.free_device();
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#undef X
+#endif
+
+// deallocate DeviceArray's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+    NAME.free_device();
+    TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
+
+    device_allocated = false;
+}
+
 void TEMPLATE_CLASS_NAME::process() {
 
+    allocate_device(); // allocate memory
+    sync_pars();       // sync pars
+}
+
+void TEMPLATE_CLASS_NAME::test_process() {
+}
+
+void TEMPLATE_CLASS_NAME::test_process2() {
 }
 
 } // namespace TEMPLATE_NAMESPACE

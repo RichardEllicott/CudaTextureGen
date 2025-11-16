@@ -9,16 +9,16 @@ functions to covert numpy arrays back and forth to std::vector and core::Array2D
 
 #include "python_helper/array_nd.h"
 #include "python_helper/device_array.h"
-#include "python_helper/numpy_array.h"
+#include "python_helper/numpy.h"
+#include "python_helper/vector.h"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <vector>
 
-// helpers to make python objects which is a bit convoluted from python
 namespace python_helper {
 
-namespace nb = nanobind; // shortcut
+namespace nb = nanobind;
 
 // get nested python lists (example)
 inline nb::object get_list_of_lists(int height, int width) {

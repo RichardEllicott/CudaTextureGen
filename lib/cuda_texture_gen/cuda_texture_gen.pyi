@@ -60,37 +60,44 @@ class Erosion5:
     def __init__(self) -> None: ...
     def process(self) -> None: ...
 
-class Erosion6:
-    _block: Incomplete
-    _height: Incomplete
-    _width: Incomplete
-    correct_diagonal_distance: Incomplete
-    debug: Incomplete
-    debug_mod: Incomplete
-    deposition_mode: Incomplete
-    deposition_rate: Incomplete
-    diffusion_rate: Incomplete
-    erosion_mode: Incomplete
-    erosion_rate: Incomplete
-    evaporation_rate: Incomplete
+class Erosion7:
+    _block: int
+    _flux8: Incomplete
+    _height: int
+    _height_map_out: Incomplete
+    _sediment_flux8: Incomplete
+    _sediment_map_out: Incomplete
+    _slope_map: Incomplete
+    _water_map_out: Incomplete
+    _width: int
+    correct_diagonal_distance: bool
+    debug: bool
+    debug_mod: int
+    deposition_mode: int
+    deposition_rate: float
+    diffusion_rate: float
+    erosion_mode: int
+    erosion_rate: float
+    evaporation_rate: float
     hardness_map: Incomplete
     height_map: Incomplete
-    max_height: Incomplete
-    max_water_outflow: Incomplete
-    min_height: Incomplete
-    outflow_carve: Incomplete
+    max_height: float
+    max_water_outflow: float
+    min_height: float
+    outflow_carve: float
     rain_map: Incomplete
     rain_rate: Incomplete
-    sediment_capacity: Incomplete
+    sediment_capacity: float
     sediment_map: Incomplete
-    simple_erosion_rate: Incomplete
-    slope_exponent: Incomplete
-    slope_jitter: Incomplete
-    slope_threshold: Incomplete
-    steps: Incomplete
+    simple_erosion_rate: float
+    slope_exponent: float
+    slope_jitter: float
+    slope_threshold: float
+    steps: int
     water_map: Incomplete
-    wrap: Incomplete
+    wrap: bool
     def __init__(self) -> None: ...
+    def clear(self) -> None: ...
     def process(self) -> None: ...
 
 class FluidSimulation:
@@ -108,6 +115,7 @@ class FluidSimulation:
     water_map_previous: Incomplete
     wave_speed: Incomplete
     width: Incomplete
+    wrap: Incomplete
     def __init__(self) -> None: ...
     def process(self) -> None: ...
 
@@ -206,37 +214,6 @@ class Tectonics:
     def __init__(self) -> None: ...
     def process(self, *args, **kwargs): ...
 
-class TemplateClass3:
-    class Type(enum.Enum):
-        __new__: ClassVar[Callable] = ...
-        APPLE: ClassVar[TemplateClass3.Type] = ...
-        ORANGE: ClassVar[TemplateClass3.Type] = ...
-        POTATO: ClassVar[TemplateClass3.Type] = ...
-        _generate_next_value_: ClassVar[Callable] = ...
-        _hashable_values_: ClassVar[list] = ...
-        _member_map_: ClassVar[dict] = ...
-        _member_names_: ClassVar[list] = ...
-        _member_type_: ClassVar[type[object]] = ...
-        _unhashable_values_: ClassVar[list] = ...
-        _unhashable_values_map_: ClassVar[dict] = ...
-        _use_args_: ClassVar[bool] = ...
-        _value2member_map_: ClassVar[dict] = ...
-        _value_repr_: ClassVar[None] = ...
-        __nb_enum__: ClassVar[PyCapsule] = ...
-        @classmethod
-        def _new_member_(cls, *args, **kwargs): ...
-    APPLE: ClassVar[TemplateClass3.Type] = ...
-    ORANGE: ClassVar[TemplateClass3.Type] = ...
-    POTATO: ClassVar[TemplateClass3.Type] = ...
-    _block: Incomplete
-    height: Incomplete
-    image: Incomplete
-    test: Incomplete
-    width: Incomplete
-    def __init__(self) -> None: ...
-    def process(self, *args, **kwargs): ...
-    def test_array3d(self) -> None: ...
-
 class TemplateClass4:
     class Type(enum.Enum):
         __new__: ClassVar[Callable] = ...
@@ -270,3 +247,21 @@ class TemplateClass4:
     test_int: Incomplete
     def __init__(self) -> None: ...
     def process(self, *args, **kwargs): ...
+
+class TemplateDArray1:
+    _block: int
+    _height: int
+    _width: int
+    device_array_3d: Incomplete
+    flux8: Incomplete
+    height_map: Incomplete
+    height_map_out: Incomplete
+    sediment_map_out: Incomplete
+    test_bool: bool
+    test_float: float
+    test_int: int
+    water_map_out: Incomplete
+    def __init__(self) -> None: ...
+    def process(self) -> None: ...
+    def test_process(self) -> None: ...
+    def test_process2(self) -> None: ...

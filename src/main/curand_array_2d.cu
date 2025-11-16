@@ -52,4 +52,26 @@ void CurandArray2D::init(size_t width, size_t height) {
     // cudaDeviceSynchronize();
 }
 
+// REFACTOR
+
+void CurandArray2D_2::resize(size_t width, size_t height, cudaStream_t stream) {
+
+    if (rng_states.width() != width || rng_states.height() != height) {
+
+        rng_states.resize(width, height);
+
+        if (!rng_states.empty()) {
+            dim3 block(16, 16);
+            dim3 grid((width + block.x - 1) / block.x,
+                      (height + block.y - 1) / block.y);
+
+            if (stream) {
+                init_rand_states<<<grid, block, 0, stream>>>(rng_states.dev_ptr(), 1234UL, width, height); // init the rand states with a seed (using stream)
+            } else {
+                init_rand_states<<<grid, block>>>(rng_states.dev_ptr(), 1234UL, width, height); // init the rand states with a seed
+            }
+        }
+    }
+}
+
 } // namespace core::cuda
