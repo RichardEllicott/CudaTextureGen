@@ -150,7 +150,7 @@ class Stream {
 
 
 // this EXAMPLE is a good idea to allow sharing the ptr
-void share_with_weak_ptr_example() {
+inline void share_with_weak_ptr_example() {
 
     auto streamA = std::make_shared<Stream>(cudaStreamDefault);
 
@@ -194,7 +194,7 @@ using StreamHandle = std::unique_ptr<std::remove_pointer_t<cudaStream_t>, CudaSt
 // - Calls cudaStreamCreateWithFlags to allocate the stream.
 // - Throws std::runtime_error if creation fails.
 // - Returns a unique_ptr that will automatically destroy the stream when it goes out of scope.
-StreamHandle create_stream(unsigned int flags = cudaStreamDefault) {
+inline StreamHandle create_stream(unsigned int flags = cudaStreamDefault) {
     cudaStream_t s;
     cudaError_t err = cudaStreamCreateWithFlags(&s, flags);
     if (err != cudaSuccess) {
@@ -205,7 +205,7 @@ StreamHandle create_stream(unsigned int flags = cudaStreamDefault) {
 }
 
 
-void using_unique_ptr_example() {
+inline void using_unique_ptr_example() {
     // Create a CUDA stream wrapped in a unique_ptr
     auto stream_handle = create_stream();
 

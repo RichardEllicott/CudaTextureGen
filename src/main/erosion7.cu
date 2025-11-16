@@ -369,7 +369,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     }
     ALLOCATE_ARRAYS
 #undef X
-#undef X ALLOCATE_ARRAYS
+#undef ALLOCATE_ARRAYS
 
     //  allocate arrays (with zero if not allocated)
 #define ZERO_ARRAYS \
@@ -382,7 +382,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     }
     ZERO_ARRAYS
 #undef X
-#undef X ZERO_ARRAYS
+#undef ZERO_ARRAYS
 
 // allocate DeviceArray's (no zero)
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
