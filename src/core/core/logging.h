@@ -50,7 +50,6 @@ inline void println(const Args &...args) {
     std::cout << std::endl;
 }
 
-
 // // ✅ New: printf-style (broken on linux)
 // inline void printf(const char* fmt, ...) {
 //     va_list args;
@@ -59,22 +58,4 @@ inline void println(const Args &...args) {
 //     va_end(args);
 // }
 
-
-
 } // namespace core::logging
-
-/*
-
-vardic template used
-
-template<typename... Args>
-void printAll(Args... args) {
-    (std::cout << ... << args) << "\n";  // fold expression (C++17)
-}
-
-int main() {
-    printAll(10, "hello", 3.14);  // works with mixed types
-}
-
-
-*/

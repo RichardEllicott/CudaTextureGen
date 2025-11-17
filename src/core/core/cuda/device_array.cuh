@@ -17,7 +17,9 @@ copy will create a deep copy on the device if data already uploaded
 #include <vector>         // std::vector<T>
 
 #include <iostream>
-#include <memory> // smart pointer
+// #include <memory> // smart pointer
+
+// #include "stream.cuh"
 
 namespace core::cuda {
 
@@ -28,14 +30,52 @@ class DeviceArray {
     size_t _size = 0;       // number of elements
     size_t _size_bytes = 0; // cached byte size
 
+    // std::weak_ptr<Stream> observer = {}; // use a weak ptr?
+
+    // 🔋 WORKING ON NEW FEATURE
+
+#pragma region STREAM_HOOKS
+
+    cudaStream_t _stream = nullptr; // optional stream
+
+    inline cudaError_t _cudaMemcpy(void *dst, const void *src, size_t count, cudaMemcpyKind kind) const {
+        return cudaMemcpyAsync(dst, src, count, kind, _stream);
+    }
+
+    template <typename U>
+    inline cudaError_t _cudaMalloc(U **devPtr, size_t size) const {
+#if CUDART_VERSION >= 11020
+        return cudaMallocAsync(reinterpret_cast<void **>(devPtr), size * sizeof(U), _stream);
+#else
+        return cudaMalloc(reinterpret_cast<void **>(devPtr), size * sizeof(U));
+#endif
+    }
+
+    inline cudaError_t _cudaMemset(void *devPtr, int value, size_t count) const {
+        return cudaMemsetAsync(devPtr, value, count, _stream);
+    }
+
+    inline cudaError_t _cudaFree(void *devPtr) const {
+#if CUDART_VERSION >= 11020
+        return cudaFreeAsync(devPtr, _stream);
+#else
+        return cudaFree(devPtr); // fallback if async not available
+#endif
+    }
+
+#pragma endregion
+
   public:
+    // get/set optional stream
+    cudaStream_t get_stream() const { return _stream; }
+    void set_stream(cudaStream_t stream) { _stream = stream; }
+
     // deep copy
     // if there is memory allocated to the GPU it will be copied quickly inside the GPU
     DeviceArray(const DeviceArray &other) {
         if (other._size > 0) {
             resize(other._size);
-            cudaError_t err = cudaMemcpy(_dev_ptr, other._dev_ptr,
-                                         _size_bytes, cudaMemcpyDeviceToDevice);
+            cudaError_t err = _cudaMemcpy(_dev_ptr, other._dev_ptr, _size_bytes, cudaMemcpyDeviceToDevice);
             if (err != cudaSuccess) {
                 throw std::runtime_error("cudaMemcpy (Device->Device) failed in copy ctor");
             }
@@ -46,8 +86,7 @@ class DeviceArray {
         if (this != &other) {
             resize(other._size);
             if (_size > 0) {
-                cudaError_t err = cudaMemcpy(_dev_ptr, other._dev_ptr,
-                                             _size_bytes, cudaMemcpyDeviceToDevice);
+                cudaError_t err = _cudaMemcpy(_dev_ptr, other._dev_ptr, _size_bytes, cudaMemcpyDeviceToDevice);
                 if (err != cudaSuccess) {
                     throw std::runtime_error("cudaMemcpy (Device->Device) failed in copy assign");
                 }
@@ -67,9 +106,12 @@ class DeviceArray {
             _dev_ptr = other._dev_ptr;
             _size = other._size;
             _size_bytes = other._size_bytes;
+            _stream = other._stream;
+
             other._dev_ptr = nullptr;
             other._size = 0;
             other._size_bytes = 0;
+            other._stream = nullptr;
         }
         return *this;
     }
@@ -79,6 +121,7 @@ class DeviceArray {
         std::swap(_dev_ptr, other._dev_ptr);
         std::swap(_size, other._size);
         std::swap(_size_bytes, other._size_bytes);
+        std::swap(_stream, other._stream); // new stream
     }
 
     // swap, need a Friend free function for ADL
@@ -107,7 +150,8 @@ class DeviceArray {
 
         free_device(); // always free before reallocating
         if (n > 0) {
-            cudaError_t err = cudaMalloc(&_dev_ptr, new_size_bytes);
+            cudaError_t err = _cudaMalloc(&_dev_ptr, new_size_bytes);
+
             if (err != cudaSuccess) {
                 _dev_ptr = nullptr;
                 _size = 0;
@@ -140,7 +184,7 @@ class DeviceArray {
         free_device();
 
         _size_bytes = new_size_bytes;
-        cudaError_t err = cudaMalloc(&_dev_ptr, _size_bytes);
+        cudaError_t err = _cudaMalloc(&_dev_ptr, _size_bytes);
         if (err != cudaSuccess) {
             _dev_ptr = nullptr;
             _size = 0;
@@ -150,7 +194,7 @@ class DeviceArray {
     }
 
     // set the device to clear zero data (floats as 0.0, structs as empty etc)
-    void zero_device() {
+    void zero_device(cudaStream_t stream = nullptr) {
         if (_size == 0) {
             throw std::runtime_error("zero_device called with size == 0");
         }
@@ -163,7 +207,8 @@ class DeviceArray {
             }
         }
 
-        cudaError_t err = cudaMemset(_dev_ptr, 0, _size_bytes);
+        cudaError_t err = _cudaMemset(_dev_ptr, 0, _size_bytes);
+
         if (err != cudaSuccess) {
             throw std::runtime_error("cudaMemset failed");
         }
@@ -172,7 +217,8 @@ class DeviceArray {
     // free the device, return the size to 0
     void free_device() {
         if (_dev_ptr) {
-            cudaError_t err = cudaFree(_dev_ptr);
+            cudaError_t err = _cudaFree(_dev_ptr);
+
             if (err != cudaSuccess) {
                 // optional: log error
             }
@@ -193,7 +239,7 @@ class DeviceArray {
         if (count == 0)
             return;
 
-        cudaError_t err = cudaMemcpy(_dev_ptr, host_ptr, _size_bytes, cudaMemcpyHostToDevice);
+        cudaError_t err = _cudaMemcpy(_dev_ptr, host_ptr, _size_bytes, cudaMemcpyHostToDevice);
         if (err != cudaSuccess)
             throw std::runtime_error("cudaMemcpy (Host->Device) failed");
     }
@@ -204,7 +250,7 @@ class DeviceArray {
         if (_size <= 0) // skip if no data
             return;
 
-        cudaError_t err = cudaMemcpy(host_ptr, _dev_ptr, _size_bytes, cudaMemcpyDeviceToHost);
+        cudaError_t err = _cudaMemcpy(host_ptr, _dev_ptr, _size_bytes, cudaMemcpyDeviceToHost);
         if (err != cudaSuccess) {
             throw std::runtime_error("cudaMemcpy (Device->Host) failed");
         }
@@ -214,78 +260,37 @@ class DeviceArray {
     // Vector-based Host <-> Device transfer methods
     // -------------------------------
 
-    // Upload from std::vector<T>
-    void upload(const std::vector<T> &host_vec) {
-        resize(host_vec.size());
-        if (host_vec.empty())
-            return;
+    // // Upload from std::vector<T>
+    // void upload(const std::vector<T> &host_vec) {
+    //     resize(host_vec.size());
+    //     if (host_vec.empty())
+    //         return;
 
-        cudaError_t err = cudaMemcpy(_dev_ptr, host_vec.data(),
-                                     _size_bytes, cudaMemcpyHostToDevice);
-        if (err != cudaSuccess) {
-            throw std::runtime_error("cudaMemcpy (Host->Device) failed in vector upload");
-        }
-    }
+    //     cudaError_t err = cudaMemcpy(_dev_ptr, host_vec.data(), _size_bytes, cudaMemcpyHostToDevice);
+    //     if (err != cudaSuccess) {
+    //         throw std::runtime_error("cudaMemcpy (Host->Device) failed in vector upload");
+    //     }
+    // }
 
-    // Download into std::vector<T>
-    void download(std::vector<T> &host_vec) const {
-        if (_size == 0)
-            return;
+    // // Download into std::vector<T>
+    // void download(std::vector<T> &host_vec) const {
+    //     if (_size == 0)
+    //         return;
 
-        host_vec.resize(_size);
-        cudaError_t err = cudaMemcpy(host_vec.data(), _dev_ptr,
-                                     _size_bytes, cudaMemcpyDeviceToHost);
-        if (err != cudaSuccess) {
-            throw std::runtime_error("cudaMemcpy (Device->Host) failed in vector download");
-        }
-    }
+    //     host_vec.resize(_size);
+    //     cudaError_t err = cudaMemcpy(host_vec.data(), _dev_ptr,
+    //                                  _size_bytes, cudaMemcpyDeviceToHost);
+    //     if (err != cudaSuccess) {
+    //         throw std::runtime_error("cudaMemcpy (Device->Host) failed in vector download");
+    //     }
+    // }
 
-    // Convenience: return a new vector with contents
-    std::vector<T> download() const {
-        std::vector<T> host_vec;
-        download(host_vec);
-        return host_vec;
-    }
+    // // Convenience: return a new vector with contents
+    // std::vector<T> download() const {
+    //     std::vector<T> host_vec;
+    //     download(host_vec);
+    //     return host_vec;
+    // }
 };
-
-static void example() {
-
-    int width = 16, height = 16;
-    auto device_array = core::cuda::DeviceArray<float>(); // create array
-    device_array.resize(width * height);                  // resizing allocates memory
-    device_array.zero_device();                           // ensure memory is initialized as 0
-}
-
-static void smart_pointer_example() {
-
-    // Create a shared DeviceArray<float> with 10 elements
-    auto arr = std::make_shared<DeviceArray<float>>();
-    arr->resize(10);
-
-    // Fill a host vector with some values
-    std::vector<float> host_data(10);
-    for (int i = 0; i < 10; ++i) {
-        host_data[i] = static_cast<float>(i) * 0.5f;
-    }
-
-    // Upload to device
-    arr->upload(host_data);
-
-    // Share the same device array with another smart pointer
-    std::shared_ptr<DeviceArray<float>> arr2 = arr;
-
-    // Download from arr2 (same underlying device memory)
-    std::vector<float> result;
-    arr2->download(result);
-
-    // Print results
-    for (float f : result) {
-        std::cout << f << " ";
-    }
-    std::cout << "\n";
-
-    // Both arr and arr2 go out of scope here.
-    // Device memory is freed automatically once the last shared_ptr is destroyed.
-}
 
 } // namespace core::cuda

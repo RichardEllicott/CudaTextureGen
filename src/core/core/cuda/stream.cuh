@@ -31,6 +31,10 @@ stream.sync(); // optional: wait for completion
 #include <stdexcept>      // for std::runtime_error
 #include <type_traits>    // for std::remove_pointer_t
 
+// Stream pool
+#include <stdexcept>
+#include <unordered_map>
+
 namespace core::cuda {
 
 // class Stream {
@@ -146,8 +150,48 @@ class Stream {
     }
 };
 
-#pragma region SHARED_PTR_HOSTING_STREAM_EXAMPLE
+class StreamPool {
+    std::unordered_map<int, Stream> streams;
 
+  public:
+    // Get a stream by index, allocating if necessary
+    Stream &get(int id, unsigned int flags = cudaStreamDefault) {
+        auto it = streams.find(id);
+        if (it != streams.end()) {
+            return it->second; // existing Stream
+        }
+        // lazily emplace a new Stream object
+        auto [pos, inserted] = streams.emplace(id, Stream(flags));
+        return pos->second;
+    }
+
+    // shortcut to get pointer directly
+    cudaStream_t get_ptr(int id, unsigned int flags = cudaStreamDefault) {
+        return get(id, flags).get();
+    }
+
+    // Synchronize all streams
+    void sync_all() {
+        for (auto &kv : streams) {
+            kv.second.sync();
+        }
+    }
+
+    // Check if a stream exists
+    bool has(int id) const {
+        return streams.find(id) != streams.end();
+    }
+
+    // Remove a stream (its destructor will destroy the CUDA stream)
+    void remove(int id) {
+        streams.erase(id);
+    }
+
+    // Number of streams currently allocated
+    size_t size() const { return streams.size(); }
+};
+
+#pragma region SHARED_PTR_HOSTING_STREAM_EXAMPLE
 
 // this EXAMPLE is a good idea to allow sharing the ptr
 inline void share_with_weak_ptr_example() {
@@ -165,6 +209,9 @@ inline void share_with_weak_ptr_example() {
 }
 
 #pragma endregion
+
+/*
+EXAMPLE, kept as notes
 
 #pragma region UNIQUE_PTR_ALTERNATIVE
 //
@@ -224,10 +271,7 @@ inline void using_unique_ptr_example() {
 
     // When stream_handle goes out of scope, the deleter runs and calls cudaStreamDestroy(raw).
 }
-
-
-
-
+*/
 
 #pragma endregion
 
