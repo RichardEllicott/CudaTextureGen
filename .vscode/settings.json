@@ -244,6 +244,14 @@
         {
             "folderPath": "cuda_texture_gen\\src\\python\\bindings\\erosion7.bind.h\\",
             "badge": "🏔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\lib\\test_erosion7.py\\",
+            "badge": "🏔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\lib\\test_erosion7_ob.py\\",
+            "badge": "🏔️"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",

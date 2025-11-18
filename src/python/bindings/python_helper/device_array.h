@@ -47,7 +47,7 @@ inline void numpy_to_device_array(const nb::ndarray<T, nb::c_contig> &source, co
 template <typename T>
 inline nb::ndarray<nb::numpy, T> device_array_to_numpy(const core::cuda::DeviceArray2D<T> &device_array) {
     auto array = python_helper::get_numpy_array<T>(device_array.height(), device_array.width()); // create numpy array
-    device_array.download(array.data());                                                            // download the data into the numpy array
+    device_array.download(array.data());                                                         // download the data into the numpy array
     return array;
 }
 
@@ -68,7 +68,7 @@ inline void numpy_to_device_array(const nb::ndarray<T, nb::c_contig> &source, co
 template <typename T>
 inline nb::ndarray<nb::numpy, T> device_array_to_numpy(const core::cuda::DeviceArray3D<T> &device_array) {
     auto array = python_helper::get_numpy_array<T>(device_array.height(), device_array.width(), device_array.depth()); // create numpy array
-    device_array.download(array.data());                                                                                     // download the data into the numpy array
+    device_array.download(array.data());                                                                               // download the data into the numpy array
     return array;
 }
 
@@ -79,6 +79,38 @@ inline void numpy_to_device_array(const nb::ndarray<T, nb::c_contig> &source, co
         throw std::runtime_error("Input must be a 3D NumPy array");
     }
     destination.upload(source.data(), source.shape(1), source.shape(0), source.shape(2)); // Upload raw pointer data into device array
+}
+
+#pragma endregion
+
+#pragma region PYTHON_NONE_SUPPORT
+
+// These functions allow logical handeling of the Python None type
+
+// ⚠️ None support needs to be explicitly added in the bind!
+// ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION, nb::arg("value").none(true));
+
+// Takes None as a valid input, intended to clear the DeviceArray
+template <typename T>
+inline void python_to_device_array(nb::object obj, core::cuda::DeviceArray<T> &device_array) {
+    if (obj.is_none()) {
+        device_array.free_device(); // Free the device array if Python passed None
+    } else {
+        // Cast Python object to a NumPy ndarray of type T
+        auto array = nb::cast<nb::ndarray<T, nb::c_contig>>(obj);
+        numpy_to_device_array(array, device_array);
+    }
+}
+
+// Returns None if device array empty
+template <typename T>
+inline nb::object device_array_to_python(const core::cuda::DeviceArray<T> &device_array) {
+    if (device_array.empty()) {
+        return nb::none(); // If the device array has no data, return Python None
+    } else {
+        auto array = device_array_to_numpy(device_array); // download device array to numpy array
+        return nb::cast(array);                           // cast required
+    }
 }
 
 #pragma endregion

@@ -31,13 +31,14 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
     X(float, max_height, 1000000.0, "maximum height the terrain can erode down to")                 \
     X(float, evaporation_rate, 0.0, "speed at which water disappears")                              \
     X(float, erosion_rate, 0.0, "rate at which height becomes sediment based on water outflow")     \
-    X(int, erosion_mode, 0, "0 *slope; 1 *slope soft sat; 2 exp slope")                             \
+    X(int, erosion_mode, 0, "0 water outflow alone, 1 *slope; 2 *slope soft sat; 3 exp slope")                             \
     X(float, slope_exponent, 0.5, "erosion mode 2 only, < 1 soften, > 1 exaggerate")                \
     X(float, deposition_rate, 0.0, "rate sediment becomes height or rock again, deposition_mode 0") \
     X(int, deposition_mode, 0, "0 = basic, 1 =  capacity based")                                    \
     X(float, sediment_capacity, 1.0, "capacity for deposition_mode 1")                              \
     X(float, simple_erosion_rate, 0.0, "simply lower based on the total slope (like Erosion4)")     \
-    X(float, slope_threshold, 0.0, "don't count any slope under this value (like Erosion4)")
+    X(float, slope_threshold, 0.0, "don't count any slope under this value (like Erosion4)")        \
+    X(bool, drain_at_min_height, false, "testing drain at min height")
 
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAY_2DS                                           \
@@ -52,7 +53,7 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
     X(float, _slope_map, "strength of slop")
 
 // (TYPE, DIMENSION, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_DEVICE_ARRAYS                     \
+#define TEMPLATE_CLASS_DEVICE_ARRAYS                      \
     X(float, 8, _flux8, "water flow out to 8 neighbours") \
     X(float, 8, _sediment_flux8, "sediment flow out to 8 neighbours")
 

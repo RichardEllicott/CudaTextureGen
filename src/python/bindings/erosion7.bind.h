@@ -1,7 +1,8 @@
 #pragma once
 
-#include "python_helper.h"
 #include "erosion7.cuh"
+#include "python_helper.h"
+
 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
@@ -32,12 +33,22 @@ inline void bind(nb::module_ &m) {
 #undef X
 #endif
 
-    // bind DeviceArray2D's
+    //     // bind DeviceArray2D's
+    // #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+    // #define X(TYPE, NAME, DESCRIPTION)                                                                                                                      \
+//     auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_to_numpy(self.NAME); };                                        \
+//     auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<TYPE, nb::c_contig> array) { python_helper::numpy_to_device_array(array, self.NAME); }; \
+//     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION);
+    //     TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+    // #undef X
+    // #endif
+
+    // handle none type return
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-#define X(TYPE, NAME, DESCRIPTION)                                                                                                                      \
-    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_to_numpy(self.NAME); };                                        \
-    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<TYPE, nb::c_contig> array) { python_helper::numpy_to_device_array(array, self.NAME); }; \
-    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION);
+#define X(TYPE, NAME, DESCRIPTION)                                                                                              \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_to_python(self.NAME); };               \
+    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::object obj) { python_helper::python_to_device_array(obj, self.NAME); }; \
+    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION, nb::arg("value").none(true));
     TEMPLATE_CLASS_DEVICE_ARRAY_2DS
 #undef X
 #endif
@@ -54,16 +65,20 @@ inline void bind(nb::module_ &m) {
 
 // Method's  (⚠️ Experimental)
 #ifdef TEMPLATE_CLASS_METHODS
-#define X(TYPE, NAME) \
-     ngd.def(EXPAND_AND_STRINGIFY(NAME), [](TEMPLATE_CLASS_NAME &self) {\
-        self.NAME();\
-     });
+#define X(TYPE, NAME)                                                   \
+    ngd.def(EXPAND_AND_STRINGIFY(NAME), [](TEMPLATE_CLASS_NAME &self) { \
+        self.NAME();                                                    \
+    });
     TEMPLATE_CLASS_METHODS
 #undef X
 #endif
 
-    ngd.def("clear", [](TEMPLATE_CLASS_NAME &self) {
+    ngd.def("deallocate_device", [](TEMPLATE_CLASS_NAME &self) {
         self.deallocate_device();
+    });
+
+    ngd.def("allocate_device", [](TEMPLATE_CLASS_NAME &self) {
+        self.allocate_device();
     });
 
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {

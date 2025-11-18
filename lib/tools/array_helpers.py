@@ -46,15 +46,29 @@ def offset_array(array: np.ndarray, x_offset: float = 0.5, y_offset: float = 0.5
     array[:] = np.roll(array, shift=(dy, dx), axis=(0, 1))
 
 
-def merge_numpy_arrays_to_rgba(r=None, g=None, b=None, a=None, shape=None, dtype=np.uint8) -> np.ndarray:
+def merge_numpy_arrays_to_color(
+    red: np.ndarray = None,
+    green: np.ndarray = None,
+    blue: np.ndarray = None,
+    alpha: np.ndarray = None,
+    shape: tuple = None,
+    dtype: np.dtype = np.uint8
+) -> np.ndarray:
     """
-    Merge separate R, G, B (and optional A) numpy arrays into a single RGBA image.
-    Missing channels default to black (0). Alpha defaults to fully opaque.
+    Merge separate Red, Green, Blue (and optional Alpha) numpy arrays into a single image.
+
+    Missing channels default to black (0). If Alpha is not provided, the result
+    will be an RGB image with 3 channels. If Alpha is provided, the result will
+    be an RGBA image with 4 channels.
 
     Parameters
     ----------
-    r, g, b, a : np.ndarray or None
+    red, green, blue, alpha : np.ndarray or None
         Arrays of the same shape, representing channels. Any can be None.
+        - red   : Red channel
+        - green : Green channel
+        - blue  : Blue channel
+        - alpha : Alpha channel (optional)
     shape : tuple or None
         Shape to use if some channels are None. If None, inferred from the first non-None channel.
     dtype : np.dtype
@@ -62,12 +76,13 @@ def merge_numpy_arrays_to_rgba(r=None, g=None, b=None, a=None, shape=None, dtype
 
     Returns
     -------
-    rgba : np.ndarray
-        Combined array of shape (H, W, 4).
+    image : np.ndarray
+        Combined array of shape (H, W, 3) if alpha is None,
+        or (H, W, 4) if alpha is provided.
     """
     # infer shape from first non-None channel
     if shape is None:
-        for ch in (r, g, b, a):
+        for ch in (red, green, blue, alpha):
             if ch is not None:
                 shape = ch.shape
                 dtype = ch.dtype
@@ -82,18 +97,21 @@ def merge_numpy_arrays_to_rgba(r=None, g=None, b=None, a=None, shape=None, dtype
             raise ValueError("Channel shape mismatch")
         return ch
 
-    r = ensure_channel(r, 0)
-    g = ensure_channel(g, 0)
-    b = ensure_channel(b, 0)
+    red = ensure_channel(red, 0)
+    green = ensure_channel(green, 0)
+    blue = ensure_channel(blue, 0)
 
-    if a is None:
-        # opaque: max for integers, 1.0 for floats
-        if np.issubdtype(dtype, np.integer):
-            fill = np.iinfo(dtype).max
-        else:
-            fill = 1.0
-        a = np.full(shape, fill, dtype=dtype)
+    if alpha is None:
+        # Return RGB only
+        return np.stack([red, green, blue], axis=-1)
     else:
-        a = ensure_channel(a, 0)
+        alpha = ensure_channel(alpha, 0)
+        return np.stack([red, green, blue, alpha], axis=-1)
 
-    return np.stack([r, g, b, a], axis=-1)
+
+def nearest_neighbor_upscale(array, factor):
+    return np.repeat(np.repeat(array, factor, axis=0), factor, axis=1)
+
+
+def tile_array_2d(array, repeat_x, repeat_y):
+    return np.tile(array, (repeat_x, repeat_y))

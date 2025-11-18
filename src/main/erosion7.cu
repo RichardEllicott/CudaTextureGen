@@ -233,16 +233,17 @@ __global__ void apply_flux(
     // ================================================================
     // [Erosion]
     // ----------------------------------------------------------------
-    float erosion = water_outflow * pars->erosion_rate; // proposed erosion
+    float erosion = water_outflow * pars->erosion_rate; // erosion just based on outflow * the erosion rate
 
+    // in the case of erosion mode's 1-3 the slope also affects the erosion
     switch (pars->erosion_mode) {
-    case 0: // slope_factor only
+    case 1: // slope_factor only
         erosion *= slope_factor;
         break;
-    case 1: // soft saturate slope_factor
+    case 2: // soft saturate slope_factor
         erosion *= slope_factor / (1.0f + slope_factor);
         break;
-    case 2: // exponent based slope_factor
+    case 3: // exponent based slope_factor
         erosion *= powf(slope_map[idx], pars->slope_exponent);
         break;
     }
@@ -290,6 +291,11 @@ __global__ void apply_flux(
             sediment -= deposit;
             height += deposit;
         }
+    }
+
+    if (pars->drain_at_min_height && height <= pars->min_height){
+        water = 0.0f;
+        sediment = 0.0f;
     }
 
     // ================================================================
@@ -345,6 +351,25 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     pars._height = height_map.height();
 
     size_t array_size = pars._width * pars._height;
+
+    // OPTIONAL set stream
+    curand_array_2d.set_stream(stream.get());
+
+    // OPTIONAL set device array streams
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    NAME.set_stream(stream.get());
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#undef X
+#endif
+
+    // OPTIONAL set device array streams
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+    NAME.set_stream(stream.get());
+    TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
 
 // // allocate DeviceArray2D's .... just zero everything!
 // #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
@@ -440,6 +465,8 @@ void TEMPLATE_CLASS_NAME::process() {
         debug_array.zero_device();
     }
 
+    stream.sync();
+
     // block/grid size
     dim3 block(pars._block, pars._block);
     dim3 grid((pars._width + block.x - 1) / block.x,
@@ -486,9 +513,9 @@ void TEMPLATE_CLASS_NAME::process() {
 
             hardness_map.dev_ptr(), // optional in
 
-            _height_map_out.dev_ptr(), // out
-            water_map.dev_ptr(),       // out
-            sediment_map.dev_ptr()     // out
+            _height_map_out.dev_ptr(),  // out
+            _water_map_out.dev_ptr(),   // out
+            _sediment_map_out.dev_ptr() // out
         );
 
         if (pars.debug) {

@@ -65,6 +65,10 @@ class CurandArray2D_2 {
     curandState *dev_ptr() {
         return rng_states.dev_ptr();
     }
+
+    // get/set optional stream
+    cudaStream_t get_stream() const { return rng_states.get_stream(); }
+    void set_stream(cudaStream_t stream) { rng_states.set_stream(stream); }
 };
 
 } // namespace core::cuda
