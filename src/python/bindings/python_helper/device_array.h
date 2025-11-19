@@ -86,9 +86,7 @@ inline void numpy_to_device_array(const nb::ndarray<T, nb::c_contig> &source, co
 #pragma region PYTHON_NONE_SUPPORT
 
 // These functions allow logical handeling of the Python None type
-
-// ⚠️ None support needs to be explicitly added in the bind!
-// ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION, nb::arg("value").none(true));
+// ⚠️ might not use this as it allows less introspection from Python's side, it might be useful to get the types of empty arrays
 
 // Takes None as a valid input, intended to clear the DeviceArray
 template <typename T>
@@ -112,6 +110,22 @@ inline nb::object device_array_to_python(const core::cuda::DeviceArray<T> &devic
         return nb::cast(array);                           // cast required
     }
 }
+
+// ⚠️ None support needs to be explicitly added in the bind!
+// EXAMPLE USAGE PATTERN ()
+/*
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION)                                                                                              \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_to_python(self.NAME); };               \
+    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::object obj) { python_helper::python_to_device_array(obj, self.NAME); }; \
+    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION, nb::arg("value").none(true));
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#undef X
+#endif
+
+*/
+
+
 
 #pragma endregion
 

@@ -64,11 +64,11 @@ class Erosion7:
     _block: int
     _flux8: Incomplete
     _height: int
-    _height_map_out: object
+    _height_map_out: Incomplete
     _sediment_flux8: Incomplete
-    _sediment_map_out: object
-    _slope_map: object
-    _water_map_out: object
+    _sediment_map_out: Incomplete
+    _slope_map: Incomplete
+    _water_map_out: Incomplete
     _width: int
     correct_diagonal_distance: bool
     debug: bool
@@ -80,29 +80,27 @@ class Erosion7:
     erosion_mode: int
     erosion_rate: float
     evaporation_rate: float
-    hardness_map: object
-    height_map: object
+    hardness_map: Incomplete
+    height_map: Incomplete
     max_height: float
     max_water_outflow: float
     min_height: float
     outflow_carve: float
-    rain_map: object
+    rain_map: Incomplete
     rain_rate: Incomplete
     sediment_capacity: float
-    sediment_map: object
+    sediment_map: Incomplete
     simple_erosion_rate: float
     slope_exponent: float
     slope_jitter: float
     slope_threshold: float
     steps: int
-    test321: Incomplete
-    water_map: object
+    water_map: Incomplete
     wrap: bool
     def __init__(self) -> None: ...
     def allocate_device(self) -> None: ...
     def deallocate_device(self) -> None: ...
     def process(self) -> None: ...
-    def test_types(self, h: object | None) -> None: ...
 
 class FluidSimulation:
     _block: Incomplete

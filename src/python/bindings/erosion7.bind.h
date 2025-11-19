@@ -33,25 +33,25 @@ inline void bind(nb::module_ &m) {
 #undef X
 #endif
 
-    //     // bind DeviceArray2D's
-    // #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-    // #define X(TYPE, NAME, DESCRIPTION)                                                                                                                      \
-//     auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_to_numpy(self.NAME); };                                        \
-//     auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<TYPE, nb::c_contig> array) { python_helper::numpy_to_device_array(array, self.NAME); }; \
-//     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION);
-    //     TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-    // #undef X
-    // #endif
+        // bind DeviceArray2D's
+    #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+    #define X(TYPE, NAME, DESCRIPTION)                                                                                                                      \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_to_numpy(self.NAME); };                                        \
+    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<TYPE, nb::c_contig> array) { python_helper::numpy_to_device_array(array, self.NAME); }; \
+    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION);
+        TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+    #undef X
+    #endif
 
-    // handle none type return
-#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-#define X(TYPE, NAME, DESCRIPTION)                                                                                              \
-    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_to_python(self.NAME); };               \
-    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::object obj) { python_helper::python_to_device_array(obj, self.NAME); }; \
-    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION, nb::arg("value").none(true));
-    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-#undef X
-#endif
+//     // ⚠️ WORKING support for None... but not using due to introspection loss! (however good example)
+// #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+// #define X(TYPE, NAME, DESCRIPTION)                                                                                              \
+//     auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_to_python(self.NAME); };               \
+//     auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::object obj) { python_helper::python_to_device_array(obj, self.NAME); }; \
+//     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION, nb::arg("value").none(true));
+//     TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+// #undef X
+// #endif
 
     // bind DeviceArray3D's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_3DS

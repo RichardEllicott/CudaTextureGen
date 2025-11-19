@@ -23,6 +23,15 @@ def normalize_array(array: np.ndarray) -> None:
         array /= range_val
 
 
+def normalized_array(array: np.ndarray) -> np.ndarray:
+    """
+    return a normalized array (don't change the input)
+    """
+    result = array.copy()
+    normalize_array(result)
+    return result
+
+
 def offset_array(array: np.ndarray, x_offset: float = 0.5, y_offset: float = 0.5) -> None:
     """
     Offset array toroidally (wraparound) by fractional amounts of width/height.
