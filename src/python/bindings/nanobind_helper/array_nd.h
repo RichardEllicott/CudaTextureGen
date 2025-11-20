@@ -11,7 +11,7 @@ convert numpy arrays to and from Array2D and Array3D's
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 
-namespace nanobind::helper {
+namespace nanobind::helper::numpy {
 
 namespace nb = nanobind; // shortcut
 
@@ -19,7 +19,7 @@ namespace nb = nanobind; // shortcut
 
 // ndarray<T> -> core::types::Array2D<T>
 template <typename T>
-inline core::types::Array2D<T> numpy_array_to_array2d(nb::ndarray<T, nb::c_contig> arr) {
+inline core::types::Array2D<T> to_array_2d(nb::ndarray<T, nb::c_contig> arr) {
     if (arr.ndim() != 2)
         throw std::runtime_error("Input must be a 2D array");
 
@@ -33,7 +33,7 @@ inline core::types::Array2D<T> numpy_array_to_array2d(nb::ndarray<T, nb::c_conti
 
 // core::types::Array2D<T> -> ndarray<T>
 template <typename T>
-inline nb::ndarray<nb::numpy, T> array2d_to_numpy_array(const core::types::Array2D<T> &source) {
+inline nb::ndarray<nb::numpy, T> to_array(const core::types::Array2D<T> &source) {
     size_t width = source.get_width();
     size_t height = source.get_height();
     size_t size = width * height;
