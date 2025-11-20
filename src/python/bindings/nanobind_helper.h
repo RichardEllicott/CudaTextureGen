@@ -7,16 +7,16 @@ functions to covert numpy arrays back and forth to std::vector and core::Array2D
 */
 #pragma once
 
-#include "python_helper/array_nd.h"
-#include "python_helper/device_array.h"
-#include "python_helper/numpy.h"
-#include "python_helper/vector.h"
+#include "nanobind_helper/array_nd.h"
+#include "nanobind_helper/device_array.h"
+#include "nanobind_helper/numpy.h"
+#include "nanobind_helper/vector.h"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <vector>
 
-namespace python_helper {
+namespace nanobind::helper {
 
 namespace nb = nanobind;
 

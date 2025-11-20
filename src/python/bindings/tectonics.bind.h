@@ -1,6 +1,6 @@
 #pragma once
 
-#include "python_helper.h"
+#include "nanobind_helper.h"
 #include "tectonics.cuh"
 
 #define STRINGIFY(x) #x
@@ -22,8 +22,8 @@ inline void bind(nb::module_ &m) {
 
     // bind maps
 #define X(TYPE, NAME)                                                                                                                                                           \
-    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::array2d_to_numpy_array(self.NAME); };                                                               \
-    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = core::cuda::CudaArray2D<TYPE>(python_helper::numpy_array_to_array2d(arr)); }; \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return nb::helper::array2d_to_numpy_array(self.NAME); };                                                               \
+    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = core::cuda::CudaArray2D<TYPE>(nb::helper::numpy_array_to_array2d(arr)); }; \
     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME);
     TEMPLATE_CLASS_MAPS
 #undef X
@@ -49,7 +49,7 @@ inline void bind(nb::module_ &m) {
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
 
-        return python_helper::array2d_to_numpy_array(self.height_map); // optional return array
+        return nb::helper::array2d_to_numpy_array(self.height_map); // optional return array
     });
 
     // optional overload
@@ -57,10 +57,10 @@ inline void bind(nb::module_ &m) {
         if (arr.ndim() != 2)
             throw std::runtime_error("Input must be a 2D float32 array");
 
-        self.height_map = python_helper::numpy_array_to_array2d(arr);
+        self.height_map = nb::helper::numpy_array_to_array2d(arr);
         self.process();
 
-        return python_helper::array2d_to_numpy_array(self.height_map); // optional return array
+        return nb::helper::array2d_to_numpy_array(self.height_map); // optional return array
     });
 }
 

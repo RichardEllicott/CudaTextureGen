@@ -1,14 +1,10 @@
 #pragma once
 
 #include "fluid_simulation.cuh"
-#include "python_helper.h"
+#include "nanobind_helper.h"
 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
-
-namespace python_helper {
-
-} // namespace python_helper
 
 namespace TEMPLATE_NAMESPACE {
 
@@ -28,9 +24,9 @@ inline void bind(nb::module_ &m) {
 
     // bind maps
 #ifdef TEMPLATE_CLASS_MAPS
-#define X(TYPE, NAME, DESCRIPTION)                                                                                                                                                    \
-    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::array2d_to_numpy_array(self.NAME); };                                                                     \
-    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = core::cuda::CudaArray2D<TYPE>(python_helper::numpy_array_to_array2d(arr)); }; \
+#define X(TYPE, NAME, DESCRIPTION)                                                                                                                                                 \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return nb::helper::array2d_to_numpy_array(self.NAME); };                                                                     \
+    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = core::cuda::CudaArray2D<TYPE>(nb::helper::numpy_array_to_array2d(arr)); }; \
     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME);
     TEMPLATE_CLASS_MAPS
 #undef X
@@ -56,12 +52,11 @@ inline void bind(nb::module_ &m) {
     //
     //
 
-
     // NEW DeviceArray2D hooks
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-#define X(TYPE, NAME, DESCRIPTION)                                                                                                                          \
-    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::device_array_to_numpy(self.NAME); };                                         \
-    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> array) { python_helper::numpy_to_device_array(array, self.NAME); }; \
+#define X(TYPE, NAME, DESCRIPTION)                                                                                                                    \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return nb::helper::device_array_to_numpy(self.NAME); };                                         \
+    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> array) { nb::helper::numpy_to_device_array(array, self.NAME); }; \
     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME);
     TEMPLATE_CLASS_DEVICE_ARRAY_2DS
 #undef X

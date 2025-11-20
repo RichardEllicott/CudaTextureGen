@@ -1,7 +1,7 @@
 #pragma once
 
+#include "nanobind_helper.h"
 #include "noise_generator.cuh"
-#include "python_helper.h"
 
 namespace noise_generator {
 
@@ -29,13 +29,13 @@ inline void bind(nb::module_ &m) {
     });
 
     ngd.def("generate", [](NoiseGenerator &self, int width, int height) { // return a new array with noise
-        auto arr = python_helper::get_numpy_array<float>(height, width);
+        auto arr = nb::helper::get_numpy_array<float>(height, width);
         float *data = arr.data();
         self.fill(data, width, height);
         return arr;
     });
 
-      // Type enumerators
+    // Type enumerators
     nb::enum_<NoiseGenerator::Type>(ngd, "Type")
 
 #define X(NAME) \

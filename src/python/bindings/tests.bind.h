@@ -1,6 +1,6 @@
 #pragma once
 
-#include "python_helper.h"
+#include "nanobind_helper.h"
 #include "tests.cuh"
 
 namespace tests {

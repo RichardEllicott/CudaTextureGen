@@ -11,7 +11,7 @@ convert numpy arrays to and from Array2D and Array3D's
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 
-namespace python_helper {
+namespace nanobind::helper {
 
 namespace nb = nanobind; // shortcut
 

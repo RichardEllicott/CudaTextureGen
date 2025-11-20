@@ -28,7 +28,7 @@ testing a native numpy object
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
 
-#include "python_helper.h"
+#include "nanobind_helper.h"
 
 namespace TEMPLATE_NAMESPACE {
 

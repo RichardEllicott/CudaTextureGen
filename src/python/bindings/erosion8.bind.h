@@ -1,7 +1,7 @@
 #pragma once
 
 #include "erosion8.cuh"
-#include "python_helper.h"
+#include "nanobind_helper.h"
 
 
 #define STRINGIFY(x) #x

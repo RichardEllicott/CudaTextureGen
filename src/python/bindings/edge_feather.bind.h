@@ -3,7 +3,7 @@
 #pragma once
 
 #include "edge_feather.cuh"
-#include "python_helper.h"
+#include "nanobind_helper.h"
 
 namespace edge_feather {
 

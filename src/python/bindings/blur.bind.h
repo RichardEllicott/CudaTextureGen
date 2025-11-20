@@ -1,13 +1,7 @@
 #pragma once
 
 #include "blur.cuh"
-#include "python_helper.h"
-
-namespace python_helper {
-
-
-
-} // namespace python_helper
+#include "nanobind_helper.h"
 
 namespace blur {
 
@@ -15,11 +9,10 @@ namespace nb = nanobind;
 
 inline void bind(nb::module_ &m) {
 
-
     // ⚠️ using this pattern as the other pattern silently converts the array to contig
     // this one will throw an error with non c_contiguous
     m.def("blur", [](nb::ndarray<float> array, float amount, bool wrap) {
-    if (!python_helper::is_c_contiguous(array)) {
+    if (!nb::helper::is_c_contiguous(array)) {
         throw std::runtime_error("blur: array must be C-contiguous");
     }
     

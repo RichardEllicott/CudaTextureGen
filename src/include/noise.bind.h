@@ -1,7 +1,7 @@
 #pragma once
 
 #include "noise.cuh"
-#include "python_helper.h"
+#include "nanobind_helper.h"
 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
@@ -42,8 +42,8 @@ inline void bind(nb::module_ &m) {
     // bind maps
 #ifdef TEMPLATE_CLASS_MAPS
 #define X(TYPE, NAME)                                                                                                                                                           \
-    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return python_helper::array2d_to_numpy_array(self.NAME); };                                                               \
-    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = core::cuda::CudaArray2D<TYPE>(python_helper::numpy_array_to_array2d(arr)); }; \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return nb::helper::array2d_to_numpy_array(self.NAME); };                                                               \
+    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = core::cuda::CudaArray2D<TYPE>(nb::helper::numpy_array_to_array2d(arr)); }; \
     ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME);
     TEMPLATE_CLASS_MAPS
 #undef X

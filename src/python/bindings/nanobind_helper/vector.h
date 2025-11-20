@@ -10,7 +10,7 @@ convert numpy arrays to and from c++ vectors
 #include <nanobind/ndarray.h>
 #include <vector>
 
-namespace python_helper {
+namespace nanobind::helper {
 
 namespace nb = nanobind;
 

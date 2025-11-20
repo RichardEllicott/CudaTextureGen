@@ -13,7 +13,7 @@ get_numpy_array(height, width, depth) // 3D
 #include <nanobind/ndarray.h>
 #include <vector>
 
-namespace python_helper {
+namespace nanobind::helper {
 
 namespace nb = nanobind; // shortcut
 
