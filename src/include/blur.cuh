@@ -11,4 +11,6 @@ namespace blur {
 
 void blur(float *host_data, int width, int height, float sigma, bool wrap);
 
-}
+void blur(float *host_data, int width, int height, int channels, float sigma, bool wrap);
+
+} // namespace blur

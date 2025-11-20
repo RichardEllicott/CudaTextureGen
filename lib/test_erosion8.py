@@ -331,7 +331,9 @@ def get_island_height_map(width, height):
 
     island = tools.load_image_as_array("./images/island03.png")
     island = tools.resize_array_2d(island, width, height)
+
     island = tools.blur_array_2d(island, 8)
+
     # tools.normalize_array(island)
 
     octaves = 8
@@ -349,7 +351,7 @@ def get_island_height_map(width, height):
     return result
 
 
-# get_island_height_map(512, 512)
+get_island_height_map(512, 512)
 
 
 def test02():
@@ -456,7 +458,32 @@ def test_3d_arrays():
 
     noise_to_pallete = weights @ soil_colors  # matrix multiply (256, 256, 3)
 
-    tools.save_array_as_image((noise_to_pallete * 255).astype(np.uint8), "./output/noise.rgb.png")
+    # island = cuda_texture_gen.blur
+
+    tools.save_array_as_image((noise_to_pallete * 255).astype(np.uint8), "./output/noise.pallete.png")
+
+
+    # noise = np.ascontiguousarray(noise[:, :, 0], dtype=np.float32)
+    noise = noise[:, :, 0]
+    print("🐈 ", type(noise))
+    print("shape:", noise.shape)        # dimensions
+    print("dtype:", noise.dtype)        # element type
+    print("ndim:", noise.ndim)          # number of dimensions
+    print("strides:", noise.strides)    # byte steps between elements
+    print("flags:", noise.flags)        # contiguity info
+
+    # noise = tools.fractal_noise(256, 256)s
+    # print("🐈 ", type(noise))
+    # print("shape:", noise.shape)        # dimensions
+    # print("dtype:", noise.dtype)        # element type
+    # print("ndim:", noise.ndim)          # number of dimensions
+    # print("strides:", noise.strides)    # byte steps between elements
+    # print("flags:", noise.flags)        # contiguity info
+
+
+    cuda_texture_gen.blur(noise, 32)
+
+    tools.save_array_as_image((noise * 255).astype(np.uint8), "./output/noise.rgb.png")
 
 
 test_3d_arrays()

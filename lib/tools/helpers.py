@@ -29,11 +29,11 @@ def print_current_function():
 
 
 def fractal_noise(
-        width, height,
-        octaves=6,
-        base_period=2,
-        seed=12345,
-        gain=0.8, lacunarity=2.0):
+        width: int, height: int,
+        octaves: int = 6,
+        base_period: int = 2,
+        seed: int = 12345,
+        gain: float = 0.8, lacunarity: float = 2.0):
     """
     get_fractal_noise
     """
@@ -63,11 +63,11 @@ def fractal_noise(
 
 
 def fractal_noise_rgb(
-        width, height,
-        octaves=6,
-        base_period=2,
-        seed=12345,
-        gain=0.8, lacunarity=2.0):
+        width: int, height: int,
+        octaves: int = 6,
+        base_period: int = 2,
+        seed: int = 12345,
+        gain: float = 0.8, lacunarity: float = 2.0):
 
     red = fractal_noise(width, height, octaves, base_period, seed, gain, lacunarity)
     green = fractal_noise(width, height, octaves, base_period, seed + octaves, gain, lacunarity)

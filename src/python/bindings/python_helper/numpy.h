@@ -17,6 +17,25 @@ namespace python_helper {
 
 namespace nb = nanobind; // shortcut
 
+#pragma region UTILITY
+
+template <typename T>
+bool is_c_contiguous(const nb::ndarray<T> &array) {
+    size_t expected_stride = sizeof(T);
+
+    for (int i = array.ndim() - 1; i >= 0; --i) {
+        if (array.stride(i) != expected_stride) {
+            return false;
+        }
+        expected_stride *= array.shape(i);
+    }
+
+    return true;
+}
+
+
+#pragma endregion
+
 #pragma region TYPE_MAPPING
 
 // Type-to-dtype mapping

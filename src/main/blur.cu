@@ -15,6 +15,7 @@ void build_gaussian_kernel_1D(float *kernel, int kSize, float sigma) {
     }
 }
 
+// single channel
 __global__ void gaussian_blur_horizontal(const float *input, float *output, int width, int height, const float *kernel, int kSize, bool wrap) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
