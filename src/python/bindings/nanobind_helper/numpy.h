@@ -17,6 +17,8 @@ namespace nanobind::helper {
 
 namespace nb = nanobind; // shortcut
 
+namespace numpy {
+
 #pragma region UTILITY
 
 template <typename T>
@@ -33,8 +35,9 @@ bool is_c_contiguous(const nb::ndarray<T> &array) {
     return true;
 }
 
-
 #pragma endregion
+
+} // namespace numpy
 
 #pragma region TYPE_MAPPING
 
@@ -113,4 +116,4 @@ inline nb::ndarray<nb::numpy, T> get_numpy_array(int height, int width, int dept
 
 #pragma endregion
 
-} // namespace python_helper
+} // namespace nanobind::helper
