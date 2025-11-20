@@ -16,7 +16,7 @@ numpy_to_device_array()
 #include <nanobind/ndarray.h>
 // #include <cstring> // required for std::memcpy in linux (not windows)
 
-namespace nanobind::helper {
+namespace nanobind::helper::numpy {
 
 namespace nb = nanobind; // shortcut
 
