@@ -79,4 +79,4 @@ inline nb::ndarray<nb::numpy, T> array3d_to_numpy_array(const core::types::Array
 
 #pragma endregion
 
-} // namespace python_helper
+}

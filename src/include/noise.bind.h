@@ -71,7 +71,7 @@ inline void bind(nb::module_ &m) {
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
 
-        // return python_helper::array2d_to_numpy_array(self.image); // optional return array
+        // return nb::helper::array2d_to_numpy_array(self.image); // optional return array
     });
 
     // // optional overload
@@ -79,10 +79,10 @@ inline void bind(nb::module_ &m) {
     //     if (arr.ndim() != 2)
     //         throw std::runtime_error("Input must be a 2D float32 array");
 
-    //     self.image = python_helper::numpy_array_to_array2d(arr);
+    //     self.image = nb::helper::numpy_array_to_array2d(arr);
     //     self.process();
 
-    //     return python_helper::array2d_to_numpy_array(self.image); // optional return array
+    //     return nb::helper::array2d_to_numpy_array(self.image); // optional return array
     // });
 }
 

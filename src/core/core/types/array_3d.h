@@ -1,33 +1,4 @@
 /*
-
-
-Array2D and Array3D custom types
-
--see python_helper.h for functions to convert
-
-
-
-
-
-Array Design Notes:
-
-
-// Example: expose your Array2D to Python as a NumPy array without copying:
-
-#include <nanobind/ndarray.h>
-namespace nb = nanobind;
-
-m.def("make_array", [](Array2D<double>& arr) {
-    return nb::ndarray<nb::numpy, double>(
-        arr.data(),
-        {arr.get_height(), arr.get_width()},
-        nb::handle() // you control ownership
-    );
-});
-
-
-
-
 */
 #pragma once
 // #include <cmath>

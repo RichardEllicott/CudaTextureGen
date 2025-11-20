@@ -44,4 +44,4 @@ inline nb::ndarray<nb::numpy, T> vector_to_array(const std::vector<T> &source, i
 
 #pragma endregion
 
-} // namespace python_helper
+}

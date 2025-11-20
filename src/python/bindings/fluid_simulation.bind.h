@@ -46,7 +46,7 @@ inline void bind(nb::module_ &m) {
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
 
-        // return python_helper::array2d_to_numpy_array(self.image); // optional return array
+        // return nb::helper::array2d_to_numpy_array(self.image); // optional return array
     });
 
     //

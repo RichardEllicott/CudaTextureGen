@@ -41,4 +41,4 @@ inline nb::object get_list_of_lists(int height, int width) {
     return outer; // Python will see a list of lists
 }
 
-} // namespace python_helper
+}
