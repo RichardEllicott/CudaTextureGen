@@ -36,7 +36,7 @@ inline nb::ndarray<nb::numpy, T> vector_to_array(const std::vector<T> &source, i
     if (source.size() != size)
         throw std::runtime_error("Source vector size doesn't match requested dimensions");
 
-    auto array = get_numpy_array<T>(height, width); // uses the dtype traits
+    auto array = get_array<T>(height, width); // uses the dtype traits
 
     std::memcpy(array.data(), source.data(), size * sizeof(T));
     return array;

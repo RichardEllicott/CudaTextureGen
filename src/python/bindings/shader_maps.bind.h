@@ -15,7 +15,7 @@ inline void bind(nb::module_ &m) {
             throw std::runtime_error("Expected a 2D float32 array");
         int height = array.shape(0);
         int width = array.shape(1);
-        auto normal_array = nb::helper::get_numpy_array<float>(height, width, 3); // 3D numpy array (rgb)
+        auto normal_array = nb::helper::numpy::get_array<float>(height, width, 3); // 3D numpy array (rgb)
         generate_normal_map(array.data(), normal_array.data(), width, height, strength, wrap);
         return normal_array; }, nb::arg("array"), nb::arg("strength") = 1.0, nb::arg("wrap") = true);
 
@@ -26,7 +26,7 @@ inline void bind(nb::module_ &m) {
 
         int height = array.shape(0);
         int width = array.shape(1);
-        auto ao_array = nb::helper::get_numpy_array<float>(height, width); // 3D numpy array (rgb)
+        auto ao_array = nb::helper::numpy::get_array<float>(height, width); // 3D numpy array (rgb)
         generate_ao_map(array.data(), ao_array.data(), width, height, radius, wrap, mode);
         return ao_array; }, nb::arg("array"), nb::arg("radius") = 1.0f, nb::arg("wrap") = true, nb::arg("mode") = 0);
 }

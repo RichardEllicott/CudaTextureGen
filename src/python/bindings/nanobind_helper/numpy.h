@@ -1,9 +1,9 @@
 /*
 create numpy arrays
 
-get_numpy_array(length) // 1D
-get_numpy_array(height, width) // 2D
-get_numpy_array(height, width, depth) // 3D
+get_array(length) // 1D
+get_array(height, width) // 2D
+get_array(height, width, depth) // 3D
 
 */
 #pragma once
@@ -13,11 +13,10 @@ get_numpy_array(height, width, depth) // 3D
 #include <nanobind/ndarray.h>
 #include <vector>
 
-namespace nanobind::helper {
+namespace nanobind::helper::numpy {
 
 namespace nb = nanobind; // shortcut
 
-namespace numpy {
 
 #pragma region UTILITY
 
@@ -37,7 +36,7 @@ bool is_c_contiguous(const nb::ndarray<T> &array) {
 
 #pragma endregion
 
-} // namespace numpy
+
 
 #pragma region TYPE_MAPPING
 
@@ -77,7 +76,7 @@ struct numpy_dtype<bool> {
 
 // get an uninitialized numpy array (1D)
 template <typename T>
-inline nb::ndarray<nb::numpy, T> get_numpy_array(int length) {
+inline nb::ndarray<nb::numpy, T> get_array(int length) {
     nb::module_ np = nb::module_::import_("numpy");                     // import numpy
     nb::object array = np.attr("empty")(length, numpy_dtype<T>::value); // array = numpy.empty(length, dtype=T)
     return nb::cast<nb::ndarray<nb::numpy, T>>(array);                  // cast the nanobind object to a nanobind array
@@ -85,7 +84,7 @@ inline nb::ndarray<nb::numpy, T> get_numpy_array(int length) {
 
 // get an uninitialized numpy array (2D)
 template <typename T>
-inline nb::ndarray<nb::numpy, T> get_numpy_array(int height, int width) {
+inline nb::ndarray<nb::numpy, T> get_array(int height, int width) {
     nb::module_ np = nb::module_::import_("numpy");                                            // import numpy
     nb::object array = np.attr("empty")(nb::make_tuple(height, width), numpy_dtype<T>::value); // array = numpy.empty((height, width), dtype=T)
     return nb::cast<nb::ndarray<nb::numpy, T>>(array);                                         // cast the nanobind object to a nanobind array
@@ -93,7 +92,7 @@ inline nb::ndarray<nb::numpy, T> get_numpy_array(int height, int width) {
 
 // get an uninitialized numpy array (3D)
 template <typename T>
-inline nb::ndarray<nb::numpy, T> get_numpy_array(int height, int width, int depth) {
+inline nb::ndarray<nb::numpy, T> get_array(int height, int width, int depth) {
     nb::module_ np = nb::module_::import_("numpy");                                                   // import numpy
     nb::object array = np.attr("empty")(nb::make_tuple(height, width, depth), numpy_dtype<T>::value); // array = numpy.empty((height, width, depth), dtype=T)
     return nb::cast<nb::ndarray<nb::numpy, T>>(array);                                                // cast the nanobind object to a nanobind array
@@ -116,4 +115,4 @@ inline nb::ndarray<nb::numpy, T> get_numpy_array(int height, int width, int dept
 
 #pragma endregion
 
-} // namespace nanobind::helper
+}

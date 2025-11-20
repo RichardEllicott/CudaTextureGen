@@ -38,7 +38,7 @@ inline nb::ndarray<nb::numpy, T> array2d_to_numpy_array(const core::types::Array
     size_t height = source.get_height();
     size_t size = width * height;
 
-    auto arr = get_numpy_array<T>(height, width); // uses dtype traits
+    auto arr = nb::helper::numpy::get_array<T>(height, width); // uses dtype traits
 
     std::memcpy(arr.data(), source.data(), size * sizeof(T));
     return arr;
@@ -71,7 +71,7 @@ inline nb::ndarray<nb::numpy, T> array3d_to_numpy_array(const core::types::Array
     size_t depth = source.get_depth();
     size_t size = width * height * depth;
 
-    auto arr = get_numpy_array<T>(height, width, depth); // overload for 3D
+    auto arr = nb::helper::numpy::get_array<T>(height, width, depth); // overload for 3D
 
     std::memcpy(arr.data(), source.data(), size * sizeof(T));
     return arr;

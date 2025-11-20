@@ -25,7 +25,7 @@ namespace nb = nanobind; // shortcut
 // download a DeviceArray's data to a new numpy array
 template <typename T>
 inline nb::ndarray<nb::numpy, T> device_array_to_numpy(const core::cuda::DeviceArray<T> &device_array) {
-    auto array = nb::helper::get_numpy_array<T>(device_array.size()); // create numpy array
+    auto array = nb::helper::numpy::get_array<T>(device_array.size()); // create numpy array
     device_array.download(array.data());                              // download the data into the numpy array
     return array;
 }
@@ -46,8 +46,8 @@ inline void numpy_to_device_array(const nb::ndarray<T, nb::c_contig> &source, co
 // download a DeviceArray2D's data to a new numpy array
 template <typename T>
 inline nb::ndarray<nb::numpy, T> device_array_to_numpy(const core::cuda::DeviceArray2D<T> &device_array) {
-    auto array = nb::helper::get_numpy_array<T>(device_array.height(), device_array.width()); // create numpy array
-    device_array.download(array.data());                                                         // download the data into the numpy array
+    auto array = nb::helper::numpy::get_array<T>(device_array.height(), device_array.width()); // create numpy array
+    device_array.download(array.data());                                                      // download the data into the numpy array
     return array;
 }
 
@@ -67,8 +67,8 @@ inline void numpy_to_device_array(const nb::ndarray<T, nb::c_contig> &source, co
 // download a DeviceArray3D's data to a new numpy array
 template <typename T>
 inline nb::ndarray<nb::numpy, T> device_array_to_numpy(const core::cuda::DeviceArray3D<T> &device_array) {
-    auto array = nb::helper::get_numpy_array<T>(device_array.height(), device_array.width(), device_array.depth()); // create numpy array
-    device_array.download(array.data());                                                                               // download the data into the numpy array
+    auto array = nb::helper::numpy::get_array<T>(device_array.height(), device_array.width(), device_array.depth()); // create numpy array
+    device_array.download(array.data());                                                                            // download the data into the numpy array
     return array;
 }
 
@@ -127,4 +127,21 @@ inline nb::object device_array_to_python(const core::cuda::DeviceArray<T> &devic
 
 #pragma endregion
 
+// refactor
+
 } // namespace nanobind::helper
+
+// ⚠️ REFATOR?
+namespace nanobind::helper::numpy {
+
+// template <typename... Args>
+// inline auto to_array(Args &&...args) {
+//     return device_array_to_numpy(std::forward<Args>(args)...);
+// }
+
+// template <typename... Args>
+// inline auto to_device_array(Args &&...args) {
+//     return ::nanobind::helper::numpy_to_device_array(std::forward<Args>(args)...);
+// }
+
+} // namespace nanobind::helper::numpy

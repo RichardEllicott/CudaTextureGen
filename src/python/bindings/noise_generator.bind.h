@@ -29,7 +29,7 @@ inline void bind(nb::module_ &m) {
     });
 
     ngd.def("generate", [](NoiseGenerator &self, int width, int height) { // return a new array with noise
-        auto arr = nb::helper::get_numpy_array<float>(height, width);
+        auto arr = nb::helper::numpy::get_array<float>(height, width);
         float *data = arr.data();
         self.fill(data, width, height);
         return arr;
