@@ -17,17 +17,19 @@ namespace nb = nanobind; // shortcut
 
 #pragma region ARRAY2D
 
+// ⚠️🚧  we could move these to namespace of core::types ?
+
 // ndarray<T> -> core::types::Array2D<T>
 template <typename T>
-inline core::types::Array2D<T> to_array_2d(nb::ndarray<T, nb::c_contig> arr) {
-    if (arr.ndim() != 2)
+inline core::types::Array2D<T> to_array_2d(nb::ndarray<T, nb::c_contig> array) {
+    if (array.ndim() != 2)
         throw std::runtime_error("Input must be a 2D array");
 
-    size_t height = arr.shape(0);
-    size_t width = arr.shape(1);
+    size_t height = array.shape(0);
+    size_t width = array.shape(1);
 
     core::types::Array2D<T> result(width, height);
-    std::memcpy(result.data(), arr.data(), width * height * sizeof(T));
+    std::memcpy(result.data(), array.data(), width * height * sizeof(T));
     return result;
 }
 
@@ -38,10 +40,10 @@ inline nb::ndarray<nb::numpy, T> to_array(const core::types::Array2D<T> &source)
     size_t height = source.get_height();
     size_t size = width * height;
 
-    auto arr = nb::helper::numpy::get_array<T>(height, width); // uses dtype traits
+    auto array = nb::helper::numpy::get_array<T>(height, width); // uses dtype traits
 
-    std::memcpy(arr.data(), source.data(), size * sizeof(T));
-    return arr;
+    std::memcpy(array.data(), source.data(), size * sizeof(T));
+    return array;
 }
 
 #pragma endregion
@@ -50,31 +52,30 @@ inline nb::ndarray<nb::numpy, T> to_array(const core::types::Array2D<T> &source)
 
 // ndarray<T> -> core::types::Array3D<T>
 template <typename T>
-inline core::types::Array3D<T> numpy_array_to_array3d(nb::ndarray<T, nb::c_contig> arr) {
-    if (arr.ndim() != 3)
+inline core::types::Array3D<T> to_array3d(nb::ndarray<T, nb::c_contig> array) {
+    if (array.ndim() != 3)
         throw std::runtime_error("Input must be a 3D array");
 
-    size_t height = arr.shape(0);
-    size_t width = arr.shape(1);
-    size_t depth = arr.shape(2);
+    size_t height = array.shape(0);
+    size_t width = array.shape(1);
+    size_t depth = array.shape(2);
 
     core::types::Array3D<T> result(width, height, depth);
-    std::memcpy(result.data(), arr.data(), width * height * depth * sizeof(T));
+    std::memcpy(result.data(), array.data(), width * height * depth * sizeof(T));
     return result;
 }
 
 // core::types::Array3D<T> -> ndarray<T>
 template <typename T>
-inline nb::ndarray<nb::numpy, T> array3d_to_numpy_array(const core::types::Array3D<T> &source) {
+inline nb::ndarray<nb::numpy, T> to_array(const core::types::Array3D<T> &source) {
     size_t width = source.get_width();
     size_t height = source.get_height();
     size_t depth = source.get_depth();
     size_t size = width * height * depth;
 
-    auto arr = nb::helper::numpy::get_array<T>(height, width, depth); // overload for 3D
-
-    std::memcpy(arr.data(), source.data(), size * sizeof(T));
-    return arr;
+    auto array = nb::helper::numpy::get_array<T>(height, width, depth); // overload for 3D
+    std::memcpy(array.data(), source.data(), size * sizeof(T));
+    return array;
 }
 
 #pragma endregion

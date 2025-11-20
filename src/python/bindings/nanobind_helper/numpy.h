@@ -17,9 +17,10 @@ namespace nanobind::helper::numpy {
 
 namespace nb = nanobind; // shortcut
 
-
 #pragma region UTILITY
 
+// confirm if numpy array is c contiguous
+// we only need this when we intend to modify numpy arrays in place
 template <typename T>
 bool is_c_contiguous(const nb::ndarray<T> &array) {
     size_t expected_stride = sizeof(T);
@@ -35,8 +36,6 @@ bool is_c_contiguous(const nb::ndarray<T> &array) {
 }
 
 #pragma endregion
-
-
 
 #pragma region TYPE_MAPPING
 
@@ -115,4 +114,4 @@ inline nb::ndarray<nb::numpy, T> get_array(int height, int width, int depth) {
 
 #pragma endregion
 
-}
+} // namespace nanobind::helper::numpy

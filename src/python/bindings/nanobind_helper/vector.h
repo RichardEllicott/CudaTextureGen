@@ -18,7 +18,7 @@ namespace nb = nanobind;
 
 // Convert ndarray -> std::vector<T>
 template <typename T>
-inline std::vector<T> array_to_vector(nb::ndarray<T, nb::c_contig> array) {
+inline std::vector<T> to_vector(nb::ndarray<T, nb::c_contig> array) {
     if (array.ndim() != 2)
         throw std::runtime_error("Input must be a 2D array");
 
@@ -30,7 +30,7 @@ inline std::vector<T> array_to_vector(nb::ndarray<T, nb::c_contig> array) {
 
 // Convert std::vector<T> -> ndarray<T>
 template <typename T>
-inline nb::ndarray<nb::numpy, T> vector_to_array(const std::vector<T> &source, int height, int width) {
+inline nb::ndarray<nb::numpy, T> to_array(const std::vector<T> &source, int height, int width) {
 
     size_t size = static_cast<size_t>(height) * static_cast<size_t>(width);
     if (source.size() != size)
