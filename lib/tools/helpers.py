@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 from .array_helpers import *
 
 
-
 def print_current_function():
     """
     print function call
@@ -29,9 +28,12 @@ def print_current_function():
     print(f"{func_name}({arg_str})...")
 
 
-
-
-def get_fractal_noise(width=1024, height=1024, octaves=6, base_period=2, base_seed=12345, gain=0.8, lacunarity=2.0):
+def fractal_noise(
+        width, height,
+        octaves=6,
+        base_period=2,
+        seed=12345,
+        gain=0.8, lacunarity=2.0):
     """
     get_fractal_noise
     """
@@ -45,7 +47,7 @@ def get_fractal_noise(width=1024, height=1024, octaves=6, base_period=2, base_se
 
     for i in range(octaves):
         gen.period = int(period)
-        gen.seed = base_seed + i
+        gen.seed = seed + i
 
         layer = gen.generate(width, height)
         normalize_array(layer)
@@ -58,6 +60,26 @@ def get_fractal_noise(width=1024, height=1024, octaves=6, base_period=2, base_se
 
     array /= total_amplitude  # Normalize final result
     return array
+
+
+def fractal_noise_rgb(
+        width, height,
+        octaves=6,
+        base_period=2,
+        seed=12345,
+        gain=0.8, lacunarity=2.0):
+
+    red = fractal_noise(width, height, octaves, base_period, seed, gain, lacunarity)
+    green = fractal_noise(width, height, octaves, base_period, seed + octaves, gain, lacunarity)
+    blue = fractal_noise(width, height, octaves, base_period, seed * octaves * 2, gain, lacunarity)
+
+    return np.stack([red, green, blue], axis=-1)
+
+
+# # Split into RGB channels
+# R = arr[:, :, 0]  # Red channel
+# G = arr[:, :, 1]  # Green channel
+# B = arr[:, :, 2]  # Blue channel
 
 
 def erode_heightmap(height_map,
@@ -145,7 +167,3 @@ def apply_color_map(height_map, cmap="terrain"):
     """
     colormap = plt.get_cmap(cmap)
     return colormap(height_map)
-
-
-
-

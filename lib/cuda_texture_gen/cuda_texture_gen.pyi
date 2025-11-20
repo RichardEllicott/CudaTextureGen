@@ -27,39 +27,6 @@ class Erosion4:
     def __init__(self) -> None: ...
     def process(self) -> None: ...
 
-class Erosion5:
-    _block: Incomplete
-    _height: Incomplete
-    _width: Incomplete
-    correct_diagonal_distance: Incomplete
-    debug: Incomplete
-    debug_mod: Incomplete
-    deposition_mode: Incomplete
-    deposition_rate: Incomplete
-    diffusion_rate: Incomplete
-    erosion_mode: Incomplete
-    erosion_rate: Incomplete
-    evaporation_rate: Incomplete
-    hardness_map: Incomplete
-    height_map: Incomplete
-    max_height: Incomplete
-    max_water_outflow: Incomplete
-    min_height: Incomplete
-    outflow_carve: Incomplete
-    rain_map: Incomplete
-    rain_rate: Incomplete
-    sediment_capacity: Incomplete
-    sediment_map: Incomplete
-    simple_erosion_rate: Incomplete
-    slope_exponent: Incomplete
-    slope_jitter: Incomplete
-    slope_threshold: Incomplete
-    steps: Incomplete
-    water_map: Incomplete
-    wrap: Incomplete
-    def __init__(self) -> None: ...
-    def process(self) -> None: ...
-
 class Erosion7:
     _block: int
     _flux8: Incomplete
@@ -87,6 +54,51 @@ class Erosion7:
     min_height: float
     outflow_carve: float
     rain_map: Incomplete
+    rain_rate: Incomplete
+    sediment_capacity: float
+    sediment_map: Incomplete
+    simple_erosion_rate: float
+    slope_exponent: float
+    slope_jitter: float
+    slope_threshold: float
+    steps: int
+    water_map: Incomplete
+    wrap: bool
+    def __init__(self) -> None: ...
+    def allocate_device(self) -> None: ...
+    def deallocate_device(self) -> None: ...
+    def process(self) -> None: ...
+
+class Erosion8:
+    _block: int
+    _flux8: Incomplete
+    _height: int
+    _height_map_out: Incomplete
+    _sediment_flux8: Incomplete
+    _sediment_map_out: Incomplete
+    _slope_map: Incomplete
+    _water_map_out: Incomplete
+    _width: int
+    correct_diagonal_distance: bool
+    debug: bool
+    debug_mod: int
+    debug_print: bool
+    deposition_mode: int
+    deposition_rate: float
+    diffusion_rate: float
+    drain_at_min_height: bool
+    erosion_mode: int
+    erosion_rate: float
+    evaporation_rate: float
+    hardness_map: Incomplete
+    height_map: Incomplete
+    layered_height_map: Incomplete
+    max_height: float
+    max_water_outflow: float
+    min_height: float
+    outflow_carve: float
+    rain_map: Incomplete
+    rain_random: bool
     rain_rate: Incomplete
     sediment_capacity: float
     sediment_map: Incomplete

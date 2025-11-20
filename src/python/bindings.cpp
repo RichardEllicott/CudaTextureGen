@@ -27,8 +27,8 @@ central file for the python bindings
 // ----------------------------------------------------------------
 // #include "erosion3.bind.h" // ✔️ introducing water for caving of river like patterns
 #include "erosion4.bind.h" // ✔️ simple erode refactored
-#include "erosion5.bind.h" // ✔️ fairly developed new version (also can replicate simple erode)
-#include "erosion7.bind.h" // 🚧 using new device arrays pattern
+#include "erosion7.bind.h" // ✔️ advanced erosion with DeviceArray's
+#include "erosion8.bind.h" // 🚧 new features
 
 // ================================================================
 // experiments
@@ -66,8 +66,8 @@ NB_MODULE(cuda_texture_gen, m) {
     noise::bind(m);
 
     erosion4::bind(m);
-    erosion5::bind(m);
     erosion7::bind(m);
+    erosion8::bind(m);
 
     fluid_simulation::bind(m);
     tectonics::bind(m);

@@ -32,7 +32,7 @@ def save_array_as_image(array: np.ndarray, filename) -> None:
         raise ValueError(f"Unsupported format: {filename}")
 
 
-def load_array_from_image(filename) -> np.ndarray:
+def load_image_as_array(filename) -> np.ndarray:
     """
     Load an image file into a NumPy array.
     Preserves whatever dimensionality the image has:
@@ -102,3 +102,7 @@ def save_frames_as_mp4(frames, filename, fps=10, codec='libx264'):
     with imageio.get_writer(filename, fps=fps, codec=codec) as writer:
         for frame in video_frames:
             writer.append_data(frame)
+
+
+
+
