@@ -26,7 +26,7 @@ namespace nb = nanobind; // shortcut
 template <typename T>
 inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray<T> &device_array) {
     auto array = get_array<T>(device_array.size()); // create numpy array
-    device_array.download(array.data());                              // download the data into the numpy array
+    device_array.download(array.data());            // download the data into the numpy array
     return array;
 }
 
@@ -47,7 +47,7 @@ inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cu
 template <typename T>
 inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray2D<T> &device_array) {
     auto array = get_array<T>(device_array.height(), device_array.width()); // create numpy array
-    device_array.download(array.data());                                                      // download the data into the numpy array
+    device_array.download(array.data());                                    // download the data into the numpy array
     return array;
 }
 
@@ -68,15 +68,22 @@ inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cu
 template <typename T>
 inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray3D<T> &device_array) {
     auto array = get_array<T>(device_array.height(), device_array.width(), device_array.depth()); // create numpy array
-    device_array.download(array.data());                                                                            // download the data into the numpy array
+    device_array.download(array.data());                                                          // download the data into the numpy array
     return array;
 }
 
 // upload a numpy array's data to a DeviceArray3D
 template <typename T>
 inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cuda::DeviceArray3D<T> &destination) {
+
+    if (source.ndim() == 2) {
+        warn("⚠️ Input was a 2D NumPy array, converted to 3D with depth of 1!");
+        destination.upload(source.data(), source.shape(1), source.shape(0), 1); // Upload raw pointer data into device array
+        return;
+    }
+
     if (source.ndim() != 3) {
-        throw std::runtime_error("Input must be a 3D NumPy array");
+        throw std::runtime_error("Input must be a 3D or 2D NumPy array");
     }
     destination.upload(source.data(), source.shape(1), source.shape(0), source.shape(2)); // Upload raw pointer data into device array
 }
@@ -107,7 +114,7 @@ inline nb::object device_array_to_python(const core::cuda::DeviceArray<T> &devic
         return nb::none(); // If the device array has no data, return Python None
     } else {
         auto array = to_array(device_array); // download device array to numpy array
-        return nb::cast(array);                           // cast required
+        return nb::cast(array);              // cast required
     }
 }
 
@@ -129,7 +136,7 @@ inline nb::object device_array_to_python(const core::cuda::DeviceArray<T> &devic
 
 // refactor
 
-} // namespace nanobind::helper
+} // namespace nanobind::helper::numpy
 
 // ⚠️ REFATOR?
 namespace nanobind::helper::numpy {

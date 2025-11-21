@@ -7,10 +7,76 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
 */
 #pragma once
 
+#include <array>
+#include <string>
+
+// #include <nanobind/nanobind.h>
+
 // ================================================================ //
 #include "template_macro_undef.h"
 #define TEMPLATE_CLASS_NAME Erosion8
 #define TEMPLATE_NAMESPACE erosion8
+
+//
+//
+//
+// 🚧 🚧 🚧 🚧
+
+using Float3 = std::array<float, 3>;
+using Float4 = std::array<float, 4>;
+using String3 = std::array<std::string, 3>; // not trivially copyable
+
+
+// #define FLOAT4_DEFAULT {1.0f, 0.0f, 0.0f, 1.0f}
+
+#define LAYER_NAME_DEFAULT {"Topsoil", "Subsoil", "Bedrock"} // not trivially copyable
+#define LAYER_RESISTANCE_DEFAULT {0.25, 0.55, 0.90}
+#define LAYER_YIELD_DEFAULT {1.0, 0.6, 0.2}
+#define LAYER_PERMEABILITY_DEFAULT {0.8, 0.25, 0.10}
+#define LAYER_THRESHOLD_DEFAULT {0.1, 0.25, 0.6}
+
+// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
+#define TEMPLATE_CLASS_EXTRA_PARAMETERS                            \
+    X(String3, layers_name, LAYER_NAME_DEFAULT, "")                \
+    X(Float3, layers_resistance, LAYER_RESISTANCE_DEFAULT, "")     \
+    X(Float3, layers_yield, LAYER_YIELD_DEFAULT, "")               \
+    X(Float3, layers_permeability, LAYER_PERMEABILITY_DEFAULT, "") \
+    X(Float3, layers_threshold, LAYER_THRESHOLD_DEFAULT, "")
+#undef TEMPLATE_CLASS_EXTRA_PARAMETERS
+
+/*
+Topsoil:
+    Erosion resistance: 0.25
+    Sediment yield: 1.00
+    Permeability: 0.80
+    Erosion threshold: 0.10
+    Color hex: #6B8E23
+
+Subsoil:
+    Erosion resistance: 0.55
+    Sediment yield: 0.60
+    Permeability: 0.45
+    Erosion threshold: 0.25
+    Color hex: #C2A35B
+
+Bedrock:
+    Erosion resistance: 0.90
+    Sediment yield: 0.20
+    Permeability: 0.10
+    Erosion threshold: 0.60
+    Color hex: #696969
+
+Resistance scales erosion rate: effective_rate = base_rate × (1 − resistance).
+Sediment yield scales how much eroded mass becomes transportable sediment.
+Permeability controls retained water fraction influencing erosion strength next step.
+Erosion threshold is the minimum shear/flow needed before erosion starts for that layer.
+Colors help visualize progression; tweak to taste.
+*/
+
+//
+//
+//
+//
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS                                                                   \
@@ -40,7 +106,13 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
     X(float, sediment_capacity, 1.0, "capacity for deposition_mode 1")                              \
     X(float, simple_erosion_rate, 0.0, "simply lower based on the total slope (like Erosion4)")     \
     X(float, slope_threshold, 0.0, "don't count any slope under this value (like Erosion4)")        \
-    X(bool, drain_at_min_height, false, "testing drain at min height")
+    X(bool, drain_at_min_height, false, "testing drain at min height")                              \
+    X(int, mode, 0, "🚧 different modes for serious refactors")                                     \
+    X(size_t, _layers, 3, "🚧 total layers")                                                        \
+    X(Float3, layers_resistance, LAYER_RESISTANCE_DEFAULT, "")                                      \
+    X(Float3, layers_yield, LAYER_YIELD_DEFAULT, "")                                                \
+    X(Float3, layers_permeability, LAYER_PERMEABILITY_DEFAULT, "")                                  \
+    X(Float3, layers_threshold, LAYER_THRESHOLD_DEFAULT, "")
 
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAY_2DS                                           \
@@ -61,7 +133,7 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
 
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAY_3DS \
-    X(float, layered_height_map, "testing the idea of a layered heightmap")
+    X(float, height_map3, "testing the idea of a layered heightmap")
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_DEBUG_DATA   \

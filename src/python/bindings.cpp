@@ -6,10 +6,10 @@ central file for the python bindings
 // ================================================================
 // tests and templates
 // ----------------------------------------------------------------
-#include "py_native_object_test.h" // ✔️ testing a more python based object
-#include "template_class_4.bind.h" // ✔️ adding more template features
+#include "py_native_object_test.h"  // ✔️ testing a more python based object
+#include "template_class_4.bind.h"  // ✔️ adding more template features
 #include "template_darray_1.bind.h" // ✔️ adding more template features
-#include "tests.bind.h"            // ✔️ simple hello from gpu
+#include "tests.bind.h"             // ✔️ simple hello from gpu
 // #include "x_template_test.bind.h" //  auto generating template test // BROKEN!
 
 // ================================================================
@@ -44,6 +44,32 @@ central file for the python bindings
 
 #include "core/logging.h"
 
+
+
+// ================================================================
+// Nanobind compatability features
+// ----------------------------------------------------------------
+// allow std::array compatability to import/export
+#include <array>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/array.h> // ❗ allows std::array compatability
+
+// other options for nanobind support:
+// #include <nanobind/stl/array.h>        // std::array
+// #include <nanobind/stl/vector.h>       // std::vector
+// #include <nanobind/stl/string.h>       // std::string
+// #include <nanobind/stl/map.h>          // std::map, std::unordered_map
+// #include <nanobind/stl/set.h>          // std::set, std::unordered_set
+// #include <nanobind/stl/list.h>         // std::list
+// #include <nanobind/stl/pair.h>         // std::pair
+// #include <nanobind/stl/tuple.h>        // std::tuple
+// #include <nanobind/stl/optional.h>     // std::optional
+// #include <nanobind/stl/variant.h>      // std::variant
+// #include <nanobind/stl/filesystem.h>   // std::filesystem::path
+// #include <nanobind/stl/shared_ptr.h>   // std::shared_ptr
+// #include <nanobind/stl/unique_ptr.h>   // std::unique_ptr
+// #include <nanobind/stl/function.h>     // std::function
+// #include <nanobind/stl/chrono.h>       // std::chrono types
 
 namespace nb = nanobind;
 

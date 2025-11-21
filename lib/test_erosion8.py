@@ -7,7 +7,6 @@ this makes it easier and quicker to upload and download data to the gpu and to t
 """
 
 
-
 # from tools import *
 import matplotlib
 from matplotlib.colors import to_rgb
@@ -353,7 +352,7 @@ def get_island_height_map(width, height):
     return result
 
 
-get_island_height_map(512, 512)
+# get_island_height_map(512, 512)
 
 
 def test02():
@@ -445,6 +444,9 @@ def get_soil_pallete():
     return soil_colors
 
 
+
+
+
 def test_3d_arrays():
 
     soil_colors = np.array([
@@ -464,7 +466,6 @@ def test_3d_arrays():
 
     tools.save_array_as_image((noise_to_pallete * 255).astype(np.uint8), "./output/noise.pallete.png")
 
-
     # noise = np.ascontiguousarray(noise[:, :, 0], dtype=np.float32)
     noise = noise[:, :, 0]
     print("🐈 ", type(noise))
@@ -482,10 +483,38 @@ def test_3d_arrays():
     # print("strides:", noise.strides)    # byte steps between elements
     # print("flags:", noise.flags)        # contiguity info
 
-
     cuda_texture_gen.blur(noise, 32)
 
     tools.save_array_as_image((noise * 255).astype(np.uint8), "./output/noise.rgb.png")
 
 
-test_3d_arrays()
+# test_3d_arrays()
+
+def test_3d_arrays():
+
+    # noise = tools.fractal_noise_rgb(256, 256).astype(np.float32)  # expect [0,1] floats
+    noise = tools.fractal_noise(256, 256).astype(np.float32)  # expect [0,1] floats
+
+    runner = ErosionRunner()
+    erosion = runner.erosion
+
+    erosion.layered_height_map = noise
+
+    noise = erosion.layered_height_map
+
+    tools.print_array_information(noise)
+
+
+# test_3d_arrays()
+
+def layers_test():
+    runner = ErosionRunner()
+    erosion = runner.erosion
+    # print("layers_name:", erosion.layers_name)
+    print("layers_resistance:", erosion.layers_resistance)
+    print("layers_yield:", erosion.layers_yield)
+    print("layers_permeability:", erosion.layers_permeability)
+    print("layers_threshold:", erosion.layers_threshold)
+
+
+layers_test()

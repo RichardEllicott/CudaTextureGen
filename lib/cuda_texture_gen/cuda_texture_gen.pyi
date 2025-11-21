@@ -74,6 +74,7 @@ class Erosion8:
     _flux8: Incomplete
     _height: int
     _height_map_out: Incomplete
+    _layers: int
     _sediment_flux8: Incomplete
     _sediment_map_out: Incomplete
     _slope_map: Incomplete
@@ -92,10 +93,15 @@ class Erosion8:
     evaporation_rate: float
     hardness_map: Incomplete
     height_map: Incomplete
-    layered_height_map: Incomplete
+    height_map3: Incomplete
+    layers_permeability: Incomplete
+    layers_resistance: Incomplete
+    layers_threshold: Incomplete
+    layers_yield: Incomplete
     max_height: float
     max_water_outflow: float
     min_height: float
+    mode: int
     outflow_carve: float
     rain_map: Incomplete
     rain_random: bool

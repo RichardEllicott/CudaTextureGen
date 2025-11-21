@@ -126,10 +126,10 @@ def tile_array_2d(array, repeat_x, repeat_y):
     return np.tile(array, (repeat_x, repeat_y))
 
 
-
-
-
 def resize_array_2d(array, width: int, height: int, order: int = 1):
+    """
+    resize array with resampling
+    """
     from scipy.ndimage import zoom
     return zoom(array, (height / array.shape[0], width / array.shape[1]), order=order)
 
@@ -137,3 +137,12 @@ def resize_array_2d(array, width: int, height: int, order: int = 1):
 def blur_array_2d(array, sigma: int):
     from scipy.ndimage import gaussian_filter
     return gaussian_filter(array, sigma=sigma)
+
+
+def print_array_information(array):
+    print("🐈 ", type(array))
+    print("shape:", array.shape)        # dimensions
+    print("dtype:", array.dtype)        # element type
+    print("ndim:", array.ndim)          # number of dimensions
+    print("strides:", array.strides)    # byte steps between elements
+    print("flags:", array.flags)        # contiguity info

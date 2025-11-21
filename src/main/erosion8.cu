@@ -379,18 +379,6 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 #undef X
 #endif
 
-// // allocate DeviceArray2D's .... just zero everything!
-// would break with the rain map
-// #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-// #define X(TYPE, NAME, DESCRIPTION)              \
-//     if (NAME.empty()) {                         \
-//         NAME.resize(pars._width, pars._height); \
-//         NAME.zero_device();                     \
-//     }
-//     TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-// #undef X
-// #endif
-
 // allocate arrays (no zero)
 #define ALLOCATE_ARRAYS  \
     X(_height_map_out)   \
@@ -426,13 +414,29 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 #undef X
 #endif
 
-// // allocate DeviceArray3D's ⚠️ EXPERIMENT
-// #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_3DS
-// #define X(TYPE, NAME, DESCRIPTION) \
+
+
+
+
+    // 🚧 LAYER MODE
+    if (pars.mode == 1) {
+        if (!height_map3.empty()) {
+            if (height_map3.width() == pars._width && height_map3.height() == pars._height && height_map3.depth() > 0) {
+                pars._layers = height_map3.depth();
+            } else {
+                height_map3.free_device();
+                pars._layers = 0;
+            }
+        }
+    }
+
+    // // allocate DeviceArray3D's ⚠️ EXPERIMENT
+    // #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_3DS
+    // #define X(TYPE, NAME, DESCRIPTION) \
 //     NAME.resize(3, pars._width, pars._height);
-//     TEMPLATE_CLASS_DEVICE_ARRAY_3DS
-// #undef X
-// #endif
+    //     TEMPLATE_CLASS_DEVICE_ARRAY_3DS
+    // #undef X
+    // #endif
 
     curand_array_2d.resize(pars._width, pars._height);
     device_allocated = true;
@@ -455,7 +459,6 @@ void TEMPLATE_CLASS_NAME::deallocate_device() {
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
 #endif
-
 
 // deallocate DeviceArray3D's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_3DS

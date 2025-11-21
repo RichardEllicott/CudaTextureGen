@@ -18,4 +18,12 @@ included at the bottom of the bind headers that use the template pattern
 #undef STRINGIFY
 #undef EXPAND_AND_STRINGIFY
 
-#undef TEMPLATE_CLASS_METHODS // new device side only 3d array
+// unused most likely
+#undef TEMPLATE_CLASS_METHODS
+
+// layers in Erosion8.cuh
+#undef LAYER_NAME_DEFAULT
+#undef LAYER_RESISTANCE_DEFAULT
+#undef LAYER_YIELD_DEFAULT
+#undef LAYER_PERMEABILITY_DEFAULT
+#undef LAYER_THRESHOLD_DEFAULT
