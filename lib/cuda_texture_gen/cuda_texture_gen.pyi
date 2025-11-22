@@ -94,10 +94,10 @@ class Erosion8:
     hardness_map: Incomplete
     height_map: Incomplete
     height_map3: Incomplete
-    layers_permeability: Incomplete
-    layers_resistance: Incomplete
-    layers_threshold: Incomplete
-    layers_yield: Incomplete
+    layers_erosiveness: list[float]
+    layers_permeability: list[float]
+    layers_threshold: list[float]
+    layers_yield: list[float]
     max_height: float
     max_water_outflow: float
     min_height: float
@@ -140,24 +140,31 @@ class FluidSimulation:
     def process(self) -> None: ...
 
 class Noise:
-    _block: Incomplete
-    angle: Incomplete
-    height: Incomplete
-    image: Incomplete
-    period: Incomplete
-    period_x: Incomplete
-    period_y: Incomplete
-    period_z: Incomplete
+    _block: int
+    _scale: float
+    _scale_x: float
+    _scale_y: float
+    _scale_z: float
+    height: int
+    period: float
+    period_x: float
+    period_y: float
+    period_z: float
+    rotate_x: float
+    rotate_y: float
+    rotate_z: float
     seed: Incomplete
     type: Incomplete
-    warp_amp: Incomplete
-    warp_scale: Incomplete
-    width: Incomplete
-    x: Incomplete
-    y: Incomplete
-    z: Incomplete
+    width: int
+    wrap_x: Incomplete
+    wrap_y: Incomplete
+    wrap_z: Incomplete
+    x: float
+    y: float
+    z: float
     def __init__(self) -> None: ...
-    def process(self) -> None: ...
+    @property
+    def noise(self): ...
 
 class NoiseGenerator:
     class Type(enum.Enum):
@@ -210,18 +217,20 @@ class PyNativeObjectTest:
     def process(self) -> None: ...
 
 class Resample:
-    _block: Incomplete
-    angle: Incomplete
-    function_mode: Incomplete
+    _block: int
+    _height: int
+    _width: int
+    angle: float
     input: Incomplete
     map_x: Incomplete
     map_y: Incomplete
-    offset_x: Incomplete
-    offset_y: Incomplete
+    mode: int
+    offset_x: float
+    offset_y: float
     output: Incomplete
-    relative_offset: Incomplete
-    sample_mode: Incomplete
-    scale_by_output_size: Incomplete
+    relative_offset: bool
+    sample_mode: int
+    scale_by_output_size: bool
     def __init__(self) -> None: ...
     def process(self) -> None: ...
 

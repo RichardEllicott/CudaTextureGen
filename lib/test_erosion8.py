@@ -332,7 +332,6 @@ def get_island_height_map(width, height):
 
     island = tools.load_image_as_array("./images/island03.png")
     island = tools.resize_array_2d(island, width, height)
-
     island = tools.blur_array_2d(island, 8)
 
     # tools.normalize_array(island)
@@ -444,9 +443,6 @@ def get_soil_pallete():
     return soil_colors
 
 
-
-
-
 def test_3d_arrays():
 
     soil_colors = np.array([
@@ -517,4 +513,9 @@ def layers_test():
     print("layers_threshold:", erosion.layers_threshold)
 
 
-layers_test()
+# layers_test()
+
+
+
+
+

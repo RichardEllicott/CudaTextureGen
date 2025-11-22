@@ -1,138 +1,129 @@
 /*
 
-🧜‍♀️ TEMPLATE VERSION 20251027-3
-🧜‍♀️ TEMPLATE VERSION 20251102-1 // added a structure for map pointers
+🎃 DARRAY TEMPLATE 20251115-1
 
-this one uses more clever types and classes, needing less horrible macros
-
-
-⚠️⚠️⚠️ THIS ONE DOESN'T SUPPORT ANY SORTS OF RGB NUMPY ARRAYS ETC ⚠️⚠️⚠️
-
-
-
-🎃 this noise generator was trying to work on 3D, also investigating animation and periodicity
-
+using new DeviceArray2D ... data is instantly uploaded and downloaded, no local copy
 
 */
 #pragma once
 
-// ════════════════════════════════════════════════ //
+// ================================================================ //
+#include "template_macro_undef.h"
 #define TEMPLATE_CLASS_NAME Noise
 #define TEMPLATE_NAMESPACE noise
 
-#define TEMPLATE_CLASS_PARAMETERS \
-    X(size_t, width, 1024)        \
-    X(size_t, height, 1024)       \
-    X(size_t, _block, 16)         \
-    X(int, type, 0)               \
-    X(int, seed, 0)               \
-    X(float, period_x, 7.0f)      \
-    X(float, period_y, 7.0f)      \
-    X(float, period_z, 7.0f)      \
-    X(float, x, 0.0f)             \
-    X(float, y, 0.0f)             \
-    X(float, z, 0.0f)             \
-    X(float, warp_amp, 4.0f)      \
-    X(float, warp_scale, 1.0f)    \
-    X(float, angle, 0.0f)
+#include <array>
 
-#define TEMPLATE_CLASS_MAPS \
-    X(float, image)
+using Float9 = std::array<float, 9>; // for rotation matrix
+using Float9Raw = float[9];          // For device structs
 
-// // trying to support float3
-#define TEMPLATE_CLASS_MAPS2 \
-    X(float3, image_rgb)
+// auto set up pars (added to python and to pars object for upload)
+// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
+#define TEMPLATE_CLASS_PARAMETERS                                                           \
+    X(size_t, width, 1024, "map width")                                                     \
+    X(size_t, height, 1024, "map height")                                                   \
+    X(size_t, _block, 16, "block size (best to leave at 16)")                               \
+    X(int, type, 0, "")                                                                     \
+    X(int, seed, 0, "")                                                                     \
+    X(float, period, 7.0f, "the frequency of the noise, use no fraction to get seamless")   \
+    X(float, period_x, 7.0f, "the frequency of the noise, use no fraction to get seamless") \
+    X(float, period_y, 7.0f, "the frequency of the noise, use no fraction to get seamless") \
+    X(float, period_z, 7.0f, "the frequency of the noise, use no fraction to get seamless") \
+    X(float, _scale, 1.0f, "gets calculated")                                               \
+    X(float, _scale_x, 1.0f, "gets calculated")                                             \
+    X(float, _scale_y, 1.0f, "gets calculated")                                             \
+    X(float, _scale_z, 1.0f, "gets calculated")                                             \
+    X(float, x, 0.0f, "x position")                                                         \
+    X(float, y, 0.0f, "y position")                                                         \
+    X(float, z, 0.0f, "z position (for 3D noise)")                                          \
+    X(bool, wrap_x, true, "")                                                               \
+    X(bool, wrap_y, true, "")                                                               \
+    X(bool, wrap_z, true, "")                                                               \
+    X(float, rotate_x, 0.0f, "pitch")                                                       \
+    X(float, rotate_y, 0.0f, "yaw")                                                         \
+    X(float, rotate_z, 0.0f, "roll (the normal one we use for 2D face on images)")
 
-// #define TEMPLATE_CLASS_TYPES \
-//     X(APPLE)                 \
-//     X(ORANGE)                \
-//     X(POTATO)
+// X(Float9, _rotation_matrix, {}, "calculated rotation matrix")
 
-// ════════════════════════════════════════════════ //
+// #define NOISE_GENERATOR_PARAMETERS \
+//     X(int, type, 0)                \
+//     X(int, seed, 0)                \
+//     X(float, period, 7.0f)         \
+//     X(float, scale, 1.0f)          \
+//     X(float, x, 0.0f)              \
+//     X(float, y, 0.0f)              \
+//     X(float, z, 0.0f)              \
+//     X(float, warp_amp, 4.0f)       \
+//     X(float, warp_scale, 1.0f)     \
+//     X(float, angle, 0.0f)
+
+// DeviceArray2D ... abstraction of DeviceArray that will be visible in python
+// (TYPE, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_DEVICE_ARRAY_2DS \
+    X(float, noise, "noise")
+
+// ================================================================ //
 
 #include "cuda_types.cuh"
-// #include <std>
 
 namespace TEMPLATE_NAMESPACE {
 
-// set to kernels as pointer
-struct Parameters {
+// Parameters struct for uploading to GPU
 #ifdef TEMPLATE_CLASS_PARAMETERS
-#define X(TYPE, NAME, DEFAULT_VAL) \
+struct Parameters {
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
     TEMPLATE_CLASS_PARAMETERS
 #undef X
-#endif
-};
-// OPTIONAL Compile‑time safety check
-static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
 
-// could be used with kernels
-struct MapPointers {
-#ifdef TEMPLATE_CLASS_MAPS
-#define X(TYPE, NAME) \
-    TYPE *NAME = nullptr;
-    TEMPLATE_CLASS_MAPS
-#undef X
-#endif
+    // Float9Raw _rotation_matrix;
+    float _rotation_matrix[9];  // Direct declaration, no typedef
+
 };
+static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
+#endif
 
 class TEMPLATE_CLASS_NAME {
 
-// make getter/setters for the pars
-#ifdef TEMPLATE_CLASS_PARAMETERS
-  private:
-    Parameters pars;
+    Parameters pars;                               // local pars
+    core::cuda::DeviceStruct<Parameters> dev_pars; // device side pars
+
+    bool pars_synced = false; // record if the pars have been synced since update
+    // sync the pars if they have changed since last sync
+    void sync_pars() {
+        if (!pars_synced) {
+            dev_pars.upload(pars);
+            pars_synced = true;
+        }
+    }
+
+    core::cuda::Stream stream; // will be allocated along with object
+    bool device_allocated = false;
 
   public:
-#define X(TYPE, NAME, DEFAULT_VAL)                \
+    // getter/setters for the pars
+#ifdef TEMPLATE_CLASS_PARAMETERS
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)   \
     TYPE get_##NAME() const { return pars.NAME; } \
-    void set_##NAME(TYPE value) { pars.NAME = value; }
+    void set_##NAME(TYPE value) {                 \
+        if (pars.NAME != value)                   \
+            pars_synced = false;                  \
+        pars.NAME = value;                        \
+    }
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
 
-// make maps as CudaArray2D
-#ifdef TEMPLATE_CLASS_MAPS
-#define X(TYPE, NAME) \
-    core::cuda::CudaArray2D<TYPE> NAME;
-    TEMPLATE_CLASS_MAPS
+// DeviceArray2D's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    core::cuda::DeviceArray2D<TYPE> NAME;
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
 #undef X
 #endif
 
-    // make enumerators
-#ifdef TEMPLATE_CLASS_TYPES
-    enum class Type {
-#define X(NAME) \
-    NAME,
-        TEMPLATE_CLASS_TYPES
-#undef X
-    };
-#endif
-
-// get all the map pointers in a structure
-#ifdef TEMPLATE_CLASS_MAPS
-    MapPointers get_map_pointers() {
-        MapPointers result;
-
-#define X(TYPE, NAME) result.NAME = NAME.dev_ptr();
-        TEMPLATE_CLASS_MAPS
-#undef X
-
-        return result;
-    }
-#endif
-
-
-// custom set all period's at once
-    float get_period() {
-        return get_period_x();
-    };
-    void set_period(float value) {
-        set_period_x(value);
-        set_period_y(value);
-        set_period_z(value);
-    };
+    void allocate_device();
+    void deallocate_device();
 
     void process();
 };

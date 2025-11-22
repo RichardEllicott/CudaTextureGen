@@ -1,12 +1,17 @@
 """
 image helpers
+
+
+# pip install imageio[ffmpeg]
+
 """
+from typing import Any, Union, Sequence
+from numpy.typing import NDArray
 import numpy as np
-# import imageio
-import imageio.v2 as imageio  # version 2 will use numpy arrays apparently, i prefer this
+import imageio.v2 as imageio  # version 2 loads to numpy arrays
 
 
-def save_array_as_image(array: np.ndarray, filename) -> None:
+def save_array_as_image(array: NDArray[Any], filename: Union[str, Sequence[str]]) -> None:
     """
     Save a NumPy 2D array as an image.
     Supports .png (uint8) or .tif/.tiff (float32).
@@ -32,7 +37,7 @@ def save_array_as_image(array: np.ndarray, filename) -> None:
         raise ValueError(f"Unsupported format: {filename}")
 
 
-def load_image_as_array(filename) -> np.ndarray:
+def load_image_as_array(filename: str, dtype: np.dtype = np.float32) -> NDArray[Any]:
     """
     Load an image file into a NumPy array.
     Preserves whatever dimensionality the image has:
@@ -42,7 +47,7 @@ def load_image_as_array(filename) -> np.ndarray:
     - Float TIFFs → 2D or 3D depending on channels
     """
     array = imageio.imread(filename)
-    return array.astype(np.float32)
+    return array.astype(dtype)
 
 
 def save_frames_as_gif_animation(frames, filename, duration=0.1, loop=0) -> None:
@@ -79,8 +84,6 @@ def save_frames_as_gif_animation(frames, filename, duration=0.1, loop=0) -> None
     imageio.mimsave(filename, gif_frames, format="GIF", duration=duration, loop=loop)
 
 
-# pip install imageio[ffmpeg]
-
 def save_frames_as_mp4(frames, filename, fps=10, codec='libx264'):
     """
     Save a sequence of frames as an MP4 video.
@@ -102,7 +105,3 @@ def save_frames_as_mp4(frames, filename, fps=10, codec='libx264'):
     with imageio.get_writer(filename, fps=fps, codec=codec) as writer:
         for frame in video_frames:
             writer.append_data(frame)
-
-
-
-

@@ -22,29 +22,44 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
 //
 // 🚧 🚧 🚧 🚧
 
+using Float2 = std::array<float, 2>;
 using Float3 = std::array<float, 3>;
 using Float4 = std::array<float, 4>;
-using String3 = std::array<std::string, 3>; // not trivially copyable
+using Float5 = std::array<float, 5>;
+using Float6 = std::array<float, 6>;
+using Float7 = std::array<float, 7>;
+using Float8 = std::array<float, 8>;
 
+using String3 = std::array<std::string, 3>; // not trivially copyable
 
 // #define FLOAT4_DEFAULT {1.0f, 0.0f, 0.0f, 1.0f}
 
 #define LAYER_NAME_DEFAULT {"Topsoil", "Subsoil", "Bedrock"} // not trivially copyable
-#define LAYER_RESISTANCE_DEFAULT {0.25, 0.55, 0.90}
+#define LAYER_RESISTANCE_DEFAULT {0.25, 0.55, 0.90}          // suggested by ai but changing to
+#define LAYER_EROSIVENESS_DEFAULT {1.0, 0.6, 0.1333333}
 #define LAYER_YIELD_DEFAULT {1.0, 0.6, 0.2}
 #define LAYER_PERMEABILITY_DEFAULT {0.8, 0.25, 0.10}
 #define LAYER_THRESHOLD_DEFAULT {0.1, 0.25, 0.6}
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_EXTRA_PARAMETERS                            \
-    X(String3, layers_name, LAYER_NAME_DEFAULT, "")                \
-    X(Float3, layers_resistance, LAYER_RESISTANCE_DEFAULT, "")     \
-    X(Float3, layers_yield, LAYER_YIELD_DEFAULT, "")               \
-    X(Float3, layers_permeability, LAYER_PERMEABILITY_DEFAULT, "") \
-    X(Float3, layers_threshold, LAYER_THRESHOLD_DEFAULT, "")
+#define TEMPLATE_CLASS_EXTRA_PARAMETERS                                                    \
+    X(String3, layers_name, LAYER_NAME_DEFAULT, "layer names, but not trivially copyable") \
+    X(Float3, layers_resistance, LAYER_RESISTANCE_DEFAULT, "")                             \
+    X(Float3, layers_erosiveness, LAYER_EROSIVENESS_DEFAULT, "multiply by erosion_rate")   \
+    X(Float3, layers_yield, LAYER_YIELD_DEFAULT, "sediment to release")                    \
+    X(Float3, layers_permeability, LAYER_PERMEABILITY_DEFAULT, "not sure?")                \
+    X(Float3, layers_threshold, LAYER_THRESHOLD_DEFAULT, "not sure?")
 #undef TEMPLATE_CLASS_EXTRA_PARAMETERS
 
 /*
+
+0.75 / 0.75 = 1.0
+0.45 / 0.75 = 0.6
+0.10 / 0.75 = 0.1333...
+
+
+
+
 Topsoil:
     Erosion resistance: 0.25
     Sediment yield: 1.00
@@ -109,10 +124,10 @@ Colors help visualize progression; tweak to taste.
     X(bool, drain_at_min_height, false, "testing drain at min height")                              \
     X(int, mode, 0, "🚧 different modes for serious refactors")                                     \
     X(size_t, _layers, 3, "🚧 total layers")                                                        \
-    X(Float3, layers_resistance, LAYER_RESISTANCE_DEFAULT, "")                                      \
-    X(Float3, layers_yield, LAYER_YIELD_DEFAULT, "")                                                \
-    X(Float3, layers_permeability, LAYER_PERMEABILITY_DEFAULT, "")                                  \
-    X(Float3, layers_threshold, LAYER_THRESHOLD_DEFAULT, "")
+    X(Float3, layers_erosiveness, LAYER_EROSIVENESS_DEFAULT, "multiply by erosion_rate")            \
+    X(Float3, layers_yield, LAYER_YIELD_DEFAULT, "sediment to release")                             \
+    X(Float3, layers_permeability, LAYER_PERMEABILITY_DEFAULT, "not sure?")                         \
+    X(Float3, layers_threshold, LAYER_THRESHOLD_DEFAULT, "not sure?")
 
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAY_2DS                                           \

@@ -264,6 +264,10 @@
         {
             "folderPath": "cuda_texture_gen\\src\\python\\bindings\\erosion8.bind.h\\",
             "badge": "🏔️"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\template_darray_1.bind.h\\",
+            "badge": "🎃"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",

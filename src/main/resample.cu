@@ -1,6 +1,8 @@
+// #include "core/cuda/curand_array_2d.cuh"
 #include "resample.cuh"
+#include <stdexcept> // std::runtime_error
 
-namespace resample {
+namespace TEMPLATE_NAMESPACE {
 
 constexpr float PI = 3.14159265358979323846f;
 constexpr float DEG_TO_RAD = PI / 180.0f;
@@ -61,11 +63,22 @@ __global__ void resample_kernel(Parameters *pars,
 
     int idx = y * out_w + x;
 
-    if (pars->function_mode == 0) {
+    if (pars->mode == 0) {
 
-        // figure out the soruce x,y
-        float src_x = map_x[idx];
-        float src_y = map_y[idx];
+        float src_x; // the x map (usually offset)
+        float src_y; // the y map (usually offset)
+
+        if (map_x) {
+            src_x = map_x[idx];
+        } else {
+            src_x = 0.0; // assume 0 if no map
+        }
+
+        if (map_y) {
+            src_y = map_x[idx];
+        } else {
+            src_y = 0.0; // assume 0 if no map
+        }
 
         // scaling so that we're neutral to image resolution (0.5 would be half the output image width)
         if (pars->scale_by_output_size) {
@@ -80,7 +93,7 @@ __global__ void resample_kernel(Parameters *pars,
 
         output[idx] = sample_bilinear(input, in_w, in_h, src_x, src_y, true);
 
-    } else if (pars->function_mode == 1) {
+    } else if (pars->mode == 1) {
         // --- plain rotation around center ---
         // angle is stored in degrees
         float angle = pars->angle * DEG_TO_RAD;
@@ -111,40 +124,71 @@ __global__ void resample_kernel(Parameters *pars,
     }
 }
 
-void Resample::process() {
+void TEMPLATE_CLASS_NAME::allocate_device() {
+}
 
-    core::cuda::Stream stream; // create a stream
+void TEMPLATE_CLASS_NAME::deallocate_device() {
 
-    size_t width = input.get_width();
-    size_t height = input.get_height();
-    // size_t _block = 16;
+    // DeviceArray2D's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    NAME.free_device();
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#undef X
+#endif
+}
 
-    input.upload();
-    map_x.upload();
-    map_y.upload();
+void TEMPLATE_CLASS_NAME::process() {
 
-    core::cuda::DeviceStruct<Parameters> dev_pars(pars); // automaticly uploads and free
+    if (input.empty()) {
+        throw std::runtime_error("input array empty!");
+    }
 
-    output.resize(input.get_width(), input.get_height());
-    output.allocate_device(); // allocate memory (no upload)
+    set__width(input.width());
+    set__height(input.height());
+
+    // pars._width = input.width();
+    // pars._height = input.height();
+
+    output.resize(pars._width, pars._height); // ensure output array matches size (no need to init)
+
+    // // if the dimensions of any map doesn't match, drop it (making it null)
+    // if (map_x.width() != pars._width || map_x.height() != pars._height) {
+    //     map_x.free_device();
+    // }
+    // if (map_y.width() != pars._width || map_y.height() != pars._height) {
+    //     map_y.free_device();
+    // }
+
+    // maybe safer
+    if ((map_x.width() && map_x.width() != pars._width) ||
+        (map_x.height() && map_x.height() != pars._height) ||
+        (map_y.width() && map_y.width() != pars._width) ||
+        (map_y.height() && map_y.height() != pars._height)) {
+        throw std::runtime_error("warp map dimension mismatch");
+    }
+
+    sync_pars();
 
     dim3 block(pars._block, pars._block);
-    dim3 grid((width + block.x - 1) / block.x,
-              (height + block.y - 1) / block.y);
+    dim3 grid((pars._width + block.x - 1) / block.x,
+              (pars._height + block.y - 1) / block.y);
 
+    // launch the kernel
     resample_kernel<<<grid, block, 0, stream.get()>>>(
         dev_pars.dev_ptr(),
         input.dev_ptr(), output.dev_ptr(),
-        width, height, width, height, map_x.dev_ptr(), map_y.dev_ptr());
+        pars._width, pars._height,
+        pars._width, pars._height, // assuming same size output (unused feature here)
+        map_x.dev_ptr(), map_y.dev_ptr());
 
-    output.download();
-
-    input.free_device();
-    output.free_device();
-    map_x.free_device();
-    map_y.free_device();
-
-    stream.sync();
+    // optional error check
+    auto err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        throw std::runtime_error(std::string("CUDA kernel launch failed: ") + cudaGetErrorString(err));
+    }
 }
 
-} // namespace resample
+} // namespace TEMPLATE_NAMESPACE
+
+#include "template_macro_undef.h"

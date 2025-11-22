@@ -1,5 +1,3 @@
-/*
- */
 #pragma once
 
 #include "nanobind_helper.h"
@@ -8,40 +6,37 @@
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
 
-namespace resample {
+namespace TEMPLATE_NAMESPACE {
 
 namespace nb = nanobind;
 
 inline void bind(nb::module_ &m) {
 
-    auto ngd = nb::class_<Resample>(m, "Resample").def(nb::init<>());
+    auto ngd = nb::class_<TEMPLATE_CLASS_NAME>(m, EXPAND_AND_STRINGIFY(TEMPLATE_CLASS_NAME)).def(nb::init<>());
 
-    // bind erosion parameters
-#define X(TYPE, NAME, DEFAULT_VAL) \
-    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), &Resample::get_##NAME, &Resample::set_##NAME);
-    RESAMPLE_PARAMETERS
+// bind pars
+#ifdef TEMPLATE_CLASS_PARAMETERS
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), &TEMPLATE_CLASS_NAME::get_##NAME, &TEMPLATE_CLASS_NAME::set_##NAME, DESCRIPTION);
+    TEMPLATE_CLASS_PARAMETERS
 #undef X
+#endif
 
-    // bind maps
-#define X(TYPE, NAME)                                                                                                                                                \
-    auto get_##NAME = [](Resample &self) { return nb::helper::numpy::to_array(self.NAME); };                                                               \
-    auto set_##NAME = [](Resample &self, nb::ndarray<float, nb::c_contig> arr) { self.NAME = core::cuda::CudaArray2D<TYPE>(nb::helper::numpy::to_array_2d(arr)); }; \
-    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME);
-    RESAMPLE_MAPS
+    // bind DeviceArray2D's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION)                                                                                                                    \
+    auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return nb::helper::numpy::to_array(self.NAME); };                                               \
+    auto set_##NAME = [](TEMPLATE_CLASS_NAME &self, nb::ndarray<TYPE, nb::c_contig> array) { nb::helper::numpy::to_device_array(array, self.NAME); }; \
+    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), get_##NAME, set_##NAME, DESCRIPTION);
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
 #undef X
+#endif
 
-    ngd.def("process", [](Resample &self) {
+    ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
     });
 }
 
-} // namespace resample
+} // namespace TEMPLATE_NAMESPACE
 
-
-// #undef TEMPLATE_CLASS_NAME
-// #undef TEMPLATE_NAMESPACE
-#undef RESAMPLE_PARAMETERS
-#undef RESAMPLE_MAPS
-
-#undef STRINGIFY
-#undef EXPAND_AND_STRINGIFY
+#include "template_macro_undef.h"

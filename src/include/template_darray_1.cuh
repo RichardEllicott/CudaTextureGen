@@ -27,7 +27,7 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
 #define TEMPLATE_CLASS_DEVICE_ARRAY_2DS \
     X(float, height_map, "testing DeviceArray2D")
 
-// DeviceArray2D ... abstraction of DeviceArray that will be visible in python
+// DeviceArray3D ... abstraction of DeviceArray that will be visible in python
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAY_3DS \
     X(float, device_array_3d, "testing DeviceArray3D")

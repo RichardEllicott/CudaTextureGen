@@ -1,73 +1,98 @@
 /*
 
-resample
+🎃 DARRAY TEMPLATE 20251115-1
 
-
-sample_mode, bilinear (only one so far)
-
-function_mode 0 = use map_x and map_y (only one so far)
-
-
-
-
+using new DeviceArray2D ... data is instantly uploaded and downloaded, no local copy
 
 */
 #pragma once
 
-#define RESAMPLE_PARAMETERS             \
-    X(size_t, _block, 16)               \
-    X(bool, relative_offset, true)      \
-    X(bool, scale_by_output_size, true) \
-    X(int, sample_mode, 0)              \
-    X(int, function_mode, 0)            \
-    X(float, angle, 0.0f)               \
-    X(float, offset_x, 0.0f)            \
-    X(float, offset_y, 0.0f)
+// ================================================================ //
+#include "template_macro_undef.h"
+#define TEMPLATE_CLASS_NAME Resample
+#define TEMPLATE_NAMESPACE resample
 
-#define RESAMPLE_MAPS \
-    X(float, input)   \
-    X(float, output)  \
-    X(float, map_x)   \
-    X(float, map_y)
+// auto set up pars (added to python and to pars object for upload)
+// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
+#define TEMPLATE_CLASS_PARAMETERS                                                                                   \
+    X(size_t, _width, 1024, "map width")                                                                            \
+    X(size_t, _height, 1024, "map height")                                                                          \
+    X(size_t, _block, 16, "block size (best to leave at 16)")                                                       \
+    X(int, mode, 0, "0 = use the maps, 1 = rotate and offset (experimental)")                                       \
+    X(bool, relative_offset, true, "relative offset warps relative, otherwise map would need absolute coordinates") \
+    X(bool, scale_by_output_size, true, "scale works so input of 0.5 would be offset by half size of image ")       \
+    X(float, angle, 0.0, "mode 1 rotate")                                                                           \
+    X(float, offset_x, 0.0, "mode 1 offset x")                                                                      \
+    X(float, offset_y, 0.0, "mode 1 offset x")                                                                      \
+    X(int, sample_mode, 0, "🚧 UNUSED, bilinear only at the moment")
 
-// #include "core.h"
-// #include <chrono>
-#include <cuda_runtime.h>
-#include <iostream>
+// DeviceArray2D ... abstraction of DeviceArray that will be visible in python
+// (TYPE, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_DEVICE_ARRAY_2DS      \
+    X(float, input, "input image") \
+    X(float, output, "buffer array to write to")\
+    X(float, map_x, "image to offset x (feed with noise to warp image)")\
+    X(float, map_y, "image to offset y (feed with noise to warp image)")\
+
+// ================================================================ //
 
 #include "cuda_types.cuh"
 
-namespace resample {
+namespace TEMPLATE_NAMESPACE {
 
+// Parameters struct for uploading to GPU
+#ifdef TEMPLATE_CLASS_PARAMETERS
 struct Parameters {
-    // declare pars on structures
-#define X(TYPE, NAME, DEFAULT_VAL) \
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
-    RESAMPLE_PARAMETERS
+    TEMPLATE_CLASS_PARAMETERS
 #undef X
 };
+static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
+#endif
 
-class Resample {
-  private:
-    Parameters pars;
+class TEMPLATE_CLASS_NAME {
+
+    Parameters pars;                               // local pars
+    core::cuda::DeviceStruct<Parameters> dev_pars; // device side pars
+
+    bool pars_synced = false; // record if the pars have been synced since update
+    void sync_pars() {
+        if (!pars_synced) {
+            dev_pars.upload(pars);
+            pars_synced = true;
+        }
+    }
+
+    core::cuda::Stream stream; // will be allocated along with object
+    bool device_allocated = false;
 
   public:
-    // make getter/setters for the pars
-#define X(TYPE, NAME, DEFAULT_VAL)                \
+    // getter/setters for the pars
+#ifdef TEMPLATE_CLASS_PARAMETERS
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)   \
     TYPE get_##NAME() const { return pars.NAME; } \
-    void set_##NAME(TYPE value) { pars.NAME = value; }
-    RESAMPLE_PARAMETERS
+    void set_##NAME(TYPE value) {                 \
+        if (pars.NAME != value)                   \
+            pars_synced = false;                  \
+        pars.NAME = value;                        \
+    }
+    TEMPLATE_CLASS_PARAMETERS
 #undef X
+#endif
 
-// make maps
-#define X(TYPE, NAME) \
-    core::cuda::CudaArray2D<TYPE> NAME;
-    RESAMPLE_MAPS
+// DeviceArray2D's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    core::cuda::DeviceArray2D<TYPE> NAME;
+    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
 #undef X
+#endif
 
-    // process will take the input and resample to the output using map_x and map_y for offset
+    void allocate_device();
+    void deallocate_device();
+
     void process();
-
-    void transform_process();
 };
-} // namespace resample
+
+} // namespace TEMPLATE_NAMESPACE

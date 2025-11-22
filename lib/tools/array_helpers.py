@@ -4,7 +4,23 @@ array helpers
 
 """
 
+from scipy.ndimage import zoom
+from scipy.ndimage import gaussian_filter
 import numpy as np
+from numpy.typing import NDArray
+from typing import Any, Optional
+
+
+def print_array_information(array: NDArray[Any]) -> None:
+    """
+    print debug info about array
+    """
+    print("🐈 ", type(array))
+    print("shape:", array.shape)        # dimensions
+    print("dtype:", array.dtype)        # element type
+    print("ndim:", array.ndim)          # number of dimensions
+    print("strides:", array.strides)    # byte steps between elements
+    print("flags:", array.flags)        # contiguity info
 
 
 def normalize_array(array: np.ndarray) -> None:
@@ -56,38 +72,19 @@ def offset_array(array: np.ndarray, x_offset: float = 0.5, y_offset: float = 0.5
 
 
 def merge_numpy_arrays_to_color(
-    red: np.ndarray = None,
-    green: np.ndarray = None,
-    blue: np.ndarray = None,
-    alpha: np.ndarray = None,
-    shape: tuple = None,
-    dtype: np.dtype = np.uint8
-) -> np.ndarray:
+    red: Optional[NDArray[Any]] = None,
+    green: Optional[NDArray[Any]] = None,
+    blue: Optional[NDArray[Any]] = None,
+    alpha: Optional[NDArray[Any]] = None,
+    shape: Optional[tuple[int, int]] = None,
+    dtype: np.dtype = np.float32,  # default float until you clamp/cast
+) -> NDArray[Any]:
     """
     Merge separate Red, Green, Blue (and optional Alpha) numpy arrays into a single image.
 
     Missing channels default to black (0). If Alpha is not provided, the result
     will be an RGB image with 3 channels. If Alpha is provided, the result will
     be an RGBA image with 4 channels.
-
-    Parameters
-    ----------
-    red, green, blue, alpha : np.ndarray or None
-        Arrays of the same shape, representing channels. Any can be None.
-        - red   : Red channel
-        - green : Green channel
-        - blue  : Blue channel
-        - alpha : Alpha channel (optional)
-    shape : tuple or None
-        Shape to use if some channels are None. If None, inferred from the first non-None channel.
-    dtype : np.dtype
-        Data type of the output array (default uint8).
-
-    Returns
-    -------
-    image : np.ndarray
-        Combined array of shape (H, W, 3) if alpha is None,
-        or (H, W, 4) if alpha is provided.
     """
     # infer shape from first non-None channel
     if shape is None:
@@ -118,31 +115,53 @@ def merge_numpy_arrays_to_color(
         return np.stack([red, green, blue, alpha], axis=-1)
 
 
-def nearest_neighbor_upscale(array, factor):
+def nearest_neighbor_upscale(array: NDArray[Any], factor: int) -> NDArray[Any]:
+    """
+    ⚠️ so minimal, kept as notes!
+    scale an image up in size with no filter, this is like what you might do for pixel art
+    it is useful to visualize the erosion better for debugging
+    """
     return np.repeat(np.repeat(array, factor, axis=0), factor, axis=1)
 
 
-def tile_array_2d(array, repeat_x, repeat_y):
+def tile_array_2d(array: NDArray[Any], repeat_x: int, repeat_y: int) -> NDArray[Any]:
+    """
+    ⚠️ so minimal, kept as notes!
+    tile the array, so repeat the same to maybe test seamless etc
+    """
     return np.tile(array, (repeat_x, repeat_y))
 
 
-def resize_array_2d(array, width: int, height: int, order: int = 1):
+# scipy
+def resize_array_2d(array: NDArray[np.floating], width: int, height: int, order: int = 1) -> NDArray[np.floating]:
     """
-    resize array with resampling
+    Resize a 2D NumPy array with resampling using scipy.ndimage.zoom.
     """
-    from scipy.ndimage import zoom
-    return zoom(array, (height / array.shape[0], width / array.shape[1]), order=order)
+
+    zoom_factors = (height / array.shape[0], width / array.shape[1])
+    return zoom(array, zoom_factors, order=order)
 
 
-def blur_array_2d(array, sigma: int):
-    from scipy.ndimage import gaussian_filter
+# scipy
+def blur_array(array: NDArray[np.floating], sigma: float) -> NDArray[np.floating]:
+    """
+    blur array with scipy
+    """
+
     return gaussian_filter(array, sigma=sigma)
 
 
-def print_array_information(array):
-    print("🐈 ", type(array))
-    print("shape:", array.shape)        # dimensions
-    print("dtype:", array.dtype)        # element type
-    print("ndim:", array.ndim)          # number of dimensions
-    print("strides:", array.strides)    # byte steps between elements
-    print("flags:", array.flags)        # contiguity info
+
+def circle_array(height: int, width: int, radius: int) -> NDArray[np.float32]:
+    """
+    Create a 2D float32 NumPy array with a filled circle in the middle.
+    Values: 1.0 inside the circle, 0.0 outside.
+    """
+    y, x = np.ogrid[:height, :width]
+    cy, cx = height // 2, width // 2
+    dist_sq = (x - cx)**2 + (y - cy)**2
+    mask = dist_sq <= radius**2
+
+    arr = np.zeros((height, width), dtype=np.float32)
+    arr[mask] = 1.0
+    return arr
