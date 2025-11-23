@@ -27,15 +27,14 @@ namespace core::cuda {
 
 class DeviceArrayNBase {
 
-    // cudaStream_t _stream = nullptr;
-
   protected:
-    cudaStream_t _stream{nullptr}; // accessible to derived classes
+    cudaStream_t _stream{nullptr}; // optional stream
 
   public:
-    void set_stream(cudaStream_t stream) {
-        _stream = stream;
-    }
+    // get stream
+    cudaStream_t get_stream() const { return _stream; }
+    // set optional stream
+    void set_stream(cudaStream_t stream) { _stream = stream; }
 
     // the total array size
     virtual size_t size() const = 0;
@@ -185,8 +184,7 @@ class DeviceArrayN : public core::cuda::DeviceArrayNBase {
 
             // resize(_dimensions); // 🚧 we might reduce logic around here
 
-            err = cudaMemcpyAsync(_dev_ptr, other._dev_ptr,
-                                  size_bytes(), cudaMemcpyDeviceToDevice, _stream);
+            err = cudaMemcpyAsync(_dev_ptr, other._dev_ptr, size_bytes(), cudaMemcpyDeviceToDevice, _stream);
             if (err != cudaSuccess) {
                 throw std::runtime_error("cudaMemcpyAsync failed in copy ctor");
             }
@@ -226,21 +224,49 @@ class DeviceArrayN : public core::cuda::DeviceArrayNBase {
 #pragma endregion
 };
 
+// thin wrapper for 2D
 template <typename T>
 class DeviceArrayN2D : public DeviceArrayN<T, 2> {
   public:
     using Base = DeviceArrayN<T, 2>;
-    using Base::Base; // inherit constructors
+    using Base::Base;   // inherit constructors
+    using Base::upload; // keep base overloads visible
 
-    DeviceArrayN2D() = default;
+    // 2D helpers
+    void resize(size_t width, size_t height) {
+        Base::resize({width, height});
+    }
 
-    // convenience accessors
+    void upload(const T *host_ptr, size_t width, size_t height) {
+        resize(width, height);
+        Base::upload(host_ptr, {width, height});
+    }
+
     size_t width() const { return this->_dimensions[0]; }
     size_t height() const { return this->_dimensions[1]; }
+};
 
-    void resize(size_t w, size_t h) {
-        Base::resize({w, h});
+// thin wrapper for 3D
+template <typename T>
+class DeviceArrayN3D : public DeviceArrayN<T, 3> {
+  public:
+    using Base = DeviceArrayN<T, 3>;
+    using Base::Base;   // inherit constructors
+    using Base::upload; // keep base overloads visible
+
+    // 3D helpers
+    void resize(size_t width, size_t height, size_t depth) {
+        Base::resize({width, height, depth});
     }
+
+    void upload(const T *host_ptr, size_t width, size_t height, size_t depth) {
+        resize(width, height, depth);
+        Base::upload(host_ptr, {width, height, depth});
+    }
+
+    size_t width() const { return this->_dimensions[0]; }
+    size_t height() const { return this->_dimensions[1]; }
+    size_t depth() const { return this->_dimensions[2]; }
 };
 
 } // namespace core::cuda
