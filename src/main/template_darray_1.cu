@@ -54,10 +54,6 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     device_allocated = true;
 }
 
-
-
-
-
 void TEMPLATE_CLASS_NAME::process() {
 
     allocate_device();  // allocate memory

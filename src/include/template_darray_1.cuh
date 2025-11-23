@@ -45,15 +45,13 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
     X(void, test_process)      \
     X(void, test_process2)
 
-
-
 // DeviceArrayN ... new upgrade to DeviceArray
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_DEVICE_ARRAY_NS \
-    X(float, 2, device_array_n2d_test, "testing device array n2d")\
+#define TEMPLATE_CLASS_DEVICE_ARRAY_NS                             \
+    X(float, 2, device_array_n2d_test, "testing device array n2d") \
     X(float, 3, device_array_n3d_test, "testing device array n3d")
 
-// 
+//
 
 // ================================================================ //
 
@@ -148,7 +146,6 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
-
 // DeviceArrayN's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
@@ -186,26 +183,50 @@ class TEMPLATE_CLASS_NAME {
         TEMPLATE_CLASS_DEVICE_ARRAY_3DS
 #undef X
 #endif
+
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
+#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+    NAME.set_stream(stream.get());
+        TEMPLATE_CLASS_DEVICE_ARRAY_NS
+#undef X
+#endif
     }
+
+    //
+    //
+    //
+    //
+// 🚧 🚧 🚧 🚧
+    // Reflection info if you want metadata
+    struct ArrayInfo {
+        core::cuda::DeviceArrayNBase *ptr;
+        const char *description;
+        int dimension;
+    };
+
+    // Lazy builder function
+    inline std::vector<ArrayInfo> &all_arrays() {
+        static std::vector<ArrayInfo> cache;
+        if (cache.empty()) {
+// Expand the X‑macro into initializer entries
+#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+    cache.push_back({&NAME, DESCRIPTION, DIMENSION});
+            TEMPLATE_CLASS_DEVICE_ARRAY_NS
+#undef X
+        }
+        return cache;
+    }
+
+    //
+    //
+    //
+    //
+    //
 
     ~TEMPLATE_CLASS_NAME() {
     }
 
     void allocate_device();
-
-//     // we would need a common base
-//     std::vector<core::cuda::DeviceArray *>
-//     device_arrays() {
-//         std::vector<core::cuda::DeviceArray *> v;
-// #define X(TYPE, DIMENSION, NAME, DESCRIPTION) v.push_back(&NAME);
-//         TEMPLATE_CLASS_DEVICE_ARRAYS
-// #undef X
-// #define X(TYPE, NAME, DESCRIPTION) v.push_back(&NAME);
-//         TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-//         TEMPLATE_CLASS_DEVICE_ARRAY_3DS
-// #undef X
-//         return v;
-//     }
 
     void deallocate_device() {
 
@@ -232,6 +253,28 @@ class TEMPLATE_CLASS_NAME {
         TEMPLATE_CLASS_DEVICE_ARRAY_3DS
 #undef X
 #endif
+
+        // deallocate DeviceArrayN's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
+#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+    NAME.free_device();
+        TEMPLATE_CLASS_DEVICE_ARRAY_NS
+#undef X
+#endif
+
+//
+// 
+// 🚧 🚧 🚧 🚧
+for (auto& info : all_arrays()) {
+    info.ptr->free_device();
+    std::cout << "Freed " << info.description
+              << " (" << info.dimension << "D)\n";
+}
+//
+//
+//
+
+
 
         device_allocated = false;
     }
