@@ -42,6 +42,7 @@ inline nb::object get_list_of_lists(int height, int width) {
 }
 
 // throw a Python warning, note normal exceptions should use C++ syntax 
+// ⚠️ USING THIS WITH LINUX CAUSED AN ERROR... it's to do with the order.... add back later?
 inline void warn(const char* message, const char* category = "UserWarning") {
     nb::module_ warnings = nb::module_::import_("warnings");
     nb::module_ builtins = nb::module_::import_("builtins");
