@@ -91,6 +91,47 @@ class DeviceArrayN : public core::cuda::DeviceArrayNBase {
         return sizeof(T) * size();
     }
 
+
+
+    //
+    //
+    //
+    // safer??
+
+    // // return ref to dimensions (might be a bit unsafe?)
+    // const std::array<size_t, Dim> &dimensions() const noexcept {
+    //     return _dimensions;
+    // }
+
+    std::array<size_t, Dim> dimensions() const noexcept {
+        return _dimensions;
+    }
+
+    // Return dimensions in NumPy order (height, width, depth...)
+    std::array<size_t, Dim> numpy_dimensions() const noexcept {
+        std::array<size_t, Dim> np_dims{};
+        if constexpr (Dim == 1) {
+            np_dims[0] = _dimensions[0]; // same
+        } else if constexpr (Dim == 2) {
+            np_dims[0] = _dimensions[1]; // height
+            np_dims[1] = _dimensions[0]; // width
+        } else if constexpr (Dim == 3) {
+            np_dims[0] = _dimensions[1]; // height
+            np_dims[1] = _dimensions[0]; // width
+            np_dims[2] = _dimensions[2]; // depth
+        } else {
+            // For higher dimensions, you can decide a consistent policy
+            // e.g. swap first two, leave the rest
+            np_dims = _dimensions;
+            std::swap(np_dims[0], np_dims[1]);
+        }
+        return np_dims;
+    }
+
+    //
+    //
+    //
+
     // free the device, will also set the dimensions to 0 (which is the same as freeing the device)
     void free_device() override {
         if (_dev_ptr) {

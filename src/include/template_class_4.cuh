@@ -57,10 +57,13 @@ map pointer structure (UNUSED, i prefer to hardcode map pars allowing extra cons
     X(float, total_water, 0.0, "")  \
     X(float, total_sediment, 0.0, "")
 
-// DeviceArray2D ... new array that just exists on the device
+// DeviceArray2D
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAY_2DS \
     X(float, device_array_2d_test, "testing device array")
+
+
+
 
 // ================================================================ //
 

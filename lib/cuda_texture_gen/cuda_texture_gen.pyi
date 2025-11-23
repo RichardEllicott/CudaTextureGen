@@ -282,6 +282,8 @@ class TemplateDArray1:
     _height: int
     _width: int
     device_array_3d: Incomplete
+    device_array_n2d_test: Incomplete
+    device_array_n3d_test: Incomplete
     height_map_out: Incomplete
     image: Incomplete
     test_bool: bool

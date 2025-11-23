@@ -99,6 +99,35 @@ inline nb::ndarray<nb::numpy, T> get_array(int height, int width, int depth) {
 
 #pragma endregion
 
+#pragma region N_DIMENSION_SUPPORT
+
+
+// get an uninitialized numpy array with arbitrary shape
+template <typename T, int Dim>
+inline nb::ndarray<nb::numpy, T> get_array(const std::array<size_t, Dim>& shape) {
+    nb::module_ np = nb::module_::import_("numpy");
+
+    nb::object array;
+    if constexpr (Dim == 1) {
+        array = np.attr("empty")(nb::make_tuple(shape[0]), numpy_dtype<T>::value);
+    } else if constexpr (Dim == 2) {
+        array = np.attr("empty")(nb::make_tuple(shape[0], shape[1]), numpy_dtype<T>::value);
+    } else if constexpr (Dim == 3) {
+        array = np.attr("empty")(nb::make_tuple(shape[0], shape[1], shape[2]), numpy_dtype<T>::value);
+    } else {
+        // Fallback for higher dimensions: build list -> convert to tuple
+        nb::list py_shape;
+        for (int i = 0; i < Dim; ++i)
+            py_shape.append(nb::int_(shape[i]));
+        array = np.attr("empty")(nb::tuple(py_shape), numpy_dtype<T>::value);
+    }
+
+    return nb::cast<nb::ndarray<nb::numpy, T>>(array);
+}
+
+
+#pragma endregion
+
 #pragma region SHARED_MEMORY_NUMPY_EXPERIMENT
 
 // // ⚠️ UNTESTED

@@ -45,6 +45,16 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
     X(void, test_process)      \
     X(void, test_process2)
 
+
+
+// DeviceArrayN ... new upgrade to DeviceArray
+// (TYPE, DIMENSIONS, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_DEVICE_ARRAY_NS \
+    X(float, 2, device_array_n2d_test, "testing device array n2d")\
+    X(float, 3, device_array_n3d_test, "testing device array n3d")
+
+// 
+
 // ================================================================ //
 
 #include "cuda_types.cuh"
@@ -135,6 +145,15 @@ class TEMPLATE_CLASS_NAME {
 #define X(TYPE, NAME, DESCRIPTION) \
     core::cuda::DeviceArray3D<TYPE> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAY_3DS
+#undef X
+#endif
+
+
+// DeviceArrayN's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
+#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+    core::cuda::DeviceArrayN<TYPE, DIMENSIONS> NAME;
+    TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #undef X
 #endif
 

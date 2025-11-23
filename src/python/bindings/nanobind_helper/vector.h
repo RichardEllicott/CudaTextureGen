@@ -1,5 +1,8 @@
 
 /*
+❓❓❓❓ I think nanobind might handle this automaticly? see the extra includes i can add (in bindings)
+
+
 convert numpy arrays to and from c++ vectors
 */
 #pragma once
