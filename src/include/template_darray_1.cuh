@@ -25,7 +25,7 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
 // DeviceArray2D ... abstraction of DeviceArray that will be visible in python
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAY_2DS \
-    X(float, height_map, "testing DeviceArray2D")
+    X(float, image, "testing DeviceArray2D")
 
 // DeviceArray3D ... abstraction of DeviceArray that will be visible in python
 // (TYPE, NAME, DESCRIPTION)
@@ -35,11 +35,8 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
 // private DeviceArray's
 // these can be multi-dimensional and are GPU side only
 // (TYPE, DIMENSION, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_DEVICE_ARRAYS                        \
-    X(float, 1, height_map_out, "second height buffer")     \
-    X(float, 1, water_map_out, "second water buffer")       \
-    X(float, 1, sediment_map_out, "second sediment buffer") \
-    X(float, 8, flux8, "water flow out to 8 neighbours")
+#define TEMPLATE_CLASS_DEVICE_ARRAYS \
+    X(float, 1, height_map_out, "second height buffer")
 
 // methods  (⚠️ Experimental)
 // these can be multi-dimensional and are GPU side only
@@ -81,27 +78,38 @@ class TEMPLATE_CLASS_NAME {
     Parameters pars;                               // local pars
     core::cuda::DeviceStruct<Parameters> dev_pars; // device side pars
 
-    bool pars_synced = false; // record if the pars have been synced since update
-    void sync_pars() {
-        if (!pars_synced) {
+    dim3 block; // we now computer block in configure_device
+    dim3 grid;  // and grid
+
+    bool _device_configured = false;
+    // call before launching a kernel to ensure pars are uploaded and block/grid calculated
+    void configure_device() {
+        if (!_device_configured) {
             dev_pars.upload(pars);
-            pars_synced = true;
+            block = dim3(pars._block, pars._block);
+            grid = dim3((pars._width + block.x - 1) / block.x, (pars._height + block.y - 1) / block.y);
+            _device_configured = true;
         }
     }
 
-    core::cuda::Stream stream; // will be allocated along with object
-    bool device_allocated = false;
+    // template called by xmacro (just to reduce code in xmacro)
+    template <typename T>
+    void set_par(T &field, const T &value) {
+        if (field != value) {
+            _device_configured = false;
+            field = value;
+        }
+    }
+
+    core::cuda::Stream stream;     // will be allocated along with object
+    bool device_allocated = false; // use or not, not sure but marking if the maps are uploaded
 
   public:
     // getter/setters for the pars
 #ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)   \
     TYPE get_##NAME() const { return pars.NAME; } \
-    void set_##NAME(TYPE value) {                 \
-        if (pars.NAME != value)                   \
-            pars_synced = false;                  \
-        pars.NAME = value;                        \
-    }
+    void set_##NAME(TYPE value) { set_par(pars.NAME, value); }
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
@@ -138,8 +146,76 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
+    TEMPLATE_CLASS_NAME() {
+
+        // set all the streams (new feature mean uploading/downloading works on this objects stream)
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+    NAME.set_stream(stream.get());
+        TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    NAME.set_stream(stream.get());
+        TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#undef X
+#endif
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_3DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    NAME.set_stream(stream.get());
+        TEMPLATE_CLASS_DEVICE_ARRAY_3DS
+#undef X
+#endif
+    }
+
+    ~TEMPLATE_CLASS_NAME() {
+    }
+
     void allocate_device();
-    void deallocate_device();
+
+//     // we would need a common base
+//     std::vector<core::cuda::DeviceArray *>
+//     device_arrays() {
+//         std::vector<core::cuda::DeviceArray *> v;
+// #define X(TYPE, DIMENSION, NAME, DESCRIPTION) v.push_back(&NAME);
+//         TEMPLATE_CLASS_DEVICE_ARRAYS
+// #undef X
+// #define X(TYPE, NAME, DESCRIPTION) v.push_back(&NAME);
+//         TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+//         TEMPLATE_CLASS_DEVICE_ARRAY_3DS
+// #undef X
+//         return v;
+//     }
+
+    void deallocate_device() {
+
+        // deallocate DeviceArray's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+    NAME.free_device();
+        TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
+
+        // deallocate DeviceArray2D's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    NAME.free_device();
+        TEMPLATE_CLASS_DEVICE_ARRAY_2DS
+#undef X
+#endif
+
+        // deallocate DeviceArray3D's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_3DS
+#define X(TYPE, NAME, DESCRIPTION) \
+    NAME.free_device();
+        TEMPLATE_CLASS_DEVICE_ARRAY_3DS
+#undef X
+#endif
+
+        device_allocated = false;
+    }
 
     void process();
 };

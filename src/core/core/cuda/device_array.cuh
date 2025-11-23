@@ -23,8 +23,9 @@ copy will create a deep copy on the device if data already uploaded
 
 namespace core::cuda {
 
+
 template <typename T>
-class DeviceArray {
+class DeviceArray  {
   private:
     T *_dev_ptr = nullptr;
     size_t _size = 0;       // number of elements

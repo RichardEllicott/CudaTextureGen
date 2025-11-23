@@ -77,7 +77,7 @@ template <typename T>
 inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cuda::DeviceArray3D<T> &destination) {
 
     if (source.ndim() == 2) {
-        warn("⚠️ Input was a 2D NumPy array, converted to 3D with depth of 1!");
+        // warn("⚠️ Input was a 2D NumPy array, converted to 3D with depth of 1!"); // LINUX BUILD ISSUE
         destination.upload(source.data(), source.shape(1), source.shape(0), 1); // Upload raw pointer data into device array
         return;
     }

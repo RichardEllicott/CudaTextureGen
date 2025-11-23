@@ -42,7 +42,7 @@ inline nb::object get_list_of_lists(int height, int width) {
 }
 
 // throw a Python warning, note normal exceptions should use C++ syntax 
-void warn(const char* message, const char* category = "UserWarning") {
+inline void warn(const char* message, const char* category = "UserWarning") {
     nb::module_ warnings = nb::module_::import_("warnings");
     nb::module_ builtins = nb::module_::import_("builtins");
     warnings.attr("warn")(message, builtins.attr(category));

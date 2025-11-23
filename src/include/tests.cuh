@@ -1,17 +1,17 @@
 /*
 
-simple hellow world tests, checking the gpu 
+simple hellow world tests, checking the gpu
 
 */
 #pragma once
 
-namespace tests{
+namespace tests {
 
 void print_debug_info();
 
 void cuda_hello();
 
-void print_unicode_test();
 
+// void device_array_n_test();
 
-}
+} // namespace tests

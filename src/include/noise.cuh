@@ -2,7 +2,9 @@
 
 🎃 DARRAY TEMPLATE 20251115-1
 
-using new DeviceArray2D ... data is instantly uploaded and downloaded, no local copy
+attempting to achive rotation with 3D gradient noise
+
+failed get this working
 
 */
 #pragma once
@@ -77,8 +79,7 @@ struct Parameters {
 #undef X
 
     // Float9Raw _rotation_matrix;
-    float _rotation_matrix[9];  // Direct declaration, no typedef
-
+    float _rotation_matrix[9]; // Direct declaration, no typedef
 };
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
 #endif
@@ -88,17 +89,23 @@ class TEMPLATE_CLASS_NAME {
     Parameters pars;                               // local pars
     core::cuda::DeviceStruct<Parameters> dev_pars; // device side pars
 
-    bool pars_synced = false; // record if the pars have been synced since update
-    // sync the pars if they have changed since last sync
-    void sync_pars() {
-        if (!pars_synced) {
+    dim3 block;
+    dim3 grid;
+
+    bool _refresh_device_config = false;
+    // call before launching a kernel to ensure pars are uploaded and block/grid calculated
+    void refresh_device_config() {
+        if (!_refresh_device_config) {
             dev_pars.upload(pars);
-            pars_synced = true;
+            block = dim3(pars._block, pars._block);
+            grid = dim3((pars.width + block.x - 1) / block.x, (pars.height + block.y - 1) / block.y);
+            _refresh_device_config = true;
         }
     }
 
     core::cuda::Stream stream; // will be allocated along with object
     bool device_allocated = false;
+
 
   public:
     // getter/setters for the pars
@@ -107,7 +114,7 @@ class TEMPLATE_CLASS_NAME {
     TYPE get_##NAME() const { return pars.NAME; } \
     void set_##NAME(TYPE value) {                 \
         if (pars.NAME != value)                   \
-            pars_synced = false;                  \
+            _refresh_device_config = false;       \
         pars.NAME = value;                        \
     }
     TEMPLATE_CLASS_PARAMETERS

@@ -8,8 +8,8 @@ cuda_hello: nanobind.nb_func
 generate_ao_map: nanobind.nb_func
 generate_normal_map: nanobind.nb_func
 print_debug_info: nanobind.nb_func
-test: nanobind.nb_func
 test123: nanobind.nb_func
+test_device_array_n: nanobind.nb_func
 
 class Erosion4:
     _block: Incomplete
@@ -139,7 +139,7 @@ class FluidSimulation:
     def __init__(self) -> None: ...
     def process(self) -> None: ...
 
-class Noise:
+class Noise3D:
     _block: int
     _scale: float
     _scale_x: float
@@ -282,14 +282,11 @@ class TemplateDArray1:
     _height: int
     _width: int
     device_array_3d: Incomplete
-    flux8: Incomplete
-    height_map: Incomplete
     height_map_out: Incomplete
-    sediment_map_out: Incomplete
+    image: Incomplete
     test_bool: bool
     test_float: float
     test_int: int
-    water_map_out: Incomplete
     def __init__(self) -> None: ...
     def process(self) -> None: ...
     def test_process(self) -> None: ...

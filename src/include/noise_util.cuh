@@ -41,11 +41,15 @@ __device__ __forceinline__ float trig_hash(float x, float y, float z, int seed) 
     return (sinf(dot) * 43758.5453f - floorf(sinf(dot) * 43758.5453f)) * 2.0f - 1.0f;
 }
 
+
 __device__ __forceinline__ int hash_int(int x, int y, int seed) {
     int n = x + y * 57 + seed * 131;
     n = (n << 13) ^ n;
     return (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff;
 }
+
+
+
 
 __device__ __forceinline__ float hash_scalar(int x, int y, int seed) {
 

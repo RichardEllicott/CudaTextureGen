@@ -20,7 +20,7 @@ central file for the python bindings
 #include "resample.bind.h"        // ✔️ resample mapping, can be used to say distort an image by noise
 #include "shader_maps.bind.h"     // ✔️ 🚧 adding a new AO
 
-#include "noise.bind.h" // 🚧 working on potential new noise generator but doesn't have all the same features yet
+#include "noise3d.bind.h" // ❌🚧 trying to make 3D rotatable noise.. didn't work, but refactors nice
 
 // ================================================================
 // erosion
@@ -89,7 +89,7 @@ NB_MODULE(cuda_texture_gen, m) {
     resample::bind(m);
     shader_maps::bind(m);
 
-    noise::bind(m);
+    noise3d::bind(m);
 
     erosion4::bind(m);
     erosion7::bind(m);

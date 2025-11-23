@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 
+
+
 namespace tests {
 
 void print_debug_info() {
@@ -93,19 +95,10 @@ void cuda_hello() {
     }
 }
 
-void print_unicode_test() {
 
-    core::logging::println("🐌 core::logging::println ", " test ", " test...");
 
-    printf("🐌 cuda printf\n");
 
-    std::cout << "🐌 std::cout test\n";
 
-    // Print using std::cout
-    std::cout << u8"🐌 std::cout test\n";
 
-    // Print using printf
-    printf(u8"🐌 cuda printf\n");
-}
 
 } // namespace tests

@@ -26,10 +26,8 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     if (device_allocated)
         return;
 
-    device_allocated = true;
-
-    pars._width = height_map.width();
-    pars._height = height_map.height();
+    pars._width = image.width();
+    pars._height = image.height();
 
     size_t array_size = pars._width * pars._height;
 
@@ -52,34 +50,20 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
 #endif
+
+    device_allocated = true;
 }
 
-// example deallocation
-void TEMPLATE_CLASS_NAME::deallocate_device() {
 
-    // deallocate DeviceArray2D's
-#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-#define X(TYPE, NAME, DESCRIPTION) \
-    NAME.free_device();
-    TEMPLATE_CLASS_DEVICE_ARRAY_2DS
-#undef X
-#endif
 
-// deallocate DeviceArray's
-#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
-    NAME.free_device();
-    TEMPLATE_CLASS_DEVICE_ARRAYS
-#undef X
-#endif
 
-    device_allocated = false;
-}
 
 void TEMPLATE_CLASS_NAME::process() {
 
-    allocate_device(); // allocate memory
-    sync_pars();       // sync pars
+    allocate_device();  // allocate memory
+    configure_device(); // run before launching a kernel
+
+    process_texture<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), pars._width, pars._height, image.dev_ptr());
 }
 
 void TEMPLATE_CLASS_NAME::test_process() {

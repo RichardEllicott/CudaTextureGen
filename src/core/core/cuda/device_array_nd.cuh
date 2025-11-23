@@ -7,12 +7,12 @@
 
 #include "device_array.cuh"
 
-// working on DeviceArrayND ( a generic version)
-#include <functional>
-#include <initializer_list>
-#include <numeric>
-#include <stdexcept>
-#include <vector>
+// // working on DeviceArrayND ( a generic version)
+// #include <functional>
+// #include <initializer_list>
+// #include <numeric>
+// #include <stdexcept>
+// #include <vector>
 
 namespace core::cuda {
 
@@ -138,76 +138,8 @@ class DeviceArray3D : public DeviceArray<T> {
     }
 };
 
-// ⚠️ 🚧 no copy/move/swap yet.. working on it
-template <typename T>
-class DeviceArrayND : public DeviceArray<T> {
 
-    std::vector<size_t> shape;
-    std::vector<size_t> strides;
-    size_t total_size = 0;
 
-  public:
-    // Construct from initializer_list
-    DeviceArrayND(std::initializer_list<size_t> dimensions) {
-        throw std::runtime_error("DeviceArrayND not implemented yet");
-        resize(dimensions);
-    }
 
-    // 1D
-    DeviceArrayND(size_t length) {
-        DeviceArrayND({length});
-    }
-
-    // 2D
-    DeviceArrayND(size_t width, size_t height) {
-        DeviceArrayND({width, height});
-    }
-
-    // 3D
-    DeviceArrayND(size_t width, size_t height, size_t depth) {
-        DeviceArrayND({width, height, depth});
-    }
-
-    void resize(std::initializer_list<size_t> dimensions) {
-        shape.assign(dimensions);
-        total_size = std::accumulate(shape.begin(), shape.end(), static_cast<size_t>(1), std::multiplies<size_t>());
-        DeviceArray<T>::resize(total_size);
-
-        // compute strides (row-major order)
-        // strides are the 1D offset for the ND offset, like:
-        // i = x + y * width
-        // i = x + y * width + z * (width * height)
-        strides.resize(shape.size());
-        if (!shape.empty()) {
-            strides.back() = 1;
-            for (int i = static_cast<int>(shape.size()) - 2; i >= 0; --i) {
-                strides[i] = strides[i + 1] * shape[i + 1];
-            }
-        }
-    }
-
-    // // Flatten ND indices into a 1D offset
-    // size_t flatten(const std::vector<size_t>& indices) const {
-    //     if (indices.size() != shape.size()) {
-    //         throw std::runtime_error("Index dimensionality mismatch");
-    //     }
-    //     size_t idx = 0;
-    //     for (size_t d = 0; d < indices.size(); ++d) {
-    //         idx += indices[d] * strides[d];
-    //     }
-    //     return idx;
-    // }
-
-    // // Convenience operator() for up to 3D
-    // T& operator()(size_t i) {
-    //     return this->data()[flatten({i})];
-    // }
-    // T& operator()(size_t i, size_t j) {
-    //     return this->data()[flatten({i,j})];
-    // }
-    // T& operator()(size_t i, size_t j, size_t k) {
-    //     return this->data()[flatten({i,j,k})];
-    // }
-};
 
 } // namespace core::cuda
