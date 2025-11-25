@@ -32,16 +32,6 @@ inline void bind(nb::module_ &m) {
 #undef X
 #endif
 
-// Method's  (⚠️ Experimental)
-#ifdef TEMPLATE_CLASS_METHODS
-#define X(TYPE, NAME)                                                   \
-    ngd.def(EXPAND_AND_STRINGIFY(NAME), [](TEMPLATE_CLASS_NAME &self) { \
-        self.NAME();                                                    \
-    });
-    TEMPLATE_CLASS_METHODS
-#undef X
-#endif
-
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
     });

@@ -35,7 +35,7 @@ def get_heightmap_01(width=128, height=128):
     # octaves = 4 + 1
     # heightmap_scale = 16.0 * 4
 
-    height_map = tools.get_fractal_noise(width=width, height=height, octaves=octaves)
+    height_map = tools.fractal_noise(width=width, height=height, octaves=octaves)
     tools.normalize_array(height_map)
 
     return height_map
@@ -48,6 +48,7 @@ class ErosionRunner:
     erosion = cuda_texture_gen.Erosion8()
 
     folder = "E:/"
+    # folder = "./output/"
     filename_base = "erosion"
 
     animation_fps = 5
@@ -307,7 +308,7 @@ def test01():
     """
     shows okay rivers
     """
-    height_map = tools.get_fractal_noise(width=256, height=256, octaves=5)
+    height_map = tools.fractal_noise(width=256, height=256, octaves=5)
     tools.normalize_array(height_map)
 
     runner = ErosionRunner()
@@ -379,7 +380,7 @@ def test02():
     # octaves = 2
     # octaves = 4
 
-    height_map = tools.get_fractal_noise(width=map_width, height=map_height, octaves=octaves)
+    height_map = tools.fractal_noise(width=map_width, height=map_height, octaves=octaves)
     # height_map = tools.normalized_array(height_map)
 
     # height_map = get_island_height_map(map_width, map_height)
@@ -426,7 +427,7 @@ def test02():
     runner.process()
 
 
-# test02()
+test02()
 
 
 def get_soil_pallete():

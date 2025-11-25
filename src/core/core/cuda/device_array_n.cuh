@@ -91,8 +91,6 @@ class DeviceArrayN : public core::cuda::DeviceArrayNBase {
         return sizeof(T) * size();
     }
 
-
-
     //
     //
     //
@@ -265,6 +263,26 @@ class DeviceArrayN : public core::cuda::DeviceArrayNBase {
 #pragma endregion
 };
 
+// thin wrapper for 1D
+template <typename T>
+class DeviceArrayN1D : public DeviceArrayN<T, 1> {
+  public:
+    using Base = DeviceArrayN<T, 1>;
+    using Base::Base;   // inherit constructors
+    using Base::upload; // keep base overloads visible
+
+    // 1D helpers
+    void resize(size_t size) {
+        Base::resize({size});
+    }
+
+    void upload(const T *host_ptr, size_t size) {
+        resize(size);
+        Base::upload(host_ptr, {size});
+    }
+
+};
+
 // thin wrapper for 2D
 template <typename T>
 class DeviceArrayN2D : public DeviceArrayN<T, 2> {
@@ -283,8 +301,8 @@ class DeviceArrayN2D : public DeviceArrayN<T, 2> {
         Base::upload(host_ptr, {width, height});
     }
 
-    size_t width() const { return this->_dimensions[0]; }
-    size_t height() const { return this->_dimensions[1]; }
+    size_t width() const { return this->dimensions()[0]; }
+    size_t height() const { return this->dimensions()[1]; }
 };
 
 // thin wrapper for 3D
@@ -305,9 +323,9 @@ class DeviceArrayN3D : public DeviceArrayN<T, 3> {
         Base::upload(host_ptr, {width, height, depth});
     }
 
-    size_t width() const { return this->_dimensions[0]; }
-    size_t height() const { return this->_dimensions[1]; }
-    size_t depth() const { return this->_dimensions[2]; }
+    size_t width() const { return this->dimensions()[0]; }
+    size_t height() const { return this->dimensions()[1]; }
+    size_t depth() const { return this->dimensions()[2]; }
 };
 
 } // namespace core::cuda
