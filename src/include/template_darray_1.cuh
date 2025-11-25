@@ -55,7 +55,14 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
 
 // ================================================================ //
 
+// standard pattern to expan a define to a "string" (with the quote marks)
+#define STRINGIFY(x) #x
+#define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
+
 #include "cuda_types.cuh"
+#include <string> // not sure?
+#include <typeindex>
+#include <vector>
 
 namespace TEMPLATE_NAMESPACE {
 
@@ -162,6 +169,8 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
+    std::vector<core::cuda::DeviceArrayNBase *> _device_array_n_ptrs; // store pointers to the DeviceArrayN's for reflection
+
     TEMPLATE_CLASS_NAME() {
 
         // set all the streams (new feature mean uploading/downloading works on this objects stream)
@@ -184,9 +193,11 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
+// new metadata
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
-    NAME.set_stream(stream.get());
+    NAME.set_stream(stream.get());            \
+    _device_array_n_ptrs.push_back(&NAME);
         TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #undef X
 #endif
@@ -196,25 +207,26 @@ class TEMPLATE_CLASS_NAME {
     //
     //
     //
-// 🚧 🚧 🚧 🚧
+    // 🚧 🚧 🚧 🚧
     // Reflection info if you want metadata
-    struct ArrayInfo {
-        core::cuda::DeviceArrayNBase *ptr;
-        const char *description;
-        int dimension;
+    struct DeviceArrayNInfo {
+        std::type_index type;    // element type (from typeid)
+        int dimension;           // dimension metadata
+        const char *name;        // name
+        const char *description; // human-readable description
     };
 
     // Lazy builder function
-    inline std::vector<ArrayInfo> &all_arrays() {
-        static std::vector<ArrayInfo> cache;
-        if (cache.empty()) {
+    std::vector<DeviceArrayNInfo> &device_array_n_info() {
+        static std::vector<DeviceArrayNInfo> _device_array_n_info;
+        if (_device_array_n_info.empty()) {
 // Expand the X‑macro into initializer entries
 #define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
-    cache.push_back({&NAME, DESCRIPTION, DIMENSION});
+    _device_array_n_info.push_back({typeid(TYPE), DIMENSION, EXPAND_AND_STRINGIFY(NAME), DESCRIPTION});
             TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #undef X
         }
-        return cache;
+        return _device_array_n_info;
     }
 
     //
@@ -224,6 +236,8 @@ class TEMPLATE_CLASS_NAME {
     //
 
     ~TEMPLATE_CLASS_NAME() {
+
+        deallocate_device();
     }
 
     void allocate_device();
@@ -262,19 +276,16 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
-//
-// 
-// 🚧 🚧 🚧 🚧
-for (auto& info : all_arrays()) {
-    info.ptr->free_device();
-    std::cout << "Freed " << info.description
-              << " (" << info.dimension << "D)\n";
-}
-//
-//
-//
-
-
+        //
+        //
+        // 🚧 🚧 🚧 🚧
+        for (const auto &device_array_n_ptr : _device_array_n_ptrs) {
+            device_array_n_ptr->free_device();
+            // std::cout << "Freed " << info.name << " (" << info.dimension << "D)\n";
+        }
+        //
+        //
+        //
 
         device_allocated = false;
     }

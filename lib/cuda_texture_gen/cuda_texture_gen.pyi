@@ -210,12 +210,6 @@ class NoiseGenerator:
     def fill(self, arg) -> None: ...
     def generate(self, *args, **kwargs): ...
 
-class PyNativeObjectTest:
-    array: Incomplete
-    test: Incomplete
-    def __init__(self, arg) -> None: ...
-    def process(self) -> None: ...
-
 class Resample:
     _block: int
     _height: int
@@ -293,3 +287,16 @@ class TemplateDArray1:
     def process(self) -> None: ...
     def test_process(self) -> None: ...
     def test_process2(self) -> None: ...
+
+class TemplateDArray2:
+    _block: int
+    _height: int
+    _width: int
+    device_array_n2d_test: Incomplete
+    device_array_n3d_test: Incomplete
+    image: Incomplete
+    test_bool: bool
+    test_float: float
+    test_int: int
+    def __init__(self) -> None: ...
+    def process(self) -> None: ...

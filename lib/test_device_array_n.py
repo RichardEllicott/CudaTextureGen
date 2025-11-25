@@ -25,7 +25,16 @@ def test_device_array_n():
     tools.save_array_as_image(noise2 * 255, "./output/noise2.png")
 
 
+# test_device_array_n()
 
 
+def test_device_array_n():
+    print("test_device_array_n...")
+
+    test = cuda_texture_gen.TemplateDArray2()
+
+    # test.
+
+    # cuda_texture_gen.TemplateDArray1
 
 test_device_array_n()

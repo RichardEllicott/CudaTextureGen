@@ -14,6 +14,7 @@ included at the bottom of the bind headers that use the template pattern
 #undef TEMPLATE_CLASS_DEBUG_DATA       // used to record debug data
 #undef TEMPLATE_CLASS_DEVICE_ARRAY_2DS // device side only 2d array
 #undef TEMPLATE_CLASS_DEVICE_ARRAY_3DS // device side only 3d array
+#undef TEMPLATE_CLASS_DEVICE_ARRAY_NS // device side only ND arrays
 
 #undef STRINGIFY
 #undef EXPAND_AND_STRINGIFY
@@ -27,3 +28,6 @@ included at the bottom of the bind headers that use the template pattern
 #undef LAYER_YIELD_DEFAULT
 #undef LAYER_PERMEABILITY_DEFAULT
 #undef LAYER_THRESHOLD_DEFAULT
+
+
+

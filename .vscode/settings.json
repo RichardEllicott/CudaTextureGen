@@ -113,7 +113,8 @@
         "fstream": "cpp",
         "numeric": "cpp",
         "source_location": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "typeindex": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "folder-color.pathColors": [
@@ -272,6 +273,18 @@
         {
             "folderPath": "cuda_texture_gen\\src\\python\\bindings\\nanobind_helper\\vector.h\\",
             "badge": "❓"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\template_darray_2.bind.h\\",
+            "badge": "🦑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\main\\template_darray_2.cu\\",
+            "badge": "🦑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\template_darray_2.cuh\\",
+            "badge": "🦑"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",
