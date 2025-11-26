@@ -36,10 +36,11 @@ $ErrorActionPreference = "Stop" # exit script if any commands crash
 # ================================================================================================================================
 #endregion
 
+$msg_symbol = "[*]" # symbol just to mark messages from this script
 
 #region ✅ Checks
 # ================================================================================================================================
-Write-Output "* Run checks..."
+Write-Output "$msg_symbol Run checks..."
 if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
     throw "Required command 'cmake' not found in PATH. Please install it before continuing."
 }
@@ -52,14 +53,14 @@ if (Get-Command sccache -ErrorAction SilentlyContinue) { $sccache_found = $true 
 
 
 #region 📁 Create Build Folder
-Write-Output "* Make folder: '$build_dir'"
+Write-Output "$msg_symbol Make folder: '$build_dir'"
 mkdir -Force $build_dir # make a build folder
 #endregion
 
 
 #region 🔍 Find Cuda Compiler
 # ================================================================================================================================
-Write-Output "* Find Cuda Compiler..."
+Write-Output "$msg_symbol Find Cuda Compiler..."
 if (-not $env:CUDA_VARS_LOADED) {
 
     # manually point to the CUDA compiler, if not found by the VS environment automaticly
@@ -81,6 +82,8 @@ if (-not $env:CUDA_VARS_LOADED) {
 # --------------------------------------------------------------------------------------------------------------------------------
 # ⚠️ OPTIONAL generate a compile_flags.txt... for clangd to help it find cuda
 # After setting $env:CUDA_PATH
+Write-Output "$msg_symbol Generate 'compile_flags.txt'..."
+
 $compileFlagsPath = Join-Path $PSScriptRoot "compile_flags.txt"
 
 $flags = @(
@@ -106,7 +109,8 @@ Write-Host "Generated compile_flags.txt for clangd at $compileFlagsPath"
 # --------------------------------------------------------------------------------------------------------------------------------
 
 # we only run this script once, which speeds up the second running of this script
-Write-Output "* Setup Environment..."
+# (script is faster from a raw shell in this way)
+Write-Output "$msg_symbol Setup Environment..."
 if (-not $env:VC_VARS_LOADED) {
     $vcvars = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
     # Run it with the x64 argument
@@ -117,18 +121,12 @@ if (-not $env:VC_VARS_LOADED) {
     }
     $env:VC_VARS_LOADED = "1"
 }
-
-# # ⚠️ optional, if the above runs each time we build, it will create duplicates eventually causing an error
-# $env:PATH = ($env:PATH -split ';' | Select-Object -Unique) -join ';'
-# $env:INCLUDE = ($env:INCLUDE -split ';' | Select-Object -Unique) -join ';'
-# $env:LIB = ($env:LIB -split ';' | Select-Object -Unique) -join ';'
-
 #endregion
 
 
 #region 🔨 Run CMake and Compile
 # ================================================================================================================================
-Write-Output "* Run CMake and Compile..."
+Write-Output "$msg_symbol Run CMake and Compile..."
 
 # cmake base starting arguments
 $cmake_args = @(

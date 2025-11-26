@@ -23,13 +23,13 @@ __global__ void process_texture(const Parameters *pars, const size_t width, cons
 
 // example allocation
 void TEMPLATE_CLASS_NAME::allocate_device() {
-    if (device_allocated)
+    if (_device_allocated)
         return;
 
     pars._width = image.dimensions()[0];
     pars._height = image.dimensions()[1];
 
-    device_allocated = true;
+    _device_allocated = true;
 }
 
 void TEMPLATE_CLASS_NAME::process() {

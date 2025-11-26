@@ -5,9 +5,8 @@
 using new DeviceArrayN, multidimensional template with common DeviceArrayNBase
 
 
-ATTEMPTING TO USE EXTREME POLYMORPHISM TO USE LESS MACROS
-
 */
+
 #pragma once
 
 // ================================================================ //
@@ -48,30 +47,12 @@ ATTEMPTING TO USE EXTREME POLYMORPHISM TO USE LESS MACROS
 
 namespace TEMPLATE_NAMESPACE {
 
-/* CRTP example
-template <typename Derived>
-class CRTP_Base {
-public:
-void call_required() {
-    // Forward to derived — must exist!
-    static_cast<Derived *>(this)->required_fn();
-}
-};
-
-// Derived class must implement required_fn
-class CRTP_Test : public CRTP_Base<CRTP_Test> {
-public:
-void required_fn() {
-    std::cout << "MyArray::required_fn implemented\n";
-}
-};
-*/
-
 // testing making a derived class
 class Base {
 
   protected:
     bool _device_configured = false;
+    bool _device_allocated = false; // use or not, not sure but marking if the maps are uploaded
 
     // template called by xmacro (just to reduce code in xmacro)
     template <typename T>
@@ -82,8 +63,7 @@ class Base {
         }
     }
 
-    core::cuda::Stream stream;     // will be allocated along with object
-    bool device_allocated = false; // use or not, not sure but marking if the maps are uploaded
+    core::cuda::Stream stream; // will be allocated along with object
 
     dim3 block; // we now computer block in configure_device
     dim3 grid;  // and grid
@@ -95,40 +75,26 @@ class Base {
     // needs to be a virtual function as we need to use a macro to fill _device_array_n_ptrs
     virtual std::vector<core::cuda::DeviceArrayNBase *> get_device_array_n_ptrs() = 0;
 
-    void deallocate_device() {
+  public:
+    // optional override
+    virtual void deallocate_device() {
         for (auto &ptr : get_device_array_n_ptrs()) {
             ptr->free_device();
         }
-        device_allocated = false;
+        _device_allocated = false;
     }
 
+    // implemented in next object, uploads the pars and calculates grid/block
     virtual void configure_device() = 0;
+
+    // allocate all the maps etc, if required
     virtual void allocate_device() = 0;
+
+    // run the actual calculations
     virtual void process() = 0;
-
-#pragma region NEW_METADATA
-    struct DeviceArrayNInfo {
-        std::type_index type;    // element type (from typeid)
-        int dimension;           // dimension metadata
-        const char *name;        // name
-        const char *description; // human-readable description
-    };
-
-    // Lazy builder function
-    std::vector<DeviceArrayNInfo> &device_array_n_info() {
-        static std::vector<DeviceArrayNInfo> _device_array_n_info;
-        if (_device_array_n_info.empty()) {
-// Expand the X‑macro into initializer entries
-#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
-    _device_array_n_info.push_back({typeid(TYPE), DIMENSION, EXPAND_AND_STRINGIFY(NAME), DESCRIPTION});
-            TEMPLATE_CLASS_DEVICE_ARRAY_NS
-#undef X
-        }
-        return _device_array_n_info;
-    }
-#pragma endregion
 };
 
+// ParametersT is the parameters struct
 template <typename ParametersT>
 class BaseTemplate : public Base {
 
@@ -139,13 +105,22 @@ class BaseTemplate : public Base {
     // call before launching a kernel to ensure pars are uploaded and block/grid calculated
     void configure_device() override {
         if (!_device_configured) {
-            dev_pars.upload(pars);
             block = dim3(pars._block, pars._block);
             grid = dim3((pars._width + block.x - 1) / block.x, (pars._height + block.y - 1) / block.y);
+            dev_pars.upload(pars);
             _device_configured = true;
         }
     }
+
+    // init function, but needs to be called in derived
+    void initialize() {
+        for (const auto ptr : get_device_array_n_ptrs()) {
+            ptr->set_stream(stream.get());
+        }
+    }
 };
+
+// 🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟🐟
 
 // Parameters struct for uploading to GPU
 #ifdef TEMPLATE_CLASS_PARAMETERS
@@ -183,7 +158,6 @@ class TEMPLATE_CLASS_NAME : public BaseTemplate<Parameters> {
         if (_device_array_n_ptrs.empty()) {
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
-    NAME.set_stream(stream.get());            \
     _device_array_n_ptrs.push_back(&NAME);
             TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #undef X
@@ -192,8 +166,9 @@ class TEMPLATE_CLASS_NAME : public BaseTemplate<Parameters> {
         return _device_array_n_ptrs;
     }
 
-    // TEMPLATE_CLASS_NAME() {
-    // }
+    TEMPLATE_CLASS_NAME() {
+        initialize();
+    }
 
     // ~TEMPLATE_CLASS_NAME() {
 
