@@ -14,7 +14,7 @@ will have a common interface of "DeviceArrayNBase"
 
 // #include <cstddef>        // size_t
 #include <cuda_runtime.h> // cudaMalloc, cudaFree, cudaMemcpy, cudaMemset, cudaError_t
-// #include <stdexcept>      // std::runtime_error
+#include <stdexcept>      // std::runtime_error
 #include <utility> // std::swap (needed for your swap implementation)
 // #include <vector>         // std::vector<T>
 
@@ -280,7 +280,6 @@ class DeviceArrayN1D : public DeviceArrayN<T, 1> {
         resize(size);
         Base::upload(host_ptr, {size});
     }
-
 };
 
 // thin wrapper for 2D
@@ -327,5 +326,13 @@ class DeviceArrayN3D : public DeviceArrayN<T, 3> {
     size_t height() const { return this->dimensions()[1]; }
     size_t depth() const { return this->dimensions()[2]; }
 };
+
+// refactor
+template <typename T>
+using DeviceArray = DeviceArrayN1D<T>;
+template <typename T>
+using DeviceArray2D = DeviceArrayN2D<T>;
+template <typename T>
+using DeviceArray3D = DeviceArrayN3D<T>;
 
 } // namespace core::cuda

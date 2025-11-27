@@ -11,8 +11,8 @@ custom Cuda objects, designed to automaticly allocate and free memory, download 
 
 #include "core/cuda/curand_array_2d.cuh" // manages random states for 2D
 
-#include "core/cuda/device_array.cuh" // device side only array allocation with some download/upload features, unused atm
-#include "core/cuda/device_array_nd.cuh" // 
+// #include "core/cuda/device_array.cuh" // device side only array allocation with some download/upload features, unused atm
+// #include "core/cuda/device_array_nd.cuh" // 
 
 #include "core/cuda/device_array_n.cuh" // NEW device array N (multidimensional template with common base class)
 

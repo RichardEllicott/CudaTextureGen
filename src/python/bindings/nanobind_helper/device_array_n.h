@@ -22,13 +22,9 @@ namespace nb = nanobind; // shortcut
 
 #pragma region DEVICE_ARRAY_N
 
-
-
-
-
 // convert DeviceArrayN to ndarray<T>
 template <typename T, int Dim>
-inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArrayN<T, Dim>& device_array) {
+inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArrayN<T, Dim> &device_array) {
     // Internal order: width, height, depth...
     auto shape = device_array.dimensions();
 
@@ -44,7 +40,7 @@ inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArrayN<T, Dim>
 
 // copy numpy array to DeviceArrayN
 template <typename T, int Dim>
-inline void to_device_array(const nb::ndarray<T, nb::c_contig>& source, core::cuda::DeviceArrayN<T, Dim>& destination) {
+inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cuda::DeviceArrayN<T, Dim> &destination) {
     if (source.ndim() != Dim)
         throw std::runtime_error("Input must be a " + std::to_string(Dim) + "D NumPy array");
 
@@ -55,14 +51,12 @@ inline void to_device_array(const nb::ndarray<T, nb::c_contig>& source, core::cu
 
     // Flip back to internal order (width, height, depth)
     std::array<size_t, Dim> internal_dims = np_dims;
-    if constexpr (Dim >= 2) std::swap(internal_dims[0], internal_dims[1]);
+    if constexpr (Dim >= 2)
+        std::swap(internal_dims[0], internal_dims[1]);
 
     destination.resize(internal_dims);
     destination.upload(source.data(), internal_dims);
 }
-
-
-
 
 #pragma endregion
 

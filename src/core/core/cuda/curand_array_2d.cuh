@@ -4,8 +4,10 @@ random wrapper
 
 */
 #pragma once
-#include "core/cuda/device_array.cuh"
-#include "core/cuda/device_array_nd.cuh"
+// #include "core/cuda/device_array.cuh"
+// #include "core/cuda/device_array_nd.cuh"
+
+#include "device_array_n.cuh"
 #include <curand_kernel.h>
 
 // #include "types.h"
