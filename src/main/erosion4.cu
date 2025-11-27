@@ -119,8 +119,8 @@ void TEMPLATE_CLASS_NAME::process() {
     sediment_map.upload();
 
     // allocate ping pong arrays
-    core::cuda::DeviceArray<float> height_map_out;
-    core::cuda::DeviceArray<float> sediment_map_out;
+    core::cuda::DeviceArray1D<float> height_map_out;
+    core::cuda::DeviceArray1D<float> sediment_map_out;
     height_map_out.resize(height_map.size());
     sediment_map_out.resize(height_map.size());
 
@@ -144,7 +144,7 @@ void TEMPLATE_CLASS_NAME::process() {
     auto s2 = sediment_map_out.dev_ptr();
 
     // init random if we need jitter
-    core::cuda::DeviceArray<curandState> rng_states;
+    core::cuda::DeviceArray1D<curandState> rng_states;
     if (pars.jitter > 0.0f) {
         rng_states.resize(height_map.size());                                             // resize and allocate
         init_rand_states<<<grid, block, 0, stream.get()>>>(rng_states.dev_ptr(), 1234UL); // init the rand states with a seed

@@ -293,7 +293,7 @@ __global__ void apply_flux(
         }
     }
 
-    if (pars->drain_at_min_height && height <= pars->min_height){
+    if (pars->drain_at_min_height && height <= pars->min_height) {
         water = 0.0f;
         sediment = 0.0f;
     }
@@ -459,7 +459,7 @@ void TEMPLATE_CLASS_NAME::process() {
     timer.mark_time();
 
     // debug output
-    core::cuda::DeviceArray<DebugData> debug_array;
+    core::cuda::DeviceArray1D<DebugData> debug_array;
     if (pars.debug) {
         debug_array.resize(pars.steps);
         debug_array.zero_device();

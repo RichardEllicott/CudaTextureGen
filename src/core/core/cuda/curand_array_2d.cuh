@@ -27,7 +27,7 @@ namespace core::cuda {
 class CurandArray2D {
 
   private:
-    core::cuda::DeviceArray<curandState> rng_states;
+    core::cuda::DeviceArray1D<curandState> rng_states;
 
   public:
     // void init(size_t width, size_t height, dim3 block, dim3 grid, cudaStream_t stream);

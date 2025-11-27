@@ -69,8 +69,8 @@ inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cu
 
 // ⚠️ decided not to use these and leave the program more strongly typed, to zero an array, send in a zero sized numpy array
 // convert or free the device if None... a more liberal pattern accepting nb::object
-template <typename T>
-inline void python_to_device_array(nb::object obj, core::cuda::DeviceArray<T> &device_array) {
+template <typename T, int Dim>
+inline void python_to_device_array(nb::object obj, core::cuda::DeviceArrayN<T, Dim> &device_array) {
     if (obj.is_none()) {
         device_array.free_device(); // Free the device array if Python passed None
     } else {
@@ -81,8 +81,8 @@ inline void python_to_device_array(nb::object obj, core::cuda::DeviceArray<T> &d
 }
 
 // Returns None if device array empty
-template <typename T>
-inline nb::object device_array_to_python(const core::cuda::DeviceArray<T> &device_array) {
+template <typename T, int Dim>
+inline nb::object device_array_to_python(const core::cuda::DeviceArrayN<T, Dim> &device_array) {
     if (device_array.empty()) {
         return nb::none(); // If the device array has no data, return Python None
     } else {

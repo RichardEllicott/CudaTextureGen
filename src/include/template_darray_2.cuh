@@ -2,7 +2,7 @@
 
 🦑 DARRAY TEMPLATE 20251125-1
 
-using new DeviceArrayN, multidimensional template with common DeviceArrayNBase
+using new DeviceArrayN, multidimensional template with common DeviceArrayBase
 
 
 */
@@ -70,10 +70,10 @@ class Base {
 
     // virtual void configure_device() = 0;
 
-    std::vector<core::cuda::DeviceArrayNBase *> _device_array_n_ptrs; // store pointers to the DeviceArrayN's for reflection
+    std::vector<core::cuda::DeviceArrayBase *> _device_array_n_ptrs; // store pointers to the DeviceArrayN's for reflection
 
     // needs to be a virtual function as we need to use a macro to fill _device_array_n_ptrs
-    virtual std::vector<core::cuda::DeviceArrayNBase *> get_device_array_n_ptrs() = 0;
+    virtual std::vector<core::cuda::DeviceArrayBase *> get_device_array_n_ptrs() = 0;
 
   public:
     // optional override
@@ -154,7 +154,7 @@ class TEMPLATE_CLASS_NAME : public BaseTemplate<Parameters> {
 #endif
 
     // lazy function to return array pointers
-    std::vector<core::cuda::DeviceArrayNBase *> get_device_array_n_ptrs() override {
+    std::vector<core::cuda::DeviceArrayBase *> get_device_array_n_ptrs() override {
         if (_device_array_n_ptrs.empty()) {
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSION, NAME, DESCRIPTION) \

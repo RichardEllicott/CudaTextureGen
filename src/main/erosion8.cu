@@ -481,7 +481,7 @@ void TEMPLATE_CLASS_NAME::process() {
     timer.mark_time();
 
     // debug output
-    core::cuda::DeviceArray<DebugData> debug_array;
+    core::cuda::DeviceArray1D<DebugData> debug_array;
     if (pars.debug) {
         debug_array.resize(pars.steps);
         debug_array.zero_device();

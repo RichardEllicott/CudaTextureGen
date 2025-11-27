@@ -134,7 +134,7 @@ class TEMPLATE_CLASS_NAME {
 // DeviceArray's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
 #define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
-    core::cuda::DeviceArray<TYPE> NAME;
+    core::cuda::DeviceArray1D<TYPE> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
 #endif

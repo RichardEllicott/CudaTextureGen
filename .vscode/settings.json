@@ -285,10 +285,6 @@
         {
             "folderPath": "cuda_texture_gen\\src\\include\\template_darray_2.cuh\\",
             "badge": "🦑"
-        },
-        {
-            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\nanobind_helper\\device_array.h\\",
-            "badge": "❌"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",

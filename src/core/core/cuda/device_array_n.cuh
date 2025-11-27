@@ -5,7 +5,7 @@ DeviceArrayN
 may be a more generic template
 
 
-will have a common interface of "DeviceArrayNBase"
+will have a common interface of "DeviceArrayBase"
 
 
 
@@ -15,7 +15,7 @@ will have a common interface of "DeviceArrayNBase"
 // #include <cstddef>        // size_t
 #include <cuda_runtime.h> // cudaMalloc, cudaFree, cudaMemcpy, cudaMemset, cudaError_t
 #include <stdexcept>      // std::runtime_error
-#include <utility> // std::swap (needed for your swap implementation)
+#include <utility>        // std::swap (needed for your swap implementation)
 // #include <vector>         // std::vector<T>
 
 // #include <iostream>
@@ -25,7 +25,7 @@ will have a common interface of "DeviceArrayNBase"
 
 namespace core::cuda {
 
-class DeviceArrayNBase {
+class DeviceArrayBase {
 
   protected:
     cudaStream_t _stream{nullptr}; // optional stream
@@ -48,11 +48,11 @@ class DeviceArrayNBase {
     bool empty() const { return size() == 0; }
 
     //
-    virtual ~DeviceArrayNBase() = default;
+    virtual ~DeviceArrayBase() = default;
 };
 
 template <typename T, int Dim>
-class DeviceArrayN : public core::cuda::DeviceArrayNBase {
+class DeviceArrayN : public core::cuda::DeviceArrayBase {
 
     std::array<size_t, Dim> _dimensions{}; // default dimensions will be 0
 
@@ -265,7 +265,7 @@ class DeviceArrayN : public core::cuda::DeviceArrayNBase {
 
 // thin wrapper for 1D
 template <typename T>
-class DeviceArrayN1D : public DeviceArrayN<T, 1> {
+class DeviceArray1D : public DeviceArrayN<T, 1> {
   public:
     using Base = DeviceArrayN<T, 1>;
     using Base::Base;   // inherit constructors
@@ -284,7 +284,7 @@ class DeviceArrayN1D : public DeviceArrayN<T, 1> {
 
 // thin wrapper for 2D
 template <typename T>
-class DeviceArrayN2D : public DeviceArrayN<T, 2> {
+class DeviceArray2D : public DeviceArrayN<T, 2> {
   public:
     using Base = DeviceArrayN<T, 2>;
     using Base::Base;   // inherit constructors
@@ -306,7 +306,7 @@ class DeviceArrayN2D : public DeviceArrayN<T, 2> {
 
 // thin wrapper for 3D
 template <typename T>
-class DeviceArrayN3D : public DeviceArrayN<T, 3> {
+class DeviceArray3D : public DeviceArrayN<T, 3> {
   public:
     using Base = DeviceArrayN<T, 3>;
     using Base::Base;   // inherit constructors
@@ -326,13 +326,5 @@ class DeviceArrayN3D : public DeviceArrayN<T, 3> {
     size_t height() const { return this->dimensions()[1]; }
     size_t depth() const { return this->dimensions()[2]; }
 };
-
-// refactor
-template <typename T>
-using DeviceArray = DeviceArrayN1D<T>;
-template <typename T>
-using DeviceArray2D = DeviceArrayN2D<T>;
-template <typename T>
-using DeviceArray3D = DeviceArrayN3D<T>;
 
 } // namespace core::cuda
