@@ -8,7 +8,7 @@ from scipy.ndimage import zoom
 from scipy.ndimage import gaussian_filter
 import numpy as np
 from numpy.typing import NDArray
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 
 def print_array_information(array: NDArray[Any]) -> None:
@@ -37,6 +37,25 @@ def normalize_array(array: np.ndarray) -> None:
     else:
         array -= min_val
         array /= range_val
+
+
+def map_array_range(array: NDArray[np.floating], 
+                    new_min: float = 0.0, 
+                    new_max: float = 1.0) -> None:
+    """
+    Map array values in place from [min(array), max(array)] to [new_min, new_max].
+    If all values are equal, fills with new_min.
+    """
+    old_min = array.min()
+    old_max = array.max()
+    old_range = old_max - old_min
+
+    if old_range == 0:  # guard against division by zero
+        array[:] = new_min
+    else:
+        scale = (new_max - new_min) / old_range
+        array[:] = (array - old_min) * scale + new_min
+
 
 
 def normalized_array(array: np.ndarray) -> np.ndarray:

@@ -21,18 +21,20 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
     X(int, mode, 0, "0 = use the maps, 1 = rotate and offset (experimental)")                                       \
     X(bool, relative_offset, true, "relative offset warps relative, otherwise map would need absolute coordinates") \
     X(bool, scale_by_output_size, true, "scale works so input of 0.5 would be offset by half size of image ")       \
+    X(float, warp_x_strength, 1.0, "optionally adjust map_x strength")                                              \
+    X(float, warp_y_strength, 1.0, "optionally adjust map_y strength")                                              \
     X(float, angle, 0.0, "mode 1 rotate")                                                                           \
     X(float, offset_x, 0.0, "mode 1 offset x")                                                                      \
     X(float, offset_y, 0.0, "mode 1 offset x")                                                                      \
-    X(int, sample_mode, 0, "🚧 UNUSED, bilinear only at the moment")
+    X(int, sample_mode, 0, "UNUSED, bilinear only at the moment")
 
 // DeviceArray2D ... abstraction of DeviceArray that will be visible in python
 // (TYPE, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_DEVICE_ARRAY_2DS      \
-    X(float, input, "input image") \
-    X(float, output, "buffer array to write to")\
-    X(float, map_x, "image to offset x (feed with noise to warp image)")\
-    X(float, map_y, "image to offset y (feed with noise to warp image)")\
+#define TEMPLATE_CLASS_DEVICE_ARRAY_2DS                                  \
+    X(float, input, "input image")                                       \
+    X(float, output, "buffer array to write to")                         \
+    X(float, map_x, "image to offset x (feed with noise to warp image)") \
+    X(float, map_y, "image to offset y (feed with noise to warp image)")
 
 // ================================================================ //
 

@@ -225,6 +225,8 @@ class Resample:
     relative_offset: bool
     sample_mode: int
     scale_by_output_size: bool
+    warp_x_strength: float
+    warp_y_strength: float
     def __init__(self) -> None: ...
     def process(self) -> None: ...
 

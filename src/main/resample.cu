@@ -85,6 +85,12 @@ __global__ void resample_kernel(Parameters *pars,
             src_x *= out_w;
             src_y *= out_h;
         }
+
+        // OPTIONAL scaling
+        src_x *= pars->warp_x_strength;
+        src_y *= pars->warp_y_strength;
+
+
         // relative offset (most logical and easiest to feed map into)
         if (pars->relative_offset) {
             src_x += x;

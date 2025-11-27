@@ -107,8 +107,10 @@ def smooth_layered_gradient(height_map, band_colors=[
     return rgb_map
 
 
-def blur(input, amount=1.0, wrap=True):
+# HAS A PROBLEM!!
+def blur_array_cuda(input, amount=1.0, wrap=True):
     cuda_texture_gen.blur(input, amount, wrap)
+
 
 
 def apply_color_map(height_map, cmap="terrain"):
