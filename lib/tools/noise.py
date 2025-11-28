@@ -14,9 +14,10 @@ import inspect
 # from matplotlib.colors import ListedColormap
 
 
-from .array_helpers import *
+from .arrays import *
 
-def fractal_noise(
+
+def fractal(
         width: int, height: int,
         octaves: int = 6,
         base_period: int = 2,
@@ -51,15 +52,15 @@ def fractal_noise(
     return array
 
 
-def fractal_noise_rgb(
+def fractal_rgb(
         width: int, height: int,
         octaves: int = 6,
         base_period: int = 2,
         seed: int = 12345,
         gain: float = 0.8, lacunarity: float = 2.0):
 
-    red = fractal_noise(width, height, octaves, base_period, seed, gain, lacunarity)
-    green = fractal_noise(width, height, octaves, base_period, seed + octaves, gain, lacunarity)
-    blue = fractal_noise(width, height, octaves, base_period, seed * octaves * 2, gain, lacunarity)
+    red = fractal(width, height, octaves, base_period, seed, gain, lacunarity)
+    green = fractal(width, height, octaves, base_period, seed + octaves, gain, lacunarity)
+    blue = fractal(width, height, octaves, base_period, seed * octaves * 2, gain, lacunarity)
 
     return np.stack([red, green, blue], axis=-1)

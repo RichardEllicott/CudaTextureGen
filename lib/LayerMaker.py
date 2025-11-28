@@ -1,20 +1,25 @@
 """
 
-pip install colour-science
+Substrata
+
+-project name??
 
 """
-import colour
+from typeguard import typechecked
 
 
+
+from typing import Union, Sequence
 import tools
 import cuda_texture_gen
 from numpy.typing import NDArray
 from typing import Any, Optional
 import numpy as np
-
+import colour  # pip install colour-science
 from matplotlib.colors import to_rgb
+import numpy as np
 
-
+@typechecked
 class LayerMaker():
 
     input = None
@@ -25,95 +30,73 @@ class LayerMaker():
         pass
 
 
-def get_soil_pallete():
+# substrata
 
-    soil_colors = np.array([
-        to_rgb("#8b4513"),  # SaddleBrown (clay-rich soil)
-        to_rgb("#f4a460"),  # SandyBrown (sand/loam)
-        to_rgb("#d2b48c"),  # Tan (silt or light soil)
-        to_rgb("#696969"),  # DimGray (shale/rock fragments)
-        to_rgb("#deb887"),  # BurlyWood (weathered sandstone)
-        to_rgb("#2f4f4f"),  # DarkSlateGray (basalt/organic-rich soil)
-    ], dtype=np.float32)
+def test2():
 
-    return soil_colors
+    subfolder = "./output/"
 
+    from IslandGenerator import IslandGenerator
+    island_generator = IslandGenerator()
+    island = island_generator.island
+    island = tools.blur_array(island, 12.0)
+    tools.save_image(island, f"{subfolder}layer_maker.height.png")
 
-def get_soil_pallete2():
-    soil_colors = np.array([
-        to_rgb("#8fb5f8"),
-        to_rgb("#bed27b"),
-        to_rgb("#f4a460"),
-        to_rgb("#34783a"),
-        to_rgb("#adcab1"),
-    ], dtype=np.float32)
+    random_gradient = tools.gradients.random_gradient(64, 512)
+    # for entry in random_gradient:
+    #     print(entry)
 
-    return soil_colors
+    random_gradient = tools.gradients.tuples_gradient_to_gradient_strip(random_gradient)
+
+    tools.save_image(random_gradient, f"{subfolder}layer_maker.gradient.png")
 
 
-def perceptual_gradient(control_points, n_samples=256) -> np.ndarray:
-    """
-    Generate a gradient interpolated in Lab space using colour-science.
-    """
-    # Convert hex or RGB stops to Lab
-    rgb_points = np.array([colour.utilities.as_float_array(colour.convert(c, 'sRGB', 'Lab'))
-                           for c in control_points])
-
-    # Interpolation positions
-    stops = np.linspace(0, 1, len(rgb_points))
-    query = np.linspace(0, 1, n_samples)
-
-    # Interpolate each Lab channel
-    lab_gradient = np.empty((n_samples, 3), dtype=np.float32)
-    for i in range(3):
-        lab_gradient[:, i] = np.interp(query, stops, rgb_points[:, i])
-
-    # Convert back to sRGB
-    rgb_gradient = colour.convert(lab_gradient, 'Lab', 'sRGB')
-    return np.clip(rgb_gradient, 0, 1)
+subfolder = "./output/"
 
 
-def get_perceptual_gradient():
+def get_island():
 
-    # Define control points (soil/rock tones)
-    control_points = ["#8b4513", "#f4a460", "#d2b48c", "#696969", "#ffffff"]
+    from IslandGenerator import IslandGenerator
+    island_generator = IslandGenerator()
 
-    # Generate perceptual gradient
-    rock_palette = perceptual_gradient(control_points, n_samples=256, space="Lab")
+    island_generator.height *= 2 * 2
+    island_generator.width *= 2 * 2
+    island_generator.diameter *= 2
 
-    return rock_palette
+    island_generator.pre_blur = 24.0
+    # island_generator.blur = 24.0
 
-    # # Apply to heightmap (using your apply_palette function)
-    # colored = apply_palette(heightmap, rock_palette, smooth=True)
+    island_generator.noise_octaves = 3
 
-    # Save result
-    # cv2.imwrite("rock_gradient.png", (colored * 255).astype(np.uint8))
+
+    island = island_generator.island
+    
+    tools.save_image(island, f"{subfolder}layer_maker.island.png")
+
+    return island
+
+
+def test_gradient_object():
+    print("test_gradient_object...")
+
+    # gradient = tools.gradients.get_test_gradient_01()
+    gradient = tools.gradients.get_test_gradient_02(0, 8)
+
+    tools.save_image(gradient.data(), f"{subfolder}layer_maker.gradient.png")
+
+    gradient_strip = gradient.render(128)
+    # tools.print_array_information(gradient_strip)
+    tools.palettes.save(gradient_strip, f"{subfolder}layer_maker.gradient.palette.png")
+
+    island = get_island()
+
+
+    island_rgb = tools.palettes.apply_gradient_strip(island, gradient_strip)
+    tools.save_image(island_rgb, f"{subfolder}layer_maker.island.rgb.png")
 
 
 def main():
-
-    from IslandGenerator import IslandGenerator
-
-    island_generator = IslandGenerator()
-    island = island_generator.island
-
-    island = tools.blur_array(island, 12.0)
-
-    tools.save_image(island, f"./output/layer_maker.height.png")
-
-    # layer_maker = LayerMaker()
-    # gradient = get_soil_pallete()
-    gradient = get_perceptual_gradient()
-
-    pallete_filename = f"./output/layer_maker.gradient.png"
-    tools.save_palette(gradient, pallete_filename)
-    pallete_filename = tools.load_palette(pallete_filename)
-
-    color_map = tools.apply_palette(island, gradient, True)
-
-    # tools.print_array_information(gradient)
-
-    tools.save_image(color_map, f"./output/layer_maker.color_map.png")
+    test_gradient_object()
 
 
 if __name__ == "__main__":

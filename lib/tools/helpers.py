@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 # from matplotlib.colors import ListedColormap
 
 
-from .array_helpers import *
+from .arrays import *
 
 
 def print_current_function():
@@ -34,17 +34,18 @@ def print_current_function():
 # B = arr[:, :, 2]  # Blue channel
 
 
-def erode_heightmap(height_map,
-                    rain_rate=0.002,
-                    max_water_outflow=0.005,
-                    capacity=0.5,
-                    erode=0.02,
-                    deposit=0.005,
-                    evaporation_rate=0.006,
-                    steps=1024,
-                    wrap=True
+def erode_heightmap(
+    height_map,
+    rain_rate=0.002,
+    max_water_outflow=0.005,
+    capacity=0.5,
+    erode=0.02,
+    deposit=0.005,
+    evaporation_rate=0.006,
+    steps=1024,
+    wrap=True
 
-                    ):
+):
     """
     run erosion
     """
@@ -110,7 +111,6 @@ def smooth_layered_gradient(height_map, band_colors=[
 # HAS A PROBLEM!!
 def blur_array_cuda(input, amount=1.0, wrap=True):
     cuda_texture_gen.blur(input, amount, wrap)
-
 
 
 def apply_color_map(height_map, cmap="terrain"):

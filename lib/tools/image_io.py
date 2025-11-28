@@ -11,6 +11,14 @@ import numpy as np
 import imageio.v2 as imageio  # version 2 loads to numpy arrays
 
 
+__all__ = [
+    "save_image",
+    "load_image",
+    "save_frames_as_gif_animation",
+    "save_frames_as_mp4",
+]
+
+
 def save_image(
     array: NDArray[Any],
     filename: Union[str, Sequence[str]],
