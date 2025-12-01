@@ -24,53 +24,58 @@ namespace core::cuda {
 //     // states[idx] = local_state; // Save updated state
 // }
 
-class CurandArray2D {
+// template <int Dim>
+// class CurandArray{
+
+// };
+
+template <int Dim>
+class CurandArray {
 
   private:
-    core::cuda::DeviceArray1D<curandState> rng_states;
+    core::cuda::DeviceArrayN<curandState, Dim> device_array;
 
   public:
-    // void init(size_t width, size_t height, dim3 block, dim3 grid, cudaStream_t stream);
-    void init(size_t width, size_t height, cudaStream_t stream);
-    void init(size_t width, size_t height);
+    unsigned long seed = 1234UL;
+    // compute the seeds
+    void init();
 
-    CurandArray2D() {
-    }
+    void resize(std::array<size_t, Dim> dimensions) {
 
-    CurandArray2D(size_t width, size_t height, cudaStream_t stream) {
-        init(width, height, stream);
-    }
-
-    CurandArray2D(size_t width, size_t height) {
-        init(width, height);
-    }
-
-    curandState *dev_ptr() {
-        return rng_states.dev_ptr();
+        if (device_array.dimensions() != dimensions) {
+            device_array.resize(dimensions);
+            init();
+        }
     }
 };
 
-class CurandArray2D_2 {
+class CurandArray2D {
 
-    core::cuda::DeviceArray2D<curandState> rng_states;
+    core::cuda::DeviceArray2D<curandState> device_array;
 
   public:
-    CurandArray2D_2() {
+    CurandArray2D() {
     }
 
-    void resize(size_t width, size_t height, cudaStream_t stream = nullptr);
+    unsigned long seed = 1234UL;
 
+    // compute the seeds
+    void init();
+
+    // resize the array, and computer the seeds if required
+    void resize(size_t width, size_t height);
+
+    // free device, the same as setting the size to 0,0
     void free_device() {
         resize(0, 0);
     }
 
     curandState *dev_ptr() {
-        return rng_states.dev_ptr();
+        return device_array.dev_ptr();
     }
 
-    // get/set optional stream
-    cudaStream_t get_stream() const { return rng_states.get_stream(); }
-    void set_stream(cudaStream_t stream) { rng_states.set_stream(stream); }
+    cudaStream_t get_stream() const { return device_array.get_stream(); }
+    void set_stream(cudaStream_t stream) { device_array.set_stream(stream); }
 };
 
 } // namespace core::cuda

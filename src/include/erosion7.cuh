@@ -113,7 +113,7 @@ class TEMPLATE_CLASS_NAME {
     core::cuda::Stream stream; // will be allocated along with object
     bool device_allocated = false;
 
-    core::cuda::CurandArray2D_2 curand_array_2d;
+    core::cuda::CurandArray2D curand_array_2d;
 
     core::util::Timer timer;
 

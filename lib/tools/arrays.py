@@ -11,7 +11,7 @@ from numpy.typing import NDArray
 from typing import Any, Optional, Union
 
 
-def print_array_information(array: NDArray[Any]) -> None:
+def print_array_information(array: NDArray) -> None:
     """
     print debug info about array
     """
@@ -39,8 +39,8 @@ def normalize_array(array: np.ndarray) -> None:
         array /= range_val
 
 
-def map_array_range(array: NDArray[np.floating], 
-                    new_min: float = 0.0, 
+def map_array_range(array: NDArray[np.floating],
+                    new_min: float = 0.0,
                     new_max: float = 1.0) -> None:
     """
     Map array values in place from [min(array), max(array)] to [new_min, new_max].
@@ -55,7 +55,6 @@ def map_array_range(array: NDArray[np.floating],
     else:
         scale = (new_max - new_min) / old_range
         array[:] = (array - old_min) * scale + new_min
-
 
 
 def normalized_array(array: np.ndarray) -> np.ndarray:
@@ -134,7 +133,7 @@ def merge_numpy_arrays_to_color(
         return np.stack([red, green, blue, alpha], axis=-1)
 
 
-def nearest_neighbor_upscale(array: NDArray[Any], factor: int) -> NDArray[Any]:
+def nearest_neighbor_upscale(array: NDArray, factor: int) -> NDArray:
     """
     ⚠️ so minimal, kept as notes!
     scale an image up in size with no filter, this is like what you might do for pixel art
@@ -143,7 +142,7 @@ def nearest_neighbor_upscale(array: NDArray[Any], factor: int) -> NDArray[Any]:
     return np.repeat(np.repeat(array, factor, axis=0), factor, axis=1)
 
 
-def tile_array_2d(array: NDArray[Any], repeat_x: int, repeat_y: int) -> NDArray[Any]:
+def tile_array_2d(array: NDArray, repeat_x: int, repeat_y: int) -> NDArray:
     """
     ⚠️ so minimal, kept as notes!
     tile the array, so repeat the same to maybe test seamless etc
@@ -152,11 +151,10 @@ def tile_array_2d(array: NDArray[Any], repeat_x: int, repeat_y: int) -> NDArray[
 
 
 # scipy
-def resize_array_2d(array: NDArray[np.floating], width: int, height: int, order: int = 1) -> NDArray[np.floating]:
+def resize_array_2d(array: NDArray[np.floating], width: int, height: int, order: int = 1):
     """
     Resize a 2D NumPy array with resampling using scipy.ndimage.zoom.
     """
-
     zoom_factors = (height / array.shape[0], width / array.shape[1])
     return zoom(array, zoom_factors, order=order)
 
@@ -168,7 +166,6 @@ def blur_array(array: NDArray[np.floating], sigma: float) -> NDArray[np.floating
     """
 
     return gaussian_filter(array, sigma=sigma)
-
 
 
 def circle_array(height: int, width: int, radius: int) -> NDArray[np.float32]:

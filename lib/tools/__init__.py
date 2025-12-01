@@ -11,10 +11,10 @@ pip install imageio
 
 
 """
-from .image_io import *
 from .arrays import *
 from . import noise
 from .dictionaries import *
 from .helpers import *
 from . import palettes
 from . import gradients
+from . import images

@@ -85,7 +85,12 @@ void TEMPLATE_CLASS_NAME::process() {
     // curand_array.init(pars.width, pars.height, grid, block, stream.get());
     // stream.sync(); // important??
 
-    auto curand_array = core::cuda::CurandArray2D(pars._width, pars._height, stream.get());
+    // auto curand_array = core::cuda::CurandArray2D(pars._width, pars._height, stream.get());
+    auto curand_array = core::cuda::CurandArray2D();
+    curand_array.set_stream(stream.get());
+    curand_array.resize(pars._width, pars._height);
+
+
     stream.sync(); // important??
 
     generate_noise<<<grid, block, 0, stream.get()>>>(

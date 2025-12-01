@@ -6,7 +6,6 @@ generating random island shapes by warping
 import tools
 import cuda_texture_gen
 from numpy.typing import NDArray
-from typing import Any, Optional
 import numpy as np
 
 
@@ -101,7 +100,8 @@ def main():
         gen.seed = i
         island = gen.island
         filename = f"./output/island_{i:02}.png"
-        tools.save_array_as_image(island * 255, filename)
+        tools.images.save(island, filename)
+
 
 
 if __name__ == "__main__":

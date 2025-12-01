@@ -5,7 +5,7 @@ helpers with dictionaries
 """
 
 import json
-from typing import Dict, Any
+from typing import Any
 
 # region ObjectReflection
 
@@ -91,7 +91,7 @@ def dict_changes(old: dict, new: dict) -> dict:
     return changes
 
 
-def dict_to_string(pars: Dict[str, Any], format_string: str = "{key} = {value}\n") -> str:
+def dict_to_string(pars: dict[str, Any], format_string: str = "{key} = {value}\n") -> str:
     result = ""
     for key, value in pars.items():
         result += format_string.format(key=key, value=value)

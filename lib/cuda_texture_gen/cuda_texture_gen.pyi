@@ -120,6 +120,55 @@ class Erosion8:
     def deallocate_device(self) -> None: ...
     def process(self) -> None: ...
 
+class Erosion9:
+    _block: int
+    _calculation_time: float
+    _flux8: Incomplete
+    _height: int
+    _height_map_out: Incomplete
+    _layers: int
+    _sediment_flux8: Incomplete
+    _sediment_map_out: Incomplete
+    _slope_map: Incomplete
+    _water_map_out: Incomplete
+    _width: int
+    correct_diagonal_distance: bool
+    debug: bool
+    debug_mod: int
+    debug_print: bool
+    deposition_mode: int
+    deposition_rate: float
+    diffusion_rate: float
+    drain_at_min_height: bool
+    erosion_mode: int
+    erosion_rate: float
+    evaporation_rate: float
+    hardness_map: Incomplete
+    height_map: Incomplete
+    layers_erosiveness: list[float]
+    layers_permeability: list[float]
+    layers_threshold: list[float]
+    layers_yield: list[float]
+    max_height: float
+    max_water_outflow: float
+    min_height: float
+    mode: int
+    outflow_carve: float
+    rain_map: Incomplete
+    rain_random: bool
+    rain_rate: Incomplete
+    sediment_capacity: float
+    sediment_map: Incomplete
+    simple_erosion_rate: float
+    slope_exponent: float
+    slope_jitter: float
+    slope_threshold: float
+    steps: int
+    water_map: Incomplete
+    wrap: bool
+    def __init__(self) -> None: ...
+    def process(self) -> None: ...
+
 class FluidSimulation:
     _block: Incomplete
     cell_size: Incomplete
@@ -290,7 +339,7 @@ class TemplateDArray1:
     def test_process(self) -> None: ...
     def test_process2(self) -> None: ...
 
-class TemplateDArray2:
+class TemplateDTest:
     _block: int
     _height: int
     _width: int

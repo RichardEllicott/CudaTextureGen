@@ -5,13 +5,11 @@ Palette helpers
 """
 import random
 import numpy as np
-from numpy.typing import NDArray
-from typing import Union, Sequence
-import matplotlib.colors as mcolors
+from . import images
 
-from . import image_io
-
-
+# from numpy.typing import NDArray
+# from typing import Union, Sequence
+# import matplotlib.colors as mcolors
 # import colour  # pip install colour-science
 # from matplotlib.colors import to_rgb
 
@@ -27,9 +25,26 @@ class Gradient:
         self._data = np.zeros((0, 4), dtype=np.float32)
 
     def _hex_to_rgb(self, hex_str: str) -> tuple[float, float, float]:
-        """Convert #RRGGBB hex string to normalized RGB tuple in [0,1]."""
+        """
+        Convert #RRGGBB hex string to normalized RGB tuple in [0,1].
+
+        Raises
+        ------
+        ValueError
+            If the string is not a valid 7-character hex color (#RRGGBB).
+        """
+        if not isinstance(hex_str, str):
+            raise TypeError("hex_str must be a string")
+
         hex_str = hex_str.lstrip('#')
-        return tuple(int(hex_str[i:i+2], 16) / 255.0 for i in (0, 2, 4))
+        if len(hex_str) != 6 or any(c not in "0123456789abcdefABCDEF" for c in hex_str):
+            raise ValueError(f"Invalid hex color string: {hex_str!r}")
+
+        return (
+            int(hex_str[0:2], 16) / 255.0,
+            int(hex_str[2:4], 16) / 255.0,
+            int(hex_str[4:6], 16) / 255.0,
+        )
 
     def add_control_point(self, position: float, color):
         """
@@ -108,13 +123,13 @@ class Gradient:
         """
         save to image, ideally use a tif to preserve 32 bit floats
         """
-        image_io.save_image(self._data, filename)
+        images.save(self._data, filename)
 
     def load(self, filename):
         """
         load from image, ideally use a tif to preserve 32 bit floats
         """
-        self.set_data(image_io.load_image(filename))
+        self.set_data(images.load(filename))
 
 
 # hex stops example

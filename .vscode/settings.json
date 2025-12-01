@@ -285,6 +285,38 @@
         {
             "folderPath": "cuda_texture_gen\\src\\include\\template_darray_2.cuh\\",
             "badge": "🦑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\template_d_base.cuh\\",
+            "badge": "🦑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\template_d.cuh\\",
+            "badge": "🦑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\template_d_test.cuh\\",
+            "badge": "🦑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\main\\template_d_test.cu\\",
+            "badge": "🦑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\template_d_test.bind.h\\",
+            "badge": "🦑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\erosion9.cuh\\",
+            "badge": "🐙"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\erosion9.bind.h\\",
+            "badge": "🐙"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\main\\erosion9.cu\\",
+            "badge": "🐙"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",

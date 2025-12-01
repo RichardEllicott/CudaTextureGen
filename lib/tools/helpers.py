@@ -17,14 +17,34 @@ import matplotlib.pyplot as plt
 from .arrays import *
 
 
-def print_current_function():
+# def print_current_function():
+#     """
+#     print function call
+#     """
+#     frame = inspect.currentframe().f_back  # caller's frame
+#     func_name = frame.f_code.co_name
+#     args, _, _, values = inspect.getargvalues(frame)
+#     arg_str = ', '.join(f"{arg}={values[arg]!r}" for arg in args)
+#     print(f"{func_name}({arg_str})...")
+
+
+from types import FrameType
+
+
+def print_current_function() -> None:
     """
-    print function call
+    Print the caller's function name and arguments.
     """
-    frame = inspect.currentframe().f_back  # caller's frame
-    func_name = frame.f_code.co_name
-    args, _, _, values = inspect.getargvalues(frame)
-    arg_str = ', '.join(f"{arg}={values[arg]!r}" for arg in args)
+    frame: FrameType | None = inspect.currentframe()
+    if frame is None or frame.f_back is None:
+        print("<no caller>")
+        return
+
+    caller: FrameType = frame.f_back
+    func_name: str = caller.f_code.co_name
+    args, _, _, values = inspect.getargvalues(caller)
+
+    arg_str: str = ', '.join(f"{arg}={values[arg]!r}" for arg in args)
     print(f"{func_name}({arg_str})...")
 
 
@@ -33,38 +53,6 @@ def print_current_function():
 # G = arr[:, :, 1]  # Green channel
 # B = arr[:, :, 2]  # Blue channel
 
-
-def erode_heightmap(
-    height_map,
-    rain_rate=0.002,
-    max_water_outflow=0.005,
-    capacity=0.5,
-    erode=0.02,
-    deposit=0.005,
-    evaporation_rate=0.006,
-    steps=1024,
-    wrap=True
-
-):
-    """
-    run erosion
-    """
-    erosion = cuda_texture_gen.Erosion3()
-
-    erosion.rain_rate = rain_rate
-    erosion.max_water_outflow = max_water_outflow
-    erosion.capacity = capacity
-    erosion.erode = erode
-    erosion.deposit = deposit
-    erosion.evaporation_rate = evaporation_rate
-    erosion.steps = steps
-    erosion.wrap = wrap
-
-    erosion.height_map = height_map
-    erosion.process()
-    height_map = erosion.height_map
-
-    return height_map
 
 
 def generate_normal_map(array, strength=1.0, wrap=True):

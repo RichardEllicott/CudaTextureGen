@@ -3,16 +3,15 @@
 Palette helpers
 
 """
-from typing import Sequence, Union
-import random
+# import random
 import numpy as np
 from numpy.typing import NDArray
-from typing import Union, Sequence
-from . import image_io
+# from typing import Union, Sequence
+from . import images
 import matplotlib.colors as mcolors
-import colour  # pip install colour-science
-from matplotlib.colors import to_rgb
-
+# import colour  # pip install colour-science
+# from matplotlib.colors import to_rgb
+from collections.abc import Sequence
 
 # __all__ = [
 #     "soil_pallete",
@@ -26,6 +25,8 @@ from matplotlib.colors import to_rgb
 # ]
 
 # soil pallete example (gradient strip)
+
+
 def soil_pallete() -> NDArray[np.float32]:
     """
     example soil colors
@@ -44,7 +45,16 @@ def soil_pallete() -> NDArray[np.float32]:
 # detect what type of pallete
 
 
-def detect_kind(palette: Union[np.ndarray, Sequence]) -> str:
+ColorTuple = tuple[int, int, int]
+GradientPoint = tuple[float, str | ColorTuple]
+
+
+def detect_kind(
+    palette: np.ndarray
+    | Sequence[str]
+    | Sequence[ColorTuple]
+    | Sequence[GradientPoint]
+) -> str:
     """
     Detect the type of palette or gradient representation.
 
@@ -190,7 +200,7 @@ def save(palette, filename: str) -> None:
     """
     palette = to_rgb(palette)
     palette = palette.reshape((-1, 1, 3))
-    image_io.save_image(palette, filename)
+    images.save(palette, filename)
 
 # load palette (as vertical color image)
 
@@ -199,5 +209,5 @@ def load(filename: str) -> NDArray[np.float32]:
     """
     Load a palette strip image (N,1,3) and collapse back to (N,3).
     """
-    gradient = image_io.load_image(filename)
+    gradient = images.load_image(filename)
     return gradient.reshape((-1, 3))

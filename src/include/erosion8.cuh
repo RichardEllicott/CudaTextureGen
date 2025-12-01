@@ -2,7 +2,7 @@
 
 🎃 DARRAY TEMPLATE 20251115-1
 
-using new DeviceArray2D ... data is instantly uploaded and downloaded, no local copy
+refactoring towards layers... didn't make really any changes so keep frozen?
 
 */
 #pragma once
@@ -201,7 +201,7 @@ class TEMPLATE_CLASS_NAME {
     core::cuda::Stream stream; // will be allocated along with object
     bool device_allocated = false;
 
-    core::cuda::CurandArray2D_2 curand_array_2d;
+    core::cuda::CurandArray2D curand_array_2d;
 
     core::util::Timer timer;
 

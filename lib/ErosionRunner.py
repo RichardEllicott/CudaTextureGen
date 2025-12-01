@@ -16,6 +16,7 @@ import numpy as np
 from tabulate import tabulate  # pip install tabulate
 import time
 import imageio.v2 as imageio  # v2 uses numpy arrays
+from numpy.typing import NDArray
 
 
 # from tools import *
@@ -31,7 +32,7 @@ class ErosionRunner:
 
     debug = True  # print debug information (note slows us down a bit)
 
-    erosion = cuda_texture_gen.Erosion8()
+    erosion: cuda_texture_gen.Erosion9 = cuda_texture_gen.Erosion9()
 
     folder = "E:/"
     # folder = "./output/"
@@ -58,22 +59,23 @@ class ErosionRunner:
     _default_pars: dict
 
     def __init__(self) -> None:
+        self._erosion: cuda_texture_gen.Erosion8 = cuda_texture_gen.Erosion8()  # or None if lazy init
         self._default_pars = tools.object_pars_to_dict(self.erosion)
 
-    def get_erosion_pars(self) -> Dict[str, Any]:
+    def get_erosion_pars(self) -> dict[str, Any]:
         pars = tools.dict_changes(
             self._default_pars,
             tools.object_pars_to_dict(self.erosion)
         )
         return pars
 
-    def set_erosion_pars(self, pars: Dict[str, Any]) -> None:
+    def set_erosion_pars(self, pars: dict[str, Any]) -> None:
         tools.set_object_with_dict(self.erosion, pars)
 
     def save_json(self) -> None:
         tools.save_dict_to_json(self.get_erosion_pars(), self.get_filename_start() + ".settings.json")
 
-    def load_json(self):
+    def load_json(self) -> None:
         dict = tools.load_dict_from_json(f"{self.filename_base}.settings.json")
         tools.set_object_with_dict(self._erosion, dict)
 
@@ -190,7 +192,7 @@ class ErosionRunner:
         clip = [None, None, None]  # if a number, clip at that number
         normalize = [True, False, False]
 
-        def get_map(self, maps: Dict[str, npt.NDArray[np.float32]]):
+        def get_map(self, maps: dict[str, NDArray[np.float32]]):
             """
             get the final map with processing
             """
@@ -206,13 +208,13 @@ class ErosionRunner:
 
         start_time = time.perf_counter()
         erosion = self.erosion
-        erosion.allocate_device()
+        # erosion.allocate_device()
 
         if self.debug:
             self._download_maps()  # ⚠️ donwnloads even though it uploaded (slow)
             print("🚀 launch erosion...")
             print("-" * 64)
-            self.print_meta_data()  # ⚠️ gets meta data (slow)
+            # self.print_meta_data()  # ⚠️ gets meta data (slow)
 
         erosion.steps = self.steps_per_frame
 
