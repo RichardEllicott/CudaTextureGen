@@ -32,8 +32,6 @@ class ErosionRunner:
 
     debug = True  # print debug information (note slows us down a bit)
 
-    erosion: cuda_texture_gen.Erosion9 = cuda_texture_gen.Erosion9()
-
     folder = "E:/"
     # folder = "./output/"
     filename_base = "erosion"
@@ -59,7 +57,7 @@ class ErosionRunner:
     _default_pars: dict
 
     def __init__(self) -> None:
-        self._erosion: cuda_texture_gen.Erosion8 = cuda_texture_gen.Erosion8()  # or None if lazy init
+        self.erosion: cuda_texture_gen.Erosion9 = cuda_texture_gen.Erosion9()  # or None if lazy init
         self._default_pars = tools.object_pars_to_dict(self.erosion)
 
     def get_erosion_pars(self) -> dict[str, Any]:
@@ -77,7 +75,7 @@ class ErosionRunner:
 
     def load_json(self) -> None:
         dict = tools.load_dict_from_json(f"{self.filename_base}.settings.json")
-        tools.set_object_with_dict(self._erosion, dict)
+        tools.set_object_with_dict(self.erosion, dict)
 
     def PRESET_simple_erosion(self):
 

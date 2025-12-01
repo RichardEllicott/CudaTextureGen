@@ -13,6 +13,27 @@
 #define TEMPLATE_CLASS_NAME Erosion9
 #define TEMPLATE_NAMESPACE erosion9
 
+// Topsoil:
+//     Erosion resistance: 0.25
+//     Sediment yield: 1.00
+//     Permeability: 0.80
+//     Erosion threshold: 0.10
+//     Color hex: #6B8E23
+
+// Subsoil:
+//     Erosion resistance: 0.55
+//     Sediment yield: 0.60
+//     Permeability: 0.45
+//     Erosion threshold: 0.25
+//     Color hex: #C2A35B
+
+// Bedrock:
+//     Erosion resistance: 0.90
+//     Sediment yield: 0.20
+//     Permeability: 0.10
+//     Erosion threshold: 0.60
+//     Color hex: #696969
+
 using Float3 = std::array<float, 3>;
 #define LAYER_NAME_DEFAULT {"Topsoil", "Subsoil", "Bedrock"} // not trivially copyable
 #define LAYER_RESISTANCE_DEFAULT {0.25, 0.55, 0.90}          // suggested by ai but changing to
@@ -87,6 +108,22 @@ struct Parameters {
 };
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
 
+//
+//
+// ⚠️ Array struct for uploading to GPU
+struct ArrayPtrs {
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
+#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+    TYPE *NAME;
+    TEMPLATE_CLASS_DEVICE_ARRAY_NS
+#undef X
+#endif
+};
+static_assert(std::is_trivially_copyable<ArrayPtrs>::value, "ArrayPtrs must remain trivially copyable for CUDA memcpy"); // optional
+//
+//
+//
+
 class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
 
   public:
@@ -121,6 +158,21 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
     }
 
     core::cuda::CurandArray2D curand_array_2d;
+
+    // get pointers to the arrays
+    ArrayPtrs get_array_ptrs() {
+        return {
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
+#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+    NAME.dev_ptr(),
+            TEMPLATE_CLASS_DEVICE_ARRAY_NS
+#undef X
+#endif
+        };
+    }
+
+    void process00();
+    void process01();
 
     TEMPLATE_CLASS_NAME() {
         initialize();
