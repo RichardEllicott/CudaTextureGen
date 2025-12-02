@@ -2,7 +2,7 @@
 
 convert numpy arrays to and from DeviceArray's
 
-new DeviceArrayN pattern
+new DeviceArray pattern
 
 */
 #pragma once
@@ -19,9 +19,9 @@ namespace nb = nanobind; // shortcut
 
 #pragma region DEVICE_ARRAY_N
 
-// convert DeviceArrayN to ndarray<T>
+// convert DeviceArray to ndarray<T>
 template <typename T, int Dim>
-inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArrayN<T, Dim> &device_array) {
+inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray<T, Dim> &device_array) {
     // Internal order: width, height, depth...
     auto shape = device_array.dimensions();
 
@@ -35,9 +35,9 @@ inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArrayN<T, Dim>
     return array;
 }
 
-// copy numpy array to DeviceArrayN
+// copy numpy array to DeviceArray
 template <typename T, int Dim>
-inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cuda::DeviceArrayN<T, Dim> &destination) {
+inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cuda::DeviceArray<T, Dim> &destination) {
     if (source.ndim() != Dim)
         throw std::runtime_error("Input must be a " + std::to_string(Dim) + "D NumPy array");
 
@@ -70,7 +70,7 @@ inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cu
 // ⚠️ decided not to use these and leave the program more strongly typed, to zero an array, send in a zero sized numpy array
 // convert or free the device if None... a more liberal pattern accepting nb::object
 template <typename T, int Dim>
-inline void python_to_device_array(nb::object obj, core::cuda::DeviceArrayN<T, Dim> &device_array) {
+inline void python_to_device_array(nb::object obj, core::cuda::DeviceArray<T, Dim> &device_array) {
     if (obj.is_none()) {
         device_array.free_device(); // Free the device array if Python passed None
     } else {
@@ -82,7 +82,7 @@ inline void python_to_device_array(nb::object obj, core::cuda::DeviceArrayN<T, D
 
 // Returns None if device array empty
 template <typename T, int Dim>
-inline nb::object device_array_to_python(const core::cuda::DeviceArrayN<T, Dim> &device_array) {
+inline nb::object device_array_to_python(const core::cuda::DeviceArray<T, Dim> &device_array) {
     if (device_array.empty()) {
         return nb::none(); // If the device array has no data, return Python None
     } else {

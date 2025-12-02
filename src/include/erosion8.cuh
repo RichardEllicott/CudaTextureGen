@@ -246,7 +246,7 @@ class TEMPLATE_CLASS_NAME {
 // #undef X
 // #endif
 
-// DeviceArrayN2D's
+// DeviceArray2D's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
 #define X(TYPE, NAME, DESCRIPTION) \
     core::cuda::DeviceArray2D<TYPE> NAME;

@@ -45,7 +45,7 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
     X(void, test_process)      \
     X(void, test_process2)
 
-// DeviceArrayN ... new upgrade to DeviceArray
+// DeviceArray ... new upgrade to DeviceArray
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAY_NS                             \
     X(float, 2, device_array_n2d_test, "testing device array n2d") \
@@ -153,10 +153,10 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
-// DeviceArrayN's
+// DeviceArray's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    core::cuda::DeviceArrayN<TYPE, DIMENSIONS> NAME;
+    core::cuda::DeviceArray<TYPE, DIMENSIONS> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #undef X
 #endif
@@ -169,7 +169,7 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
-    std::vector<core::cuda::DeviceArrayBase *> _device_array_n_ptrs; // store pointers to the DeviceArrayN's for reflection
+    std::vector<core::cuda::DeviceArrayBase *> _device_array_n_ptrs; // store pointers to the DeviceArray's for reflection
 
     TEMPLATE_CLASS_NAME() {
 
@@ -209,7 +209,7 @@ class TEMPLATE_CLASS_NAME {
     //
     // 🚧 🚧 🚧 🚧
     // Reflection info if you want metadata
-    struct DeviceArrayNInfo {
+    struct DeviceArrayInfo {
         std::type_index type;    // element type (from typeid)
         int dimension;           // dimension metadata
         const char *name;        // name
@@ -217,8 +217,8 @@ class TEMPLATE_CLASS_NAME {
     };
 
     // Lazy builder function
-    std::vector<DeviceArrayNInfo> &device_array_n_info() {
-        static std::vector<DeviceArrayNInfo> _device_array_n_info;
+    std::vector<DeviceArrayInfo> &device_array_n_info() {
+        static std::vector<DeviceArrayInfo> _device_array_n_info;
         if (_device_array_n_info.empty()) {
 // Expand the X‑macro into initializer entries
 #define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
@@ -268,7 +268,7 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
-        // deallocate DeviceArrayN's
+        // deallocate DeviceArray's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
     NAME.free_device();

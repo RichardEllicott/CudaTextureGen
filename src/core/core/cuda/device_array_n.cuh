@@ -1,6 +1,6 @@
 /*
 
-DeviceArrayN
+DeviceArray
 
 may be a more generic template
 
@@ -91,7 +91,7 @@ class DeviceArrayBase {
 };
 
 template <typename T, int Dim>
-class DeviceArrayN : public core::cuda::DeviceArrayBase {
+class DeviceArray : public core::cuda::DeviceArrayBase {
 
     std::array<size_t, Dim> _dimensions{}; // default dimensions will be 0
 
@@ -111,10 +111,10 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
     }
 
   public:
-    DeviceArrayN() noexcept {
+    DeviceArray() noexcept {
     }
 
-    ~DeviceArrayN() override {
+    ~DeviceArray() override {
         free_device();
     }
 
@@ -334,7 +334,7 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
 
 #pragma region SWAP
     // swap member function
-    void swap(DeviceArrayN<T, Dim> &other) noexcept {
+    void swap(DeviceArray<T, Dim> &other) noexcept {
         using std::swap;
         swap(_dev_ptr, other._dev_ptr);
         swap(_stream, other._stream);
@@ -343,14 +343,14 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
 
     // freind is a syntatic sugar to avoid putting the non-member function outside
     // this allows std::swap(myArrayA, myArrayB) to work
-    friend void swap(DeviceArrayN<T, Dim> &a, DeviceArrayN<T, Dim> &b) noexcept {
+    friend void swap(DeviceArray<T, Dim> &a, DeviceArray<T, Dim> &b) noexcept {
         a.swap(b);
     }
 #pragma endregion
 #pragma region COPY
 
     // COPY
-    DeviceArrayN(const DeviceArrayN &other) {
+    DeviceArray(const DeviceArray &other) {
         _dimensions = other._dimensions;
         _stream = other._stream;
         _dev_ptr = nullptr;
@@ -370,9 +370,9 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
         }
     }
 
-    DeviceArrayN &operator=(const DeviceArrayN &other) {
+    DeviceArray &operator=(const DeviceArray &other) {
         if (this != &other) {
-            DeviceArrayN tmp(other); // copy‑construct
+            DeviceArray tmp(other); // copy‑construct
             swap(tmp);               // strong exception safety
         }
         return *this;
@@ -382,14 +382,14 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
 
 #pragma region MOVE
 
-    DeviceArrayN(DeviceArrayN &&other) noexcept {
+    DeviceArray(DeviceArray &&other) noexcept {
         swap(other);
         other._dev_ptr = nullptr;
         other._dimensions = {};
         other._stream = nullptr;
     }
 
-    DeviceArrayN &operator=(DeviceArrayN &&other) noexcept {
+    DeviceArray &operator=(DeviceArray &&other) noexcept {
         if (this != &other) {
             free_device(); // release current
             swap(other);
@@ -405,9 +405,9 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
 
 // thin wrapper for 1D
 template <typename T>
-class DeviceArray1D : public DeviceArrayN<T, 1> {
+class DeviceArray1D : public DeviceArray<T, 1> {
   public:
-    using Base = DeviceArrayN<T, 1>;
+    using Base = DeviceArray<T, 1>;
     using Base::Base;   // inherit constructors
     using Base::upload; // keep base overloads visible
 
@@ -424,9 +424,9 @@ class DeviceArray1D : public DeviceArrayN<T, 1> {
 
 // thin wrapper for 2D
 template <typename T>
-class DeviceArray2D : public DeviceArrayN<T, 2> {
+class DeviceArray2D : public DeviceArray<T, 2> {
   public:
-    using Base = DeviceArrayN<T, 2>;
+    using Base = DeviceArray<T, 2>;
     using Base::Base;   // inherit constructors
     using Base::upload; // keep base overloads visible
 
@@ -446,9 +446,9 @@ class DeviceArray2D : public DeviceArrayN<T, 2> {
 
 // thin wrapper for 3D
 template <typename T>
-class DeviceArray3D : public DeviceArrayN<T, 3> {
+class DeviceArray3D : public DeviceArray<T, 3> {
   public:
-    using Base = DeviceArrayN<T, 3>;
+    using Base = DeviceArray<T, 3>;
     using Base::Base;   // inherit constructors
     using Base::upload; // keep base overloads visible
 

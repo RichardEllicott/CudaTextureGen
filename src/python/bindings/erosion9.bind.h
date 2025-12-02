@@ -23,7 +23,7 @@ inline void bind(nb::module_ &m) {
 #undef X
 #endif
 
-    // bind DeviceArrayN's
+    // bind DeviceArray's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION)                                                                                                         \
     auto get_##NAME = [](TEMPLATE_CLASS_NAME &self) { return nb::helper::numpy::to_array(self.NAME); };                                                \

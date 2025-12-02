@@ -33,7 +33,7 @@ template <int Dim>
 class CurandArray {
 
   private:
-    core::cuda::DeviceArrayN<curandState, Dim> device_array;
+    core::cuda::DeviceArray<curandState, Dim> device_array;
 
   public:
     unsigned long seed = 1234UL;

@@ -54,10 +54,10 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
 #undef X
 #endif
 
-// DeviceArrayN's
+// DeviceArray's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    core::cuda::DeviceArrayN<TYPE, DIMENSIONS> NAME;
+    core::cuda::DeviceArray<TYPE, DIMENSIONS> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #undef X
 #endif

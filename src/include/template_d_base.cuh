@@ -45,7 +45,7 @@ class Base {
 
     // virtual void configure_device() = 0;
 
-    std::vector<core::cuda::DeviceArrayBase *> _device_array_n_ptrs; // store pointers to the DeviceArrayN's for reflection
+    std::vector<core::cuda::DeviceArrayBase *> _device_array_n_ptrs; // store pointers to the DeviceArray's for reflection
 
     // needs to be a virtual function as we need to use a macro to fill _device_array_n_ptrs
     virtual std::vector<core::cuda::DeviceArrayBase *> get_device_array_n_ptrs() = 0;

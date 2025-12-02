@@ -25,7 +25,7 @@ inline void bind(nb::module_ &m) {
         printf("test_device_array_n...");
 
 
-        core::cuda::DeviceArrayN<float, 2> device_array_n;
+        core::cuda::DeviceArray<float, 2> device_array_n;
 
     });
 }
