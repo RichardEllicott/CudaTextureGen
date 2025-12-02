@@ -12,32 +12,24 @@ will have a common interface of "DeviceArrayBase"
 */
 #pragma once
 
-// #include <cstddef>        // size_t
+#include <array>
+#include <cstddef>
+#include <cstring>        // memcpy
 #include <cuda_runtime.h> // cudaMalloc, cudaFree, cudaMemcpy, cudaMemset, cudaError_t
+#include <memory>         // for std::unique_ptr
 #include <stdexcept>      // std::runtime_error
 #include <utility>        // std::swap (needed for your swap implementation)
-// #include <vector>         // std::vector<T>
-
-// #include <iostream>
-#include <array>
-#include <cstring> // memcpy
-#include <memory>  // for std::unique_ptr
 
 namespace core::cuda {
 
-
-#include <memory>
-#include <cstddef>
-#include <cstring>
-
-
+// BREAKS LINUX???
 // temp buffer, optional pattern for storing temp array
 template <typename T>
 class TempBuffer {
     std::unique_ptr<T[]> _ptr;
     std::size_t _size = 0;
 
-public:
+  public:
     TempBuffer() = default;
 
     // allocate or reuse if already big enough
@@ -49,12 +41,12 @@ public:
     }
 
     // accessors
-    T* data() { return _ptr.get(); }
-    const T* data() const { return _ptr.get(); }
+    T *data() { return _ptr.get(); }
+    const T *data() const { return _ptr.get(); }
     std::size_t size() const { return _size; }
 
     // convenience: copy from host
-    void copy_from(const T* src, std::size_t n) {
+    void copy_from(const T *src, std::size_t n) {
         ensure(n);
         std::memcpy(_ptr.get(), src, n * sizeof(T));
     }
@@ -66,13 +58,11 @@ public:
     }
 
     // non-copyable, but movable
-    TempBuffer(const TempBuffer&) = delete;
-    TempBuffer& operator=(const TempBuffer&) = delete;
-    TempBuffer(TempBuffer&&) noexcept = default;
-    TempBuffer& operator=(TempBuffer&&) noexcept = default;
+    TempBuffer(const TempBuffer &) = delete;
+    TempBuffer &operator=(const TempBuffer &) = delete;
+    TempBuffer(TempBuffer &&) noexcept = default;
+    TempBuffer &operator=(TempBuffer &&) noexcept = default;
 };
-
-
 
 class DeviceArrayBase {
 
