@@ -19,13 +19,60 @@ will have a common interface of "DeviceArrayBase"
 // #include <vector>         // std::vector<T>
 
 // #include <iostream>
-// #include <memory> // smart pointer
-
 #include <array>
-
-#include <cstring>   // memcpy
+#include <cstring> // memcpy
+#include <memory>  // for std::unique_ptr
 
 namespace core::cuda {
+
+
+#include <memory>
+#include <cstddef>
+#include <cstring>
+
+
+// temp buffer, optional pattern for storing temp array
+template <typename T>
+class TempBuffer {
+    std::unique_ptr<T[]> _ptr;
+    std::size_t _size = 0;
+
+public:
+    TempBuffer() = default;
+
+    // allocate or reuse if already big enough
+    void ensure(std::size_t n) {
+        if (!_ptr || _size < n) {
+            _ptr.reset(new T[n]);
+            _size = n;
+        }
+    }
+
+    // accessors
+    T* data() { return _ptr.get(); }
+    const T* data() const { return _ptr.get(); }
+    std::size_t size() const { return _size; }
+
+    // convenience: copy from host
+    void copy_from(const T* src, std::size_t n) {
+        ensure(n);
+        std::memcpy(_ptr.get(), src, n * sizeof(T));
+    }
+
+    // free explicitly
+    void reset() {
+        _ptr.reset();
+        _size = 0;
+    }
+
+    // non-copyable, but movable
+    TempBuffer(const TempBuffer&) = delete;
+    TempBuffer& operator=(const TempBuffer&) = delete;
+    TempBuffer(TempBuffer&&) noexcept = default;
+    TempBuffer& operator=(TempBuffer&&) noexcept = default;
+};
+
+
 
 class DeviceArrayBase {
 
@@ -163,10 +210,7 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
         if (!_dev_ptr) // no allocated memory (we just pass with no error for now)
             return;
 
-        // concider error, throw std::runtime_error("zero_device called with size == 0");
-
         cudaError_t err = cudaMemsetAsync(_dev_ptr, 0, size_bytes(), _stream);
-
         if (err != cudaSuccess) {
             throw std::runtime_error("cudaMemset failed");
         }
@@ -205,6 +249,72 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
     //
     //
 
+    void sync() const {
+        if (_stream) {
+            // Wait only for this stream
+            cudaStreamSynchronize(_stream);
+        } else {
+            // No stream set → default stream, so wait for all outstanding work
+            cudaDeviceSynchronize();
+        }
+    }
+
+    //
+    //
+    //
+    std::unique_ptr<T[]> _tmp_buffer; // persistent optional buffer
+    size_t _tmp_buffer_size = 0;
+    void upload(const T *host_ptr, std::array<size_t, Dim> dimensions, bool convert) {
+        resize(dimensions);
+        if (size() == 0)
+            return;
+
+        // ⚠️ new stuff
+        const T *src_ptr = host_ptr;
+        if (convert) {
+            if constexpr (Dim == 3) {
+                _tmp_buffer.reset(new T[size()]);                       // allocate temporary
+                std::memcpy(_tmp_buffer.get(), host_ptr, size_bytes()); // make a copy
+                convert_layout(host_ptr, _tmp_buffer.get(), _dimensions[0], _dimensions[1], _dimensions[2], true);
+                src_ptr = _tmp_buffer.get();
+            }
+        }
+
+        cudaError_t err = cudaMemcpyAsync(_dev_ptr, src_ptr, size_bytes(), cudaMemcpyHostToDevice, _stream);
+        if (err != cudaSuccess)
+            throw std::runtime_error("cudaMemcpyAsync (Host->Device) failed");
+    }
+
+    void download(T *host_ptr, bool convert) const {
+        if (!_dev_ptr || size() == 0)
+            return;
+
+        // ⚠️ new stuff
+        const T *src_ptr = host_ptr;
+
+        auto err = cudaMemcpyAsync(host_ptr, _dev_ptr, size_bytes(), cudaMemcpyDeviceToHost, _stream);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("cudaMemcpy (Device->Host) failed");
+        }
+
+        if (convert) {
+            if constexpr (Dim == 3) {
+                sync();
+                _tmp_buffer.reset(new T[size()]);                       // allocate temporary
+                std::memcpy(_tmp_buffer.get(), host_ptr, size_bytes()); // make a copy
+                convert_layout(host_ptr, _tmp_buffer.get(), _dimensions[0], _dimensions[1], _dimensions[2], false);
+                src_ptr = _tmp_buffer.get();
+            }
+        }
+    }
+
+    //
+    //
+    //
+
+    //
+    // ORGINAL
+    //
     // Upload from host pointer
     void upload(const T *host_ptr, std::array<size_t, Dim> dimensions) {
 
@@ -212,7 +322,7 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
         if (size() == 0)
             return;
 
-        cudaError_t err = cudaMemcpyAsync(_dev_ptr, host_ptr, size_bytes(), cudaMemcpyHostToDevice);
+        cudaError_t err = cudaMemcpyAsync(_dev_ptr, host_ptr, size_bytes(), cudaMemcpyHostToDevice, _stream);
         if (err != cudaSuccess)
             throw std::runtime_error("cudaMemcpy (Host->Device) failed");
     }
@@ -221,11 +331,16 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
     void download(T *host_ptr) const {
         if (!_dev_ptr || size() == 0)
             return;
-        auto err = cudaMemcpyAsync(host_ptr, _dev_ptr, size_bytes(), cudaMemcpyDeviceToHost);
+
+        auto err = cudaMemcpyAsync(host_ptr, _dev_ptr, size_bytes(), cudaMemcpyDeviceToHost, _stream);
         if (err != cudaSuccess) {
             throw std::runtime_error("cudaMemcpy (Device->Host) failed");
         }
     }
+    //
+    //
+    //
+    //
 
 #pragma region SWAP
     // swap member function
