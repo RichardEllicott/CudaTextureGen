@@ -21,7 +21,7 @@ void CurandArray<Dim>::init() {
     int N = device_array.size();
     int threadsPerBlock = 256;
     int blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
-    init_rand_states<<<blocks, threadsPerBlock>>>(states, seed, N);
+    init_rand_states<<<blocks, threadsPerBlock>>>(this->states, this->seed, N); // added this-> here for linux?
 }
 
 // 2D init kernel

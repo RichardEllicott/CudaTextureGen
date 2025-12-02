@@ -23,6 +23,8 @@ will have a common interface of "DeviceArrayBase"
 
 #include <array>
 
+#include <cstring>   // memcpy
+
 namespace core::cuda {
 
 class DeviceArrayBase {
@@ -169,6 +171,39 @@ class DeviceArrayN : public core::cuda::DeviceArrayBase {
             throw std::runtime_error("cudaMemset failed");
         }
     }
+
+    //
+    //
+    // 🚧 🚧 🚧 🚧
+    // // Generic layout converter between SoA and AoS for 3D arrays
+    // // direction = true  → SoA → AoS
+    // // direction = false → AoS → SoA
+    // template <typename T>
+    inline void convert_array_layout(const T *source, T *destination, int width, int height, int channels, bool soa_to_aos) {
+
+        // if constexpr (Dim == 1) {
+
+        // }
+
+        if (channels == 1) { // Just copy, no rearrangement needed
+            std::memcpy(destination, source, sizeof(T) * width * height);
+            return;
+        }
+        int plane_size = width * height;
+        for (int idx = 0; idx < plane_size; ++idx) {
+            for (int c = 0; c < channels; ++c) {
+                if (soa_to_aos) {
+                    destination[idx * channels + c] = source[c * plane_size + idx];
+                } else {
+                    destination[c * plane_size + idx] = source[idx * channels + c];
+                }
+            }
+        }
+    }
+    //
+    //
+    //
+    //
 
     // Upload from host pointer
     void upload(const T *host_ptr, std::array<size_t, Dim> dimensions) {

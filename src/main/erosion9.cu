@@ -3,23 +3,60 @@
 #include "erosion9_kernels.cuh"
 // #include "noise_util.cuh"
 #include "core.h" // timer
+#include "cuda_math.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 
 #pragma region KERNELS
 
-// Accessors
-#define DEFINE_MAP_ACCESSORS(NAME)                                                                     \
-    __device__ inline float get_##NAME##_map(const ArrayPtrs *arrays, int step, int idx) {             \
-        return ((step % 2 == 0) ? arrays->NAME##_map : arrays->_##NAME##_map_out)[idx];                \
-    }                                                                                                  \
-    __device__ inline void set_##NAME##_map(const ArrayPtrs *arrays, int step, int idx, float value) { \
-        ((step % 2 == 0) ? arrays->_##NAME##_map_out : arrays->NAME##_map)[idx] = value;               \
+// Atomic erosion primitive
+template <typename T>
+struct MinFilter {
+    __device__ T operator()(T a, T b) const {
+        return a < b ? a : b;
     }
-DEFINE_MAP_ACCESSORS(height)
-DEFINE_MAP_ACCESSORS(water)
-DEFINE_MAP_ACCESSORS(sediment)
-#undef DEFINE_MAP_ACCESSORS
+};
+
+template <typename T>
+struct Clamp {
+    __device__ T operator()(T val, T minv, T maxv) const {
+        return max(minv, min(val, maxv));
+    }
+};
+
+// Kernel template that applies a sequence of stages
+template <typename T, typename... Stages>
+__global__ void erosionKernel(T *data, int n, Stages... stages) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        T val = data[idx];
+        // Apply each stage in sequence
+        (void)std::initializer_list<int>{
+            ((val = stages(val)), 0)... // fold expression trick
+        };
+        data[idx] = val;
+    }
+}
+
+// // Compose erosion pipeline at compile time
+// erosionKernel<<<grid, block>>>(d_data, n,
+//     MinFilter<float>{},
+//     Clamp<float>{});
+
+// ping pong helper
+template <typename MapPtr>
+__device__ inline float read_map_in(MapPtr in, MapPtr out, int step, int idx) {
+    return (step % 2 == 0 ? in : out)[idx];
+}
+// ping pong helper
+template <typename MapPtr>
+__device__ inline void write_map_out(MapPtr in, MapPtr out, int step, int idx, float value) {
+    (step % 2 == 0 ? out : in)[idx] = value;
+}
+
+__device__ inline int pos_to_idx(int2 pos, int map_width) {
+    return pos.y * map_width + pos.x;
+}
 
 // new pattern
 __global__ void calculate_flux2(
@@ -27,27 +64,75 @@ __global__ void calculate_flux2(
     const ArrayPtrs *arrays,
     const int step) {
     // ================================================================
-    int width = pars->_width;
-    int height = pars->_height;
-    // ----------------------------------------------------------------
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= width || y >= height)
+    int2 map_size = make_int2(pars->_width, pars->_height);
+    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = y * width + x;
+    int idx = pos_to_idx(pos, map_size.x);
+    // ----------------------------------------------------------------
+    int mode = pars->mode;
     // ================================================================
-    float height = get_height_map(arrays, step, idx);
-    float water = get_water_map(arrays, step, idx);
-    float sediment = get_sediment_map(arrays, step, idx);
+    float height = read_map_in(arrays->height_map, arrays->_height_map_out, step, idx);
+    float water = read_map_in(arrays->water_map, arrays->_water_map_out, step, idx);
+    float sediment = read_map_in(arrays->sediment_map, arrays->_sediment_map_out, step, idx);
+    // ================================================================
+    // [Calculate Slopes]
+    // ----------------------------------------------------------------
 
-    //
-    //
-    //
-    //
+    float surface;
 
-    set_height_map(arrays, step, idx, height);
-    set_water_map(arrays, step, idx, water);
-    set_sediment_map(arrays, step, idx, sediment);
+    switch (mode) {
+    case 0:
+        surface = height + water;
+        break;
+    case 1:
+        surface = height + water;
+
+        if (pars->_layers > 1) {
+        }
+
+        break;
+    }
+
+    float slopes[8];
+    for (int n = 0; n < 8; ++n) {
+        int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
+        int new_idx = pos_to_idx(new_pos, map_size.x);
+        float new_height = read_map_in(arrays->height_map, arrays->_height_map_out, step, new_idx);
+        float new_water = read_map_in(arrays->height_map, arrays->_height_map_out, step, new_idx);
+        float new_sediment = read_map_in(arrays->height_map, arrays->_height_map_out, step, new_idx);
+    }
+
+    // ================================================================
+    // won't do this here
+    write_map_out(arrays->height_map, arrays->_height_map_out, step, idx, height);
+    write_map_out(arrays->water_map, arrays->_water_map_out, step, idx, water);
+    write_map_out(arrays->sediment_map, arrays->_sediment_map_out, step, idx, sediment);
+}
+
+#pragma endregion
+
+#pragma region ARRAY_WORKER
+
+// Generic layout converter between SoA and AoS for 3D arrays
+// direction = true  → SoA → AoS
+// direction = false → AoS → SoA
+template <typename T>
+inline void convert_array_layout(const T *source, T *destination, int width, int height, int channels, bool soa_to_aos) {
+    if (channels == 1) { // Just copy, no rearrangement needed
+        std::memcpy(destination, source, sizeof(T) * width * height);
+        return;
+    }
+    int plane_size = width * height;
+    for (int idx = 0; idx < plane_size; ++idx) {
+        for (int c = 0; c < channels; ++c) {
+            if (soa_to_aos) {
+                destination[idx * channels + c] = source[c * plane_size + idx];
+            } else {
+                destination[c * plane_size + idx] = source[idx * channels + c];
+            }
+        }
+    }
 }
 
 #pragma endregion
@@ -172,6 +257,7 @@ void TEMPLATE_CLASS_NAME::process01() {
     core::cuda::DeviceStruct<ArrayPtrs> dev_array_ptrs(get_array_ptrs()); // device side pars
 
     for (int step = 0; step < pars.steps; ++step) {
+        calculate_flux2<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), dev_array_ptrs.dev_ptr(), step);
     }
 }
 

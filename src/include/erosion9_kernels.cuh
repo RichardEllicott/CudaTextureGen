@@ -5,6 +5,9 @@ store some kernels
 */
 // #pragma once
 
+#include "cuda_math.cuh"
+
+
 namespace TEMPLATE_NAMESPACE {
 
 #pragma region HASH
@@ -45,29 +48,6 @@ constexpr float SQRT2 = 1.4142135623730950488f;
 __device__ __constant__ int2 offsets[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
 __device__ __constant__ float offset_distances[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
 __device__ __constant__ int opposite_offset_refs[8] = {1, 0, 3, 2, 5, 4, 7, 6};
-
-// tested posmod for wrapping map coordinates
-__device__ __forceinline__ int posmod(int i, int mod) {
-    int result = i % mod;
-    return result < 0 ? result + mod : result;
-}
-
-// wrap or clamp for map coordinates, note the clamp is range-1
-__device__ __forceinline__ int wrap_or_clamp(int i, int range, bool wrap) {
-    if (wrap) {
-        return posmod(i, range);
-    } else {
-        return i < 0 ? 0 : (i >= range ? range - 1 : i);
-    }
-}
-
-__device__ __forceinline__ int clampi(int value, int minimum, int maximum) {
-    return min(max(value, minimum), maximum);
-}
-
-__device__ __forceinline__ float clampf(float value, float minimum, float maximum) {
-    return fminf(fmaxf(value, minimum), maximum);
-}
 
 #pragma endregion
 
@@ -143,8 +123,8 @@ __global__ void calculate_flux(
     for (int n = 0; n < 8; ++n) {
 
         // new pos
-        int nx = wrap_or_clamp(x + offsets[n].x, map_width, pars->wrap);
-        int ny = wrap_or_clamp(y + offsets[n].y, map_height, pars->wrap);
+        int nx = wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
+        int ny = wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
         int nidx = ny * map_width + nx;
 
         float n_surface = height_map[nidx] + water_map[nidx]; // new surface
@@ -192,8 +172,8 @@ __global__ void calculate_flux(
     if (pars->diffusion_rate > 0.0f) {
 
         for (int n = 0; n < 8; ++n) {
-            int nx = wrap_or_clamp(x + offsets[n].x, map_width, pars->wrap);
-            int ny = wrap_or_clamp(y + offsets[n].y, map_height, pars->wrap);
+            int nx = wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
+            int ny = wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
             int nidx = ny * map_width + nx;
 
             float neighbor_water = water_map[nidx];
@@ -253,8 +233,8 @@ __global__ void apply_flux(
         // calculate outflow
         water_outflow += flux8[idx * 8 + n];
         // calculate inflow
-        int nx = wrap_or_clamp(x + offsets[n].x, map_width, pars->wrap);
-        int ny = wrap_or_clamp(y + offsets[n].y, map_height, pars->wrap);
+        int nx = wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
+        int ny = wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
         int nidx = ny * map_width + nx;
 
         int opposite_offset = opposite_offset_refs[n];
@@ -296,7 +276,7 @@ __global__ void apply_flux(
     sediment += erosion;
     height -= erosion;
 
-    height = clampf(height, pars->min_height, pars->max_height); // clamp height (but min is already enforced)
+    height = clamp(height, pars->min_height, pars->max_height); // clamp height (but min is already enforced)
 
     // ================================================================
     // [Evaporation]
@@ -308,8 +288,8 @@ __global__ void apply_flux(
     // ----------------------------------------------------------------
     float sediment_change = 0.0f;
     for (int n = 0; n < 8; ++n) {
-        int nx = wrap_or_clamp(x + offsets[n].x, map_width, pars->wrap);
-        int ny = wrap_or_clamp(y + offsets[n].y, map_height, pars->wrap);
+        int nx = wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
+        int ny = wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
         int nidx = ny * map_width + nx;
         int opp = opposite_offset_refs[n];
 
