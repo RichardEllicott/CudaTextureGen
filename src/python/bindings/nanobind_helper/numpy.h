@@ -1,9 +1,10 @@
 /*
 create numpy arrays
 
-get_array(length) // 1D
-get_array(height, width) // 2D
-get_array(height, width, depth) // 3D
+get_array<float>(length) // 1D
+get_array<float>(height, width) // 2D
+get_array<float>(height, width, depth) // 3D
+get_array<float, 4>({3, 4, 5, 6}); // 4D or more...
 
 */
 #pragma once
@@ -73,38 +74,9 @@ struct numpy_dtype<bool> {
 
 #pragma region CREATE_EMPTY_ARRAY
 
-// get an uninitialized numpy array (1D)
-template <typename T>
-inline nb::ndarray<nb::numpy, T> get_array(int length) {
-    nb::module_ np = nb::module_::import_("numpy");                     // import numpy
-    nb::object array = np.attr("empty")(length, numpy_dtype<T>::value); // array = numpy.empty(length, dtype=T)
-    return nb::cast<nb::ndarray<nb::numpy, T>>(array);                  // cast the nanobind object to a nanobind array
-}
-
-// get an uninitialized numpy array (2D)
-template <typename T>
-inline nb::ndarray<nb::numpy, T> get_array(int height, int width) {
-    nb::module_ np = nb::module_::import_("numpy");                                            // import numpy
-    nb::object array = np.attr("empty")(nb::make_tuple(height, width), numpy_dtype<T>::value); // array = numpy.empty((height, width), dtype=T)
-    return nb::cast<nb::ndarray<nb::numpy, T>>(array);                                         // cast the nanobind object to a nanobind array
-}
-
-// get an uninitialized numpy array (3D)
-template <typename T>
-inline nb::ndarray<nb::numpy, T> get_array(int height, int width, int depth) {
-    nb::module_ np = nb::module_::import_("numpy");                                                   // import numpy
-    nb::object array = np.attr("empty")(nb::make_tuple(height, width, depth), numpy_dtype<T>::value); // array = numpy.empty((height, width, depth), dtype=T)
-    return nb::cast<nb::ndarray<nb::numpy, T>>(array);                                                // cast the nanobind object to a nanobind array
-}
-
-#pragma endregion
-
-#pragma region N_DIMENSION_SUPPORT
-
-
-// get an uninitialized numpy array with arbitrary shape
+// get an uninitialized numpy array with arbitrary shape, note numpy shapes go (height, width, depth)
 template <typename T, int Dim>
-inline nb::ndarray<nb::numpy, T> get_array(const std::array<size_t, Dim>& shape) {
+inline nb::ndarray<nb::numpy, T> get_array(const std::array<size_t, Dim> &shape) {
     nb::module_ np = nb::module_::import_("numpy");
 
     nb::object array;
@@ -125,6 +97,26 @@ inline nb::ndarray<nb::numpy, T> get_array(const std::array<size_t, Dim>& shape)
     return nb::cast<nb::ndarray<nb::numpy, T>>(array);
 }
 
+// Convenience overload: 1D
+template <typename T>
+inline nb::ndarray<nb::numpy, T>
+get_array(int length) {
+    return get_array<T, 1>({static_cast<size_t>(length)});
+}
+
+// Convenience overload: 2D
+template <typename T>
+inline nb::ndarray<nb::numpy, T>
+get_array(int height, int width) {
+    return get_array<T, 2>({static_cast<size_t>(height), static_cast<size_t>(width)});
+}
+
+// Convenience overload: 3D
+template <typename T>
+inline nb::ndarray<nb::numpy, T>
+get_array(int height, int width, int depth) {
+    return get_array<T, 3>({static_cast<size_t>(height), static_cast<size_t>(width), static_cast<size_t>(depth)});
+}
 
 #pragma endregion
 
