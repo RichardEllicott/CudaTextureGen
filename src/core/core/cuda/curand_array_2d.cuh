@@ -7,7 +7,7 @@ random wrapper
 // #include "core/cuda/device_array.cuh"
 // #include "core/cuda/device_array_nd.cuh"
 
-#include "device_array_n.cuh"
+#include "device_array.cuh"
 #include <curand_kernel.h>
 
 // #include "types.h"

@@ -205,8 +205,6 @@ __global__ void apply_flux(
     const float *__restrict__ sediment_flux8, // in
     const float *__restrict__ slope_map,      // in
 
-    const float *__restrict__ hardness_map, // 🚧 optional in
-
     float *__restrict__ height_map_out,  // out
     float *__restrict__ water_map_out,   // out
     float *__restrict__ sediment_map_out // out

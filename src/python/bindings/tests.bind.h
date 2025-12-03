@@ -3,7 +3,6 @@
 #include "nanobind_helper.h"
 #include "tests.cuh"
 
-#include "core/cuda/device_array_n.cuh"
 
 namespace tests {
 
@@ -21,12 +20,6 @@ inline void bind(nb::module_ &m) {
         tests::cuda_hello();
     });
 
-    m.def("test_device_array_n", []() {
-        printf("test_device_array_n...");
-
-
-        core::cuda::DeviceArray<float, 2> device_array_n;
-
-    });
+  
 }
 } // namespace tests

@@ -80,18 +80,22 @@ using Float3 = std::array<float, 3>;
     X(Float3, layers_threshold, LAYER_THRESHOLD_DEFAULT, "not sure?")
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_DEVICE_ARRAY_NS                                               \
-    X(float, 2, height_map, "current height, set this map to start the simulation")  \
-    X(float, 2, water_map, "current water, optionally set this map at start")        \
-    X(float, 2, sediment_map, "current sediment,  optionally set this map at start") \
-    X(float, 2, hardness_map, "optional hardness map (not yet used)")                \
-    X(float, 2, rain_map, "optional rain map (not yet used)")                        \
-    X(float, 2, _height_map_out, "height out")                                       \
-    X(float, 2, _water_map_out, "water out")                                         \
-    X(float, 2, _sediment_map_out, "sediment out")                                   \
-    X(float, 2, _slope_map, "strength of slope")                                     \
-    X(float, 1, _flux8, "⚠️ 8 water flow out to 8 neighbours")                        \
-    X(float, 1, _sediment_flux8, "⚠️ sediment flow out to 8 neighbours")
+#define TEMPLATE_CLASS_DEVICE_ARRAY_NS                                                               \
+    X(float, 2, height_map, "current height, set this map to start the simulation")                  \
+    X(float, 2, _height_map_out, "height out")                                                       \
+    X(float, 2, water_map, "current water, optionally set this map at start")                        \
+    X(float, 2, _water_map_out, "water out")                                                         \
+    X(float, 2, sediment_map, "current sediment,  optionally set this map at start")                 \
+    X(float, 2, _sediment_map_out, "sediment out")                                                   \
+    X(float, 2, rain_map, "optional rain map, multiply by this")                                     \
+    X(float, 2, _slope_map, "strength of slope")                                                     \
+    X(float, 1, _flux8, "⚠️ 8 water flow out to 8 neighbours")                                        \
+    X(float, 1, _sediment_flux8, "⚠️ sediment flow out to 8 neighbours")                              \
+    X(float, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB") \
+    X(float, 3, _layer_map_out, "layer out")                                                         \
+    X(float, 2, _surface_map, "calculating the surface height")
+
+// X(float, 2, hardness_map, "optional hardness map (not yet used)")
 
 // ================================================================ //
 

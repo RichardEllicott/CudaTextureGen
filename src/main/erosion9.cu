@@ -54,8 +54,53 @@ __device__ inline void write_map_out(MapPtr in, MapPtr out, int step, int idx, f
     (step % 2 == 0 ? out : in)[idx] = value;
 }
 
+template <typename T>
+__device__ inline T *get_map_ptr(T *in, T *out, int step) {
+    return (step % 2 == 0 ? in : out);
+}
+
 __device__ inline int pos_to_idx(int2 pos, int map_width) {
     return pos.y * map_width + pos.x;
+}
+
+// calulate total height of layers
+__global__ void calc_layer_height(
+    const Parameters *pars,
+    const ArrayPtrs *arrays,
+    const int step) {
+    // ================================================================
+    int2 map_size = make_int2(pars->_width, pars->_height);
+    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
+        return;
+    int idx = pos_to_idx(pos, map_size.x);
+    // ----------------------------------------------------------------
+
+    auto layer_map = get_map_ptr(arrays->layer_map, arrays->_layer_map_out, step);
+    auto height_map = get_map_ptr(arrays->height_map, arrays->_height_map_out, step);
+    auto water_map = get_map_ptr(arrays->water_map, arrays->_water_map_out, step);
+    auto sediment_map = get_map_ptr(arrays->sediment_map, arrays->_sediment_map_out, step);
+
+    // auto layer_map_out = get_map_ptr(arrays->_layer_map_out, arrays->layer_map, step);
+    // auto height_map_out = get_map_ptr(arrays->_height_map_out, arrays->height_map, step);
+    // auto water_map_out = get_map_ptr(arrays->_water_map_out, arrays->water_map, step);
+    // auto sediment_map_out = get_map_ptr(arrays->_sediment_map_out, arrays->sediment_map, step);
+
+    int layer_count = pars->_layers;
+    int layer_idx = idx * layer_count;
+
+    float height = 0.0;
+    for (int i = 0; i < layer_count; i++) {
+        height += layer_map[layer_idx + i];
+    }
+
+    float water = water_map[idx];
+
+    float surface = height + water;
+
+    height_map[idx] = height;
+
+    arrays->_surface_map[idx] = surface;
 }
 
 // new pattern
@@ -80,16 +125,19 @@ __global__ void calculate_flux2(
     // ----------------------------------------------------------------
 
     float surface;
+    int layer_count;
+    float *layers_ptr;
 
     switch (mode) {
     case 0:
         surface = height + water;
         break;
     case 1:
-        surface = height + water;
+        layer_count = pars->_layers;
+        layers_ptr = arrays->layer_map + idx * layer_count;
 
-        if (pars->_layers > 1) {
-        }
+        // if (pars->_layers > 1) {
+        // }
 
         break;
     }
@@ -226,8 +274,6 @@ void TEMPLATE_CLASS_NAME::process00() {
             _flux8.dev_ptr(),          // in
             _sediment_flux8.dev_ptr(), // in
             _slope_map.dev_ptr(),      // in
-
-            hardness_map.dev_ptr(), // optional in
 
             _height_map_out.dev_ptr(),  // out
             _water_map_out.dev_ptr(),   // out
