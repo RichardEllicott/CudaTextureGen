@@ -8,8 +8,7 @@ functions to covert numpy arrays back and forth to std::vector and core::Array2D
 #pragma once
 
 #include "nanobind_helper/array_nd.h"
-// #include "nanobind_helper/device_array.h"
-#include "nanobind_helper/device_array_n.h" // NEW
+#include "nanobind_helper/device_array.h"
 #include "nanobind_helper/numpy.h"
 #include "nanobind_helper/vector.h"
 

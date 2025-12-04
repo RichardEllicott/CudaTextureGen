@@ -185,6 +185,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         return _dev_ptr;
     }
 
+    // resize dimensions, free and allocate memory as required
     void resize(std::array<size_t, Dim> dimensions) {
         if (_dimensions == dimensions) {
             return; // nothing changed, skip reallocation
@@ -193,6 +194,21 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         free_device();
         _dimensions = dimensions;
         allocate_device();
+    }
+
+    // resize helper (works on any dimension)
+    void resize_helper(size_t width, size_t height = 1, size_t depth = 1) {
+        if constexpr (Dim == 1) {
+            resize({width});
+            if (height > 1 || depth > 1) {
+            }
+        } else if constexpr (Dim == 2) {
+            resize({width, height});
+            if (depth > 1) {
+            }
+        } else if constexpr (Dim == 3) {
+            resize({width, height, depth});
+        }
     }
 
     void zero_device() override {
@@ -206,39 +222,6 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         }
     }
 
-    //
-    //
-    // 🚧 🚧 🚧 🚧
-    // // Generic layout converter between SoA and AoS for 3D arrays
-    // // direction = true  → SoA → AoS
-    // // direction = false → AoS → SoA
-    // template <typename T>
-    inline void convert_array_layout(const T *source, T *destination, int width, int height, int channels, bool soa_to_aos) {
-
-        // if constexpr (Dim == 1) {
-
-        // }
-
-        if (channels == 1) { // Just copy, no rearrangement needed
-            std::memcpy(destination, source, sizeof(T) * width * height);
-            return;
-        }
-        int plane_size = width * height;
-        for (int idx = 0; idx < plane_size; ++idx) {
-            for (int c = 0; c < channels; ++c) {
-                if (soa_to_aos) {
-                    destination[idx * channels + c] = source[c * plane_size + idx];
-                } else {
-                    destination[c * plane_size + idx] = source[idx * channels + c];
-                }
-            }
-        }
-    }
-    //
-    //
-    //
-    //
-
     void sync() const {
         if (_stream) {
             // Wait only for this stream
@@ -249,62 +232,6 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         }
     }
 
-    //
-    //
-    //
-    std::unique_ptr<T[]> _tmp_buffer; // persistent optional buffer
-    size_t _tmp_buffer_size = 0;
-    void upload(const T *host_ptr, std::array<size_t, Dim> dimensions, bool convert) {
-        resize(dimensions);
-        if (size() == 0)
-            return;
-
-        // ⚠️ new stuff
-        const T *src_ptr = host_ptr;
-        if (convert) {
-            if constexpr (Dim == 3) {
-                _tmp_buffer.reset(new T[size()]);                       // allocate temporary
-                std::memcpy(_tmp_buffer.get(), host_ptr, size_bytes()); // make a copy
-                convert_layout(host_ptr, _tmp_buffer.get(), _dimensions[0], _dimensions[1], _dimensions[2], true);
-                src_ptr = _tmp_buffer.get();
-            }
-        }
-
-        cudaError_t err = cudaMemcpyAsync(_dev_ptr, src_ptr, size_bytes(), cudaMemcpyHostToDevice, _stream);
-        if (err != cudaSuccess)
-            throw std::runtime_error("cudaMemcpyAsync (Host->Device) failed");
-    }
-
-    void download(T *host_ptr, bool convert) const {
-        if (!_dev_ptr || size() == 0)
-            return;
-
-        // ⚠️ new stuff
-        const T *src_ptr = host_ptr;
-
-        auto err = cudaMemcpyAsync(host_ptr, _dev_ptr, size_bytes(), cudaMemcpyDeviceToHost, _stream);
-        if (err != cudaSuccess) {
-            throw std::runtime_error("cudaMemcpy (Device->Host) failed");
-        }
-
-        if (convert) {
-            if constexpr (Dim == 3) {
-                sync();
-                _tmp_buffer.reset(new T[size()]);                       // allocate temporary
-                std::memcpy(_tmp_buffer.get(), host_ptr, size_bytes()); // make a copy
-                convert_layout(host_ptr, _tmp_buffer.get(), _dimensions[0], _dimensions[1], _dimensions[2], false);
-                src_ptr = _tmp_buffer.get();
-            }
-        }
-    }
-
-    //
-    //
-    //
-
-    //
-    // ORGINAL
-    //
     // Upload from host pointer
     void upload(const T *host_ptr, std::array<size_t, Dim> dimensions) {
 
@@ -327,10 +254,6 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
             throw std::runtime_error("cudaMemcpy (Device->Host) failed");
         }
     }
-    //
-    //
-    //
-    //
 
 #pragma region SWAP
     // swap member function
@@ -373,7 +296,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
     DeviceArray &operator=(const DeviceArray &other) {
         if (this != &other) {
             DeviceArray tmp(other); // copy‑construct
-            swap(tmp);               // strong exception safety
+            swap(tmp);              // strong exception safety
         }
         return *this;
     }

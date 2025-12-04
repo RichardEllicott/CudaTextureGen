@@ -19,6 +19,19 @@ import imageio.v2 as imageio  # v2 uses numpy arrays
 from numpy.typing import NDArray
 
 
+from enum import Enum
+
+# class Color(Enum):
+#     RED   = 1
+#     GREEN = 2
+#     BLUE  = 3
+
+# # Usage
+# print(Color.RED)        # Color.RED
+# print(Color.RED.value)  # 1
+# print(Color.RED.name)   # "RED"
+
+
 # from tools import *
 # import matplotlib
 # from matplotlib.colors import to_rgb
@@ -29,6 +42,12 @@ from numpy.typing import NDArray
 
 
 class ErosionRunner:
+
+    class Mode(Enum):
+        normal = 0
+        layer = 1
+
+    mode = Mode.normal
 
     debug = True  # print debug information (note slows us down a bit)
 
@@ -51,8 +70,26 @@ class ErosionRunner:
 
     process_time = 0.0
 
-    def get_filename_start(self):
-        return f"{self.folder}/{self.filename_base}"
+    # PROPERTIES
+
+    # height_map = property(lambda self: self.erosion.height_map,
+    #                 lambda self, v: setattr(self.erosion, "height_map", v))
+    # layer_map = property(lambda self: self.layer_map.depth,
+    #                  lambda self, v: self.erosion.)
+
+    @property
+    def layer_map(self):
+        v = self.erosion.layer_map
+        # stored internally as (C,H,W), return to Python as (H,W,C)
+        return np.transpose(v, (1, 2, 0))
+
+    @layer_map.setter
+    def layer_map(self, v):
+        self.mode = self.Mode.layer  # layer mode
+        # accept (H,W,C), store internally as (C,H,W)
+        v = np.ascontiguousarray(np.transpose(v, (2, 0, 1)))
+        self.erosion.layer_map = v
+    # PROPERTIES
 
     _default_pars: dict
 
@@ -71,7 +108,7 @@ class ErosionRunner:
         tools.set_object_with_dict(self.erosion, pars)
 
     def save_json(self) -> None:
-        tools.save_dict_to_json(self.get_erosion_pars(), self.get_filename_start() + ".settings.json")
+        tools.save_dict_to_json(self.get_erosion_pars(), self.filename_base + ".settings.json")
 
     def load_json(self) -> None:
         dict = tools.load_dict_from_json(f"{self.filename_base}.settings.json")
@@ -286,8 +323,11 @@ class ErosionRunner:
         # tools.save_array_as_image(sediment_map * 255, self.get_filename_start() + ".sediment.png")
 
 
-def test():
-    erosion_runner = ErosionRunner()
+def main():
+
+    pass
 
 
-test()
+if __name__ == "__main__":
+    print("Running main logic...")
+    main()

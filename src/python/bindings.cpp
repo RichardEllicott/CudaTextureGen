@@ -3,12 +3,15 @@
 central file for the python bindings
 
 */
+
+
+
 // ================================================================
 // tests and templates
 // ----------------------------------------------------------------
 #include "template_class_4.bind.h"  //
+#include "template_d_test.bind.h"   //  multi part template test
 #include "template_darray_1.bind.h" //
-#include "template_d_test.bind.h" //  multi part template test
 #include "tests.bind.h"             // ✔️ simple hello from gpu
 // #include "x_template_test.bind.h" //  auto generating template test // BROKEN!
 
@@ -70,7 +73,53 @@ central file for the python bindings
 // #include <nanobind/stl/function.h>     // std::function
 // #include <nanobind/stl/chrono.h>       // std::chrono types
 
-namespace nb = nanobind;
+// #include <nanobind/nanobind.h>
+// #include <nanobind/stl/tuple.h>
+// #include <cuda_runtime.h>
+
+// namespace nanobind::detail {
+//     template <>
+//     struct type_caster<int2> {
+//         NB_TYPE_CASTER(int2, const_name("tuple[int, int]"))
+
+//         // Python -> C++ conversion
+//         bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+//             // Try to convert from a tuple or list of 2 ints
+//             if (PyTuple_Check(src.ptr()) && PyTuple_Size(src.ptr()) == 2) {
+//                 PyObject *item0 = PyTuple_GetItem(src.ptr(), 0);
+//                 PyObject *item1 = PyTuple_GetItem(src.ptr(), 1);
+
+//                 value.x = PyLong_AsLong(item0);
+//                 value.y = PyLong_AsLong(item1);
+
+//                 if (PyErr_Occurred())
+//                     return false;
+
+//                 return true;
+//             }
+//             if (PyList_Check(src.ptr()) && PyList_Size(src.ptr()) == 2) {
+//                 PyObject *item0 = PyList_GetItem(src.ptr(), 0);
+//                 PyObject *item1 = PyList_GetItem(src.ptr(), 1);
+
+//                 value.x = PyLong_AsLong(item0);
+//                 value.y = PyLong_AsLong(item1);
+
+//                 if (PyErr_Occurred())
+//                     return false;
+
+//                 return true;
+//             }
+//             return false;
+//         }
+
+//         // C++ -> Python conversion
+//         static handle from_cpp(int2 src, rv_policy policy, cleanup_list *cleanup) noexcept {
+//             return nb::make_tuple(src.x, src.y).release();
+//         }
+//     };
+// }
+
+// namespace nb = nanobind;
 
 NB_MODULE(cuda_texture_gen, m) {
 

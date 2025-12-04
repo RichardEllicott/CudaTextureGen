@@ -94,3 +94,27 @@ def test02():
 
 
 test02()
+
+def test03():
+    """
+    layers test
+    """
+    runner = ErosionRunner()
+    erosion = runner.erosion
+
+    map_width, map_height = 512, 512
+
+    octaves = 8
+
+    # height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves)
+    layer_map = tools.noise.fractal_rgb(width=map_width, height=map_height, octaves=octaves)
+
+    runner.layer_map = layer_map
+
+    erosion.mode = 1
+
+    runner.steps_per_frame = 16
+    runner.steps_per_frame = 64
+    runner.process()
+
+# test03()

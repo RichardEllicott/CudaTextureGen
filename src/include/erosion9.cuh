@@ -34,6 +34,10 @@
 //     Erosion threshold: 0.60
 //     Color hex: #696969
 
+// using Int2 = std::array<int, 2>;
+// #define DEFAULT_INT2 {0, 0}
+// #define DEFAULT_INT2 make_int2(0, 0)
+
 using Float3 = std::array<float, 3>;
 #define LAYER_NAME_DEFAULT {"Topsoil", "Subsoil", "Bedrock"} // not trivially copyable
 #define LAYER_RESISTANCE_DEFAULT {0.25, 0.55, 0.90}          // suggested by ai but changing to
@@ -77,7 +81,11 @@ using Float3 = std::array<float, 3>;
     X(Float3, layers_erosiveness, LAYER_EROSIVENESS_DEFAULT, "multiply by erosion_rate")            \
     X(Float3, layers_yield, LAYER_YIELD_DEFAULT, "sediment to release")                             \
     X(Float3, layers_permeability, LAYER_PERMEABILITY_DEFAULT, "not sure?")                         \
-    X(Float3, layers_threshold, LAYER_THRESHOLD_DEFAULT, "not sure?")
+    X(Float3, layers_threshold, LAYER_THRESHOLD_DEFAULT, "not sure?")                               \
+    X(float, scale, 1.0, "the real world dimensions of a pixel (width)")                            \
+    X(float, gravity, -9.8, "gravity with regard to positive being upwards")
+
+// X(int2, test_int2, DEFAULT_INT2, "test a Int2")
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_DEVICE_ARRAY_NS                                                               \
@@ -112,8 +120,6 @@ struct Parameters {
 };
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
 
-//
-//
 // ⚠️ Array struct for uploading to GPU
 struct ArrayPtrs {
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
@@ -124,9 +130,6 @@ struct ArrayPtrs {
 #endif
 };
 static_assert(std::is_trivially_copyable<ArrayPtrs>::value, "ArrayPtrs must remain trivially copyable for CUDA memcpy"); // optional
-//
-//
-//
 
 class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
 
@@ -175,6 +178,14 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
         };
     }
 
+    // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
+    struct ArrayMeta {
+        const char *type;        // e.g. "float", "int", "double"
+        const int dimensions;    // e.g. "1D", "2x2", "NxM"
+        const char *name;        // identifier
+        const char *description; // human-readable docstring
+    };
+
     void process00();
     void process01();
 
@@ -183,6 +194,9 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
     }
 
     void allocate_device() override;
+
+    void allocate_device00();
+    void allocate_device01();
 
     void process() override;
 };
