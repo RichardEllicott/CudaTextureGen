@@ -108,10 +108,10 @@ class ErosionRunner:
         tools.set_object_with_dict(self.erosion, pars)
 
     def save_json(self) -> None:
-        tools.save_dict_to_json(self.get_erosion_pars(), self.filename_base + ".settings.json")
+        tools.save_dict_to_json(self.get_erosion_pars(), f"{self.folder}{self.filename_base}.settings.json")
 
     def load_json(self) -> None:
-        dict = tools.load_dict_from_json(f"{self.filename_base}.settings.json")
+        dict = tools.load_dict_from_json(f"{self.folder}{self.filename_base}.settings.json")
         tools.set_object_with_dict(self.erosion, dict)
 
     def PRESET_simple_erosion(self):

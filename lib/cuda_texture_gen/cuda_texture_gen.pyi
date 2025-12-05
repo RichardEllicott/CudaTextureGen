@@ -54,6 +54,7 @@ class Erosion9:
     scale: float
     sediment_capacity: float
     sediment_map: Incomplete
+    sediment_yield: float
     simple_erosion_rate: float
     slope_exponent: float
     slope_jitter: float

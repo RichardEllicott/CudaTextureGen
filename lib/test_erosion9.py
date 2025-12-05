@@ -116,14 +116,13 @@ def test_mode_1():
     # layer_map = tools.noise.fractal_rgb(width=map_width, height=map_height, octaves=octaves)
     # runner.layer_map = layer_map
 
-    
     erosion.rain_rate = 0.00005
-    erosion.erosion_rate = 0.01
+    erosion.erosion_rate = 0.001 * 2.0
     erosion.evaporation_rate = 0.001
     erosion.max_water_outflow = 8.0
 
     runner.steps_per_frame = 16
-    # runner.steps_per_frame = 64
+    runner.steps_per_frame = 64
     runner.process()
 
 

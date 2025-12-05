@@ -208,21 +208,20 @@ __global__ void apply_flux2(
     // ----------------------------------------------------------------
 
     float water_inflow = 0.f;     // inflow calculated by visting neighbours
-    float sediment_change = 0.0f; // same with sediment change
+    float sediment_change = 0.0f; // (⚠️ could partially precompute)
 
-    float water_outflow = 0.0f; // ❓ could be more effecient to calculate this previously (like as a delta)
+    float water_outflow = 0.0f; // (⚠️ could precompute)
 
     for (int n = 0; n < 8; ++n) {
-        water_outflow += arrays->_flux8[idx * 8 + n]; // ❓ could be more effecient to calculate this previously (like as a delta)
+        water_outflow += arrays->_flux8[idx * 8 + n];            // outflow from this tile (⚠️ could precompute)
+        sediment_change -= arrays->_sediment_flux8[idx * 8 + n]; // outflow from this tile (⚠️ could precompute)
 
         int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
         int new_idx = pos_to_idx(new_pos, map_size.x);
         int opposite_offset = opposite_offset_refs[n];
 
-        water_inflow += arrays->_flux8[new_idx * 8 + opposite_offset]; // ❓  confusing
-
-        sediment_change -= arrays->_sediment_flux8[idx * 8 + n];               // outflow
-        sediment_change += arrays->_sediment_flux8[new_idx * 8 + opposite_offset]; // inflow
+        water_inflow += arrays->_flux8[new_idx * 8 + opposite_offset];             //  inflow from neighbouring tiles
+        sediment_change += arrays->_sediment_flux8[new_idx * 8 + opposite_offset]; // inflow from neighbouring tiles
     }
 
     water -= water_outflow;
@@ -233,23 +232,12 @@ __global__ void apply_flux2(
     float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
     erosion = fminf(erosion, fmaxf(0.0f, available_erosion));
 
-    sediment += erosion; // ❓ scale this by the material, some might make less sediment
+    sediment += erosion * pars->sediment_yield; // ❓ scale this by the material, some might make less sediment
     height -= erosion;
 
-    // height = clamp(height, pars->min_height, pars->max_height); //❓❓ pointless won't go up?
+    height = clamp(height, pars->min_height, pars->max_height); //❓❓ pointless won't go up?
 
     water -= pars->evaporation_rate; // evaporation
-
-    // ================================================================
-    // [sediment_change]  ❓ can intergrate with previous
-    // ----------------------------------------------------------------
-
-    // for (int n = 0; n < 8; ++n) {
-    //     int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
-    //     int new_idx = pos_to_idx(new_pos, map_size.x);
-    //     int opposite_offset = opposite_offset_refs[n];
-
-    // }
 
     // ================================================================
     // [Deposition]
