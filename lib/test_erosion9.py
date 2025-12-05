@@ -21,7 +21,7 @@ def lerp(a, b, t: float):
     return (1.0 - t) * a + t * b
 
 
-def test02():
+def test_mode_0():
     """
     shows okay rivers
     """
@@ -62,7 +62,7 @@ def test02():
     erosion.rain_rate = 0.005
 
     erosion.max_water_outflow = 1.0
-    erosion.erosion_mode = 1
+    erosion.mode = 0
     # erosion.erosion_mode = 2
     erosion.deposition_rate = 0.5 / 10.0
     # erosion.deposition_rate = 0.5
@@ -74,6 +74,8 @@ def test02():
     erosion.evaporation_rate = 0.001
     erosion.drain_at_min_height = True
     # erosion.min_height = 0.0
+
+    erosion.sediment_capacity = 1.0  # ⚠️  new change
 
     # trying to spread water
     # self._erosion.diffusion_rate = 0.001 # seems buggy
@@ -93,28 +95,36 @@ def test02():
     runner.process()
 
 
-test02()
+# test_mode_0()
 
-def test03():
+def test_mode_1():
     """
     layers test
     """
     runner = ErosionRunner()
     erosion = runner.erosion
+    erosion.mode = 1
 
     map_width, map_height = 512, 512
 
     octaves = 8
 
-    # height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves)
-    layer_map = tools.noise.fractal_rgb(width=map_width, height=map_height, octaves=octaves)
+    height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves)
+    height_map *= 128.0
+    erosion.height_map = height_map
 
-    runner.layer_map = layer_map
+    # layer_map = tools.noise.fractal_rgb(width=map_width, height=map_height, octaves=octaves)
+    # runner.layer_map = layer_map
 
-    erosion.mode = 1
+    
+    erosion.rain_rate = 0.00005
+    erosion.erosion_rate = 0.01
+    erosion.evaporation_rate = 0.001
+    erosion.max_water_outflow = 8.0
 
     runner.steps_per_frame = 16
-    runner.steps_per_frame = 64
+    # runner.steps_per_frame = 64
     runner.process()
 
-# test03()
+
+test_mode_1()

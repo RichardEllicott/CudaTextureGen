@@ -119,21 +119,28 @@ __global__ void calculate_flux2(
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
     int idx = pos_to_idx(pos, map_size.x);
-    // ----------------------------------------------------------------
-    int mode = pars->mode;
     // ================================================================
-    float height = read_map_in(arrays->height_map, arrays->_height_map_out, step, idx);
-    float water = read_map_in(arrays->water_map, arrays->_water_map_out, step, idx);
-    float sediment = read_map_in(arrays->sediment_map, arrays->_sediment_map_out, step, idx);
-
+    // [Rain]
+    // ----------------------------------------------------------------
+    float rain = pars->rain_rate;
+    // if (arrays->rain_map) {
+    //     rain *= arrays->rain_map[idx]; // multiply by rain_map if != nullptr
+    // }
+    arrays->water_map[idx] += rain;
+    // ================================================================
+    // float height = read_map_in(arrays->height_map, arrays->_height_map_out, step, idx);
+    // float water = read_map_in(arrays->water_map, arrays->_water_map_out, step, idx);
+    // float sediment = read_map_in(arrays->sediment_map, arrays->_sediment_map_out, step, idx);
+    float height = arrays->height_map[idx];
+    float water = arrays->water_map[idx];
+    float sediment = arrays->sediment_map[idx];
+    // ================================================================
+    // [Calculate Flows]
+    // ----------------------------------------------------------------
     float surface = height + water;
+    float outflows[8];
+    float total_outflow = 0.0f;
 
-    // ================================================================
-    // [Calculate Slopes]
-    // ----------------------------------------------------------------
-
-    float p_slope_gradients[8];
-    // float 
     for (int n = 0; n < 8; ++n) {
         int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
         int new_idx = pos_to_idx(new_pos, map_size.x);
@@ -142,18 +149,129 @@ __global__ void calculate_flux2(
         float new_sediment = read_map_in(arrays->sediment_map, arrays->_height_map_out, step, new_idx);
         float new_surface = new_height + new_water;
 
-        float difference = surface - new_surface; // positive means we are higher than neighbour
+        float slope_height = surface - new_surface;                                      // positive means we are higher than neighbour
+        float horizontal_distance = pars->scale * offset_distances[n];                   // distance to tile (1.0 | ~1.41) * map scale
+        float positive_slope_gradient = fmaxf(slope_height / horizontal_distance, 0.0f); // positive slope gradient
 
-        float horizontal_distance = pars->scale * offset_distances[n];
-        float p_slope_gradient = fmaxf(difference / horizontal_distance, 0.0f); // positive slope gradient
-        p_slope_gradients[n] = p_slope_gradient;
+        // ----------------------------------------------------------------
+        // Manning velocity approx
+        // float v = (1.0f / roughness) * powf(water, 2.0f / 3.0f) * sqrtf(p_slope_gradient);
+        float outflow = powf(water, 2.0f / 3.0f) * sqrtf(positive_slope_gradient); // based on manning with no roughness
+        outflow *= pars->flow_rate;                                                // scale with a flow rate, lowering this number will slow all flow
+        outflows[n] = outflow;
+        total_outflow += outflow;
+    }
 
-        // Manning velocity
-        float v = (1.0f / n) * powf(water, 2.0f / 3.0f) * sqrtf(p_slope_gradient);
+    // ================================================================
+    // [Calculate Flux]
+    // ----------------------------------------------------------------
 
+    // get a scale factor in the case we have exceeded the max water outflow
+    // ❓ we could approach this problem different and instead use a max outflow per cell
+    float flux_scale = 1.0f;
+    if (total_outflow > pars->max_water_outflow) {
+        flux_scale = pars->max_water_outflow / total_outflow;
+    }
+
+    // pointer's to the flux arrays
+    float *_flux8_ptr = &arrays->_flux8[idx * 8];
+    float *_sediment_flux8_ptr = &arrays->_sediment_flux8[idx * 8];             // pointer to sediment flux
+    float sediment_concentration = (water > 1e-6f) ? (sediment / water) : 0.0f; // sediment concentration
+    sediment_concentration *= pars->sediment_capacity;                          // the amount of sediment to transport based on capacity
+
+    for (int n = 0; n < 8; ++n) {
+        float scaled_outflow = outflows[n] * flux_scale;
+        _flux8_ptr[n] = scaled_outflow;                                   // final outflow value scaled
+        _sediment_flux8_ptr[n] = scaled_outflow * sediment_concentration; // final sediment flow
     }
 }
 
+__global__ void apply_flux2(
+    const Parameters *pars,
+    const ArrayPtrs *arrays,
+    const int step) {
+    // ================================================================
+    int2 map_size = make_int2(pars->_width, pars->_height);
+    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
+        return;
+    int idx = pos_to_idx(pos, map_size.x);
+    // ================================================================
+    // float height = read_map_in(arrays->height_map, arrays->_height_map_out, step, idx);
+    // float water = read_map_in(arrays->water_map, arrays->_water_map_out, step, idx);
+    // float sediment = read_map_in(arrays->sediment_map, arrays->_sediment_map_out, step, idx);
+    float height = arrays->height_map[idx];
+    float water = arrays->water_map[idx];
+    float sediment = arrays->sediment_map[idx];
+    // ================================================================
+    // [Calculate Flows]
+    // ----------------------------------------------------------------
+
+    float water_inflow = 0.f;     // inflow calculated by visting neighbours
+    float sediment_change = 0.0f; // same with sediment change
+
+    float water_outflow = 0.0f; // ❓ could be more effecient to calculate this previously (like as a delta)
+
+    for (int n = 0; n < 8; ++n) {
+        water_outflow += arrays->_flux8[idx * 8 + n]; // ❓ could be more effecient to calculate this previously (like as a delta)
+
+        int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
+        int new_idx = pos_to_idx(new_pos, map_size.x);
+        int opposite_offset = opposite_offset_refs[n];
+
+        water_inflow += arrays->_flux8[new_idx * 8 + opposite_offset]; // ❓  confusing
+
+        sediment_change -= arrays->_sediment_flux8[idx * 8 + n];               // outflow
+        sediment_change += arrays->_sediment_flux8[new_idx * 8 + opposite_offset]; // inflow
+    }
+
+    water -= water_outflow;
+    water += water_inflow;
+    sediment += sediment_change;
+
+    float erosion = water_outflow * pars->erosion_rate;
+    float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
+    erosion = fminf(erosion, fmaxf(0.0f, available_erosion));
+
+    sediment += erosion; // ❓ scale this by the material, some might make less sediment
+    height -= erosion;
+
+    // height = clamp(height, pars->min_height, pars->max_height); //❓❓ pointless won't go up?
+
+    water -= pars->evaporation_rate; // evaporation
+
+    // ================================================================
+    // [sediment_change]  ❓ can intergrate with previous
+    // ----------------------------------------------------------------
+
+    // for (int n = 0; n < 8; ++n) {
+    //     int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
+    //     int new_idx = pos_to_idx(new_pos, map_size.x);
+    //     int opposite_offset = opposite_offset_refs[n];
+
+    // }
+
+    // ================================================================
+    // [Deposition]
+    // ----------------------------------------------------------------
+    float deposit = sediment * pars->deposition_rate; // ❓ simple, no capacity
+    sediment -= deposit;
+    height += deposit;
+    // ================================================================
+    // [Drain]
+    // ----------------------------------------------------------------
+    if (pars->drain_at_min_height && height <= pars->min_height) {
+        water = 0.0f;
+        sediment = 0.0f;
+    }
+    // ================================================================
+    // [output]
+    // ----------------------------------------------------------------
+
+    arrays->height_map[idx] = height;
+    arrays->water_map[idx] = fmaxf(0.f, water);       // no negative water
+    arrays->sediment_map[idx] = fmaxf(0.f, sediment); // no negative sediment
+}
 /*
 Manning’s equation (open channel):
 
@@ -189,143 +307,6 @@ https://copilot.microsoft.com/chats/hMzbLGxH7tG1SQkZWEPYW
 // write_map_out(arrays->height_map, arrays->_height_map_out, step, idx, height);
 // write_map_out(arrays->water_map, arrays->_water_map_out, step, idx, water);
 // write_map_out(arrays->sediment_map, arrays->_sediment_map_out, step, idx, sediment);
-
-#pragma endregion
-
-// 2D Saint-Venant (shallow-water)
-#pragma region SHALLOW_WATER
-
-#define HD_INLINE __host__ __device__ inline
-constexpr float GRAVITY = 9.81f;
-
-struct Cell {
-    float h; // depth
-    float u; // vel x
-    float v; // vel y
-    float z; // bed elevation (terrain)
-};
-
-struct Flux3 {
-    float fh;  // mass flux
-    float fhu; // x-momentum flux
-    float fhv; // y-momentum flux
-};
-
-HD_INLINE Flux3 flux_x(const Cell &c) {
-    float hu = c.h * c.u;
-    float hv = c.h * c.v;
-    float p = 0.5f * GRAVITY * c.h * c.h; // hydrostatic pressure term
-    return {hu, hu * c.u + p, hu * c.v};
-}
-
-HD_INLINE Flux3 flux_y(const Cell &c) {
-    float hu = c.h * c.u;
-    float hv = c.h * c.v;
-    float p = 0.5f * GRAVITY * c.h * c.h;
-    return {hv, hu * c.v, hv * c.v + p};
-}
-
-HD_INLINE float wavespeed(const Cell &c) {
-    float c0 = sqrtf(GRAVITY * fmaxf(c.h, 0.0f));
-    float ax = fabsf(c.u) + c0;
-    float ay = fabsf(c.v) + c0;
-    return fmaxf(ax, ay);
-}
-
-// Rusanov interface flux and update
-
-HD_INLINE Flux3 rusanov_flux_x(const Cell &L, const Cell &R) {
-    Flux3 fL = flux_x(L);
-    Flux3 fR = flux_x(R);
-    float a = fmaxf(wavespeed(L), wavespeed(R));
-    return {
-        0.5f * (fL.fh + fR.fh) - 0.5f * a * (R.h - L.h),
-        0.5f * (fL.fhu + fR.fhu) - 0.5f * a * ((R.h * R.u) - (L.h * L.u)),
-        0.5f * (fL.fhv + fR.fhv) - 0.5f * a * ((R.h * R.v) - (L.h * L.v))};
-}
-
-HD_INLINE Flux3 rusanov_flux_y(const Cell &B, const Cell &T) {
-    Flux3 gB = flux_y(B);
-    Flux3 gT = flux_y(T);
-    float a = fmaxf(wavespeed(B), wavespeed(T));
-    return {
-        0.5f * (gB.fh + gT.fh) - 0.5f * a * (T.h - B.h),
-        0.5f * (gB.fhu + gT.fhu) - 0.5f * a * ((T.h * T.u) - (B.h * B.u)),
-        0.5f * (gB.fhv + gT.fhv) - 0.5f * a * ((T.h * T.v) - (B.h * B.v))};
-}
-
-// Cell update (finite-volume on a uniform grid with spacing dx, dy):
-
-HD_INLINE void update_cell(
-    const Flux3 &FxL, const Flux3 &FxR,
-    const Flux3 &FyB, const Flux3 &FyT,
-    const Cell &c, float n_rough, float dx, float dy, float dt,
-    Cell &out) {
-    // Divergence of fluxes
-    float dh = -(FxR.fh - FxL.fh) / dx - (FyT.fh - FyB.fh) / dy;
-    float dhu = -(FxR.fhu - FxL.fhu) / dx - (FyT.fhu - FyB.fhu) / dy;
-    float dhv = -(FxR.fhv - FxL.fhv) / dx - (FyT.fhv - FyB.fhv) / dy;
-
-    // Bed slope source terms: -g h ∂z/∂x, -g h ∂z/∂y (use centered diffs outside this helper)
-    // Friction (Manning): tau_x, tau_y
-    float speed = sqrtf(c.u * c.u + c.v * c.v);
-    float h_safe = fmaxf(c.h, 1e-6f);
-    float tau_x = GRAVITY * n_rough * n_rough * c.u * speed / powf(h_safe, 4.0f / 3.0f);
-    float tau_y = GRAVITY * n_rough * n_rough * c.v * speed / powf(h_safe, 4.0f / 3.0f);
-
-    // Update conserved variables
-    float h_new = c.h + dt * dh;
-    float hu_new = c.h * c.u + dt * (dhu - h_safe * tau_x);
-    float hv_new = c.h * c.v + dt * (dhv - h_safe * tau_y);
-
-    // Reconstruct primitive variables
-    h_new = fmaxf(h_new, 0.0f);
-    float inv_h = (h_new > 1e-6f) ? (1.0f / h_new) : 0.0f;
-    out.h = h_new;
-    out.u = hu_new * inv_h;
-    out.v = hv_new * inv_h;
-
-    // Note: add bed-slope source terms outside using ∂z/∂x, ∂z/∂y and -g h ∂z
-}
-
-// Pseudocode for a 2D kernel launch over interior cells
-__global__ void shallow_water_step(const Cell *in, Cell *out,
-                                   int W, int H, float dx, float dy,
-                                   float dt, float n_rough) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x <= 0 || y <= 0 || x >= W - 1 || y >= H - 1)
-        return;
-
-    int idx = y * W + x;
-    auto C = in[idx];
-    auto L = in[idx - 1];
-    auto R = in[idx + 1];
-    auto B = in[idx - W];
-    auto T = in[idx + W];
-
-    // Interface fluxes (left, right, bottom, top)
-    Flux3 FxL = rusanov_flux_x(L, C);
-    Flux3 FxR = rusanov_flux_x(C, R);
-    Flux3 FyB = rusanov_flux_y(B, C);
-    Flux3 FyT = rusanov_flux_y(C, T);
-
-    // Update cell
-    Cell Cout;
-    update_cell(FxL, FxR, FyB, FyT, C, n_rough, dx, dy, dt, Cout);
-
-    // Bed slope sources (optional, outside update_cell)
-    // Compute centered gradients of z:
-    float dzdx = (R.z - L.z) / (2.0f * dx);
-    float dzdy = (T.z - B.z) / (2.0f * dy);
-    float hbar = Cout.h;
-
-    // Apply bed slope acceleration: u' += -g * dt * ∂z/∂x, v' similarly
-    Cout.u += -GRAVITY * dt * dzdx;
-    Cout.v += -GRAVITY * dt * dzdy;
-
-    out[idx] = Cout;
-}
 
 #pragma endregion
 
@@ -411,7 +392,7 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
     // flux output
     _flux8.resize({array_size * 8});
     _sediment_flux8.resize({array_size * 8});
-    _layer_map_out.resize({pars._width, pars._height, pars._layers});
+    // _layer_map_out.resize({pars._width, pars._height, pars._layers});
 
     // allocate and zero arrays
 #define ZERO_ARRAYS \
@@ -426,7 +407,23 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
 #undef X
 #undef ZERO_ARRAYS
 
-// allocate all remaining arrays
+    // ================================================================
+    // allocate arrays
+    // #define ALLOCATE_ARRAYS  \
+//     X(_height_map_out)   \
+//     X(_water_map_out)    \
+//     X(_sediment_map_out) \
+//     X(_slope_map)
+    // #define X(NAME)                                   \
+//     if (NAME.size() != array_size) {              \
+//         NAME.resize({pars._width, pars._height}); \
+//     }
+    //     ALLOCATE_ARRAYS
+    // #undef X
+    // #undef ALLOCATE_ARRAYS
+
+// ================================================================
+// ⚠️ allocate all remaining arrays  ... WARNING I SEEM TO NEED THIS??
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION)         \
     if (NAME.empty()) {                                \
         NAME.resize_helper(pars._width, pars._height); \
@@ -521,6 +518,8 @@ void TEMPLATE_CLASS_NAME::process00() {
 
 void TEMPLATE_CLASS_NAME::process01() {
 
+    // printf("process01...");
+
     allocate_device();
     configure_device();
     stream.sync();
@@ -528,8 +527,11 @@ void TEMPLATE_CLASS_NAME::process01() {
     core::cuda::DeviceStruct<ArrayPtrs> dev_array_ptrs(get_array_ptrs()); // device side pars
 
     for (int step = 0; step < pars.steps; ++step) {
-        // calculate_flux2<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), dev_array_ptrs.dev_ptr(), step);
+        calculate_flux2<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), dev_array_ptrs.dev_ptr(), step);
+        apply_flux2<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), dev_array_ptrs.dev_ptr(), step);
     }
+
+    stream.sync();
 }
 
 } // namespace TEMPLATE_NAMESPACE

@@ -92,6 +92,7 @@ class DeviceArrayBase {
 
 template <typename T, int Dim>
 class DeviceArray : public core::cuda::DeviceArrayBase {
+    static_assert(Dim > 0, "DeviceArray requires Dim > 0");
 
     std::array<size_t, Dim> _dimensions{}; // default dimensions will be 0
 
@@ -130,18 +131,30 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         return sizeof(T) * size();
     }
 
-    //
-    //
-    //
-    // safer??
-
-    // // return ref to dimensions (might be a bit unsafe?)
-    // const std::array<size_t, Dim> &dimensions() const noexcept {
-    //     return _dimensions;
-    // }
-
-    std::array<size_t, Dim> dimensions() const noexcept {
+    // Return dimensions by const reference (safe if _dimensions is stable)
+    const std::array<size_t, Dim> &dimensions() const noexcept {
         return _dimensions;
+    }
+
+    // width always exists
+    size_t width() const noexcept {
+        return _dimensions[0];
+    }
+
+    // height only if Dim >= 2, else 1
+    size_t height() const noexcept {
+        if constexpr (Dim >= 2) {
+            return _dimensions[1];
+        }
+        return 1;
+    }
+
+    // depth only if Dim >= 3, else 1
+    size_t depth() const noexcept {
+        if constexpr (Dim >= 3) {
+            return _dimensions[2];
+        }
+        return 1;
     }
 
     // Return dimensions in NumPy order (height, width, depth...)
@@ -164,10 +177,6 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         }
         return np_dims;
     }
-
-    //
-    //
-    //
 
     // free the device, will also set the dimensions to 0 (which is the same as freeing the device)
     void free_device() override {
@@ -363,8 +372,8 @@ class DeviceArray2D : public DeviceArray<T, 2> {
         Base::upload(host_ptr, {width, height});
     }
 
-    size_t width() const { return this->dimensions()[0]; }
-    size_t height() const { return this->dimensions()[1]; }
+    // size_t width() const { return this->dimensions()[0]; }
+    // size_t height() const { return this->dimensions()[1]; }
 };
 
 // thin wrapper for 3D
@@ -385,9 +394,9 @@ class DeviceArray3D : public DeviceArray<T, 3> {
         Base::upload(host_ptr, {width, height, depth});
     }
 
-    size_t width() const { return this->dimensions()[0]; }
-    size_t height() const { return this->dimensions()[1]; }
-    size_t depth() const { return this->dimensions()[2]; }
+    // size_t width() const { return this->dimensions()[0]; }
+    // size_t height() const { return this->dimensions()[1]; }
+    // size_t depth() const { return this->dimensions()[2]; }
 };
 
 } // namespace core::cuda

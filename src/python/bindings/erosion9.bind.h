@@ -36,6 +36,10 @@ inline void bind(nb::module_ &m) {
     ngd.def("process", [](TEMPLATE_CLASS_NAME &self) {
         self.process();
     });
+
+    ngd.def("allocate_device", [](TEMPLATE_CLASS_NAME &self) {
+        self.allocate_device();
+    });
 }
 
 } // namespace TEMPLATE_NAMESPACE

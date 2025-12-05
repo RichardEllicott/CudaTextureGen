@@ -85,7 +85,7 @@ class ErosionRunner:
 
     @layer_map.setter
     def layer_map(self, v):
-        self.mode = self.Mode.layer  # layer mode
+        # self.mode = self.Mode.layer  # layer mode
         # accept (H,W,C), store internally as (C,H,W)
         v = np.ascontiguousarray(np.transpose(v, (2, 0, 1)))
         self.erosion.layer_map = v
@@ -183,6 +183,7 @@ class ErosionRunner:
     def _download_maps(self):
         self._maps.clear()
         for name in self.erosion_map_names:
+            # print(f"download map: {name}")
             self._maps[name] = getattr(self.erosion, name)
 
     def generate_meta_data(self) -> OrderedDictType:
@@ -243,13 +244,13 @@ class ErosionRunner:
 
         start_time = time.perf_counter()
         erosion = self.erosion
-        # erosion.allocate_device()
+        erosion.allocate_device()
 
         if self.debug:
             self._download_maps()  # ⚠️ donwnloads even though it uploaded (slow)
             print("🚀 launch erosion...")
             print("-" * 64)
-            # self.print_meta_data()  # ⚠️ gets meta data (slow)
+            self.print_meta_data()  # ⚠️ gets meta data (slow)
 
         erosion.steps = self.steps_per_frame
 
@@ -296,8 +297,8 @@ class ErosionRunner:
                 water_map_writer.append_data((maps['water_map'] * 255.0).astype(np.uint8))
 
             if self.build_combined_map_animation:
-                # merged_array = tools.merge_numpy_arrays_to_color(maps['height_map'], maps['height_map'], maps['water_map'])
-                merged_array = tools.merge_numpy_arrays_to_color(maps['sediment_map'], maps['height_map'], maps['water_map'])
+                merged_array = tools.merge_numpy_arrays_to_color(maps['height_map'], maps['height_map'], maps['water_map'])
+                # merged_array = tools.merge_numpy_arrays_to_color(maps['sediment_map'], maps['height_map'], maps['water_map'])
                 combined_map_writer.append_data((merged_array * 255.0).astype(np.uint8))
 
         end_time = time.perf_counter()

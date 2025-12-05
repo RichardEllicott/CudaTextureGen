@@ -35,6 +35,7 @@ class Erosion9:
     erosion_mode: int
     erosion_rate: float
     evaporation_rate: float
+    flow_rate: float
     gravity: float
     height_map: Incomplete
     layer_map: Incomplete
@@ -61,6 +62,7 @@ class Erosion9:
     water_map: Incomplete
     wrap: bool
     def __init__(self) -> None: ...
+    def allocate_device(self) -> None: ...
     def process(self) -> None: ...
 
 class FluidSimulation:

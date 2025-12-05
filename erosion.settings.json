@@ -1,10 +1,8 @@
 {
-    "deposition_rate": 0.05,
-    "drain_at_min_height": true,
-    "erosion_mode": 1,
-    "erosion_rate": 0.025,
+    "erosion_rate": 0.01,
     "evaporation_rate": 0.001,
-    "max_water_outflow": 1.0,
-    "rain_rate": 0.005,
-    "steps": 64
+    "max_water_outflow": 8.0,
+    "mode": 1,
+    "rain_rate": 5e-05,
+    "steps": 16
 }
