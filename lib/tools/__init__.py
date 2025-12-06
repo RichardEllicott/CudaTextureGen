@@ -11,10 +11,12 @@ pip install imageio
 
 
 """
-from .arrays import *
+# from .helpers import *
+from . import helpers
 from . import noise
-from .dictionaries import *
-from .helpers import *
+from . import dicts
 from . import palettes
 from . import gradients
 from . import images
+from . import arrays
+from . import cuda

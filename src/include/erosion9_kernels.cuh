@@ -5,6 +5,7 @@ store some kernels
 */
 // #pragma once
 
+#include <cuda_runtime.h>
 #include "cuda_math.cuh"
 
 
@@ -326,5 +327,93 @@ __global__ void apply_flux(
 }
 
 #pragma endregion
+
+
+
+
+/*
+Manning’s equation (open channel):
+
+v = (1/n) * R**(2/3) * s**(1/2)
+n: roughness (0.02–0.06 typical)
+R: hydraulic radius; on grids, approximate with water depth h, or h - bed roughness
+Good balance of realism vs cost; still needs clamping.
+
+Fine sediment (mud, silt): Can actually smooth the bed temporarily, lowering
+Coarse sediment (gravel, cobbles): Creates rougher boundaries, raising
+
+Smooth concrete channel:
+𝑛 ≈ 0.012
+
+Natural streams with sediment and vegetation:
+𝑛 ≈ 0.03 – 0.06
+
+Very rough, boulder‑strewn rivers:
+𝑛 ≈ 0.07 – 0.15
+
+*/
+
+/*
+Shallow-water (Saint-Venant)
+
+https://copilot.microsoft.com/chats/hMzbLGxH7tG1SQkZWEPYW
+
+
+*/
+
+
+
+
+// KEPT AS NOTE
+// // 🚧 calculate the layer height, set it to height_map and _surface_map
+// __global__ void calc_layer_height(
+//     const Parameters *pars,
+//     const ArrayPtrs *arrays,
+//     const int step) {
+//     // // ================================================================
+//     // int2 map_size = make_int2(pars->_width, pars->_height);
+//     // int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+//     // if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
+//     //     return;
+//     // int idx = pos_to_idx(pos, map_size.x);
+//     // // ----------------------------------------------------------------
+//     // ================================================================
+//     int map_width = pars->_width;
+//     int map_height = pars->_height;
+//     int x = blockIdx.x * blockDim.x + threadIdx.x;
+//     int y = blockIdx.y * blockDim.y + threadIdx.y;
+//     if (x >= map_width || y >= map_height) // bounds check
+//         return;
+//     int idx = y * map_width + x;
+//     // ----------------------------------------------------------------
+
+//     auto layer_map = get_map_ptr(arrays->layer_map, arrays->_layer_map_out, step);    // in
+//     auto height_map = get_map_ptr(arrays->height_map, arrays->_height_map_out, step); // out
+//     auto water_map = get_map_ptr(arrays->water_map, arrays->_water_map_out, step);    // in
+//     // auto sediment_map = get_map_ptr(arrays->sediment_map, arrays->_sediment_map_out, step);
+
+//     // auto layer_map_out = get_map_ptr(arrays->_layer_map_out, arrays->layer_map, step);
+//     // auto height_map_out = get_map_ptr(arrays->_height_map_out, arrays->height_map, step);
+//     // auto water_map_out = get_map_ptr(arrays->_water_map_out, arrays->water_map, step);
+//     // auto sediment_map_out = get_map_ptr(arrays->_sediment_map_out, arrays->sediment_map, step);
+
+//     int layer_count = pars->_layers;
+//     int layer_idx = idx * layer_count;
+
+//     // find height from layers
+//     float height = 0.0;
+//     for (int i = 0; i < layer_count; i++) {
+//         height += layer_map[layer_idx + i];
+//     }
+//     float water = water_map[idx];
+//     float surface = height + water;
+
+//     height_map[idx] = height;
+//     arrays->_surface_map[idx] = surface;
+// }
+
+
+
+
 
 } // namespace TEMPLATE_NAMESPACE

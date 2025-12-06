@@ -4,11 +4,10 @@ array helpers
 
 """
 
-from scipy.ndimage import zoom
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import zoom, gaussian_filter
 import numpy as np
-from numpy.typing import NDArray
-from typing import Any, Optional, Union
+from numpy.typing import NDArray, DTypeLike
+from typing import Any
 
 
 def print_array_information(array: NDArray) -> None:
@@ -23,7 +22,7 @@ def print_array_information(array: NDArray) -> None:
     print("flags:", array.flags)        # contiguity info
 
 
-def normalize_array(array: np.ndarray) -> None:
+def normalize(array: np.ndarray) -> None:
     """
     Normalize array in place to [0,1].
     If all values are equal, returns zeros.
@@ -39,9 +38,18 @@ def normalize_array(array: np.ndarray) -> None:
         array /= range_val
 
 
-def map_array_range(array: NDArray[np.floating],
-                    new_min: float = 0.0,
-                    new_max: float = 1.0) -> None:
+def normalized(array: np.ndarray) -> np.ndarray:
+    """
+    return a normalized array (don't change the input)
+    """
+    result = array.copy()
+    normalize(result)
+    return result
+
+
+def map_range(array: NDArray[np.floating],
+              new_min: float = 0.0,
+              new_max: float = 1.0) -> None:
     """
     Map array values in place from [min(array), max(array)] to [new_min, new_max].
     If all values are equal, fills with new_min.
@@ -57,16 +65,7 @@ def map_array_range(array: NDArray[np.floating],
         array[:] = (array - old_min) * scale + new_min
 
 
-def normalized_array(array: np.ndarray) -> np.ndarray:
-    """
-    return a normalized array (don't change the input)
-    """
-    result = array.copy()
-    normalize_array(result)
-    return result
-
-
-def offset_array(array: np.ndarray, x_offset: float = 0.5, y_offset: float = 0.5) -> None:
+def offset(array: np.ndarray, x_offset: float = 0.5, y_offset: float = 0.5) -> None:
     """
     Offset array toroidally (wraparound) by fractional amounts of width/height.
 
@@ -89,22 +88,17 @@ def offset_array(array: np.ndarray, x_offset: float = 0.5, y_offset: float = 0.5
     array[:] = np.roll(array, shift=(dy, dx), axis=(0, 1))
 
 
-def merge_numpy_arrays_to_color(
-    red: Optional[NDArray[Any]] = None,
-    green: Optional[NDArray[Any]] = None,
-    blue: Optional[NDArray[Any]] = None,
-    alpha: Optional[NDArray[Any]] = None,
-    shape: Optional[tuple[int, int]] = None,
-    dtype: np.dtype = np.float32,  # default float until you clamp/cast
+def merge_to_color(
+    red: NDArray[Any] | None = None,
+    green: NDArray[Any] | None = None,
+    blue: NDArray[Any] | None = None,
+    alpha: NDArray[Any] | None = None,
+    shape: tuple[int, ...] | None = None,
+    dtype: DTypeLike = np.float32,  # default float until you clamp/cast
 ) -> NDArray[Any]:
     """
     Merge separate Red, Green, Blue (and optional Alpha) numpy arrays into a single image.
-
-    Missing channels default to black (0). If Alpha is not provided, the result
-    will be an RGB image with 3 channels. If Alpha is provided, the result will
-    be an RGBA image with 4 channels.
     """
-    # infer shape from first non-None channel
     if shape is None:
         for ch in (red, green, blue, alpha):
             if ch is not None:
@@ -114,7 +108,7 @@ def merge_numpy_arrays_to_color(
     if shape is None:
         raise ValueError("Must provide at least one channel or a shape")
 
-    def ensure_channel(ch, fill_value):
+    def ensure_channel(ch: NDArray[Any] | None, fill_value: int) -> NDArray[Any]:
         if ch is None:
             return np.full(shape, fill_value, dtype=dtype)
         if ch.shape != shape:
@@ -126,7 +120,6 @@ def merge_numpy_arrays_to_color(
     blue = ensure_channel(blue, 0)
 
     if alpha is None:
-        # Return RGB only
         return np.stack([red, green, blue], axis=-1)
     else:
         alpha = ensure_channel(alpha, 0)
@@ -142,7 +135,7 @@ def nearest_neighbor_upscale(array: NDArray, factor: int) -> NDArray:
     return np.repeat(np.repeat(array, factor, axis=0), factor, axis=1)
 
 
-def tile_array_2d(array: NDArray, repeat_x: int, repeat_y: int) -> NDArray:
+def tile(array: NDArray, repeat_x: int, repeat_y: int) -> NDArray:
     """
     ⚠️ so minimal, kept as notes!
     tile the array, so repeat the same to maybe test seamless etc
@@ -151,7 +144,7 @@ def tile_array_2d(array: NDArray, repeat_x: int, repeat_y: int) -> NDArray:
 
 
 # scipy
-def resize_array_2d(array: NDArray[np.floating], width: int, height: int, order: int = 1):
+def resize(array: NDArray[np.floating], width: int, height: int, order: int = 1):
     """
     Resize a 2D NumPy array with resampling using scipy.ndimage.zoom.
     """
@@ -160,7 +153,7 @@ def resize_array_2d(array: NDArray[np.floating], width: int, height: int, order:
 
 
 # scipy
-def blur_array(array: NDArray[np.floating], sigma: float) -> NDArray[np.floating]:
+def blur(array: NDArray[np.floating], sigma: float) -> NDArray[np.floating]:
     """
     blur array with scipy
     """
@@ -168,7 +161,7 @@ def blur_array(array: NDArray[np.floating], sigma: float) -> NDArray[np.floating
     return gaussian_filter(array, sigma=sigma)
 
 
-def circle_array(height: int, width: int, radius: int) -> NDArray[np.float32]:
+def circle(width: int, height: int, radius: int) -> NDArray[np.float32]:
     """
     Create a 2D float32 NumPy array with a filled circle in the middle.
     Values: 1.0 inside the circle, 0.0 outside.

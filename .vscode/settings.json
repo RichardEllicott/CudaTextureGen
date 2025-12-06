@@ -114,7 +114,8 @@
         "numeric": "cpp",
         "source_location": "cpp",
         "valarray": "cpp",
-        "typeindex": "cpp"
+        "typeindex": "cpp",
+        "*.temp": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "folder-color.pathColors": [

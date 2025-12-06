@@ -1,14 +1,12 @@
 """
 
-Erosion7 is the same as Erosion5 but has a new device array pattern
-
-this makes it easier and quicker to upload and download data to the gpu and to therefore make animations
+ErosionRunner object, runs the erosion and outputs movie and/or images from the data
 
 """
 
 import tools
 import cuda_texture_gen
-from typing import Dict, Any
+from typing import Any
 import numpy.typing as npt
 from collections import OrderedDict
 from typing import OrderedDict as OrderedDictType
@@ -17,58 +15,134 @@ from tabulate import tabulate  # pip install tabulate
 import time
 import imageio.v2 as imageio  # v2 uses numpy arrays
 from numpy.typing import NDArray
-
-
 from enum import Enum
 
-# class Color(Enum):
-#     RED   = 1
-#     GREEN = 2
-#     BLUE  = 3
 
-# # Usage
-# print(Color.RED)        # Color.RED
-# print(Color.RED.value)  # 1
-# print(Color.RED.name)   # "RED"
+class FrameProfile:
+    """
+    a profile of a frame, builds a frame from the channels list
+    """
+
+    # channels, list of strings or a string (for one channel)
+    channels: list[str] = ["height_map", "height_map", "water_map"]
+
+    clip: list[int | float | None] = [None, None, None]  # if a number, clip at that number
+    normalize: list[bool] = [True, True, True]
+
+    # generate as ao map
+    ao_map: bool = False
+    ao_map_strength: float = 1.0
+    ao_map_radius: float = 1.0
+
+    # generate as normal map
+    normal_map: bool = False
+    normal_map_strength: float = 1.0
+
+    def validate(self) -> None:
+        # Only allow 1 or 3 channels
+
+        if len(self.channels) not in (1, 3):
+            raise ValueError(
+                f"FrameProfile must have 1 or 3 channels, got {len(self.channels)}: {self.channels}"
+            )
+
+        if self.normal_map and len(self.channels) != 1:
+            raise ValueError(
+                f"FrameProfile normal map must be 1 channel, got {len(self.channels)}: {self.channels}"
+            )
+
+    def __init__(self, runner: "ErosionRunner") -> None:
+        self.runner = runner
+
+    def get_frame(self) -> NDArray:
+        """
+        build and get a frame
+        """
+
+        self.validate()  # ensure 1 or 3 channels
+
+        processed_maps = []
+
+        channels = self.channels
+        if isinstance(channels, str):
+            channels = [channels]
+
+        for i in range(len(channels)):
+            channel = channels[i]
+
+            if channel:  # if channel not None
+                map = self.runner._maps[channel].copy()
+
+                # clip
+                clip = self.clip[i]
+                if clip:
+                    map = map.clip(0, clip)
+
+                # normalize
+                normalize: bool = self.normalize[i]
+                if normalize:
+                    tools.arrays.normalize(map)
+
+                if self.ao_map:
+                    if self.ao_map_strength != 0.0:
+                        map *= self.ao_map_strength
+                    map = tools.cuda.ao_map(map, self.ao_map_radius, True)
+
+                if self.normal_map:
+                    map = tools.cuda.normal_map(map, self.normal_map_strength, True)
+
+            processed_maps.append(map)  # appends map or None
+
+        if len(channels) == 1:
+            return processed_maps[0]
+        # elif len(self.channels) == 3:
+        return tools.arrays.merge_to_color(*processed_maps)  # should be 3 channels
 
 
-# from tools import *
-# import matplotlib
-# from matplotlib.colors import to_rgb
-# from scipy.ndimage import zoom
+class MovieProfile(FrameProfile):
 
+    # # Create an in-memory buffer
+    # buf = io.BytesIO()
 
-# from collections import OrderedDict
+    fps: int = 30
+
+    def __init__(self, runner: "ErosionRunner") -> None:
+        super().__init__(runner)
+
+        # self.move_writer = imageio.get_writer(filename, fps=fps)
+
+        # self.writer = imageio.get_writer(self.buf, codec="libx264", fps=30)
 
 
 class ErosionRunner:
 
+    debug: bool = True  # print debug information (note slows us down a bit)
+
     class Mode(Enum):
         normal = 0
         layer = 1
+    mode: Mode = Mode.normal
 
-    mode = Mode.normal
-
-    debug = True  # print debug information (note slows us down a bit)
-
-    folder = "E:/"
+    folder: str = "E:/"
     # folder = "./output/"
-    filename_base = "erosion"
+    filename_base: str = "erosion"
 
-    animation_fps = 5
+    animation_fps: int = 5
+    frame_count: int = 64
+    steps_per_frame: int = 16
+    nearest_neighbor_upscale: int = 1  # 🐞 if > 1 upscale the pixel sizes (makes it easier to see what's going on)
+    process_time: float = 0.0
 
-    build_height_map_animation = True
-    build_water_map_animation = True
-    build_sediment_map_animation = True
-    build_combined_map_animation = True
+    # profiles build movies each frame in process
+    movie_profiles: dict[str, MovieProfile] | None = {}
+    # profiles build image at end of process
+    image_profiles: dict[str, FrameProfile] | None = {}
 
-    frame_count = 64
+    # names of the maps to download each frame
+    map_names = ["height_map", "water_map", "sediment_map"]
 
-    steps_per_frame = 8
-
-    nearest_neighbor_upscale = 1  # if > 1 upscale the pixel sizes (makes it easier to see what's going on)
-
-    process_time = 0.0
+    _maps: dict[str, npt.NDArray[np.float32]] = {}
+    _default_pars: dict
 
     # PROPERTIES
 
@@ -77,6 +151,7 @@ class ErosionRunner:
     # layer_map = property(lambda self: self.layer_map.depth,
     #                  lambda self, v: self.erosion.)
 
+    # for changing to the internal format
     @property
     def layer_map(self):
         v = self.erosion.layer_map
@@ -91,28 +166,80 @@ class ErosionRunner:
         self.erosion.layer_map = v
     # PROPERTIES
 
-    _default_pars: dict
-
     def __init__(self) -> None:
         self.erosion: cuda_texture_gen.Erosion9 = cuda_texture_gen.Erosion9()  # or None if lazy init
-        self._default_pars = tools.object_pars_to_dict(self.erosion)
+        self._default_pars = tools.dicts.from_object(self.erosion)
+        self.default_output_profile_01()  # defaults
+
+    def default_output_profile_01(self):
+
+        self.movie_profiles = {}
+        self.image_profiles = {}
+
+        # combined map movie
+        movie_profile = MovieProfile(self)
+        # movie_profile.channels = ["sediment_map", "height_map", "water_map"]  # all channels
+        movie_profile.channels = ["height_map", "height_map", "water_map"]  # height does yellow
+        movie_profile.clip = [None, None, 1.0]
+        self.movie_profiles["combined"] = movie_profile
+
+        # height map movie
+        movie_profile = MovieProfile(self)
+        movie_profile.channels = ["height_map"]
+        self.movie_profiles["height"] = movie_profile
+
+        # water map movie
+        movie_profile = MovieProfile(self)
+        movie_profile.channels = ["water_map"]
+        self.movie_profiles["water"] = movie_profile
+
+        # height map image
+        image_profile = FrameProfile(self)
+        image_profile.channels = ["height_map"]
+        self.image_profiles["height.png"] = image_profile
+
+        # normal map image
+        image_profile = FrameProfile(self)
+        image_profile.normal_map = True
+        image_profile.normal_map_strength = 1.0
+        image_profile.channels = ["height_map"]
+        self.image_profiles["normal.png"] = image_profile
+
+        # ao map image
+        image_profile = FrameProfile(self)
+        image_profile.ao_map = True
+        image_profile.ao_map_strength = 16.0
+        image_profile.channels = ["height_map"]
+        self.image_profiles["ao.png"] = image_profile
 
     def get_erosion_pars(self) -> dict[str, Any]:
-        pars = tools.dict_changes(
+        """
+        get erosion as dict
+        """
+        pars = tools.dicts.changes(
             self._default_pars,
-            tools.object_pars_to_dict(self.erosion)
+            tools.dicts.from_object(self.erosion)
         )
         return pars
 
     def set_erosion_pars(self, pars: dict[str, Any]) -> None:
-        tools.set_object_with_dict(self.erosion, pars)
+        """
+        set erosion pars from dict
+        """
+        tools.dicts.set_object(self.erosion, pars)
 
     def save_json(self) -> None:
-        tools.save_dict_to_json(self.get_erosion_pars(), f"{self.folder}{self.filename_base}.settings.json")
+        """
+        save erosion pars as json file
+        """
+        tools.dicts.to_json(self.get_erosion_pars(), f"{self.folder}{self.filename_base}.settings.json")
 
     def load_json(self) -> None:
-        dict = tools.load_dict_from_json(f"{self.folder}{self.filename_base}.settings.json")
-        tools.set_object_with_dict(self.erosion, dict)
+        """
+        load erosion pars from json file
+        """
+        dict = tools.dicts.from_json(f"{self.folder}{self.filename_base}.settings.json")
+        tools.dicts.set_object(self.erosion, dict)
 
     def PRESET_simple_erosion(self):
 
@@ -176,21 +303,16 @@ class ErosionRunner:
         # changed_pars = dict_changes(default_pars, object_pars_to_dict(erosion))
         # print("🏔️", changed_pars)
 
-    erosion_map_names = ["height_map", "water_map", "sediment_map"]
-
-    _maps: Dict[str, npt.NDArray[np.float32]] = {}
-
     def _download_maps(self):
         self._maps.clear()
-        for name in self.erosion_map_names:
-            # print(f"download map: {name}")
-            self._maps[name] = getattr(self.erosion, name)
+        for name in self.map_names:
+            map = getattr(self.erosion, name)
+            self._maps[name] = map
 
-    def generate_meta_data(self) -> OrderedDictType:
-        result: OrderedDictType = OrderedDict()
-
-        for name in self.erosion_map_names:
-            entry = OrderedDict()
+    def generate_meta_data(self) -> dict:
+        result: dict = {}
+        for name in self.map_names:
+            entry: dict = {}
             map = self._maps[name]
             entry['min'] = map.min()
             entry['max'] = map.max()
@@ -213,40 +335,14 @@ class ErosionRunner:
         # Print as table
         print(tabulate(rows, headers=["Name", "Min", "Max", "Mean", "Std"], floatfmt=".3f"))
 
-    class MapProfile:
-        """
-        🚧 UNUSED
-
-        """
-
-        name = "combined"
-
-        # channels = ["height_map"]
-        channels = ["height_map", "height_map", "water_map"]
-        # channels = ["height_map", "height_map", "sediment_map"]
-
-        clip = [None, None, None]  # if a number, clip at that number
-        normalize = [True, False, False]
-
-        def get_map(self, maps: dict[str, NDArray[np.float32]]):
-            """
-            get the final map with processing
-            """
-            maps = maps.copy()  # will shallow copy the maps to ensure we don't make changes to the orginal
-
-            process_maps = {}
-
-            for i in range(len(self.channels)):
-
-                pass
-
     def process(self):
 
         start_time = time.perf_counter()
         erosion = self.erosion
-        erosion.allocate_device()
 
+        erosion.debug = self.debug
         if self.debug:
+            erosion.allocate_device()  # pre-allocate to allow debug download
             self._download_maps()  # ⚠️ donwnloads even though it uploaded (slow)
             print("🚀 launch erosion...")
             print("-" * 64)
@@ -256,50 +352,30 @@ class ErosionRunner:
 
         self.save_json()  # saves the erosion settings
 
-        def get_mpg_writer(label=""):
-            return imageio.get_writer(f"{self.folder}/{self.filename_base}{label}.mp4", fps=self.animation_fps)
-
-        if self.build_height_map_animation:
-            height_map_writer = get_mpg_writer()
-        if self.build_water_map_animation:
-            water_map_writer = get_mpg_writer(".water")
-        if self.build_combined_map_animation:
-            combined_map_writer = get_mpg_writer(".combined")
+        movie_writers = {}
+        if self.movie_profiles:
+            for key in self.movie_profiles:
+                writer = imageio.get_writer(f"{self.folder}/{self.filename_base}.{key}.mp4", fps=self.animation_fps)
+                movie_writers[key] = writer
 
         for i in range(self.frame_count):
 
             self.erosion.process()
 
             self._download_maps()
-            maps = self._maps.copy()  # shallow copy
 
-            # print(f"frame: {i}, height_map min: {maps['height_map'].min():.2f}, max: {maps['height_map'].max():.2f}")
-
-            # CLIP
-            # maps['height_map'] = maps['height_map'].clip(0, 1)
-            # maps['water_map'] = maps['water_map'].clip(0, 1)
-            # maps['sediment_map'] = maps['sediment_map'].clip(0, 1)
-
-            # NORMALIZE
-            maps['height_map'] = tools.normalized_array(maps['height_map'])
-            maps['water_map'] = tools.normalized_array(maps['water_map'])
-            maps['sediment_map'] = tools.normalized_array(maps['sediment_map'])
-
-            # nearest upscale (allows seeing the erosion)
+            # 🐞 nearest upscale (allows seeing the erosion)
             if self.nearest_neighbor_upscale > 1:
-                for name, map in maps.items():
-                    maps[name] = np.repeat(np.repeat(map, self.nearest_neighbor_upscale, axis=0), self.nearest_neighbor_upscale, axis=1)
+                for name, map in self._maps.items():
+                    self._maps[name] = np.repeat(np.repeat(map, self.nearest_neighbor_upscale, axis=0), self.nearest_neighbor_upscale, axis=1)
 
-            if self.build_height_map_animation:
-                height_map_writer.append_data((maps['height_map'] * 255.0).astype(np.uint8))
-
-            if self.build_water_map_animation:
-                water_map_writer.append_data((maps['water_map'] * 255.0).astype(np.uint8))
-
-            if self.build_combined_map_animation:
-                merged_array = tools.merge_numpy_arrays_to_color(maps['height_map'], maps['height_map'], maps['water_map'])
-                # merged_array = tools.merge_numpy_arrays_to_color(maps['sediment_map'], maps['height_map'], maps['water_map'])
-                combined_map_writer.append_data((merged_array * 255.0).astype(np.uint8))
+            # for each movie writer write using frame profile
+            if self.movie_profiles:
+                for key in movie_writers:
+                    profile = self.movie_profiles[key]
+                    frame = profile.get_frame()
+                    writer = movie_writers[key]
+                    writer.append_data((frame * 255.0).astype(np.uint8))
 
         end_time = time.perf_counter()
         self.process_time = end_time - start_time
@@ -310,22 +386,36 @@ class ErosionRunner:
             print("-" * 64)
             print(f"process time: {self.process_time:.3f} seconds")
 
-        # metadata = {
-        #     "height_map.min": height_map.min(),
-        #     "height_map.max": height_map.max(),
-        #     "water_map.min": water_map.min(),
-        #     "water_map.max": water_map.max(),
-        #     "sediment_map.min": sediment_map.min(),
-        #     "sediment_map.max": sediment_map.max(),
-        # }
+        total_frames = self.steps_per_frame * self.frame_count
+        print(f"total_frames: {total_frames}")
+        estimated_rain = self.erosion.rain_rate * total_frames
+        print(f"estimated_rain: {estimated_rain}")
 
-        # tools.save_array_as_image(height_map * 255, self.get_filename_start() + ".height.png")
-        # tools.save_array_as_image(water_map * 255, self.get_filename_start() + ".water.png")
-        # tools.save_array_as_image(sediment_map * 255, self.get_filename_start() + ".sediment.png")
+        estimated_rain *= erosion._width * erosion._height
+        print(f"estimated_rain (test): {estimated_rain}")
+
+
+        if self.image_profiles:
+            for name in self.image_profiles:
+                profile = self.image_profiles[name]
+                frame = profile.get_frame()
+                tools.images.save(frame, f"{self.folder}/{self.filename_base}.{name}")
+
+
+        if self.debug:
+            self.erosion.debug_update()
+
+            tile_count = erosion._width * erosion._height
+
+            _debug_rain_total = self.erosion._debug_rain_total
+            _debug_rain_total /= tile_count
+            print(f"_debug_rain_total: {_debug_rain_total}")
+
+
+
 
 
 def main():
-
     pass
 
 

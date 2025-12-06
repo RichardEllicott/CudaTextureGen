@@ -84,8 +84,9 @@ using Float3 = std::array<float, 3>;
     X(Float3, layers_threshold, LAYER_THRESHOLD_DEFAULT, "❌ not sure?")                                        \
     X(float, scale, 1.0, "🐙 real world width of a pixel")                                                      \
     X(float, gravity, -9.8, "❌ gravity with regard to positive being upwards")                                 \
-    X(float, flow_rate, 1.0, "🐙 flow rate for new model")\
-    X(float, sediment_yield, 1.0, "🐙 amount of sediment generated")\
+    X(float, flow_rate, 1.0, "🐙 flow rate for new model")                                                      \
+    X(float, sediment_yield, 1.0, "🐙 amount of sediment generated")                                            \
+    X(float, _debug_rain_total, 0, "❓ outputting debug data")
 
 // X(int2, test_int2, DEFAULT_INT2, "test a Int2")
 
@@ -201,6 +202,7 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
     void allocate_device01();
 
     void process() override;
+    void debug_update();
 };
 
 } // namespace TEMPLATE_NAMESPACE

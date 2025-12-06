@@ -37,8 +37,14 @@ inline void bind(nb::module_ &m) {
         self.process();
     });
 
+    // hook to allocate_device
     ngd.def("allocate_device", [](TEMPLATE_CLASS_NAME &self) {
         self.allocate_device();
+    });
+
+    // hook to debug_update (downloads debug data)
+    ngd.def("debug_update", [](TEMPLATE_CLASS_NAME &self) {
+        self.debug_update();
     });
 }
 

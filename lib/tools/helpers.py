@@ -5,16 +5,11 @@ standard tools interface, load our library and hook up to it
 
 
 """
-# import python_bootstrap  # bootstrap to our fresh compiled module
-import cuda_texture_gen
 import numpy as np
 import inspect
 from matplotlib.colors import to_rgb
 import matplotlib.pyplot as plt
-# from matplotlib.colors import ListedColormap
-
-
-from .arrays import *
+from . import arrays
 
 
 # def print_current_function():
@@ -54,21 +49,6 @@ def print_current_function() -> None:
 # B = arr[:, :, 2]  # Blue channel
 
 
-
-def generate_normal_map(array, strength=1.0, wrap=True):
-    """
-    generate normal map
-    """
-    return cuda_texture_gen.generate_normal_map(array, strength, wrap)
-
-
-def generate_ao_map(array, radius=1.0, wrap=True, mode=0):
-    """
-    generate ambient occlusion
-    """
-    return cuda_texture_gen.generate_ao_map(array, radius, wrap, mode)
-
-
 def smooth_layered_gradient(height_map, band_colors=[
         to_rgb("#8fb5f8"),
         to_rgb("#bed27b"),
@@ -94,11 +74,6 @@ def smooth_layered_gradient(height_map, band_colors=[
         rgb_map[mask] = (1 - t)[:, None] * c0 + t[:, None] * c1
 
     return rgb_map
-
-
-# HAS A PROBLEM!!
-def blur_array_cuda(input, amount=1.0, wrap=True):
-    cuda_texture_gen.blur(input, amount, wrap)
 
 
 def apply_color_map(height_map, cmap="terrain"):

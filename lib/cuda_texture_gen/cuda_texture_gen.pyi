@@ -13,6 +13,7 @@ test123: nanobind.nb_func
 class Erosion9:
     _block: int
     _calculation_time: float
+    _debug_rain_total: float
     _flux8: Incomplete
     _height: int
     _height_map_out: Incomplete
@@ -64,6 +65,7 @@ class Erosion9:
     wrap: bool
     def __init__(self) -> None: ...
     def allocate_device(self) -> None: ...
+    def debug_update(self) -> None: ...
     def process(self) -> None: ...
 
 class FluidSimulation:

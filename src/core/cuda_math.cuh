@@ -4,6 +4,7 @@ cuda math functions
 
 */
 #pragma once
+#include <cuda_runtime.h>
 
 #pragma region POSMOD
 

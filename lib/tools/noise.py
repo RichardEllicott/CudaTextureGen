@@ -8,13 +8,7 @@ standard tools interface, load our library and hook up to it
 # import python_bootstrap  # bootstrap to our fresh compiled module
 import cuda_texture_gen
 import numpy as np
-import inspect
-# from matplotlib.colors import to_rgb
-# import matplotlib.pyplot as plt
-# from matplotlib.colors import ListedColormap
-
-
-from .arrays import *
+from . import arrays
 
 
 def fractal(
@@ -40,7 +34,7 @@ def fractal(
 
         layer = gen.generate(width, height)
 
-        normalize_array(layer)
+        arrays.normalize(layer)
 
         array += layer * amplitude
         total_amplitude += amplitude

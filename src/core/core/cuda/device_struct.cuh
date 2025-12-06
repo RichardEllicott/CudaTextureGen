@@ -18,8 +18,21 @@ class DeviceStruct {
 
     T *_device_ptr = nullptr;
 
+    cudaStream_t _stream{nullptr}; // optional stream
+
   public:
     DeviceStruct() = default;
+
+    // get stream
+    cudaStream_t get_stream() const {
+                throw std::runtime_error("Stream not implemented!");
+        return _stream;
+    }
+    // set optional stream
+    void set_stream(cudaStream_t stream) {
+        throw std::runtime_error("Stream not implemented!");
+        _stream = stream;
+    }
 
     // Construct directly from host value
     explicit DeviceStruct(const T &value) {

@@ -105,24 +105,45 @@ def test_mode_1():
     erosion = runner.erosion
     erosion.mode = 1
 
-    map_width, map_height = 512, 512
+    map_width, map_height = 128, 128
 
     octaves = 8
 
     height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves)
     height_map *= 128.0
+
+    # ## circle cuut
+    # circle = tools.arrays.circle_array(map_width, map_height, map_width // 3)
+    # circle = tools.blur_array(circle, 16.0)
+    # height_map *= circle
+
+
     erosion.height_map = height_map
 
     # layer_map = tools.noise.fractal_rgb(width=map_width, height=map_height, octaves=octaves)
     # runner.layer_map = layer_map
 
-    erosion.rain_rate = 0.00005
-    erosion.erosion_rate = 0.001 * 2.0
-    erosion.evaporation_rate = 0.001
+    water_rate = 0.0001
+
+    erosion.rain_rate = water_rate # increasing rain rate barely making difference!
+    erosion.erosion_rate = 0.001
+    erosion.evaporation_rate = water_rate * 0.9
+
+    runner.nearest_neighbor_upscale = 4
+
+
+    # erosion.drain_at_min_height = True
+    # erosion.min_height = 0.0
     erosion.max_water_outflow = 8.0
 
+
+    runner.frame_count = 64
+
+
+    runner.image_profiles = None # disable image
+
     runner.steps_per_frame = 16
-    runner.steps_per_frame = 64
+    # runner.steps_per_frame = 64
     runner.process()
 
 

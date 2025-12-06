@@ -35,77 +35,40 @@ __device__ inline int pos_to_idx(int2 pos, int map_width) {
 
 #pragma region KERNELS
 
-// calculate the layer height, set it to height_map and _surface_map
-__global__ void calc_layer_height(
-    const Parameters *pars,
+__global__ void add_rain2(
+    Parameters *pars,
     const ArrayPtrs *arrays,
     const int step) {
-    // // ================================================================
-    // int2 map_size = make_int2(pars->_width, pars->_height);
-    // int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
-    // if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
-    //     return;
-    // int idx = pos_to_idx(pos, map_size.x);
-    // // ----------------------------------------------------------------
     // ================================================================
-    int map_width = pars->_width;
-    int map_height = pars->_height;
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= map_width || y >= map_height) // bounds check
+    int2 map_size = make_int2(pars->_width, pars->_height);
+    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = y * map_width + x;
+    int idx = pos_to_idx(pos, map_size.x);
+    // ================================================================
+    // [Rain]
     // ----------------------------------------------------------------
-
-    auto layer_map = get_map_ptr(arrays->layer_map, arrays->_layer_map_out, step);    // in
-    auto height_map = get_map_ptr(arrays->height_map, arrays->_height_map_out, step); // out
-    auto water_map = get_map_ptr(arrays->water_map, arrays->_water_map_out, step);    // in
-    // auto sediment_map = get_map_ptr(arrays->sediment_map, arrays->_sediment_map_out, step);
-
-    // auto layer_map_out = get_map_ptr(arrays->_layer_map_out, arrays->layer_map, step);
-    // auto height_map_out = get_map_ptr(arrays->_height_map_out, arrays->height_map, step);
-    // auto water_map_out = get_map_ptr(arrays->_water_map_out, arrays->water_map, step);
-    // auto sediment_map_out = get_map_ptr(arrays->_sediment_map_out, arrays->sediment_map, step);
-
-    int layer_count = pars->_layers;
-    int layer_idx = idx * layer_count;
-
-    // find height from layers
-    float height = 0.0;
-    for (int i = 0; i < layer_count; i++) {
-        height += layer_map[layer_idx + i];
+    float rain = pars->rain_rate;
+    if (arrays->rain_map) {
+        rain *= arrays->rain_map[idx]; // multiply by rain_map if != nullptr
     }
-    float water = water_map[idx];
-    float surface = height + water;
+    arrays->water_map[idx] += rain;
 
-    height_map[idx] = height;
-    arrays->_surface_map[idx] = surface;
-}
+    if (pars->debug) {
+        // __shared__ float block_sum;
+        // block_sum = 0.0f;
+        // __syncthreads();
 
-// Inputs: difference = Δz to neighbor, h = local water depth,
-// scale = cell spacing, is_diag = true for diagonals, n = Manning roughness,
-// v_max = cap
-__device__ inline float manning_speed(float difference, float h, float scale, bool is_diag, float n, float v_max) {
-    // run (horizontal distance)
-    float run = is_diag ? (scale * 1.414213562f) : scale;
+        // float delta = rain;
+        // atomicAdd(&block_sum, delta);
 
-    // slope (rise/run), downhill only
-    float s = difference / run;
-    if (s < 0.0f)
-        s = 0.0f;
+        // __syncthreads();
+        // if (threadIdx.x == 0) {
+        //     atomicAdd(total, block_sum);
+        // }
 
-    // hydraulic radius approximation
-    float R = h; // tweak if you model roughness/width explicitly
-    if (R <= 0.0f || n <= 0.0f)
-        return 0.0f;
-
-    // Manning velocity
-    float v = (1.0f / n) * powf(R, 2.0f / 3.0f) * sqrtf(s);
-
-    // stability caps
-    if (v > v_max)
-        v = v_max;
-    return v;
+        atomicAdd(&(pars->_debug_rain_total), rain);
+    }
 }
 
 // new pattern
@@ -144,9 +107,11 @@ __global__ void calculate_flux2(
     for (int n = 0; n < 8; ++n) {
         int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
         int new_idx = pos_to_idx(new_pos, map_size.x);
-        float new_height = read_map_in(arrays->height_map, arrays->_height_map_out, step, new_idx);
-        float new_water = read_map_in(arrays->water_map, arrays->_height_map_out, step, new_idx);
-        float new_sediment = read_map_in(arrays->sediment_map, arrays->_height_map_out, step, new_idx);
+
+        float new_height = arrays->height_map[new_idx];
+        float new_water = arrays->water_map[new_idx];
+        float new_sediment = arrays->sediment_map[new_idx];
+
         float new_surface = new_height + new_water;
 
         float slope_height = surface - new_surface;                                      // positive means we are higher than neighbour
@@ -197,9 +162,6 @@ __global__ void apply_flux2(
         return;
     int idx = pos_to_idx(pos, map_size.x);
     // ================================================================
-    // float height = read_map_in(arrays->height_map, arrays->_height_map_out, step, idx);
-    // float water = read_map_in(arrays->water_map, arrays->_water_map_out, step, idx);
-    // float sediment = read_map_in(arrays->sediment_map, arrays->_sediment_map_out, step, idx);
     float height = arrays->height_map[idx];
     float water = arrays->water_map[idx];
     float sediment = arrays->sediment_map[idx];
@@ -235,7 +197,7 @@ __global__ void apply_flux2(
     sediment += erosion * pars->sediment_yield; // ❓ scale this by the material, some might make less sediment
     height -= erosion;
 
-    height = clamp(height, pars->min_height, pars->max_height); //❓❓ pointless won't go up?
+    height = clamp(height, pars->min_height, pars->max_height); // ❓❓ pointless won't go up?
 
     water -= pars->evaporation_rate; // evaporation
 
@@ -260,41 +222,7 @@ __global__ void apply_flux2(
     arrays->water_map[idx] = fmaxf(0.f, water);       // no negative water
     arrays->sediment_map[idx] = fmaxf(0.f, sediment); // no negative sediment
 }
-/*
-Manning’s equation (open channel):
 
-v = (1/n) * R**(2/3) * s**(1/2)
-n: roughness (0.02–0.06 typical)
-R: hydraulic radius; on grids, approximate with water depth h, or h - bed roughness
-Good balance of realism vs cost; still needs clamping.
-
-Fine sediment (mud, silt): Can actually smooth the bed temporarily, lowering
-Coarse sediment (gravel, cobbles): Creates rougher boundaries, raising
-
-Smooth concrete channel:
-𝑛 ≈ 0.012
-
-Natural streams with sediment and vegetation:
-𝑛 ≈ 0.03 – 0.06
-
-Very rough, boulder‑strewn rivers:
-𝑛 ≈ 0.07 – 0.15
-
-*/
-
-/*
-Shallow-water (Saint-Venant)
-
-https://copilot.microsoft.com/chats/hMzbLGxH7tG1SQkZWEPYW
-
-
-*/
-
-// // ================================================================
-// // won't do this here
-// write_map_out(arrays->height_map, arrays->_height_map_out, step, idx, height);
-// write_map_out(arrays->water_map, arrays->_water_map_out, step, idx, water);
-// write_map_out(arrays->sediment_map, arrays->_sediment_map_out, step, idx, sediment);
 
 #pragma endregion
 
@@ -360,14 +288,20 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
     if (_device_allocated)
         return;
 
+    if (pars.debug) {
+        printf("⚠️  debug mode active!\n");
+    }
+
     bool layers_mode = false;
 
     if (!layer_map.empty()) {
+        printf("🐙 layer_map detected...\n");
         layers_mode = true;
         pars._width = layer_map.dimensions()[0];
         pars._height = layer_map.dimensions()[1];
         pars._layers = layer_map.dimensions()[2];
     } else if (!height_map.empty()) {
+        printf("🐙 height_map detected...\n");
         pars._width = height_map.dimensions()[0];
         pars._height = height_map.dimensions()[1];
         pars._layers = 0;
@@ -377,8 +311,7 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
 
     size_t array_size = pars._width * pars._height;
 
-    // flux output
-    _flux8.resize({array_size * 8});
+    _flux8.resize({array_size * 8}); // flux output
     _sediment_flux8.resize({array_size * 8});
     // _layer_map_out.resize({pars._width, pars._height, pars._layers});
 
@@ -394,30 +327,6 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
     ZERO_ARRAYS
 #undef X
 #undef ZERO_ARRAYS
-
-    // ================================================================
-    // allocate arrays
-    // #define ALLOCATE_ARRAYS  \
-//     X(_height_map_out)   \
-//     X(_water_map_out)    \
-//     X(_sediment_map_out) \
-//     X(_slope_map)
-    // #define X(NAME)                                   \
-//     if (NAME.size() != array_size) {              \
-//         NAME.resize({pars._width, pars._height}); \
-//     }
-    //     ALLOCATE_ARRAYS
-    // #undef X
-    // #undef ALLOCATE_ARRAYS
-
-// ================================================================
-// ⚠️ allocate all remaining arrays  ... WARNING I SEEM TO NEED THIS??
-#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION)         \
-    if (NAME.empty()) {                                \
-        NAME.resize_helper(pars._width, pars._height); \
-    }
-    TEMPLATE_CLASS_DEVICE_ARRAY_NS
-#undef X
 
     _device_allocated = true;
 }
@@ -506,8 +415,6 @@ void TEMPLATE_CLASS_NAME::process00() {
 
 void TEMPLATE_CLASS_NAME::process01() {
 
-    // printf("process01...");
-
     allocate_device();
     configure_device();
     stream.sync();
@@ -515,11 +422,19 @@ void TEMPLATE_CLASS_NAME::process01() {
     core::cuda::DeviceStruct<ArrayPtrs> dev_array_ptrs(get_array_ptrs()); // device side pars
 
     for (int step = 0; step < pars.steps; ++step) {
+
+        // add_rain2<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), dev_array_ptrs.dev_ptr(), step);
         calculate_flux2<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), dev_array_ptrs.dev_ptr(), step);
         apply_flux2<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), dev_array_ptrs.dev_ptr(), step);
     }
 
     stream.sync();
+}
+
+void TEMPLATE_CLASS_NAME::debug_update() {
+    pars = dev_pars.download();
+    stream.sync();
+    cudaDeviceSynchronize(); // required as we didn't implement stream in dev_pars
 }
 
 } // namespace TEMPLATE_NAMESPACE
