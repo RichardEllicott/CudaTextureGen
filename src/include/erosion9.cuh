@@ -76,6 +76,7 @@ using Float3 = std::array<float, 3>;
     X(float, simple_erosion_rate, 0.0, "simply lower based on the total slope (like Erosion4)")                 \
     X(float, slope_threshold, 0.0, "don't count any slope under this value (like Erosion4)")                    \
     X(bool, drain_at_min_height, false, "testing drain at min height")                                          \
+    X(float, drain_rate, 1000000.0, "rate of drain")                                                            \
     X(int, mode, 0, "🚧 different modes for serious refactors")                                                 \
     X(size_t, _layers, 3, "❌ total layers")                                                                    \
     X(Float3, layers_erosiveness, LAYER_EROSIVENESS_DEFAULT, "❌ multiply by erosion_rate")                     \
@@ -86,7 +87,8 @@ using Float3 = std::array<float, 3>;
     X(float, gravity, -9.8, "❌ gravity with regard to positive being upwards")                                 \
     X(float, flow_rate, 1.0, "🐙 flow rate for new model")                                                      \
     X(float, sediment_yield, 1.0, "🐙 amount of sediment generated")                                            \
-    X(float, _debug_rain_total, 0, "❓ outputting debug data")
+    X(float, _debug_rain_total, 0.0, "❓ outputting debug data")                                                \
+    X(float, _debug_drain_total, 0.0, "❓ outputting debug data")
 
 // X(int2, test_int2, DEFAULT_INT2, "test a Int2")
 

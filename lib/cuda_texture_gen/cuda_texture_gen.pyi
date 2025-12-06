@@ -13,6 +13,7 @@ test123: nanobind.nb_func
 class Erosion9:
     _block: int
     _calculation_time: float
+    _debug_drain_total: float
     _debug_rain_total: float
     _flux8: Incomplete
     _height: int
@@ -33,6 +34,7 @@ class Erosion9:
     deposition_rate: float
     diffusion_rate: float
     drain_at_min_height: bool
+    drain_rate: float
     erosion_mode: int
     erosion_rate: float
     evaporation_rate: float

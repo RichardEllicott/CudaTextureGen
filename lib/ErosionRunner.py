@@ -178,9 +178,9 @@ class ErosionRunner:
 
         # combined map movie
         movie_profile = MovieProfile(self)
-        # movie_profile.channels = ["sediment_map", "height_map", "water_map"]  # all channels
-        movie_profile.channels = ["height_map", "height_map", "water_map"]  # height does yellow
-        movie_profile.clip = [None, None, 1.0]
+        movie_profile.channels = ["sediment_map", "height_map", "water_map"]  # all channels
+        # movie_profile.channels = ["height_map", "height_map", "water_map"]  # height does yellow
+        # movie_profile.clip = [None, None, 1.0]
         self.movie_profiles["combined"] = movie_profile
 
         # height map movie
@@ -384,7 +384,9 @@ class ErosionRunner:
             print("-" * 64)
             self.print_meta_data()
             print("-" * 64)
-            print(f"process time: {self.process_time:.3f} seconds")
+        
+        
+        print(f"process time: {self.process_time:.3f} seconds")
 
         total_frames = self.steps_per_frame * self.frame_count
         print(f"total_frames: {total_frames}")
@@ -410,6 +412,10 @@ class ErosionRunner:
             _debug_rain_total = self.erosion._debug_rain_total
             _debug_rain_total /= tile_count
             print(f"_debug_rain_total: {_debug_rain_total}")
+
+            _debug_drain_total = self.erosion._debug_drain_total
+            _debug_drain_total /= tile_count
+            print(f"_debug_drain_total: {_debug_drain_total}")
 
 
 

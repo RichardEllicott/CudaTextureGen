@@ -53,27 +53,14 @@ __global__ void add_rain2(
         rain *= arrays->rain_map[idx]; // multiply by rain_map if != nullptr
     }
     arrays->water_map[idx] += rain;
-
     if (pars->debug) {
-        // __shared__ float block_sum;
-        // block_sum = 0.0f;
-        // __syncthreads();
-
-        // float delta = rain;
-        // atomicAdd(&block_sum, delta);
-
-        // __syncthreads();
-        // if (threadIdx.x == 0) {
-        //     atomicAdd(total, block_sum);
-        // }
-
         atomicAdd(&(pars->_debug_rain_total), rain);
     }
 }
 
 // new pattern
 __global__ void calculate_flux2(
-    const Parameters *pars,
+    Parameters *pars,
     const ArrayPtrs *arrays,
     const int step) {
     // ================================================================
@@ -86,16 +73,13 @@ __global__ void calculate_flux2(
     // [Rain]
     // ----------------------------------------------------------------
     float rain = pars->rain_rate;
-    // if (arrays->rain_map) {
-    //     rain *= arrays->rain_map[idx]; // multiply by rain_map if != nullptr
-    // }
+    if (arrays->rain_map) {
+        rain *= arrays->rain_map[idx]; // multiply by rain_map if != nullptr
+    }
     arrays->water_map[idx] += rain;
-    // if (pars->debug) {
-    //     atomicAdd(&(pars->_debug_rain_total), rain);
-    // }
-
-
-
+    if (pars->debug) {
+        atomicAdd(&(pars->_debug_rain_total), rain);
+    }
     // ================================================================
     float height = arrays->height_map[idx];
     float water = arrays->water_map[idx];
@@ -143,7 +127,7 @@ __global__ void calculate_flux2(
     // pointer's to the flux arrays
     float *_flux8_ptr = &arrays->_flux8[idx * 8];
     float *_sediment_flux8_ptr = &arrays->_sediment_flux8[idx * 8];             // pointer to sediment flux
-    float sediment_concentration = (water > 1e-6f) ? (sediment / water) : 0.0f; // sediment concentration
+    float sediment_concentration = (max_or_total_water > 1e-6f) ? (sediment / max_or_total_water) : 0.0f; // sediment concentration
     sediment_concentration *= pars->sediment_capacity;                          // the amount of sediment to transport based on capacity
 
     for (int n = 0; n < 8; ++n) {
@@ -154,7 +138,7 @@ __global__ void calculate_flux2(
 }
 
 __global__ void apply_flux2(
-    const Parameters *pars,
+    Parameters *pars,
     const ArrayPtrs *arrays,
     const int step) {
     // ================================================================
@@ -170,7 +154,6 @@ __global__ void apply_flux2(
     // ================================================================
     // [Calculate Flows]
     // ----------------------------------------------------------------
-
     float water_inflow = 0.f;     // inflow calculated by visting neighbours
     float sediment_change = 0.0f; // (⚠️ could partially precompute)
 
@@ -213,9 +196,20 @@ __global__ void apply_flux2(
     // [Drain]
     // ----------------------------------------------------------------
     if (pars->drain_at_min_height && height <= pars->min_height) {
-        water = 0.0f;
-        sediment = 0.0f;
+        if (pars->debug) {
+
+            // extra calculations to track drain
+            float before = water;
+            float drained = fminf(pars->drain_rate, before); // can't drain more than we have
+            atomicAdd(&(pars->_debug_drain_total), drained);
+
+            water -= pars->drain_rate; // are ignored in practise as we clip at end of process
+
+        } else {
+            water -= pars->drain_rate;
+        }
     }
+
     // ================================================================
     // [output]
     // ----------------------------------------------------------------
