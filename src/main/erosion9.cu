@@ -90,10 +90,13 @@ __global__ void calculate_flux2(
     //     rain *= arrays->rain_map[idx]; // multiply by rain_map if != nullptr
     // }
     arrays->water_map[idx] += rain;
+    // if (pars->debug) {
+    //     atomicAdd(&(pars->_debug_rain_total), rain);
+    // }
+
+
+
     // ================================================================
-    // float height = read_map_in(arrays->height_map, arrays->_height_map_out, step, idx);
-    // float water = read_map_in(arrays->water_map, arrays->_water_map_out, step, idx);
-    // float sediment = read_map_in(arrays->sediment_map, arrays->_sediment_map_out, step, idx);
     float height = arrays->height_map[idx];
     float water = arrays->water_map[idx];
     float sediment = arrays->sediment_map[idx];
@@ -131,11 +134,10 @@ __global__ void calculate_flux2(
     // [Calculate Flux]
     // ----------------------------------------------------------------
 
-    // get a scale factor in the case we have exceeded the max water outflow
-    // ❓ we could approach this problem different and instead use a max outflow per cell
-    float flux_scale = 1.0f;
-    if (total_outflow > pars->max_water_outflow) {
-        flux_scale = pars->max_water_outflow / total_outflow;
+    float max_or_total_water = min(water, pars->max_water_outflow); // firstly either the water or max outflow
+    float flux_scale = 1.0f;                                        // will scale the resulting flux by this to ensure water total doesn't exceed max_or_total_water
+    if (total_outflow > max_or_total_water) {
+        flux_scale = max_or_total_water / total_outflow;
     }
 
     // pointer's to the flux arrays
@@ -222,7 +224,6 @@ __global__ void apply_flux2(
     arrays->water_map[idx] = fmaxf(0.f, water);       // no negative water
     arrays->sediment_map[idx] = fmaxf(0.f, sediment); // no negative sediment
 }
-
 
 #pragma endregion
 
