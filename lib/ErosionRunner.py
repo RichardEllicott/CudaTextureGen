@@ -178,9 +178,9 @@ class ErosionRunner:
 
         # combined map movie
         movie_profile = MovieProfile(self)
-        movie_profile.channels = ["sediment_map", "height_map", "water_map"]  # all channels
-        # movie_profile.channels = ["height_map", "height_map", "water_map"]  # height does yellow
-        # movie_profile.clip = [None, None, 1.0]
+        # movie_profile.channels = ["sediment_map", "height_map", "water_map"]  # all channels
+        movie_profile.channels = ["height_map", "height_map", "water_map"]  # height does yellow
+        movie_profile.clip = [None, None, 1.0]
         self.movie_profiles["combined"] = movie_profile
 
         # height map movie
@@ -333,7 +333,7 @@ class ErosionRunner:
             rows.append([name, stats['min'], stats['max'], stats['mean'], stats['std']])
 
         # Print as table
-        print(tabulate(rows, headers=["Name", "Min", "Max", "Mean", "Std"], floatfmt=".3f"))
+        print(tabulate(rows, headers=["Name", "Min", "Max", "Mean", "Std"], floatfmt=".4f"))
 
     def process(self):
 
@@ -406,16 +406,19 @@ class ErosionRunner:
 
         if self.debug:
             self.erosion.debug_update()
-
             tile_count = erosion._width * erosion._height
 
-            _debug_rain_total = self.erosion._debug_rain_total
-            _debug_rain_total /= tile_count
-            print(f"_debug_rain_total: {_debug_rain_total}")
+            for attr in dir(self.erosion):
+                if attr.startswith("_debug"):
+                    value = getattr(self.erosion, attr)
+                    value /= tile_count
+                    print(f"{attr}: {value}")
 
-            _debug_drain_total = self.erosion._debug_drain_total
-            _debug_drain_total /= tile_count
-            print(f"_debug_drain_total: {_debug_drain_total}")
+
+            # for name, value in vars(self.erosion).items():                
+            #     if name.startswith("_debug"):
+            #         value /= tile_count
+            #         print(f"{name}: {value}")
 
 
 

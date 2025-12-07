@@ -96,7 +96,7 @@ class TemplateD : public Base {
             ptr->set_stream(stream.get());
         }
         curand_array_2d.set_stream(stream.get());
-        // dev_pars.set_stream(stream.get()); // ⚠️ not yet implemented
+        dev_pars.set_stream(stream.get());
     }
 };
 

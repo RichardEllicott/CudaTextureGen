@@ -102,28 +102,27 @@ def test_mode_1():
     layers test
     """
     runner = ErosionRunner()
-    runner.debug = False
+    # runner.debug = False
 
     erosion = runner.erosion
     erosion.mode = 1
 
     map_width, map_height = 128, 128
-    map_width, map_height = 256, 256
+    # map_width, map_height = 256, 256
     # map_width, map_height = 512, 512
 
     # scale vars (increase processing time, do smaller steps)
-    # scale_stretch = 1
-    scale_stretch = 16
+    scale_stretch = 1.0
 
     octaves = 8
     octaves = 7
     base_period = 1
 
     height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves, base_period=base_period)
-    # height_map *= 32.0
-    height_map *= 8.0
+    height_map *= 32.0
+    # height_map *= 8.0
 
-    runner.nearest_neighbor_upscale = 2
+    runner.nearest_neighbor_upscale = 4
 
     # circle cuut
     # circle = tools.arrays.circle(map_width, map_height, map_width // 3)
@@ -136,16 +135,16 @@ def test_mode_1():
     # runner.layer_map = layer_map
 
     erosion.rain_rate = 0.001  # increasing rain rate barely making difference!
-    erosion.erosion_rate = 0.01 * 10.0
+    erosion.erosion_rate = 0.001
     erosion.evaporation_rate = 0.0001
-    erosion.max_water_outflow = 1.0 / 8.0
+    erosion.max_water_outflow = 1.0
 
-    erosion.drain_at_min_height = True
-    erosion.min_height = -1.0
-    erosion.drain_rate = 0.01
+    # erosion.drain_at_min_height = True
+    # erosion.min_height = 0.0
+    # erosion.drain_rate = 0.01
 
-    erosion.sediment_capacity = 1.0
-    erosion.deposition_rate = 1.0 / 1.0
+    # erosion.sediment_capacity = 1.0
+    # erosion.deposition_rate = 1.0 / 1.0
 
     runner.frame_count = 64
     runner.frame_count *= 4
@@ -155,12 +154,12 @@ def test_mode_1():
     runner.steps_per_frame = 16
 
     # scale stretch
-    erosion.rain_rate /= scale_stretch
-    erosion.erosion_rate /= scale_stretch
-    erosion.evaporation_rate /= scale_stretch
-    erosion.max_water_outflow /= scale_stretch
-    runner.steps_per_frame *= scale_stretch
-    erosion.drain_rate /= scale_stretch
+    # erosion.rain_rate /= scale_stretch
+    # erosion.erosion_rate /= scale_stretch
+    # erosion.evaporation_rate /= scale_stretch
+    # erosion.max_water_outflow /= scale_stretch
+    # runner.steps_per_frame *= scale_stretch
+    # erosion.drain_rate /= scale_stretch
 
     # runner.steps_per_frame = 64
     runner.process()

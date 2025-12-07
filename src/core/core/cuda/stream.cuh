@@ -37,56 +37,7 @@ stream.sync(); // optional: wait for completion
 
 namespace core::cuda {
 
-// class Stream {
-//     cudaStream_t stream = nullptr;
-
-//   public:
-//     explicit Stream(unsigned int flags = cudaStreamDefault) {
-//         cudaError_t err = cudaStreamCreateWithFlags(&stream, flags);
-//         if (err != cudaSuccess) {
-//             throw std::runtime_error(std::string("Failed to create CUDA stream: ") +
-//                                      cudaGetErrorString(err));
-//         }
-//     }
-
-//     // co coopy
-//     Stream(const Stream &) = delete;
-//     Stream &operator=(const Stream &) = delete;
-
-//     Stream(Stream &&other) noexcept : stream(other.stream) {
-//         other.stream = nullptr;
-//     }
-//     Stream &operator=(Stream &&other) noexcept {
-//         if (this != &other) {
-//             if (stream)
-//                 cudaStreamDestroy(stream);
-//             stream = other.stream;
-//             other.stream = nullptr;
-//         }
-//         return *this;
-//     }
-
-//     void swap(Stream &other) noexcept {
-//         std::swap(stream, other.stream);
-//     }
-
-//     bool valid() const noexcept { return stream != nullptr; }
-//     cudaStream_t get() const noexcept { return stream; }
-
-//     void sync() const {
-//         cudaError_t err = cudaStreamSynchronize(stream);
-//         if (err != cudaSuccess) {
-//             throw std::runtime_error(std::string("Stream sync failed: ") +
-//                                      cudaGetErrorString(err));
-//         }
-//     }
-
-//     ~Stream() {
-//         if (stream)
-//             cudaStreamDestroy(stream);
-//     }
-// };
-
+// Stream helper, wil create a stream automaticly
 class Stream {
     cudaStream_t stream = nullptr; // underlying CUDA stream handle
 

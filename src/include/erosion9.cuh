@@ -86,9 +86,13 @@ using Float3 = std::array<float, 3>;
     X(float, scale, 1.0, "🐙 real world width of a pixel")                                                      \
     X(float, gravity, -9.8, "❌ gravity with regard to positive being upwards")                                 \
     X(float, flow_rate, 1.0, "🐙 flow rate for new model")                                                      \
-    X(float, sediment_yield, 1.0, "🐙 amount of sediment generated")                                            \
-    X(float, _debug_rain_total, 0.0, "❓ outputting debug data")                                                \
-    X(float, _debug_drain_total, 0.0, "❓ outputting debug data")
+    X(float, sediment_yield, 1.0, "🐙 amount of sediment generated")
+
+#define TEMPLATE_DEBUG_OUTPUTS                                    \
+    X(float, _debug_rain_total, 0.0, "tracking total rain")       \
+    X(float, _debug_drain_total, 0.0, "tracking total drain")     \
+    X(float, _debug_erosion_total, 0.0, "tracking total erosion") \
+    X(float, _debug_evaporation_total, 0.0, "tracking total erosion")
 
 // X(int2, test_int2, DEFAULT_INT2, "test a Int2")
 
@@ -129,14 +133,29 @@ static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must re
 struct ArrayPtrs {
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    TYPE *NAME;
+    TYPE *NAME = nullptr;
     TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #undef X
 #endif
 };
 static_assert(std::is_trivially_copyable<ArrayPtrs>::value, "ArrayPtrs must remain trivially copyable for CUDA memcpy"); // optional
 
+// Parameters struct for uploading to GPU
+struct DebugOutputs {
+#ifdef TEMPLATE_DEBUG_OUTPUTS
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    TYPE NAME = DEFAULT_VAL;
+    TEMPLATE_DEBUG_OUTPUTS
+#undef X
+#endif
+};
+static_assert(std::is_trivially_copyable<DebugOutputs>::value, "DebugOutputs must remain trivially copyable for CUDA memcpy"); // optional
+
 class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
+
+  protected:
+    core::cuda::DeviceSyncedStruct<DebugOutputs> debug_outputs; // device side pars (new synced wrapper keeps a local copy)
+    core::cuda::DeviceStruct<ArrayPtrs> dev_array_ptrs;         // device side pars
 
   public:
     // getter/setters for the pars
@@ -145,6 +164,15 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
     TYPE get_##NAME() const { return pars.NAME; } \
     void set_##NAME(TYPE value) { set_par(pars.NAME, value); }
     TEMPLATE_CLASS_PARAMETERS
+#undef X
+#endif
+
+    // getter/setters for the debug output's
+#ifdef TEMPLATE_DEBUG_OUTPUTS
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)                   \
+    TYPE get_##NAME() const { return debug_outputs.host().NAME; } \
+    void set_##NAME(TYPE value) { debug_outputs.host().NAME = value; }
+    TEMPLATE_DEBUG_OUTPUTS
 #undef X
 #endif
 
@@ -183,19 +211,21 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
         };
     }
 
-    // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-    struct ArrayMeta {
-        const char *type;        // e.g. "float", "int", "double"
-        const int dimensions;    // e.g. "1D", "2x2", "NxM"
-        const char *name;        // identifier
-        const char *description; // human-readable docstring
-    };
+    // // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
+    // struct ArrayMeta {
+    //     const char *type;        // e.g. "float", "int", "double"
+    //     const int dimensions;    // e.g. "1D", "2x2", "NxM"
+    //     const char *name;        // identifier
+    //     const char *description; // human-readable docstring
+    // };
 
     void process00();
     void process01();
 
     TEMPLATE_CLASS_NAME() {
         initialize();
+        debug_outputs.set_stream(stream.get());
+        dev_array_ptrs.set_stream(stream.get());
     }
 
     void allocate_device() override;

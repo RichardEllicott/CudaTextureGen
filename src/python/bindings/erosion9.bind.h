@@ -23,6 +23,14 @@ inline void bind(nb::module_ &m) {
 #undef X
 #endif
 
+// bind debug outputs
+#ifdef TEMPLATE_DEBUG_OUTPUTS
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    ngd.def_prop_rw(EXPAND_AND_STRINGIFY(NAME), &TEMPLATE_CLASS_NAME::get_##NAME, &TEMPLATE_CLASS_NAME::set_##NAME, DESCRIPTION);
+    TEMPLATE_DEBUG_OUTPUTS
+#undef X
+#endif
+
     // bind DeviceArray's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION)                                                                                                         \

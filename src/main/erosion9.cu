@@ -36,8 +36,9 @@ __device__ inline int pos_to_idx(int2 pos, int map_width) {
 #pragma region KERNELS
 
 __global__ void add_rain2(
-    Parameters *pars,
+    const Parameters *pars,
     const ArrayPtrs *arrays,
+    DebugOutputs *debug,
     const int step) {
     // ================================================================
     int2 map_size = make_int2(pars->_width, pars->_height);
@@ -54,7 +55,7 @@ __global__ void add_rain2(
     }
     arrays->water_map[idx] += rain;
     if (pars->debug) {
-        atomicAdd(&(pars->_debug_rain_total), rain);
+        atomicAdd(&(debug->_debug_rain_total), rain);
     }
 }
 
@@ -62,6 +63,7 @@ __global__ void add_rain2(
 __global__ void calculate_flux2(
     Parameters *pars,
     const ArrayPtrs *arrays,
+    DebugOutputs *debug,
     const int step) {
     // ================================================================
     int2 map_size = make_int2(pars->_width, pars->_height);
@@ -78,7 +80,7 @@ __global__ void calculate_flux2(
     }
     arrays->water_map[idx] += rain;
     if (pars->debug) {
-        atomicAdd(&(pars->_debug_rain_total), rain);
+        atomicAdd(&(debug->_debug_rain_total), rain);
     }
     // ================================================================
     float height = arrays->height_map[idx];
@@ -114,6 +116,9 @@ __global__ void calculate_flux2(
         total_outflow += outflow;
     }
 
+// #define CODE_ROUTE 0 // or 1
+#if CODE_ROUTE == 0
+
     // ================================================================
     // [Calculate Flux]
     // ----------------------------------------------------------------
@@ -126,20 +131,42 @@ __global__ void calculate_flux2(
 
     // pointer's to the flux arrays
     float *_flux8_ptr = &arrays->_flux8[idx * 8];
-    float *_sediment_flux8_ptr = &arrays->_sediment_flux8[idx * 8];             // pointer to sediment flux
+    float *_sediment_flux8_ptr = &arrays->_sediment_flux8[idx * 8];                                       // pointer to sediment flux
     float sediment_concentration = (max_or_total_water > 1e-6f) ? (sediment / max_or_total_water) : 0.0f; // sediment concentration
-    sediment_concentration *= pars->sediment_capacity;                          // the amount of sediment to transport based on capacity
+    sediment_concentration *= pars->sediment_capacity;                                                    // the amount of sediment to transport based on capacity
 
     for (int n = 0; n < 8; ++n) {
         float scaled_outflow = outflows[n] * flux_scale;
         _flux8_ptr[n] = scaled_outflow;                                   // final outflow value scaled
         _sediment_flux8_ptr[n] = scaled_outflow * sediment_concentration; // final sediment flow
     }
+
+#elif CODE_ROUTE == 1
+
+    // ================================================================
+    // [Calculate Outflow] BROKEN
+    // ----------------------------------------------------------------
+    float *_flux8_ptr = &arrays->_flux8[idx * 8];
+    float max_or_total_water = min(water, pars->max_water_outflow); // firstly either the water or max outflow
+    // normalize so total is max_or_total_water
+    for (int n = 0; n < 8; ++n) {
+        // water outflow
+        float flux = outflows[n];
+        flux /= total_outflow;      // total now 1
+        flux *= max_or_total_water; // total now = to max_or_total_water
+        _flux8_ptr[n] = flux;       // final outflow value scaled
+    }
+
+#else
+#error "Unsupported CODE_ROUTE value"
+#endif
+#undef CODE_ROUTE
 }
 
 __global__ void apply_flux2(
-    Parameters *pars,
+    const Parameters *pars,
     const ArrayPtrs *arrays,
+    DebugOutputs *debug,
     const int step) {
     // ================================================================
     int2 map_size = make_int2(pars->_width, pars->_height);
@@ -175,16 +202,31 @@ __global__ void apply_flux2(
     water += water_inflow;
     sediment += sediment_change;
 
-    float erosion = water_outflow * pars->erosion_rate;
+    float erosion = water_outflow * pars->erosion_rate;  // max possible erosion
     float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
-    erosion = fminf(erosion, fmaxf(0.0f, available_erosion));
+
+    // erosion = fminf(erosion, fmaxf(0.0f, available_erosion)); // not sure??
+    erosion = fminf(erosion, available_erosion);
+
+
+
+
+    if (pars->debug) {
+        atomicAdd(&(debug->_debug_erosion_total), erosion);
+    }
 
     sediment += erosion * pars->sediment_yield; // ❓ scale this by the material, some might make less sediment
     height -= erosion;
 
     height = clamp(height, pars->min_height, pars->max_height); // ❓❓ pointless won't go up?
 
+    if (pars->debug) {
+        float evaporation_loss = min(pars->evaporation_rate, water); // evaporation is either evaporation_rate or remaining
+        atomicAdd(&(debug->_debug_evaporation_total), evaporation_loss);
+    }
     water -= pars->evaporation_rate; // evaporation
+
+    //
 
     // ================================================================
     // [Deposition]
@@ -201,7 +243,7 @@ __global__ void apply_flux2(
             // extra calculations to track drain
             float before = water;
             float drained = fminf(pars->drain_rate, before); // can't drain more than we have
-            atomicAdd(&(pars->_debug_drain_total), drained);
+            atomicAdd(&(debug->_debug_drain_total), drained);
 
             water -= pars->drain_rate; // are ignored in practise as we clip at end of process
 
@@ -323,6 +365,8 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
 #undef X
 #undef ZERO_ARRAYS
 
+    dev_array_ptrs.upload(get_array_ptrs());
+
     _device_allocated = true;
 }
 
@@ -414,22 +458,31 @@ void TEMPLATE_CLASS_NAME::process01() {
     configure_device();
     stream.sync();
 
-    core::cuda::DeviceStruct<ArrayPtrs> dev_array_ptrs(get_array_ptrs()); // device side pars
-
     for (int step = 0; step < pars.steps; ++step) {
 
-        // add_rain2<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), dev_array_ptrs.dev_ptr(), step);
-        calculate_flux2<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), dev_array_ptrs.dev_ptr(), step);
-        apply_flux2<<<grid, block, 0, stream.get()>>>(dev_pars.dev_ptr(), dev_array_ptrs.dev_ptr(), step);
+        calculate_flux2<<<grid, block, 0, stream.get()>>>(
+            dev_pars.dev_ptr(),
+            dev_array_ptrs.dev_ptr(),
+            debug_outputs.dev_ptr(),
+            step);
+
+        apply_flux2<<<grid, block, 0, stream.get()>>>(
+            dev_pars.dev_ptr(),
+            dev_array_ptrs.dev_ptr(),
+            debug_outputs.dev_ptr(),
+            step);
     }
 
     stream.sync();
 }
 
 void TEMPLATE_CLASS_NAME::debug_update() {
-    pars = dev_pars.download();
-    stream.sync();
-    cudaDeviceSynchronize(); // required as we didn't implement stream in dev_pars
+    // pars = dev_pars.download();
+    // stream.sync();
+    // cudaDeviceSynchronize(); // required as we didn't implement stream in dev_pars
+
+    debug_outputs.set_stream(stream.get());
+    debug_outputs.download();
 }
 
 } // namespace TEMPLATE_NAMESPACE

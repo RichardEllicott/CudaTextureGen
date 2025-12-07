@@ -14,6 +14,8 @@ class Erosion9:
     _block: int
     _calculation_time: float
     _debug_drain_total: float
+    _debug_erosion_total: float
+    _debug_evaporation_total: float
     _debug_rain_total: float
     _flux8: Incomplete
     _height: int
