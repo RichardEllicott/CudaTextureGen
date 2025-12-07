@@ -66,6 +66,7 @@ class Erosion9:
     simple_erosion_rate: float
     slope_exponent: float
     slope_jitter: float
+    slope_jitter_mode: int
     slope_threshold: float
     steps: int
     water_map: Incomplete

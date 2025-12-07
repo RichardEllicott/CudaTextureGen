@@ -88,7 +88,8 @@ using Float3 = std::array<float, 3>;
     X(float, flow_rate, 1.0, "🐙 flow rate for new model")                                                      \
     X(float, sediment_yield, 0.0, "🐙 amount of sediment generated")                                            \
     X(float, positive_slope_gradient_cap, 1000000.0, "🐙 amount of sediment generated")                         \
-    X(float, deposition_threshold, 0.0, "🐙 amount of sediment generated")
+    X(float, deposition_threshold, 0.0, "🐙 amount of sediment generated")\
+    X(int, slope_jitter_mode, 0, "0 is based on step, 1 is frozen")\
 
 #define TEMPLATE_DEBUG_OUTPUTS                                    \
     X(float, _debug_rain_total, 0.0, "tracking total rain")       \

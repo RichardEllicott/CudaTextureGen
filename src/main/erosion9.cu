@@ -105,7 +105,12 @@ __global__ void calculate_flux2(
     float total_flux = 0.0f;
 
     if (pars->slope_jitter > 0.0f) {
-        surface_height += hash_float_signed(pos.x, pos.y, step, 1234) * pars->slope_jitter; // ⚠️ we change the height here as this is the cheapest jitter (do not write back)
+
+        if (pars->slope_jitter_mode == 0) {
+            surface_height += hash_float_signed(pos.x, pos.y, step, 1234) * pars->slope_jitter; // ⚠️ we change the height here as this is the cheapest jitter (do not write back)
+        } else {
+            surface_height += hash_float_signed(pos.x, pos.y, 0, 1234) * pars->slope_jitter;
+        }
     }
 
     for (int n = 0; n < 8; ++n) {

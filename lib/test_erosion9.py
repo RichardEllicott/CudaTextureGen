@@ -102,29 +102,29 @@ def test_mode_1():
     runner = ErosionRunner()
     # runner.debug = False
 
-    runner.output_preset_01()
-    # runner.output_preset_02()
+    # runner.output_preset_01()
+    runner.output_preset_02()
     # runner.output_preset_03()
 
     erosion = runner.erosion
     erosion.mode = 1
 
-    runner.nearest_neighbor_upscale = 1
+    runner.nearest_neighbor_upscale = 2
     map_width, map_height = 512, 512
     map_width //= runner.nearest_neighbor_upscale
     map_height //= runner.nearest_neighbor_upscale
 
     # scale vars (increase processing time, do smaller steps)
-    scale_stretch = 4
+    scale_stretch = 1
 
     octaves = 8
-    octaves = 3
-    octaves = 4
+    octaves = 6
     base_period = 1
 
     height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves, base_period=base_period)
-    height_map *= 32.0
-    # height_map *= 8.0
+    # height_map *= 32.0
+    # height_map *= 16.0
+    height_map *= 128.0
 
     # # circle cuut
     # circle = tools.arrays.circle(map_width, map_height, map_width // 3)
@@ -141,7 +141,7 @@ def test_mode_1():
     erosion.evaporation_rate = 0.0001
     erosion.max_water_outflow = 1.0
 
-    # erosion.drain_at_min_height = True
+    erosion.drain_at_min_height = True
     erosion.min_height = 0.0
     erosion.drain_rate = 0.01
 
@@ -155,6 +155,7 @@ def test_mode_1():
     # erosion.deposition_threshold = 0.00001
 
     erosion.slope_jitter = 1.0 / 8.0
+    erosion.slope_jitter_mode = 1
     # erosion.slope_jitter = 32.0
 
     runner.frame_count = 64

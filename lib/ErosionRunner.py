@@ -413,7 +413,7 @@ class ErosionRunner:
             
 
         self._metric_data = {}
-        
+
         erosion.steps = self.steps_per_frame
 
         movie_writers = {}
