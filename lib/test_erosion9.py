@@ -95,7 +95,6 @@ def test_mode_0():
     runner.process()
 
 
-# test_mode_0()
 
 def test_mode_1():
     """
@@ -103,6 +102,8 @@ def test_mode_1():
     """
     runner = ErosionRunner()
     # runner.debug = False
+
+    runner.output_preset_03()
 
     erosion = runner.erosion
     erosion.mode = 1
@@ -112,7 +113,7 @@ def test_mode_1():
     # map_width, map_height = 512, 512
 
     # scale vars (increase processing time, do smaller steps)
-    scale_stretch = 1.0
+    scale_stretch = 1
 
     octaves = 8
     octaves = 7
@@ -124,7 +125,9 @@ def test_mode_1():
 
     runner.nearest_neighbor_upscale = 4
 
-    # circle cuut
+
+
+    # # circle cuut
     # circle = tools.arrays.circle(map_width, map_height, map_width // 3)
     # circle = tools.arrays.blur(circle, 16.0)
     # height_map *= circle
@@ -134,35 +137,46 @@ def test_mode_1():
     # layer_map = tools.noise.fractal_rgb(width=map_width, height=map_height, octaves=octaves)
     # runner.layer_map = layer_map
 
-    erosion.rain_rate = 0.001  # increasing rain rate barely making difference!
-    erosion.erosion_rate = 0.001
-    erosion.evaporation_rate = 0.0001
+    erosion.rain_rate = 0.0035  # increasing rain rate barely making difference!
+    erosion.erosion_rate = 0.004
+    erosion.evaporation_rate = 0.003
     erosion.max_water_outflow = 1.0
 
-    # erosion.drain_at_min_height = True
-    # erosion.min_height = 0.0
-    # erosion.drain_rate = 0.01
+    erosion.drain_at_min_height = True
+    erosion.min_height = 0.0
+    erosion.drain_rate = 0.01
 
-    # erosion.sediment_capacity = 1.0
-    # erosion.deposition_rate = 1.0 / 1.0
+
+    # erosion.positive_slope_gradient_cap = 16.0
+
+
+    # sediment is affecting the erosion a bit, slowing it down i think
+    # erosion.sediment_yield = 0.5
+    # erosion.sediment_capacity = 0.5
+    # erosion.deposition_rate = 0.5
+
+
+    erosion.slope_jitter = 1.0
+
 
     runner.frame_count = 64
     runner.frame_count *= 4
 
-    runner.image_profiles = None  # disable image
+    runner.image_profiles = {}  # disable image
 
     runner.steps_per_frame = 16
 
     # scale stretch
-    # erosion.rain_rate /= scale_stretch
-    # erosion.erosion_rate /= scale_stretch
-    # erosion.evaporation_rate /= scale_stretch
-    # erosion.max_water_outflow /= scale_stretch
-    # runner.steps_per_frame *= scale_stretch
-    # erosion.drain_rate /= scale_stretch
+    erosion.rain_rate /= scale_stretch
+    # erosion.erosion_rate /= scale_stretch # maybe leave the same as we have less water per frame
+    erosion.evaporation_rate /= scale_stretch
+    erosion.max_water_outflow /= scale_stretch
+    runner.steps_per_frame *= scale_stretch
+    erosion.drain_rate /= scale_stretch
+    erosion.positive_slope_gradient_cap /= scale_stretch
 
     # runner.steps_per_frame = 64
     runner.process()
 
-
+# test_mode_0()
 test_mode_1()

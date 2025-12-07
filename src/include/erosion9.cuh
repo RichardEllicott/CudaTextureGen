@@ -48,7 +48,7 @@ using Float3 = std::array<float, 3>;
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS                                                                               \
-    X(bool, debug, false, "track certain information for monitoring")                                           \
+    X(bool, _debug, false, "track certain information for monitoring")                                          \
     X(bool, debug_print, false, "print out information to console")                                             \
     X(int, debug_mod, 1, "frequency to print the debug output")                                                 \
     X(size_t, _block, 16, "gpu block size (best at 16)")                                                        \
@@ -86,7 +86,8 @@ using Float3 = std::array<float, 3>;
     X(float, scale, 1.0, "🐙 real world width of a pixel")                                                      \
     X(float, gravity, -9.8, "❌ gravity with regard to positive being upwards")                                 \
     X(float, flow_rate, 1.0, "🐙 flow rate for new model")                                                      \
-    X(float, sediment_yield, 1.0, "🐙 amount of sediment generated")
+    X(float, sediment_yield, 1.0, "🐙 amount of sediment generated")                                            \
+    X(float, positive_slope_gradient_cap, 1000000.0, "🐙 amount of sediment generated")
 
 #define TEMPLATE_DEBUG_OUTPUTS                                    \
     X(float, _debug_rain_total, 0.0, "tracking total rain")       \
@@ -110,7 +111,8 @@ using Float3 = std::array<float, 3>;
     X(float, 1, _sediment_flux8, "⚠️ sediment flow out to 8 neighbours")                              \
     X(float, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB") \
     X(float, 3, _layer_map_out, "layer out")                                                         \
-    X(float, 2, _surface_map, "calculating the surface height")
+    X(float, 2, _surface_map, "calculating the surface height")                                      \
+    X(float, 2, hardness_map, "optional hardness map")
 
 // X(float, 2, hardness_map, "optional hardness map (not yet used)")
 

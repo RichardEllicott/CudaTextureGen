@@ -13,6 +13,7 @@ test123: nanobind.nb_func
 class Erosion9:
     _block: int
     _calculation_time: float
+    _debug: bool
     _debug_drain_total: float
     _debug_erosion_total: float
     _debug_evaporation_total: float
@@ -29,7 +30,6 @@ class Erosion9:
     _water_map_out: Incomplete
     _width: int
     correct_diagonal_distance: bool
-    debug: bool
     debug_mod: int
     debug_print: bool
     deposition_mode: int
@@ -53,6 +53,7 @@ class Erosion9:
     min_height: float
     mode: int
     outflow_carve: float
+    positive_slope_gradient_cap: float
     rain_map: Incomplete
     rain_random: bool
     rain_rate: Incomplete
