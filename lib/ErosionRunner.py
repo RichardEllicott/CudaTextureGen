@@ -398,7 +398,7 @@ class ErosionRunner:
 
     def process(self):
 
-        self._metric_data = {}
+        
 
         start_time = time.perf_counter()
         erosion = self.erosion
@@ -410,7 +410,10 @@ class ErosionRunner:
             print("🚀 launch erosion...")
             print("-" * 64)
             self.print_metric_data()  # ⚠️ gets meta data (slow)
+            
 
+        self._metric_data = {}
+        
         erosion.steps = self.steps_per_frame
 
         movie_writers = {}

@@ -258,12 +258,6 @@ __global__ void apply_flux2(
     //
 
     // ================================================================
-    // [Deposition]
-    // ----------------------------------------------------------------
-    float deposit = sediment * pars->deposition_rate; // ❓ simple, no capacity
-    sediment -= deposit;
-    height += deposit;
-    // ================================================================
     // [Drain]
     // ----------------------------------------------------------------
     if (pars->drain_at_min_height && height <= pars->min_height) {
@@ -280,6 +274,23 @@ __global__ void apply_flux2(
 
         } else {
             water -= pars->drain_rate;
+        }
+    }
+
+    // ================================================================
+    // [Deposition]
+    // ----------------------------------------------------------------
+
+    if (pars->deposition_mode == 0) {
+        float deposit = sediment * pars->deposition_rate; // ❓ simple, no capacity
+        sediment -= deposit;
+        height += deposit;
+
+    } else if (pars->deposition_mode == 1) { // 🐞 with a deposition_threshold for water_outflow
+        if (water_outflow < pars->deposition_threshold) {
+            float deposit = sediment * pars->deposition_rate;
+            sediment -= deposit;
+            height += deposit;
         }
     }
 

@@ -34,6 +34,7 @@ class Erosion9:
     debug_print: bool
     deposition_mode: int
     deposition_rate: float
+    deposition_threshold: float
     diffusion_rate: float
     drain_at_min_height: bool
     drain_rate: float
@@ -42,6 +43,7 @@ class Erosion9:
     evaporation_rate: float
     flow_rate: float
     gravity: float
+    hardness_map: Incomplete
     height_map: Incomplete
     layer_map: Incomplete
     layers_erosiveness: list[float]

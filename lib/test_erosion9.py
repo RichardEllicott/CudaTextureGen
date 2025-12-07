@@ -95,7 +95,6 @@ def test_mode_0():
     runner.process()
 
 
-
 def test_mode_1():
     """
     layers test
@@ -103,29 +102,29 @@ def test_mode_1():
     runner = ErosionRunner()
     # runner.debug = False
 
-    runner.output_preset_03()
+    runner.output_preset_01()
+    # runner.output_preset_02()
+    # runner.output_preset_03()
 
     erosion = runner.erosion
     erosion.mode = 1
 
-    map_width, map_height = 128, 128
-    # map_width, map_height = 256, 256
-    # map_width, map_height = 512, 512
+    runner.nearest_neighbor_upscale = 1
+    map_width, map_height = 512, 512
+    map_width //= runner.nearest_neighbor_upscale
+    map_height //= runner.nearest_neighbor_upscale
 
     # scale vars (increase processing time, do smaller steps)
-    scale_stretch = 1
+    scale_stretch = 4
 
     octaves = 8
-    octaves = 7
+    octaves = 3
+    octaves = 4
     base_period = 1
 
     height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves, base_period=base_period)
     height_map *= 32.0
     # height_map *= 8.0
-
-    runner.nearest_neighbor_upscale = 4
-
-
 
     # # circle cuut
     # circle = tools.arrays.circle(map_width, map_height, map_width // 3)
@@ -137,27 +136,26 @@ def test_mode_1():
     # layer_map = tools.noise.fractal_rgb(width=map_width, height=map_height, octaves=octaves)
     # runner.layer_map = layer_map
 
-    erosion.rain_rate = 0.0035  # increasing rain rate barely making difference!
-    erosion.erosion_rate = 0.004
-    erosion.evaporation_rate = 0.003
+    erosion.rain_rate = 0.0007  # increasing rain rate barely making difference!
+    erosion.erosion_rate = 0.03
+    erosion.evaporation_rate = 0.0001
     erosion.max_water_outflow = 1.0
 
-    erosion.drain_at_min_height = True
+    # erosion.drain_at_min_height = True
     erosion.min_height = 0.0
     erosion.drain_rate = 0.01
 
-
     # erosion.positive_slope_gradient_cap = 16.0
 
-
-    # sediment is affecting the erosion a bit, slowing it down i think
+    # # sediment is affecting the erosion a bit, slowing it down i think
     # erosion.sediment_yield = 0.5
-    # erosion.sediment_capacity = 0.5
+    # erosion.sediment_capacity = 0.5 / 4.0
+    # erosion.sediment_capacity = 1.0 # blows up!
     # erosion.deposition_rate = 0.5
+    # erosion.deposition_threshold = 0.00001
 
-
-    erosion.slope_jitter = 1.0
-
+    erosion.slope_jitter = 1.0 / 8.0
+    # erosion.slope_jitter = 32.0
 
     runner.frame_count = 64
     runner.frame_count *= 4
@@ -177,6 +175,7 @@ def test_mode_1():
 
     # runner.steps_per_frame = 64
     runner.process()
+
 
 # test_mode_0()
 test_mode_1()
