@@ -11,6 +11,7 @@ import cuda_texture_gen
 import numpy as np
 
 from ErosionRunner import ErosionRunner
+from IslandGenerator import IslandGenerator
 
 
 # 2D array with shape (0, 0) .... USE FOR CLEARING A HEIGHTMAP.. OPTIONAL
@@ -72,7 +73,11 @@ def test_mode_0():
 
     # remove water
     erosion.evaporation_rate = 0.001
-    erosion.drain_at_min_height = True
+    erosion.drain_rate = 100000.0
+
+    runner.frame_count = 256
+
+
     # erosion.min_height = 0.0
 
     erosion.sediment_capacity = 1.0  # ⚠️  new change
@@ -100,72 +105,77 @@ def test_mode_1():
     layers test
     """
     runner = ErosionRunner()
-    # runner.debug = False
+    erosion = runner.erosion
+    island_generator = IslandGenerator()
 
-    # runner.output_preset_01()
-    runner.output_preset_02()
+    runner.output_preset_01()
+    # runner.output_preset_02()
     # runner.output_preset_03()
 
-    erosion = runner.erosion
+    # runner.image_profiles = {}  # disable image
+    runner.movie_profiles = {}  # disable movies
+
+    map_size = 1024
+
     erosion.mode = 1
 
-    runner.nearest_neighbor_upscale = 2
-    map_width, map_height = 512, 512
+    runner.nearest_neighbor_upscale = 1
+    map_width = map_size
+    map_height = map_size
+
+
     map_width //= runner.nearest_neighbor_upscale
     map_height //= runner.nearest_neighbor_upscale
 
-    # scale vars (increase processing time, do smaller steps)
-    scale_stretch = 1
+    height_scale = 64.0
+    height_scale = 24.0
+    scale_stretch = 1 # stretching time
 
+    # gen heightmaps
     octaves = 8
-    octaves = 6
+    octaves = 10
     base_period = 1
-
     height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves, base_period=base_period)
-    # height_map *= 32.0
-    # height_map *= 16.0
-    height_map *= 128.0
 
-    # # circle cuut
-    # circle = tools.arrays.circle(map_width, map_height, map_width // 3)
-    # circle = tools.arrays.blur(circle, 16.0)
-    # height_map *= circle
+    cut_island = True
+    if cut_island:
+        # island cut
+        island_generator.width = map_width
+        island_generator.height = map_height
+        island_generator.preset00()
+        island_generator.pre_blur = 32.0
+        island = island_generator.island
+        height_map *= island
+        # plus adding a bit of island height back
+        # height_map += island * 2.0
+        # tools.arrays.normalized(height_map)
 
-    erosion.height_map = height_map
-
-    # layer_map = tools.noise.fractal_rgb(width=map_width, height=map_height, octaves=octaves)
-    # runner.layer_map = layer_map
-
+    # erosion pars
     erosion.rain_rate = 0.0007  # increasing rain rate barely making difference!
-    erosion.erosion_rate = 0.03
-    erosion.evaporation_rate = 0.0001
-    erosion.max_water_outflow = 1.0
-
-    erosion.drain_at_min_height = True
+    erosion.erosion_rate = 0.01
+    erosion.evaporation_rate = 0.0002
     erosion.min_height = 0.0
-    erosion.drain_rate = 0.01
+    # erosion.drain_rate = 0.001
+    erosion.slope_jitter = 1.0
 
-    # erosion.positive_slope_gradient_cap = 16.0
+    # erosion.flow_rate = 0.125
+    erosion.max_water_outflow = 0.125
 
-    # # sediment is affecting the erosion a bit, slowing it down i think
-    # erosion.sediment_yield = 0.5
-    # erosion.sediment_capacity = 0.5 / 4.0
-    # erosion.sediment_capacity = 1.0 # blows up!
-    # erosion.deposition_rate = 0.5
-    # erosion.deposition_threshold = 0.00001
+    # sediment
+    erosion.sediment_yield = 0.5
+    erosion.sediment_capacity = 1.0
+    # # erosion.deposition_mode = 1
+    # # erosion.deposition_rate = 0.125
+    # # erosion.deposition_threshold = 0.125
 
-    erosion.slope_jitter = 1.0 / 8.0
-    erosion.slope_jitter_mode = 1
-    # erosion.slope_jitter = 32.0
-
-    runner.frame_count = 64
-    runner.frame_count *= 4
-
-    runner.image_profiles = {}  # disable image
-
+    # runner
+    runner.frame_count = 256
+    runner.frame_count = 128
     runner.steps_per_frame = 16
 
-    # scale stretch
+
+
+    # scale stretch (if used)
     erosion.rain_rate /= scale_stretch
     # erosion.erosion_rate /= scale_stretch # maybe leave the same as we have less water per frame
     erosion.evaporation_rate /= scale_stretch
@@ -174,7 +184,8 @@ def test_mode_1():
     erosion.drain_rate /= scale_stretch
     erosion.positive_slope_gradient_cap /= scale_stretch
 
-    # runner.steps_per_frame = 64
+    erosion.height_map = height_map * height_scale
+
     runner.process()
 
 

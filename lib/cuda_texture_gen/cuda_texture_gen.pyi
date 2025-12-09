@@ -36,7 +36,6 @@ class Erosion9:
     deposition_rate: float
     deposition_threshold: float
     diffusion_rate: float
-    drain_at_min_height: bool
     drain_rate: float
     erosion_mode: int
     erosion_rate: float
@@ -50,6 +49,7 @@ class Erosion9:
     layers_permeability: list[float]
     layers_threshold: list[float]
     layers_yield: list[float]
+    manning_mode: int
     max_height: float
     max_water_outflow: float
     min_height: float
@@ -61,6 +61,7 @@ class Erosion9:
     rain_rate: Incomplete
     scale: float
     sediment_capacity: float
+    sediment_drain_rate: float
     sediment_map: Incomplete
     sediment_yield: float
     simple_erosion_rate: float

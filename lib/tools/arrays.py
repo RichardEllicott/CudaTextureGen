@@ -22,7 +22,7 @@ def print_array_information(array: NDArray) -> None:
     print("flags:", array.flags)        # contiguity info
 
 
-def normalize(array: np.ndarray) -> None:
+def normalize(array: NDArray[np.floating]) -> None:
     """
     Normalize array in place to [0,1].
     If all values are equal, returns zeros.
@@ -38,7 +38,7 @@ def normalize(array: np.ndarray) -> None:
         array /= range_val
 
 
-def normalized(array: np.ndarray) -> np.ndarray:
+def normalized(array: NDArray[np.floating]) -> NDArray[np.floating]:
     """
     return a normalized array (don't change the input)
     """

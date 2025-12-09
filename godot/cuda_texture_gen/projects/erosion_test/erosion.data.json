@@ -1,0 +1,45 @@
+{
+    "process_time": 11.567159000085667,
+    "erosion_settings": {
+        "erosion_rate": 0.01,
+        "evaporation_rate": 0.0002,
+        "max_water_outflow": 0.125,
+        "min_height": 0.0,
+        "mode": 1,
+        "rain_rate": 0.0007,
+        "sediment_capacity": 1.0,
+        "sediment_yield": 0.5,
+        "slope_jitter": 1.0,
+        "steps": 16
+    },
+    "runner_settings": {
+        "frame_count": 128,
+        "steps_per_frame": 16
+    },
+    "metrics": {
+        "height_map": {
+            "min": 0.0,
+            "max": 10.298315048217773,
+            "mean": 2.2251038551330566,
+            "std": 2.6221604347229004
+        },
+        "water_map": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0
+        },
+        "sediment_map": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0
+        }
+    },
+    "debug": {
+        "_debug_drain_total": 0.0,
+        "_debug_erosion_total": 0.03125,
+        "_debug_evaporation_total": 0.00390625,
+        "_debug_rain_total": 0.015625
+    }
+}

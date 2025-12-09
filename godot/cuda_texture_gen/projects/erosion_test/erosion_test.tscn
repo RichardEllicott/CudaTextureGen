@@ -1,0 +1,83 @@
+[gd_scene load_steps=13 format=3 uid="uid://7gbwq76p8pim"]
+
+[ext_resource type="Material" uid="uid://bpmirx26gh3l8" path="res://projects/erosion_test/erosion_test.tres" id="1_h552o"]
+[ext_resource type="Texture2D" uid="uid://cus1ghso80e1w" path="res://projects/erosion_test/erosion.height.png" id="2_bom1d"]
+[ext_resource type="Texture2D" uid="uid://c4emxtf8mcvws" path="res://projects/erosion_test/erosion.ao.png" id="3_rssbv"]
+[ext_resource type="Texture2D" uid="uid://oxphclpymf2y" path="res://projects/erosion_test/erosion.normal.png" id="4_6rf8d"]
+[ext_resource type="Texture2D" uid="uid://btrkenf6y7aby" path="res://projects/erosion_test/erosion.start.png" id="5_kl0yu"]
+[ext_resource type="Texture2D" uid="uid://bjj2xk5j8q1nl" path="res://projects/erosion_test/erosion.albedo.png" id="6_3yk81"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ipkew"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kl0yu"]
+albedo_texture = ExtResource("2_bom1d")
+normal_enabled = true
+normal_texture = ExtResource("4_6rf8d")
+ao_enabled = true
+ao_texture = ExtResource("3_rssbv")
+heightmap_enabled = true
+heightmap_deep_parallax = true
+heightmap_min_layers = 8
+heightmap_max_layers = 32
+heightmap_texture = ExtResource("2_bom1d")
+uv1_world_triplanar = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3yk81"]
+heightmap_enabled = true
+heightmap_deep_parallax = true
+heightmap_min_layers = 8
+heightmap_max_layers = 32
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_pdf4d"]
+sky_top_color = Color(0.147656, 0.174777, 0.210938, 1)
+
+[sub_resource type="Sky" id="Sky_ipkew"]
+sky_material = SubResource("ProceduralSkyMaterial_pdf4d")
+
+[sub_resource type="Environment" id="Environment_soec6"]
+background_mode = 2
+sky = SubResource("Sky_ipkew")
+fog_light_color = Color(0.355174, 0.3948, 0.478013, 1)
+fog_density = 0.0348
+
+[node name="Tests" type="Node3D"]
+
+[node name="WithAlbedo" type="MeshInstance3D" parent="."]
+transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0)
+visible = false
+mesh = SubResource("PlaneMesh_ipkew")
+surface_material_override/0 = ExtResource("1_h552o")
+
+[node name="HeightAsAlbedo" type="MeshInstance3D" parent="."]
+transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, 0.0007338524, 0, -0.0074784756)
+mesh = SubResource("PlaneMesh_ipkew")
+surface_material_override/0 = SubResource("StandardMaterial3D_kl0yu")
+
+[node name="test" type="MeshInstance3D" parent="."]
+transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, 0.0007338524, 0, -0.0074784756)
+visible = false
+mesh = SubResource("PlaneMesh_ipkew")
+surface_material_override/0 = SubResource("StandardMaterial3D_3yk81")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.927092, -0.049801, -0.37151, 0.187173, 0.920227, 0.343728, 0.324756, -0.388204, 0.862457, 0, 4.89124, 10.2755)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_soec6")
+
+[node name="start" type="TextureRect" parent="."]
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("5_kl0yu")
+
+[node name="height_map" type="TextureRect" parent="."]
+offset_left = 1088.0
+offset_right = 2112.0
+offset_bottom = 1024.0
+texture = ExtResource("2_bom1d")
+
+[node name="albedo" type="TextureRect" parent="."]
+offset_top = 1088.0
+offset_right = 1024.0
+offset_bottom = 2112.0
+texture = ExtResource("6_3yk81")

@@ -6,7 +6,7 @@
 #include "cuda_math.cuh"
 #include <stdexcept> // std::runtime_error
 
-#define EROSION_OUTFLOW_PRECALCULATION
+// #define EROSION_OUTFLOW_PRECALCULATION
 
 namespace TEMPLATE_NAMESPACE {
 
@@ -37,12 +37,24 @@ __device__ inline int pos_to_idx(int2 pos, int map_width) {
 
 #pragma region KERNELS2
 
-// KEPT AS NOTE
-// 🚧 calculate the layer height, set it to height_map and _surface_map
-__global__ void calc_layer_height(
+__device__ inline float get_layered_height(
+    const float *layer_map,
+    const int map_width,
+    const int layers,
+    const int2 pos) {
+
+    float height = 0.0;
+    int idx = (pos.y * map_width + pos.x) * layers;
+    for (int n = 0; n < layers; ++n) {
+        height += layer_map[idx + n];
+    }
+
+    return height;
+}
+
+__global__ void precalc_layer_height(
     const Parameters *pars,
-    const ArrayPtrs *arrays,
-    const int step) {
+    const ArrayPtrs *arrays) {
     // ================================================================
     int2 map_size = make_int2(pars->_width, pars->_height);
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
@@ -50,24 +62,7 @@ __global__ void calc_layer_height(
         return;
     int idx = pos_to_idx(pos, map_size.x);
     // ================================================================
-
-    auto layer_map = arrays->layer_map;   // in
-    auto height_map = arrays->height_map; // out
-    auto water_map = arrays->water_map;   // in
-
-    int layer_count = pars->_layers;
-    int layer_idx = idx * layer_count;
-
-    // find height from layers
-    float height = 0.0;
-    for (int i = 0; i < layer_count; i++) {
-        height += layer_map[layer_idx + i];
-    }
-    float water = water_map[idx];
-    float surface = height + water;
-
-    height_map[idx] = height;
-    arrays->_surface_map[idx] = surface;
+    arrays->height_map[idx] = get_layered_height(arrays->layer_map, pos.x, pars->_layers, pos);
 }
 
 // new pattern
@@ -98,55 +93,78 @@ __global__ void calculate_flux2(
     float water = arrays->water_map[idx];
     float sediment = arrays->sediment_map[idx];
     // ================================================================
-    // [Calculate Flows]
+    // [Optimize Skip Warp?]
+    // ----------------------------------------------------------------
+
+    // //THOUGHT SKIPPING CALCULATIONS MIGHT HELP ???? BUT SEEMS TO SLOW US DOWN!
+    // if (water < 0.01){
+    //     for (int n = 0; n < 8; ++n) {
+    //         int idx8 = idx * 8;
+    //         arrays->_flux8[idx8 + n] = 0.0f;
+    //         arrays->_sediment_flux8[idx8 + n] = 0.0f;
+    //     }
+    //     arrays->_water_map_out[idx] = 0.0f;
+    //     arrays->_sediment_map_out[idx] = 0.0f;
+    // }
+
+    // ================================================================
+    // [Calculate Flux]
     // ----------------------------------------------------------------
     float surface_height = height + water;
-    float fluxes[8];
-    float total_flux = 0.0f;
 
+    // optional jitter added by offsetting surface by random value
     if (pars->slope_jitter > 0.0f) {
-
         if (pars->slope_jitter_mode == 0) {
-            surface_height += hash_float_signed(pos.x, pos.y, step, 1234) * pars->slope_jitter; // ⚠️ we change the height here as this is the cheapest jitter (do not write back)
+            surface_height += hash_float_signed(pos.x, pos.y, step, 1234) * pars->slope_jitter; // change each step
         } else {
-            surface_height += hash_float_signed(pos.x, pos.y, 0, 1234) * pars->slope_jitter;
+            surface_height += hash_float_signed(pos.x, pos.y, 0, 1234) * pars->slope_jitter; // same each step (probabally doesn't really do anything)
         }
     }
 
+    // calculate initial flux (unscaled)
+    float fluxes[8];
+    float total_flux = 0.0f;
     for (int n = 0; n < 8; ++n) {
         int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
         int new_idx = pos_to_idx(new_pos, map_size.x);
 
         float new_height = arrays->height_map[new_idx];
         float new_water = arrays->water_map[new_idx];
-        float new_sediment = arrays->sediment_map[new_idx];
-
+        // float new_sediment = arrays->sediment_map[new_idx];
         float new_surface_height = new_height + new_water;
 
-        float slope_height = surface_height - new_surface_height;                        // positive means we are higher than neighbour
-        float horizontal_distance = pars->scale * offset_distances[n];                   // distance to tile (1.0 | ~1.41) * map scale
-        float positive_slope_gradient = fmaxf(slope_height / horizontal_distance, 0.0f); // positive slope gradient
+        float difference = surface_height - new_surface_height;        // positive means we are higher than neighbour
+        float horizontal_distance = pars->scale * offset_distances[n]; // distance to tile (1.0 | ~1.41) * map scale
 
-        positive_slope_gradient = min(positive_slope_gradient, pars->positive_slope_gradient_cap); // 🚧 new cap
+        float p_slope_grad = max(difference / horizontal_distance, 0.0f); // positive slope gradient
 
-        // ----------------------------------------------------------------
-        // Manning velocity approx
-        // float v = (1.0f / roughness) * powf(water, 2.0f / 3.0f) * sqrtf(p_slope_gradient);
-        float flux = powf(water, 2.0f / 3.0f) * sqrtf(positive_slope_gradient); // based on manning with no roughness
-        flux *= pars->flow_rate;                                                // scale with a flow rate, lowering this number will slow all flow
-        fluxes[n] = flux;
-        total_flux += flux;
+        p_slope_grad = p_slope_grad < pars->slope_threshold ? 0.0f : p_slope_grad; // slope_threshold (slope needs to exceed a certain value)
+
+        p_slope_grad = min(p_slope_grad, pars->positive_slope_gradient_cap); // 🚧 new cap
+
+        float flux;
+        switch (pars->erosion_mode) {
+        case 0:
+            // ----------------------------------------------------------------
+            // Manning velocity approx
+            // float v = (1.0f / roughness) * powf(water, 2.0f / 3.0f) * sqrtf(p_slope_gradient);
+            flux = powf(water, 2.0f / 3.0f) * sqrtf(p_slope_grad); // based on manning with no roughness
+            flux *= pars->flow_rate;                               // scale with a flow rate, lowering this number will slow all flow
+            fluxes[n] = flux;
+            total_flux += flux;
+            break;
+        case 1:
+
+            break;
+        }
     }
 
 // #define CODE_ROUTE 1
 #if CODE_ROUTE == 0
 
-    // ================================================================
-    // [Calculate Flux]
-    // ----------------------------------------------------------------
-
-    float max_or_total_water = min(water, pars->max_water_outflow); // firstly either the water or max outflow
-    float flux_scale = 1.0f;                                        // will scale the resulting flux by this to ensure water total doesn't exceed max_or_total_water
+    // Calculate scaling value for the flux to ensure we don't exceed water or max_water_outflow
+    float flux_scale = 1.0f;
+    float max_or_total_water = min(water, pars->max_water_outflow);
     if (total_flux > max_or_total_water) {
         flux_scale = max_or_total_water / total_flux;
     }
@@ -173,22 +191,30 @@ __global__ void calculate_flux2(
 #elif CODE_ROUTE == 1
 
     // ================================================================
-    // [Calculate Outflow] BROKEN
+    // [Calculate Outflow] BROKEN?
     // ----------------------------------------------------------------
 
     float *_flux8_ptr = &arrays->_flux8[idx * 8];
-    float max_or_total_water = min(water, pars->max_water_outflow); // firstly either the water or max outflow
-    // normalize so total is max_or_total_water
+    float *_sediment_flux8_ptr = &arrays->_sediment_flux8[idx * 8];
+
+    float total_water_outflow = min(total_flux, water);                      // cannot exceed water
+    total_water_outflow = min(total_water_outflow, pars->max_water_outflow); // or max outflow
+
+    // normalize method
     for (int n = 0; n < 8; ++n) {
         // water outflow
-        float flux = outflows[n];
-        flux /= total_outflow;      // total now 1
-        flux *= max_or_total_water; // total now = to max_or_total_water
-        _flux8_ptr[n] = flux;       // final outflow value scaled
+        float water_outflow = fluxes[n];
+        water_outflow /= total_flux;                                      // divide by total, so now all 8 fluxes will add to 1
+        water_outflow *= total_water_outflow;                             // multiply by the actual total
+        _flux8_ptr[n] = water_outflow;                                    // final outflow value scaled
+        _sediment_flux8_ptr[n] = water_outflow * pars->sediment_capacity; // sediment simply proportionate to water outflow
     }
 
-#else
-#error "Unsupported CODE_ROUTE value"
+#ifdef EROSION_OUTFLOW_PRECALCULATION
+    arrays->_water_map_out[idx] = total_water_outflow;
+    arrays->_sediment_map_out[idx] = total_water_outflow * pars->sediment_capacity;
+#endif
+
 #endif
 #undef CODE_ROUTE
 }
@@ -213,8 +239,8 @@ __global__ void apply_flux2(
     // ----------------------------------------------------------------
 
 #ifdef EROSION_OUTFLOW_PRECALCULATION
-    float water_outflow = arrays->_water_map_out[idx]; // load precalculated values
-    float sediment_change = arrays->_sediment_map_out[idx];
+    float water_outflow = arrays->_water_map_out[idx];       // load precalculated values
+    float sediment_change = -arrays->_sediment_map_out[idx]; // minus sediment outflow
 #else
     float water_outflow = 0.0f; // (⚠️ could precompute)
     float sediment_change = 0.0f;
@@ -265,27 +291,27 @@ __global__ void apply_flux2(
     // ================================================================
     // [Drain]
     // ----------------------------------------------------------------
-    if (pars->drain_at_min_height && height <= pars->min_height) {
+    if (pars->drain_rate > 0.0f && height <= pars->min_height) {
         if (pars->_debug) {
-
-            // extra calculations to track drain
-            float before = water;
-            float drained = fminf(pars->drain_rate, before); // can't drain more than we have
-            atomicAdd(&(debug->_debug_drain_total), drained);
-
-            water -= pars->drain_rate; // are ignored in practise as we clip at end of process
-
-            sediment -= pars->drain_rate * pars->sediment_capacity; // ⚠️ new drain away sediment to
-
+            float delta = water;
+            water -= pars->drain_rate;
+            water = max(0.0, water);
+            delta -= water;
+            atomicAdd(&(debug->_debug_drain_total), delta);
         } else {
             water -= pars->drain_rate;
+            water = max(0.0, water);
         }
+    }
+
+    if (pars->sediment_drain_rate > 0.0f && height <= pars->min_height) {
+        sediment -= pars->sediment_drain_rate;
+        sediment = max(0.0, sediment);
     }
 
     // ================================================================
     // [Deposition]
     // ----------------------------------------------------------------
-
     if (pars->deposition_mode == 0) {
         float deposit = sediment * pars->deposition_rate; // ❓ simple, no capacity
         sediment -= deposit;
@@ -304,8 +330,8 @@ __global__ void apply_flux2(
     // ----------------------------------------------------------------
 
     arrays->height_map[idx] = height;
-    arrays->water_map[idx] = fmaxf(0.f, water);       // no negative water
-    arrays->sediment_map[idx] = fmaxf(0.f, sediment); // no negative sediment
+    arrays->water_map[idx] = max(0.0f, water);       // no negative water
+    arrays->sediment_map[idx] = max(0.0f, sediment); // no negative sediment
 }
 
 #pragma endregion
@@ -367,6 +393,10 @@ void TEMPLATE_CLASS_NAME::allocate_device00() {
     _device_allocated = true;
 }
 
+void TEMPLATE_CLASS_NAME::setup_layer_mode01() {
+    height_map.resize({pars._width, pars._height});
+}
+
 void TEMPLATE_CLASS_NAME::allocate_device01() {
 
     if (_device_allocated)
@@ -376,14 +406,13 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
         printf("⚠️  debug mode active!\n");
     }
 
-    bool layers_mode = false;
-
     if (!layer_map.empty()) {
         printf("🐙 layer_map detected...\n");
-        layers_mode = true;
         pars._width = layer_map.dimensions()[0];
         pars._height = layer_map.dimensions()[1];
-        pars._layers = layer_map.dimensions()[2];
+        pars._layers = layer_map.dimensions()[2]; // marks layers mode as active
+        setup_layer_mode01();
+
     } else if (!height_map.empty()) {
         printf("🐙 height_map detected...\n");
         pars._width = height_map.dimensions()[0];
@@ -516,6 +545,12 @@ void TEMPLATE_CLASS_NAME::process01() {
     stream.sync();
 
     for (int step = 0; step < pars.steps; ++step) {
+
+        if (pars._layers > 0) {
+            precalc_layer_height<<<grid, block, 0, stream.get()>>>(
+                dev_pars.dev_ptr(),
+                dev_array_ptrs.dev_ptr());
+        };
 
         calculate_flux2<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(),

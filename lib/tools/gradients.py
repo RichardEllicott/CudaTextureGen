@@ -3,6 +3,7 @@
 Palette helpers
 
 """
+import colorsys
 import random
 import numpy as np
 from . import images
@@ -169,19 +170,18 @@ def get_test_gradient_01(seed: int = 0) -> Gradient:
     return gradient
 
 
-def get_test_gradient_02(seed: int = 0, n_points: int = 4) -> Gradient:
+def random_gradient_from_pallete(pallete: list[str], seed: int = 0, n_points: int = 4):
     """
     Create a test gradient with a fixed seed and a chosen number of control points.
     Colors are picked randomly from soil_pallete_01, repeats allowed.
     """
-    # Set seed for reproducibility
     random.seed(seed)
     np.random.seed(seed)
 
     gradient = Gradient()
 
     for _ in range(n_points):
-        color = random.choice(soil_pallete_01)   # allows repeats
+        color = random.choice(pallete)   # allows repeats
         position = random.random()               # random float in [0,1]
         gradient.add_control_point(position, color)
 
@@ -190,3 +190,62 @@ def get_test_gradient_02(seed: int = 0, n_points: int = 4) -> Gradient:
     gradient.normalize()
 
     return gradient
+
+
+soil_pallete_02 = [
+    "#8b4513",  # SaddleBrown (clay-rich soil)
+    "#939c2e",  # SaddleBrown (clay-rich soil)
+    "#d2b48c",  # Tan (silt or light soil)
+    "#deb887",  # BurlyWood (weathered sandstone)
+    "#ba8c4f",  # BurlyWood (weathered sandstone)
+]
+
+
+def random_palette(center_hue: float,
+                   n: int = 5,
+                   hue_std: float = 10.0,
+                   sat_range=(0.3, 0.6),
+                   val_range=(0.3, 0.7),
+                   seed: int | None = None) -> list[str]:
+    """
+    Generate a palette of hex color strings clustered around a center hue.
+    Procedural: reproducible with a seed.
+
+    Args:
+        center_hue: Hue in degrees [0, 360).
+        n: Number of colors.
+        hue_std: Standard deviation for hue jitter (degrees).
+        sat_range: Min/max saturation range.
+        val_range: Min/max value (brightness) range.
+        seed: Optional integer seed for reproducibility.
+
+    Returns:
+        List of hex strings like '#aabbcc'.
+    """
+    if seed is not None:
+        random.seed(seed)
+
+    colors = []
+    for _ in range(n):
+        hue = random.gauss(center_hue, hue_std) % 360
+        sat = random.uniform(*sat_range)
+        val = random.uniform(*val_range)
+
+        r, g, b = colorsys.hsv_to_rgb(hue/360.0, sat, val)
+        r, g, b = int(r*255), int(g*255), int(b*255)
+
+        colors.append(f"#{r:02x}{g:02x}{b:02x}")
+    return colors
+
+
+def get_test_gradient_02(seed: int = 0, n_points: int = 32) -> Gradient:
+    # """
+    # Create a test gradient with a fixed seed and a chosen number of control points.
+    # Colors are picked randomly from soil_pallete_01, repeats allowed.
+    # """
+
+    # return random_gradient_from_pallete(soil_pallete_01, seed, n_points)
+
+    palette1 = random_palette(center_hue=30, n=n_points, seed=42)
+    print(palette1)
+    return random_gradient_from_pallete(palette1, seed, n_points)

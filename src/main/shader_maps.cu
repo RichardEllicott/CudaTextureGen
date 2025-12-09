@@ -31,7 +31,8 @@ __device__ __forceinline__ void normalize3(float &x, float &y, float &z) {
 __global__ void generate_normal_map_kernel(const float *__restrict__ heightmap,
                                            float *__restrict__ normalmap,
                                            int width, int height,
-                                           float normal_scale, bool wrap) {
+                                           float normal_scale, bool wrap,
+                                           bool direct_x_style = true) {
 
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -62,10 +63,17 @@ __global__ void generate_normal_map_kernel(const float *__restrict__ heightmap,
 
     normalize3(nx, ny, nz);
 
+    float r;
+    float g;
+    float b;
+
     // Convert to [0,1] color space
-    float r = 0.5f + 0.5f * nx;
-    float g = 0.5f + 0.5f * ny;
-    float b = 0.5f + 0.5f * nz;
+    r = 0.5f + 0.5f * nx;
+    if (direct_x_style)
+        g = 0.5f + 0.5f * -ny;
+    else
+        g = 0.5f + 0.5f * ny;
+    b = 0.5f + 0.5f * nz;
 
     int base = (y * width + x) * 3;
     normalmap[base + 0] = r;
@@ -327,7 +335,6 @@ void generate_ao_map(
     cudaMalloc(&d_out, out_size);
 
     cudaMemcpy(d_in, host_in, in_size, cudaMemcpyHostToDevice);
-
 
     HTAO_Pars pars;
 

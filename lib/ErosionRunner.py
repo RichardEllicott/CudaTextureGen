@@ -30,6 +30,13 @@ class FrameProfile:
     clip: list[int | float | None] = [None, None, None]  # if a number, clip at that number
     normalize: list[bool] = [True, True, True]
 
+    class Type(Enum):
+        default = 0
+        normal_map = 1
+        ao_map = 2
+        layer_map = 3
+    type: Type = Type.default
+
     # generate as ao map
     ao_map: bool = False
     ao_map_strength: float = 1.0
@@ -38,6 +45,24 @@ class FrameProfile:
     # generate as normal map
     normal_map: bool = False
     normal_map_strength: float = 1.0
+
+    albedo_map_0: bool = False
+
+    _gradient_strip = None
+
+    def apply_gradient(self, map):
+
+        if not self._gradient_strip:
+            gradient: tools.gradients.Gradient = tools.gradients.get_test_gradient_02(0, 8)
+            # gradient: tools.gradients.Gradient = tools.gradients.get_test_gradient_02(0, 128)
+            self._gradient_strip = gradient.render(512)
+
+        map = map - self.runner.starting_heightmap
+        # map = self.runner.starting_heightmap - map
+        tools.arrays.normalize(map)
+
+        map = tools.palettes.apply_gradient_strip(map, self._gradient_strip)
+        return map
 
     def validate(self) -> None:
         # Only allow 1 or 3 channels
@@ -50,6 +75,11 @@ class FrameProfile:
         if self.normal_map and len(self.channels) != 1:
             raise ValueError(
                 f"FrameProfile normal map must be 1 channel, got {len(self.channels)}: {self.channels}"
+            )
+
+        if self.albedo_map_0 and len(self.channels) != 1:
+            raise ValueError(
+                f"FrameProfile albedo_map_0 must be 1 channel, got {len(self.channels)}: {self.channels}"
             )
 
     def __init__(self, runner: "ErosionRunner") -> None:
@@ -92,6 +122,9 @@ class FrameProfile:
                 if self.normal_map:
                     map = tools.cuda.normal_map(map, self.normal_map_strength, True)
 
+                if self.albedo_map_0:
+                    map = self.apply_gradient(map)
+
             processed_maps.append(map)  # appends map or None
 
         if len(channels) == 1:
@@ -117,16 +150,20 @@ class MovieProfile(FrameProfile):
 
 class ErosionRunner:
 
+    # godot\cuda_texture_gen\projects\erosion_test
+
+    # folder: str = "E:/"
+    # folder: str = "./output/"
+    folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
+
+    filename_base: str = "erosion"
+
     debug: bool = True  # print debug information (note slows us down a bit)
 
     class Mode(Enum):
         normal = 0
         layer = 1
     mode: Mode = Mode.normal
-
-    folder: str = "E:/"
-    # folder = "./output/"
-    filename_base: str = "erosion"
 
     animation_fps: int = 5
     frame_count: int = 64
@@ -144,6 +181,8 @@ class ErosionRunner:
 
     _maps: dict[str, npt.NDArray[np.float32]] = {}
     _default_pars: dict
+
+    starting_heightmap: NDArray[np.float32] | None = None
 
     # PROPERTIES
 
@@ -199,6 +238,16 @@ class ErosionRunner:
         image_profile.channels = ["height_map"]
         self.image_profiles["height.png"] = image_profile
 
+        # # height map image (tif)
+        # image_profile = FrameProfile(self)
+        # image_profile.channels = ["height_map"]
+        # self.image_profiles["height.tif"] = image_profile
+
+    #    # height map image (exr)
+    #     image_profile = FrameProfile(self)
+    #     image_profile.channels = ["height_map"]
+    #     self.image_profiles["height.exr"] = image_profile
+
         # normal map image
         image_profile = FrameProfile(self)
         image_profile.normal_map = True
@@ -212,6 +261,12 @@ class ErosionRunner:
         image_profile.ao_map_strength = 16.0
         image_profile.channels = ["height_map"]
         self.image_profiles["ao.png"] = image_profile
+
+        # gradient albedo map
+        image_profile = FrameProfile(self)
+        image_profile.albedo_map_0 = True
+        image_profile.channels = ["height_map"]
+        self.image_profiles["albedo.png"] = image_profile
 
     def output_preset_02(self):
 
@@ -320,7 +375,8 @@ class ErosionRunner:
 
         # remove water
         erosion.evaporation_rate = 0.001
-        erosion.drain_at_min_height = True
+        erosion.drain_rate = 1000000.0
+
         erosion.min_height = 0.0
 
         # trying to spread water
@@ -348,7 +404,7 @@ class ErosionRunner:
 
         # remove water
         erosion.evaporation_rate = 0.001
-        erosion.drain_at_min_height = True
+        erosion.drain_rate = 1000000.0
         erosion.min_height = 0.0
 
         # trying to spread water
@@ -398,10 +454,14 @@ class ErosionRunner:
 
     def process(self):
 
-        
-
         start_time = time.perf_counter()
         erosion = self.erosion
+
+        self.starting_heightmap = erosion.height_map
+        if self.starting_heightmap is not None:
+            tools.images.save(
+                tools.arrays.normalized(self.starting_heightmap),
+                f"{self.folder}/{self.filename_base}.start.png")
 
         erosion._debug = self.debug
         if self.debug:
@@ -410,7 +470,6 @@ class ErosionRunner:
             print("🚀 launch erosion...")
             print("-" * 64)
             self.print_metric_data()  # ⚠️ gets meta data (slow)
-            
 
         self._metric_data = {}
 
@@ -425,7 +484,8 @@ class ErosionRunner:
 
             self.erosion.process()
 
-            self._download_maps()
+            if self.movie_profiles:
+                self._download_maps()
 
             # 🐞 nearest upscale (allows seeing the erosion)
             if self.nearest_neighbor_upscale > 1:
@@ -448,6 +508,9 @@ class ErosionRunner:
             print("-" * 64)
 
         print(f"process time: {self.process_time:.3f} seconds")
+
+        if self.image_profiles and not self.movie_profiles:
+            self._download_maps()
 
         for name in self.image_profiles:
             profile = self.image_profiles[name]

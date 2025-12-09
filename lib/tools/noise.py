@@ -9,6 +9,7 @@ standard tools interface, load our library and hook up to it
 import cuda_texture_gen
 import numpy as np
 from . import arrays
+from numpy.typing import NDArray
 
 
 def fractal(
@@ -16,7 +17,7 @@ def fractal(
         octaves: int = 6,
         base_period: int = 2,
         seed: int = 12345,
-        gain: float = 0.8, lacunarity: float = 2.0):
+        gain: float = 0.8, lacunarity: float = 2.0) -> NDArray[np.float32]:
     """
     get_fractal_noise
     """
@@ -51,7 +52,7 @@ def fractal_rgb(
         octaves: int = 6,
         base_period: int = 2,
         seed: int = 12345,
-        gain: float = 0.8, lacunarity: float = 2.0):
+        gain: float = 0.8, lacunarity: float = 2.0) -> NDArray[np.float32]:
 
     red = fractal(width, height, octaves, base_period, seed, gain, lacunarity)
     green = fractal(width, height, octaves, base_period, seed + octaves, gain, lacunarity)

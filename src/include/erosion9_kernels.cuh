@@ -5,9 +5,8 @@ store some kernels
 */
 // #pragma once
 
-#include <cuda_runtime.h>
 #include "cuda_math.cuh"
-
+#include <cuda_runtime.h>
 
 namespace TEMPLATE_NAMESPACE {
 
@@ -315,9 +314,19 @@ __global__ void apply_flux(
         }
     }
 
-    if (pars->drain_at_min_height && height <= pars->min_height) {
-        water = 0.0f;
-        sediment = 0.0f;
+    // ================================================================
+    // [Deposition]
+    // ----------------------------------------------------------------
+    // if (pars->drain_at_min_height && height <= pars->min_height) {
+    //     water = 0.0f;
+    //     sediment = 0.0f;
+    // }
+
+    if (pars->drain_rate > 0.0f) {
+        water -= pars->drain_rate;
+    }
+    if (pars->sediment_drain_rate > 0.0f) {
+        sediment -= pars->sediment_drain_rate;
     }
 
     // ================================================================
@@ -327,9 +336,6 @@ __global__ void apply_flux(
 }
 
 #pragma endregion
-
-
-
 
 /*
 Manning’s equation (open channel):
@@ -360,13 +366,5 @@ https://copilot.microsoft.com/chats/hMzbLGxH7tG1SQkZWEPYW
 
 
 */
-
-
-
-
-
-
-
-
 
 } // namespace TEMPLATE_NAMESPACE
