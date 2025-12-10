@@ -7,66 +7,9 @@
 #include <stdexcept> // std::runtime_error
 #include <stdint.h>
 
-// #define EROSION_OUTFLOW_PRECALCULATION
+#define EROSION_OUTFLOW_PRECALCULATION
 
 namespace TEMPLATE_NAMESPACE {
-
-#pragma region HASH
-
-// integer hash (based on MurmurHash3 finalizer)
-__device__ __forceinline__ int hash_int(int x, int y, int z, int seed) {
-    int n = x + y * 374761393 + z * 668265263 + seed * 1274126177;
-
-    n ^= n >> 16;
-    n *= 0x85ebca6b;
-    n ^= n >> 13;
-    n *= 0xc2b2ae35;
-    n ^= n >> 16;
-
-    return n; // can be negative
-}
-
-// integer hash (based on MurmurHash3 finalizer)
-__device__ __forceinline__ uint32_t hash_uint(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) {
-    uint32_t n = x + y * 374761393u + z * 668265263u + seed * 1274126177u;
-
-    n ^= n >> 16;
-    n *= 0x85ebca6bu;
-    n ^= n >> 13;
-    n *= 0xc2b2ae35u;
-    n ^= n >> 16;
-
-    return n; // full 32-bit unsigned result
-}
-
-// float from [0,1]
-__device__ __forceinline__ float hash_float(uint32_t hash) {
-    return static_cast<float>(hash) / pow(2.0f, 32.0f); // Scale to [0,1]
-}
-// float from [0,1]
-__device__ __forceinline__ float hash_float(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) {
-    return hash_float(hash_uint(x, y, z, seed));
-}
-
-// float from [-1,1]
-__device__ __forceinline__ float hash_float_signed(int hash) {
-    return static_cast<float>(hash) / pow(2.0f, 31.0f); // Scale to [-1,1).
-}
-
-// float from [-1,1] range:
-__device__ __forceinline__ float hash_float_signed(int x, int y, int z, int seed) {
-    return hash_float_signed(hash_int(x, y, z, seed));
-}
-
-// take in a hash, extract a bool (set index from 0 to 31)
-__device__ __forceinline__ bool hash_to_bool(int hash, int index = 0) {
-    return (hash >> index) & 1u;
-}
-
-// if ((hash_result >> 0) & 1u) { // we can extract from 0-31 for a 50:50
-// }
-
-#pragma endregion
 
 #pragma region CONSTANTS
 
@@ -178,6 +121,13 @@ __global__ void add_rain3(
     arrays->water_map[idx] += rain;
 }
 
+// get 4 random float's from one 32 bit hash, they are not so random though with about 255 possible values
+__device__ __forceinline__ float jitter_from_byte(uint32_t h, int byte_index) {
+    uint32_t byte = (h >> (8 * byte_index)) & 0xFFu;
+    // map 0..255 to -1..1
+    return (float(byte) / 127.5f) - 1.0f;
+}
+
 __global__ void calculate_flux3(
     const Parameters *__restrict__ pars,
     const ArrayPtrs *__restrict__ arrays,
@@ -199,24 +149,6 @@ __global__ void calculate_flux3(
     float sediment = sediment_map[idx];
     float surface = height + water;
     // ================================================================
-    // HASH TEST
-    // int hash = hash_int(pos.x, pos.y, step, 0);
-    // if (hash_to_bool(hash)){
-
-    // }
-    // ================================================================
-    // optional jitter added by offsetting surface by random value
-    if (pars->slope_jitter > 0.0f) {
-        switch (pars->slope_jitter_mode) {
-        case 0:
-            surface += hash_float_signed(pos.x, pos.y, step, 1) * pars->slope_jitter; // change each step
-            break;
-        default:
-            surface += hash_float_signed(pos.x, pos.y, 0, 1) * pars->slope_jitter; // same each step (probabally doesn't really do anything)
-            break;
-        }
-    }
-    // ================================================================
     // Calculate Slope Vector
     // ----------------------------------------------------------------
 
@@ -237,6 +169,7 @@ __global__ void calculate_flux3(
     float yp_water = water_map[yp_idx];
     float xp_surface = xp_height + xp_water;
     float yp_surface = yp_height + yp_water;
+
     // negative offsets data
     float xn_height = height_map[xn_idx];
     float yn_height = height_map[yn_idx];
@@ -244,6 +177,26 @@ __global__ void calculate_flux3(
     float yn_water = water_map[yn_idx];
     float xn_surface = xn_height + xn_water;
     float yn_surface = yn_height + yn_water;
+
+    if (pars->slope_jitter) {
+
+        switch (pars->slope_jitter_mode) {
+        case 0:
+            xp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 10) * pars->slope_jitter;
+            yp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 11) * pars->slope_jitter;
+            xn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 12) * pars->slope_jitter;
+            yn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 13) * pars->slope_jitter;
+            break;
+
+        case 1:
+            uint32_t h = cuda_math::hash_uint(pos.x, pos.y, step, 10);
+            xp_surface += jitter_from_byte(h, 0) * pars->slope_jitter;
+            yp_surface += jitter_from_byte(h, 1) * pars->slope_jitter;
+            xn_surface += jitter_from_byte(h, 2) * pars->slope_jitter;
+            yn_surface += jitter_from_byte(h, 3) * pars->slope_jitter;
+            break;
+        }
+    }
 
     float2 slope_vector = float2{xn_surface - xp_surface, yn_surface - yp_surface}; // note slope may be double actual (use scale to compensate)
 
@@ -257,14 +210,18 @@ __global__ void calculate_flux3(
     float slope_magnitude = cuda_math::length(slope_vector);
     arrays->_slope_magnitude[idx] = slope_magnitude;
 
+    // 🧪 manning based velocity??
+    float water_velocity = pow(water, 2.0f / 3.0f) * sqrt(slope_magnitude);
+    arrays->_water_velocity[idx] = water_velocity;
+
 // ================================================================
 // Calculate Fluxes
 // ----------------------------------------------------------------
-// #define BAKE_SCALE_TO_UNIT_OFFSETS_8
-// #ifdef BAKE_SCALE_TO_UNIT_OFFSETS_8
-//     constexpr float2 UNIT_OFFSETS_8[8] = {
-//         {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}}; // baking scale here penalizes the dot product result of diagonals
-// #endif
+#define BAKE_SCALE_TO_UNIT_OFFSETS_8
+#ifdef BAKE_SCALE_TO_UNIT_OFFSETS_8
+    constexpr float2 UNIT_OFFSETS_8[8] = {
+        {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}}; // baking scale here penalizes the dot product result of diagonals
+#endif
 
     float fluxes[8];
     float flux_total = 0.0f;
@@ -272,42 +229,47 @@ __global__ void calculate_flux3(
         float2 unit_offset = UNIT_OFFSETS_8[n];                    // cell offset as a float vector, not normalized as this helps scale
         float product = cuda_math::dot(unit_offset, slope_vector); // dot product gets how strongly we push into this direction
         product = max(product, 0.0);                               // positive only
+
+        // if (pars->mode == 1) { // manning mode
+            // flux = powf(water, 2.0f / 3.0f) * sqrtf(p_slope_grad); // based on manning with no roughness
+            // flux *= pars->flow_rate;                               // scale with a flow rate, lowering this number will slow all flow
+        // }
+
         fluxes[n] = product;
         flux_total += product;
     }
-    // ----------------------------------------------------------------
-    // // normalize (all add up to 1.0)
-    // if (flux_total > 1e-6f) {
-    //     for (int n = 0; n < 8; ++n) {
-    //         fluxes[n] /= flux_total;
-    //     }
-    // } else {
-    //     for (int n = 0; n < 8; ++n) {
-    //         fluxes[n] = 0.0f;
-    //     }
-    // }
-    // ================================================================
-    // Outflows
-    // ----------------------------------------------------------------
 
-    float flux_scale = 1.0f;                                        /// value to scale flux, never up but only down
-    float max_or_total_water = min(water, pars->max_water_outflow); // the total water or the max outflow
+    // normalize (all add up to 1.0)
     if (flux_total > 1e-6f) {
-        if (flux_total > max_or_total_water) {
-            flux_scale = max_or_total_water / flux_total; // this will only scale down
+        for (int n = 0; n < 8; ++n) {
+            fluxes[n] /= flux_total;
         }
     } else {
-        flux_scale = 0.0f;
+        for (int n = 0; n < 8; ++n) {
+            fluxes[n] = 0.0f;
+        }
     }
 
-    // ----------------------------------------------------------------
+    float water_outflow = flux_total * pars->flow_rate;          // water outflow total
+    water_outflow = min(water_outflow, water);                   // can't exceed water
+    water_outflow = min(water_outflow, pars->max_water_outflow); // or max outflow
+
+    float sediment_outflow = water_outflow * pars->sediment_capacity; // sediment outflow total
+    sediment_outflow = min(sediment_outflow, sediment);               // can't exceed sediment
 
     int idx8 = idx * 8;
     float *_flux8_ptr = &arrays->_flux8[idx8];
     float *_sediment_flux8_ptr = &arrays->_sediment_flux8[idx8];
     for (int n = 0; n < 8; ++n) {
-        _flux8_ptr[n] = fluxes[n] * flux_scale;
+        float flux = fluxes[n];
+        _flux8_ptr[n] = flux * water_outflow;
+        _sediment_flux8_ptr[n] = flux * sediment_outflow;
     }
+
+#ifdef EROSION_OUTFLOW_PRECALCULATION
+    arrays->_water_out[idx] = water_outflow;
+    arrays->_sediment_out[idx] = sediment_outflow;
+#endif
 }
 
 __global__ void apply_flux3(
@@ -321,6 +283,7 @@ __global__ void apply_flux3(
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
     int idx = pos_to_idx(pos, map_size.x);
+    int idx8 = idx * 8;
     // ================================================================
     float *height_map = arrays->height_map;
     float *water_map = arrays->water_map;
@@ -334,23 +297,30 @@ __global__ void apply_flux3(
     // Flow
     // ----------------------------------------------------------------
 
+#ifdef EROSION_OUTFLOW_PRECALCULATION
+    float water_out = arrays->_water_out[idx];
+    float sediment_change = -arrays->_sediment_out[idx];
+    float water_in = 0.0f;
+#else
     float water_out = 0.0f;
     float water_in = 0.0f;
-
-    int idx8 = idx * 8;
-
-    for (int n = 0; n < 8; ++n) {
-    }
+    float sediment_change = 0.0f;
+#endif
 
     for (int n = 0; n < 8; ++n) {
 
+#ifndef EROSION_OUTFLOW_PRECALCULATION
         water_out += arrays->_flux8[idx8 + n]; //  (⚠️ could precompute)
+        sediment_change -= arrays->_sediment_flux8[idx8 + n];
+#endif
 
         int2 new_pos = cuda_math::wrap_or_clamp_index(pos + OFFSETS[n], map_size, pars->wrap);
         int new_idx = pos_to_idx(new_pos, map_size.x);
+        int new_idx8 = new_idx * 8;
         int opposite_ref = OFFSET_OPPOSITE_REFS[n];
 
-        water_in += arrays->_flux8[new_idx * 8 + opposite_ref]; //  inflow from neighbouring tiles
+        water_in += arrays->_flux8[new_idx8 + opposite_ref]; //  inflow from neighbouring tiles
+        sediment_change += arrays->_sediment_flux8[new_idx8 + opposite_ref];
     }
 
     water += water_in;
@@ -360,28 +330,33 @@ __global__ void apply_flux3(
     // Evaporation
     // ----------------------------------------------------------------
     water -= pars->evaporation_rate;
-
-    //
-    // plain outflow
-    //
-    float erosion = water_out * pars->erosion_rate;      // max possible erosion
+    // ================================================================
+    // Erosion
+    // ----------------------------------------------------------------
     float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
-    erosion = min(erosion, available_erosion);           // can't erode more than we have rock
-    erosion = max(erosion, 0.0f);                        // erosion can't be negative
+    float erosion;
+    float slope_magnitude = arrays->_slope_magnitude[idx];
 
-    //
-    // outflow * slope  ⚠️ BROKE
-    //
-    // float slope_magnitude = arrays->_slope_magnitude[idx];
-    // float erosion = water_out * pars->erosion_rate * slope_magnitude; // max possible erosion
-    // float available_erosion = height - pars->min_height;              // limit erosion to available rock above min_height
-    // erosion = min(erosion, available_erosion);                        // can't erode more than we have rock
-    // erosion = max(erosion, 0.0f);                                     // erosion can't be negative
-    //
-    //
-    //
+    switch (pars->erosion_mode) {
+    case 0:
+        erosion = water_out * pars->erosion_rate; // max possible erosion
+        break;
+    case 1:
+        erosion = water_out * pars->erosion_rate * slope_magnitude; // with slope_magnitude ⚠️ BROKE?
+        break;
+    case 2:
+        erosion = water * pars->erosion_rate * slope_magnitude; // maybe based on total water?
+        break;
+    case 3:
+        erosion = water * pars->erosion_rate * arrays->_water_velocity[idx]; // maybe based on total water?
+        break;
+    }
+
+    erosion = min(erosion, available_erosion); // can't erode more than we have rock
+    erosion = max(erosion, 0.0f);              // erosion can't be negative
+
     height -= erosion;
-    sediment += erosion;
+    sediment += erosion * pars->sediment_yield;
 
     // ================================================================
     // Drain
@@ -389,7 +364,14 @@ __global__ void apply_flux3(
     if (pars->drain_rate > 0.0f && height <= pars->min_height) {
         water -= pars->drain_rate;
     }
-
+    // ================================================================
+    // [Deposition]
+    // ----------------------------------------------------------------
+    if (water_out < pars->deposition_threshold) {
+        float deposit = sediment * pars->deposition_rate;
+        sediment -= deposit;
+        height += deposit;
+    }
     // ================================================================
     water = max(water, 0.0f);
     height_map[idx] = height;
@@ -446,7 +428,10 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     // allocate arrays
 #define ALLOCATE_ARRAYS \
-    X(_slope_magnitude)
+    X(_slope_magnitude) \
+    X(_water_out)       \
+    X(_sediment_out)    \
+    X(_water_velocity)
 #define X(NAME) \
     NAME.resize({pars._width, pars._height});
     ALLOCATE_ARRAYS

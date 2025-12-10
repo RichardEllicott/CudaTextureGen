@@ -210,9 +210,6 @@ class ErosionRunner:
         # self.erosion: cuda_texture_gen.Erosion9 = cuda_texture_gen.Erosion9()  # or None if lazy init
         self.erosion: cuda_texture_gen.Erosion10 = cuda_texture_gen.Erosion10()  # or None if lazy init
 
-
-
-
         self._default_pars = tools.dicts.from_object(self.erosion)
         self.output_preset_01()  # defaults
 
@@ -495,7 +492,11 @@ class ErosionRunner:
             # 🐞 nearest upscale (allows seeing the erosion)
             if self.nearest_neighbor_upscale > 1:
                 for name, map in self._maps.items():
-                    self._maps[name] = np.repeat(np.repeat(map, self.nearest_neighbor_upscale, axis=0), self.nearest_neighbor_upscale, axis=1)
+                    # self._maps[name] = np.repeat(np.repeat(map, self.nearest_neighbor_upscale, axis=0), self.nearest_neighbor_upscale, axis=1)
+                    self._maps[name] = tools.arrays.nearest_neighbor_upscale(map, self.nearest_neighbor_upscale)
+
+                # if self.starting_heightmap is not None:
+                #     self.starting_heightmap = tools.arrays.nearest_neighbor_upscale(self.starting_heightmap, self.nearest_neighbor_upscale)
 
             # for each movie writer write using frame profile
             for key in movie_writers:

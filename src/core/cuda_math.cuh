@@ -10,6 +10,7 @@ namespace cuda_math {
 
 #pragma region CONSTANTS
 
+// device code can't see constexpr
 constexpr float SQRT2 = 1.4142135623730950488f;      // root of 2
 constexpr float INV_SQRT2 = 0.70710678118654752440f; // inverse root of 2
 constexpr float PI = 3.14159265358979323846f;
@@ -24,6 +25,7 @@ __device__ __forceinline__ int posmod(int i, int mod) {
     int result = i % mod;
     return result < 0 ? result + mod : result;
 }
+
 // float version, haven't checked yet
 __device__ __forceinline__ float posmod(float x, float mod) {
     float result = fmodf(x, mod); // remainder in (-mod, mod)
@@ -50,6 +52,7 @@ __device__ inline int clamp_index(int i, int range) {
     return clamp(i, 0, range - 1);
 }
 
+// clamp int2 to an index, ie range 8 => [0, 7]
 __device__ inline int2 clamp_index(int2 pos, int2 range) {
     return make_int2(clamp_index(pos.x, range.x), clamp_index(pos.y, range.y));
 }
@@ -64,11 +67,12 @@ __device__ inline int2 clamp_index(int2 pos, int2 range) {
 //     return wrap ? posmod(i, range) : clamp_index(i, range);
 // }
 
-// wrap or clamp for map access
+// wrap or clamp int for map access
 __device__ __forceinline__ int wrap_or_clamp_index(int i, int range, bool wrap) {
     return wrap ? posmod(i, range) : clamp_index(i, range);
 }
 
+// wrap or clamp int2 for map access
 __device__ __forceinline__ int2 wrap_or_clamp_index(int2 pos, int2 range, bool wrap) {
     return wrap ? posmod(pos, range) : clamp_index(pos, range);
 }
@@ -99,7 +103,60 @@ __host__ __device__ __forceinline__ float2 normalize(const float2 &v) {
 }
 #pragma endregion
 
+#pragma region HASH
 
+// integer hash (based on MurmurHash3 finalizer)
+__device__ __forceinline__ int hash_int(int x, int y, int z, int seed) {
+    int n = x + y * 374761393 + z * 668265263 + seed * 1274126177;
+
+    n ^= n >> 16;
+    n *= 0x85ebca6b;
+    n ^= n >> 13;
+    n *= 0xc2b2ae35;
+    n ^= n >> 16;
+
+    return n; // can be negative
+}
+
+// integer hash (based on MurmurHash3 finalizer)
+__device__ __forceinline__ uint32_t hash_uint(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) {
+    uint32_t n = x + y * 374761393u + z * 668265263u + seed * 1274126177u;
+
+    n ^= n >> 16;
+    n *= 0x85ebca6bu;
+    n ^= n >> 13;
+    n *= 0xc2b2ae35u;
+    n ^= n >> 16;
+
+    return n; // full 32-bit unsigned result
+}
+
+// float from [0,1]
+__device__ __forceinline__ float hash_float(uint32_t hash) {
+    return static_cast<float>(hash) / pow(2.0f, 32.0f); // Scale to [0,1]
+}
+
+// float from [0,1]
+__device__ __forceinline__ float hash_float(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) {
+    return hash_float(hash_uint(x, y, z, seed));
+}
+
+// float from [-1,1]
+__device__ __forceinline__ float hash_float_signed(int hash) {
+    return static_cast<float>(hash) / pow(2.0f, 31.0f); // Scale to [-1,1).
+}
+
+// float from [-1,1] range:
+__device__ __forceinline__ float hash_float_signed(int x, int y, int z, int seed) {
+    return hash_float_signed(hash_int(x, y, z, seed));
+}
+
+// take in a hash, extract a bool (set index from 0 to 31)
+__device__ __forceinline__ bool hash_to_bool(int hash, int index = 0) {
+    return (hash >> index) & 1u;
+}
+
+#pragma endregion
 
 } // namespace cuda_math
 

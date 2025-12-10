@@ -22,16 +22,21 @@ class Erosion10:
     _layer_map_out: Incomplete
     _layers: int
     _sediment_flux8: Incomplete
+    _sediment_out: Incomplete
     _slope_magnitude: Incomplete
     _slope_vector2: Incomplete
     _water_out: Incomplete
+    _water_velocity: Incomplete
     _width: int
     debug_mod: int
     debug_print: bool
+    deposition_rate: float
+    deposition_threshold: float
     drain_rate: float
     erosion_mode: int
     erosion_rate: float
     evaporation_rate: float
+    flow_rate: Incomplete
     hardness_map: Incomplete
     height_map: Incomplete
     layer_map: Incomplete
