@@ -1,5 +1,5 @@
 {
-    "process_time": 11.567159000085667,
+    "process_time": 1.9343575001694262,
     "erosion_settings": {
         "erosion_rate": 0.01,
         "evaporation_rate": 0.0002,
@@ -38,8 +38,8 @@
     },
     "debug": {
         "_debug_drain_total": 0.0,
-        "_debug_erosion_total": 0.03125,
-        "_debug_evaporation_total": 0.00390625,
-        "_debug_rain_total": 0.015625
+        "_debug_erosion_total": 0.0,
+        "_debug_evaporation_total": 0.0,
+        "_debug_rain_total": 0.0
     }
 }

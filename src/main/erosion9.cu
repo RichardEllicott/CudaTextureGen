@@ -125,7 +125,7 @@ __global__ void calculate_flux2(
     float fluxes[8];
     float total_flux = 0.0f;
     for (int n = 0; n < 8; ++n) {
-        int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
+        int2 new_pos = cuda_math::wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
         int new_idx = pos_to_idx(new_pos, map_size.x);
 
         float new_height = arrays->height_map[new_idx];
@@ -254,7 +254,7 @@ __global__ void apply_flux2(
         sediment_change -= arrays->_sediment_flux8[idx * 8 + n]; // outflow from this tile (⚠️ could precompute)
 #endif
 
-        int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
+        int2 new_pos = cuda_math::wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
         int new_idx = pos_to_idx(new_pos, map_size.x);
         int opposite_offset = opposite_offset_refs[n];
 

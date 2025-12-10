@@ -123,8 +123,8 @@ __global__ void calculate_flux(
     for (int n = 0; n < 8; ++n) {
 
         // new pos
-        int nx = wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
-        int ny = wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
+        int nx = cuda_math::wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
+        int ny = cuda_math::wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
         int nidx = ny * map_width + nx;
 
         float n_surface = height_map[nidx] + water_map[nidx]; // new surface
@@ -172,8 +172,8 @@ __global__ void calculate_flux(
     if (pars->diffusion_rate > 0.0f) {
 
         for (int n = 0; n < 8; ++n) {
-            int nx = wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
-            int ny = wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
+            int nx = cuda_math::wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
+            int ny = cuda_math::wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
             int nidx = ny * map_width + nx;
 
             float neighbor_water = water_map[nidx];
@@ -231,8 +231,8 @@ __global__ void apply_flux(
         // calculate outflow
         water_outflow += flux8[idx * 8 + n];
         // calculate inflow
-        int nx = wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
-        int ny = wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
+        int nx = cuda_math::wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
+        int ny = cuda_math::wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
         int nidx = ny * map_width + nx;
 
         int opposite_offset = opposite_offset_refs[n];
@@ -274,7 +274,7 @@ __global__ void apply_flux(
     sediment += erosion;
     height -= erosion;
 
-    height = clamp(height, pars->min_height, pars->max_height); // clamp height (but min is already enforced)
+    height = cuda_math::clamp(height, pars->min_height, pars->max_height); // clamp height (but min is already enforced)
 
     // ================================================================
     // [Evaporation]
@@ -286,8 +286,8 @@ __global__ void apply_flux(
     // ----------------------------------------------------------------
     float sediment_change = 0.0f;
     for (int n = 0; n < 8; ++n) {
-        int nx = wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
-        int ny = wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
+        int nx = cuda_math::wrap_or_clamp_index(x + offsets[n].x, map_width, pars->wrap);
+        int ny = cuda_math::wrap_or_clamp_index(y + offsets[n].y, map_height, pars->wrap);
         int nidx = ny * map_width + nx;
         int opp = opposite_offset_refs[n];
 

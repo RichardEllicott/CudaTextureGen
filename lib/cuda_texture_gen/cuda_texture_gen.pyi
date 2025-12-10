@@ -10,6 +10,51 @@ generate_normal_map: nanobind.nb_func
 print_debug_info: nanobind.nb_func
 test123: nanobind.nb_func
 
+class Erosion10:
+    _block: int
+    _debug: bool
+    _debug_drain_total: float
+    _debug_erosion_total: float
+    _debug_evaporation_total: float
+    _debug_rain_total: float
+    _flux8: Incomplete
+    _height: int
+    _layer_map_out: Incomplete
+    _layers: int
+    _sediment_flux8: Incomplete
+    _slope_magnitude: Incomplete
+    _slope_vector2: Incomplete
+    _water_out: Incomplete
+    _width: int
+    debug_mod: int
+    debug_print: bool
+    drain_rate: float
+    erosion_mode: int
+    erosion_rate: float
+    evaporation_rate: float
+    hardness_map: Incomplete
+    height_map: Incomplete
+    layer_map: Incomplete
+    max_height: float
+    max_water_outflow: float
+    min_height: float
+    mode: int
+    rain_map: Incomplete
+    rain_rate: Incomplete
+    scale: float
+    sediment_capacity: float
+    sediment_map: Incomplete
+    sediment_yield: float
+    slope_jitter: float
+    slope_jitter_mode: int
+    steps: int
+    water_map: Incomplete
+    wrap: bool
+    def __init__(self) -> None: ...
+    def allocate_device(self) -> None: ...
+    def debug_update(self) -> None: ...
+    def process(self) -> None: ...
+
 class Erosion9:
     _block: int
     _calculation_time: float

@@ -33,6 +33,7 @@ central file for the python bindings
 // #include "erosion7.bind.h" // ✔️ advanced erosion with DeviceArray's
 // #include "erosion8.bind.h" // 🚧 new features
 #include "erosion9.bind.h" // 🐙 main version
+#include "erosion10.bind.h" // 🐙 main version
 
 // ================================================================
 // experiments
@@ -143,6 +144,7 @@ NB_MODULE(cuda_texture_gen, m) {
     // erosion7::bind(m);
     // erosion8::bind(m);
     erosion9::bind(m);
+    erosion10::bind(m);
 
     fluid_simulation::bind(m);
     tectonics::bind(m);

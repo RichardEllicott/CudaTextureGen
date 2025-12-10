@@ -152,9 +152,9 @@ class ErosionRunner:
 
     # godot\cuda_texture_gen\projects\erosion_test
 
-    # folder: str = "E:/"
+    folder: str = "E:/"
     # folder: str = "./output/"
-    folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
+    # folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
 
     filename_base: str = "erosion"
 
@@ -207,7 +207,12 @@ class ErosionRunner:
     # PROPERTIES
 
     def __init__(self) -> None:
-        self.erosion: cuda_texture_gen.Erosion9 = cuda_texture_gen.Erosion9()  # or None if lazy init
+        # self.erosion: cuda_texture_gen.Erosion9 = cuda_texture_gen.Erosion9()  # or None if lazy init
+        self.erosion: cuda_texture_gen.Erosion10 = cuda_texture_gen.Erosion10()  # or None if lazy init
+
+
+
+
         self._default_pars = tools.dicts.from_object(self.erosion)
         self.output_preset_01()  # defaults
 

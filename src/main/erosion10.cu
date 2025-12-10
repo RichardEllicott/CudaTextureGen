@@ -1,36 +1,119 @@
 #include "core/cuda/curand_array_2d.cuh"
 #include "erosion10.cuh"
-#include "erosion9_kernels.cuh"
+// #include "erosion9_kernels.cuh"
 // #include "noise_util.cuh"
 #include "core.h" // timer
 #include "cuda_math.cuh"
 #include <stdexcept> // std::runtime_error
+#include <stdint.h>
 
 // #define EROSION_OUTFLOW_PRECALCULATION
 
 namespace TEMPLATE_NAMESPACE {
 
+#pragma region HASH
+
+// integer hash (based on MurmurHash3 finalizer)
+__device__ __forceinline__ int hash_int(int x, int y, int z, int seed) {
+    int n = x + y * 374761393 + z * 668265263 + seed * 1274126177;
+
+    n ^= n >> 16;
+    n *= 0x85ebca6b;
+    n ^= n >> 13;
+    n *= 0xc2b2ae35;
+    n ^= n >> 16;
+
+    return n; // can be negative
+}
+
+// integer hash (based on MurmurHash3 finalizer)
+__device__ __forceinline__ uint32_t hash_uint(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) {
+    uint32_t n = x + y * 374761393u + z * 668265263u + seed * 1274126177u;
+
+    n ^= n >> 16;
+    n *= 0x85ebca6bu;
+    n ^= n >> 13;
+    n *= 0xc2b2ae35u;
+    n ^= n >> 16;
+
+    return n; // full 32-bit unsigned result
+}
+
+// float from [0,1]
+__device__ __forceinline__ float hash_float(uint32_t hash) {
+    return static_cast<float>(hash) / pow(2.0f, 32.0f); // Scale to [0,1]
+}
+// float from [0,1]
+__device__ __forceinline__ float hash_float(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) {
+    return hash_float(hash_uint(x, y, z, seed));
+}
+
+// float from [-1,1]
+__device__ __forceinline__ float hash_float_signed(int hash) {
+    return static_cast<float>(hash) / pow(2.0f, 31.0f); // Scale to [-1,1).
+}
+
+// float from [-1,1] range:
+__device__ __forceinline__ float hash_float_signed(int x, int y, int z, int seed) {
+    return hash_float_signed(hash_int(x, y, z, seed));
+}
+
+// take in a hash, extract a bool (set index from 0 to 31)
+__device__ __forceinline__ bool hash_to_bool(int hash, int index = 0) {
+    return (hash >> index) & 1u;
+}
+
+// if ((hash_result >> 0) & 1u) { // we can extract from 0-31 for a 50:50
+// }
+
+#pragma endregion
+
+#pragma region CONSTANTS
+
+constexpr float SQRT2 = 1.4142135623730950488f;      // root of 2
+constexpr float INV_SQRT2 = 0.70710678118654752440f; // inverse root of 2
+// constexpr float PI = 3.14159265358979323846f;
+// constexpr float GOLDEN_RATIO = 1.6180339887498948482f;
+
+// doesn't like this in cuda
+// constexpr int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}}; // 8 offsets with the opposites in pairs, first 4 cardinal
+// constexpr float OFFSET_DISTANCES[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
+// constexpr int OFFSET_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
+// constexpr float2 UNIT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}};
+
+// GRID_OFFSETS_8 ??
+__device__ __constant__ int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}}; // 8 offsets with the opposites in pairs, first 4 cardinal
+__device__ __constant__ float OFFSET_DISTANCES[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
+__device__ __constant__ int OFFSET_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
+__device__ __constant__ float2 UNIT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {INV_SQRT2, INV_SQRT2}, {-INV_SQRT2, -INV_SQRT2}, {INV_SQRT2, -INV_SQRT2}, {-INV_SQRT2, INV_SQRT2}};
+
+#pragma endregion
+
 #pragma region HELPERS
 
 // ping pong helper
 template <typename T>
-__device__ inline T *get_map_ptr(T *in, T *out, int step) {
+__device__ __forceinline__ T *get_map_ptr(T *in, T *out, int step) {
     return step % 2 == 0 ? in : out;
 }
 
 // ping pong helper
 template <typename MapPtr>
-__device__ inline float read_map_in(MapPtr in, MapPtr out, int step, int idx) {
+__device__ __forceinline__ float read_map_in(MapPtr in, MapPtr out, int step, int idx) {
     return get_map_ptr(in, out, step)[idx];
 }
 // ping pong helper
 template <typename MapPtr>
-__device__ inline void write_map_out(MapPtr in, MapPtr out, int step, int idx, float value) {
+__device__ __forceinline__ void write_map_out(MapPtr in, MapPtr out, int step, int idx, float value) {
     get_map_ptr(in, out, step)[idx] = value;
 }
 
-__device__ inline int pos_to_idx(int2 pos, int map_width) {
+__device__ __forceinline__ int pos_to_idx(int2 pos, int map_width) {
     return pos.y * map_width + pos.x;
+}
+
+__device__ __forceinline__ int pos_to_idx(int x, int y, int map_width) {
+    return y * map_width + x;
 }
 
 #pragma endregion
@@ -65,12 +148,20 @@ __global__ void precalc_layer_height(
     arrays->height_map[idx] = get_layered_height(arrays->layer_map, pos.x, pars->_layers, pos);
 }
 
-// new pattern
-__global__ void calculate_flux2(
-    const Parameters *pars,
-    const ArrayPtrs *arrays,
-    DebugOutputs *debug,
-    const int step) {
+#pragma endregion
+
+#pragma region KERNELS3
+
+// could inline
+// __global__ void add_rain3(
+//     const Parameters *pars,
+//     const ArrayPtrs *arrays) {
+
+// __restrict__ here, might be good it promises only one thing points to this, so it's not added twice
+
+__global__ void add_rain3(
+    const Parameters *__restrict__ pars,
+    const ArrayPtrs *__restrict__ arrays) {
     // ================================================================
     int2 map_size = make_int2(pars->_width, pars->_height);
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
@@ -85,144 +176,12 @@ __global__ void calculate_flux2(
         rain *= arrays->rain_map[idx]; // multiply by rain_map if != nullptr
     }
     arrays->water_map[idx] += rain;
-    if (pars->_debug) {
-        atomicAdd(&(debug->_debug_rain_total), rain);
-    }
-    // ================================================================
-    float height = arrays->height_map[idx];
-    float water = arrays->water_map[idx];
-    float sediment = arrays->sediment_map[idx];
-    // ================================================================
-    // [Optimize Skip Warp?]
-    // ----------------------------------------------------------------
-
-    // //THOUGHT SKIPPING CALCULATIONS MIGHT HELP ???? BUT SEEMS TO SLOW US DOWN!
-    // if (water < 0.01){
-    //     for (int n = 0; n < 8; ++n) {
-    //         int idx8 = idx * 8;
-    //         arrays->_flux8[idx8 + n] = 0.0f;
-    //         arrays->_sediment_flux8[idx8 + n] = 0.0f;
-    //     }
-    //     arrays->_water_map_out[idx] = 0.0f;
-    //     arrays->_sediment_map_out[idx] = 0.0f;
-    // }
-
-    // ================================================================
-    // [Calculate Flux]
-    // ----------------------------------------------------------------
-    float surface_height = height + water;
-
-    // optional jitter added by offsetting surface by random value
-    if (pars->slope_jitter > 0.0f) {
-        if (pars->slope_jitter_mode == 0) {
-            surface_height += hash_float_signed(pos.x, pos.y, step, 1234) * pars->slope_jitter; // change each step
-        } else {
-            surface_height += hash_float_signed(pos.x, pos.y, 0, 1234) * pars->slope_jitter; // same each step (probabally doesn't really do anything)
-        }
-    }
-
-    // calculate initial flux (unscaled)
-    float fluxes[8];
-    float total_flux = 0.0f;
-    for (int n = 0; n < 8; ++n) {
-        int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
-        int new_idx = pos_to_idx(new_pos, map_size.x);
-
-        float new_height = arrays->height_map[new_idx];
-        float new_water = arrays->water_map[new_idx];
-        // float new_sediment = arrays->sediment_map[new_idx];
-        float new_surface_height = new_height + new_water;
-
-        float difference = surface_height - new_surface_height;        // positive means we are higher than neighbour
-        float horizontal_distance = pars->scale * offset_distances[n]; // distance to tile (1.0 | ~1.41) * map scale
-
-        float p_slope_grad = max(difference / horizontal_distance, 0.0f); // positive slope gradient
-
-        p_slope_grad = p_slope_grad < pars->slope_threshold ? 0.0f : p_slope_grad; // slope_threshold (slope needs to exceed a certain value)
-
-        p_slope_grad = min(p_slope_grad, pars->positive_slope_gradient_cap); // 🚧 new cap
-
-        float flux;
-        switch (pars->erosion_mode) {
-        case 0:
-            // ----------------------------------------------------------------
-            // Manning velocity approx
-            // float v = (1.0f / roughness) * powf(water, 2.0f / 3.0f) * sqrtf(p_slope_gradient);
-            flux = powf(water, 2.0f / 3.0f) * sqrtf(p_slope_grad); // based on manning with no roughness
-            flux *= pars->flow_rate;                               // scale with a flow rate, lowering this number will slow all flow
-            fluxes[n] = flux;
-            total_flux += flux;
-            break;
-        case 1:
-
-            break;
-        }
-    }
-
-// #define CODE_ROUTE 1
-#if CODE_ROUTE == 0
-
-    // Calculate scaling value for the flux to ensure we don't exceed water or max_water_outflow
-    float flux_scale = 1.0f;
-    float max_or_total_water = min(water, pars->max_water_outflow);
-    if (total_flux > max_or_total_water) {
-        flux_scale = max_or_total_water / total_flux;
-    }
-
-    // pointer's to the flux arrays
-    float *_flux8_ptr = &arrays->_flux8[idx * 8];
-    float *_sediment_flux8_ptr = &arrays->_sediment_flux8[idx * 8];                                       // pointer to sediment flux
-    float sediment_concentration = (max_or_total_water > 1e-6f) ? (sediment / max_or_total_water) : 0.0f; // sediment concentration
-    sediment_concentration *= pars->sediment_capacity;                                                    // the amount of sediment to transport based on capacity
-
-    for (int n = 0; n < 8; ++n) {
-        float scaled_outflow = fluxes[n] * flux_scale;
-        _flux8_ptr[n] = scaled_outflow;                                   // final outflow value scaled
-        _sediment_flux8_ptr[n] = scaled_outflow * sediment_concentration; // final sediment flow
-    }
-
-#ifdef EROSION_OUTFLOW_PRECALCULATION
-    // OPTIONAL OPTIMIZATION (save total outflow from this cell)
-    total_flux *= flux_scale;
-    arrays->_water_map_out[idx] = total_flux;
-    arrays->_sediment_map_out[idx] = total_flux * sediment_concentration;
-#endif
-
-#elif CODE_ROUTE == 1
-
-    // ================================================================
-    // [Calculate Outflow] BROKEN?
-    // ----------------------------------------------------------------
-
-    float *_flux8_ptr = &arrays->_flux8[idx * 8];
-    float *_sediment_flux8_ptr = &arrays->_sediment_flux8[idx * 8];
-
-    float total_water_outflow = min(total_flux, water);                      // cannot exceed water
-    total_water_outflow = min(total_water_outflow, pars->max_water_outflow); // or max outflow
-
-    // normalize method
-    for (int n = 0; n < 8; ++n) {
-        // water outflow
-        float water_outflow = fluxes[n];
-        water_outflow /= total_flux;                                      // divide by total, so now all 8 fluxes will add to 1
-        water_outflow *= total_water_outflow;                             // multiply by the actual total
-        _flux8_ptr[n] = water_outflow;                                    // final outflow value scaled
-        _sediment_flux8_ptr[n] = water_outflow * pars->sediment_capacity; // sediment simply proportionate to water outflow
-    }
-
-#ifdef EROSION_OUTFLOW_PRECALCULATION
-    arrays->_water_map_out[idx] = total_water_outflow;
-    arrays->_sediment_map_out[idx] = total_water_outflow * pars->sediment_capacity;
-#endif
-
-#endif
-#undef CODE_ROUTE
 }
 
-__global__ void apply_flux2(
-    const Parameters *pars,
-    const ArrayPtrs *arrays,
-    DebugOutputs *debug,
+__global__ void calculate_flux3(
+    const Parameters *__restrict__ pars,
+    const ArrayPtrs *__restrict__ arrays,
+    DebugOutputs *__restrict__ debug,
     const int step) {
     // ================================================================
     int2 map_size = make_int2(pars->_width, pars->_height);
@@ -231,173 +190,216 @@ __global__ void apply_flux2(
         return;
     int idx = pos_to_idx(pos, map_size.x);
     // ================================================================
-    float height = arrays->height_map[idx];
-    float water = arrays->water_map[idx];
-    float sediment = arrays->sediment_map[idx];
+    float *height_map = arrays->height_map;
+    float *water_map = arrays->water_map;
+    float *sediment_map = arrays->sediment_map;
     // ================================================================
-    // [Calculate Flows]
+    float height = height_map[idx];
+    float water = water_map[idx];
+    float sediment = sediment_map[idx];
+    float surface = height + water;
+    // ================================================================
+    // HASH TEST
+    // int hash = hash_int(pos.x, pos.y, step, 0);
+    // if (hash_to_bool(hash)){
+
+    // }
+    // ================================================================
+    // optional jitter added by offsetting surface by random value
+    if (pars->slope_jitter > 0.0f) {
+        switch (pars->slope_jitter_mode) {
+        case 0:
+            surface += hash_float_signed(pos.x, pos.y, step, 1) * pars->slope_jitter; // change each step
+            break;
+        default:
+            surface += hash_float_signed(pos.x, pos.y, 0, 1) * pars->slope_jitter; // same each step (probabally doesn't really do anything)
+            break;
+        }
+    }
+    // ================================================================
+    // Calculate Slope Vector
     // ----------------------------------------------------------------
 
-#ifdef EROSION_OUTFLOW_PRECALCULATION
-    float water_outflow = arrays->_water_map_out[idx];       // load precalculated values
-    float sediment_change = -arrays->_sediment_map_out[idx]; // minus sediment outflow
-#else
-    float water_outflow = 0.0f; // (⚠️ could precompute)
-    float sediment_change = 0.0f;
-#endif
-    float water_inflow = 0.f; // needs to be calculated from neightbours
+    int xp = cuda_math::wrap_or_clamp_index(pos.x + 1, map_size.x, pars->wrap); // x + 1
+    int xn = cuda_math::wrap_or_clamp_index(pos.x - 1, map_size.x, pars->wrap); // x - 1
+    int yp = cuda_math::wrap_or_clamp_index(pos.y + 1, map_size.y, pars->wrap); // y + 1
+    int yn = cuda_math::wrap_or_clamp_index(pos.y - 1, map_size.y, pars->wrap); // y - 1
+
+    int xp_idx = pos.y * map_size.x + xp; // {+1,0}
+    int xn_idx = pos.y * map_size.x + xn; // {-1,0}
+    int yp_idx = yp * map_size.x + pos.x; // {0,+1}
+    int yn_idx = yn * map_size.x + pos.x; // {0,-1}
+
+    // positive offsets data
+    float xp_height = height_map[xp_idx];
+    float yp_height = height_map[yp_idx];
+    float xp_water = water_map[xp_idx];
+    float yp_water = water_map[yp_idx];
+    float xp_surface = xp_height + xp_water;
+    float yp_surface = yp_height + yp_water;
+    // negative offsets data
+    float xn_height = height_map[xn_idx];
+    float yn_height = height_map[yn_idx];
+    float xn_water = water_map[xn_idx];
+    float yn_water = water_map[yn_idx];
+    float xn_surface = xn_height + xn_water;
+    float yn_surface = yn_height + yn_water;
+
+    float2 slope_vector = float2{xn_surface - xp_surface, yn_surface - yp_surface}; // note slope may be double actual (use scale to compensate)
+
+    slope_vector /= pars->scale; // scale such that double world size would mean half gradients
+
+    // save to a Flow map for later use
+    int idx2 = idx * 2;
+    arrays->_slope_vector2[idx2] = slope_vector.x;
+    arrays->_slope_vector2[idx2 + 1] = slope_vector.y;
+
+    float slope_magnitude = cuda_math::length(slope_vector);
+    arrays->_slope_magnitude[idx] = slope_magnitude;
+
+// ================================================================
+// Calculate Fluxes
+// ----------------------------------------------------------------
+// #define BAKE_SCALE_TO_UNIT_OFFSETS_8
+// #ifdef BAKE_SCALE_TO_UNIT_OFFSETS_8
+//     constexpr float2 UNIT_OFFSETS_8[8] = {
+//         {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}}; // baking scale here penalizes the dot product result of diagonals
+// #endif
+
+    float fluxes[8];
+    float flux_total = 0.0f;
+    for (int n = 0; n < 8; ++n) {
+        float2 unit_offset = UNIT_OFFSETS_8[n];                    // cell offset as a float vector, not normalized as this helps scale
+        float product = cuda_math::dot(unit_offset, slope_vector); // dot product gets how strongly we push into this direction
+        product = max(product, 0.0);                               // positive only
+        fluxes[n] = product;
+        flux_total += product;
+    }
+    // ----------------------------------------------------------------
+    // // normalize (all add up to 1.0)
+    // if (flux_total > 1e-6f) {
+    //     for (int n = 0; n < 8; ++n) {
+    //         fluxes[n] /= flux_total;
+    //     }
+    // } else {
+    //     for (int n = 0; n < 8; ++n) {
+    //         fluxes[n] = 0.0f;
+    //     }
+    // }
+    // ================================================================
+    // Outflows
+    // ----------------------------------------------------------------
+
+    float flux_scale = 1.0f;                                        /// value to scale flux, never up but only down
+    float max_or_total_water = min(water, pars->max_water_outflow); // the total water or the max outflow
+    if (flux_total > 1e-6f) {
+        if (flux_total > max_or_total_water) {
+            flux_scale = max_or_total_water / flux_total; // this will only scale down
+        }
+    } else {
+        flux_scale = 0.0f;
+    }
+
+    // ----------------------------------------------------------------
+
+    int idx8 = idx * 8;
+    float *_flux8_ptr = &arrays->_flux8[idx8];
+    float *_sediment_flux8_ptr = &arrays->_sediment_flux8[idx8];
+    for (int n = 0; n < 8; ++n) {
+        _flux8_ptr[n] = fluxes[n] * flux_scale;
+    }
+}
+
+__global__ void apply_flux3(
+    const Parameters *__restrict__ pars,
+    const ArrayPtrs *__restrict__ arrays,
+    DebugOutputs *__restrict__ debug,
+    const int step) {
+    // ================================================================
+    int2 map_size = make_int2(pars->_width, pars->_height);
+    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
+        return;
+    int idx = pos_to_idx(pos, map_size.x);
+    // ================================================================
+    float *height_map = arrays->height_map;
+    float *water_map = arrays->water_map;
+    float *sediment_map = arrays->sediment_map;
+    // ================================================================
+    float height = height_map[idx];
+    float water = water_map[idx];
+    float sediment = sediment_map[idx];
+    // float surface = height + water;
+    // ================================================================
+    // Flow
+    // ----------------------------------------------------------------
+
+    float water_out = 0.0f;
+    float water_in = 0.0f;
+
+    int idx8 = idx * 8;
+
+    for (int n = 0; n < 8; ++n) {
+    }
 
     for (int n = 0; n < 8; ++n) {
 
-#ifndef EROSION_OUTFLOW_PRECALCULATION
-        water_outflow += arrays->_flux8[idx * 8 + n];            // outflow from this tile (⚠️ could precompute)
-        sediment_change -= arrays->_sediment_flux8[idx * 8 + n]; // outflow from this tile (⚠️ could precompute)
-#endif
+        water_out += arrays->_flux8[idx8 + n]; //  (⚠️ could precompute)
 
-        int2 new_pos = wrap_or_clamp_index(pos + offsets[n], map_size, pars->wrap);
+        int2 new_pos = cuda_math::wrap_or_clamp_index(pos + OFFSETS[n], map_size, pars->wrap);
         int new_idx = pos_to_idx(new_pos, map_size.x);
-        int opposite_offset = opposite_offset_refs[n];
+        int opposite_ref = OFFSET_OPPOSITE_REFS[n];
 
-        water_inflow += arrays->_flux8[new_idx * 8 + opposite_offset];             //  inflow from neighbouring tiles
-        sediment_change += arrays->_sediment_flux8[new_idx * 8 + opposite_offset]; // inflow from neighbouring tiles
+        water_in += arrays->_flux8[new_idx * 8 + opposite_ref]; //  inflow from neighbouring tiles
     }
 
-    water -= water_outflow;
-    water += water_inflow;
-    sediment += sediment_change;
+    water += water_in;
+    water -= water_out;
 
-    float erosion = water_outflow * pars->erosion_rate;  // max possible erosion
-    float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
-    erosion = min(erosion, available_erosion);           // can't erode more than we have rock
-    erosion = max(erosion, 0.0);                         // erosion can't be negative
-
-    if (pars->_debug) {
-        atomicAdd(&(debug->_debug_erosion_total), erosion);
-    }
-
-    sediment += erosion * pars->sediment_yield; // scale this by the material, some might make less sediment
-    height -= erosion;
-
-    // height = clamp(height, pars->min_height, pars->max_height); // ❓❓ pointless won't go up?
-
-    if (pars->_debug) {
-        float evaporation_loss = min(pars->evaporation_rate, water); // evaporation is either evaporation_rate or remaining
-        atomicAdd(&(debug->_debug_evaporation_total), evaporation_loss);
-    }
-    water -= pars->evaporation_rate; // evaporation
+    // ================================================================
+    // Evaporation
+    // ----------------------------------------------------------------
+    water -= pars->evaporation_rate;
 
     //
+    // plain outflow
+    //
+    float erosion = water_out * pars->erosion_rate;      // max possible erosion
+    float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
+    erosion = min(erosion, available_erosion);           // can't erode more than we have rock
+    erosion = max(erosion, 0.0f);                        // erosion can't be negative
+
+    //
+    // outflow * slope  ⚠️ BROKE
+    //
+    // float slope_magnitude = arrays->_slope_magnitude[idx];
+    // float erosion = water_out * pars->erosion_rate * slope_magnitude; // max possible erosion
+    // float available_erosion = height - pars->min_height;              // limit erosion to available rock above min_height
+    // erosion = min(erosion, available_erosion);                        // can't erode more than we have rock
+    // erosion = max(erosion, 0.0f);                                     // erosion can't be negative
+    //
+    //
+    //
+    height -= erosion;
+    sediment += erosion;
 
     // ================================================================
-    // [Drain]
+    // Drain
     // ----------------------------------------------------------------
     if (pars->drain_rate > 0.0f && height <= pars->min_height) {
-        if (pars->_debug) {
-            float delta = water;
-            water -= pars->drain_rate;
-            water = max(0.0, water);
-            delta -= water;
-            atomicAdd(&(debug->_debug_drain_total), delta);
-        } else {
-            water -= pars->drain_rate;
-            water = max(0.0, water);
-        }
-    }
-
-    if (pars->sediment_drain_rate > 0.0f && height <= pars->min_height) {
-        sediment -= pars->sediment_drain_rate;
-        sediment = max(0.0, sediment);
+        water -= pars->drain_rate;
     }
 
     // ================================================================
-    // [Deposition]
-    // ----------------------------------------------------------------
-    if (pars->deposition_mode == 0) {
-        float deposit = sediment * pars->deposition_rate; // ❓ simple, no capacity
-        sediment -= deposit;
-        height += deposit;
-
-    } else if (pars->deposition_mode == 1) { // 🐞 with a deposition_threshold for water_outflow
-        if (water_outflow < pars->deposition_threshold) {
-            float deposit = sediment * pars->deposition_rate;
-            sediment -= deposit;
-            height += deposit;
-        }
-    }
-
-    // ================================================================
-    // [output]
-    // ----------------------------------------------------------------
-
-    arrays->height_map[idx] = height;
-    arrays->water_map[idx] = max(0.0f, water);       // no negative water
-    arrays->sediment_map[idx] = max(0.0f, sediment); // no negative sediment
+    water = max(water, 0.0f);
+    height_map[idx] = height;
+    water_map[idx] = water;
+    sediment_map[idx] = sediment;
 }
 
 #pragma endregion
 
 void TEMPLATE_CLASS_NAME::allocate_device() {
-    switch (pars.mode) {
-    case 0:
-        allocate_device00();
-        break;
-    case 1:
-        allocate_device01();
-        break;
-    case 2:
-        break;
-    case 3:
-        break;
-    }
-}
-
-void TEMPLATE_CLASS_NAME::allocate_device00() {
-    if (_device_allocated)
-        return;
-
-    pars._width = height_map.dimensions()[0];
-    pars._height = height_map.dimensions()[1];
-    size_t array_size = pars._width * pars._height;
-
-// allocate and zero arrays
-#define ALLOCATE_ARRAYS \
-    X(water_map)        \
-    X(sediment_map)
-#define X(NAME)                                   \
-    if (NAME.size() != array_size) {              \
-        NAME.resize({pars._width, pars._height}); \
-        NAME.zero_device();                       \
-    }
-    ALLOCATE_ARRAYS
-#undef X
-#undef ALLOCATE_ARRAYS
-
-// allocate arrays
-#define ALLOCATE_ARRAYS  \
-    X(_height_map_out)   \
-    X(_water_map_out)    \
-    X(_sediment_map_out) \
-    X(_slope_map)
-#define X(NAME)                                   \
-    if (NAME.size() != array_size) {              \
-        NAME.resize({pars._width, pars._height}); \
-    }
-    ALLOCATE_ARRAYS
-#undef X
-#undef ALLOCATE_ARRAYS
-
-    // flux output
-    _flux8.resize({array_size * 8});
-    _sediment_flux8.resize({array_size * 8});
-
-    _device_allocated = true;
-}
-
-void TEMPLATE_CLASS_NAME::setup_layer_mode01() {
-    height_map.resize({pars._width, pars._height});
-}
-
-void TEMPLATE_CLASS_NAME::allocate_device01() {
 
     if (_device_allocated)
         return;
@@ -407,14 +409,13 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
     }
 
     if (!layer_map.empty()) {
-        printf("🐙 layer_map detected...\n");
+        printf("🐡 layer_map detected...\n");
         pars._width = layer_map.dimensions()[0];
         pars._height = layer_map.dimensions()[1];
         pars._layers = layer_map.dimensions()[2]; // marks layers mode as active
-        setup_layer_mode01();
 
     } else if (!height_map.empty()) {
-        printf("🐙 height_map detected...\n");
+        printf("🐡 height_map detected...\n");
         pars._width = height_map.dimensions()[0];
         pars._height = height_map.dimensions()[1];
         pars._layers = 0;
@@ -424,8 +425,10 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
 
     size_t array_size = pars._width * pars._height;
 
-    _flux8.resize({array_size * 8}); // flux output
-    _sediment_flux8.resize({array_size * 8});
+    _flux8.resize({array_size * 8});                        // flux output
+    _sediment_flux8.resize({array_size * 8});               // sediment flux output
+    _slope_vector2.resize({pars._width * 2, pars._height}); // double size
+
     // _layer_map_out.resize({pars._width, pars._height, pars._layers});
 
     // allocate and zero arrays
@@ -443,8 +446,7 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
 
     // allocate arrays
 #define ALLOCATE_ARRAYS \
-    X(_water_map_out)   \
-    X(_sediment_map_out)
+    X(_slope_magnitude)
 #define X(NAME) \
     NAME.resize({pars._width, pars._height});
     ALLOCATE_ARRAYS
@@ -458,114 +460,36 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
 
 void TEMPLATE_CLASS_NAME::process() {
 
-    switch (pars.mode) {
-    case 0:
-        process00();
-        break;
-    case 1:
-        process01();
-        break;
-    case 2:
-        break;
-    case 3:
-        break;
-    }
-}
-
-void TEMPLATE_CLASS_NAME::process00() {
-
-    allocate_device();
-    configure_device();
-    stream.sync();
-
-    core::util::Timer timer;
-
-    for (int step = 0; step < pars.steps; ++step) {
-
-        // if we have rain
-        if (pars.rain_rate > 0.0f) {
-            rain_pass<<<grid, block, 0, stream.get()>>>(
-                dev_pars.dev_ptr(), pars._width, pars._height,
-
-                nullptr,
-
-                rain_map.dev_ptr(), // optional in
-
-                water_map.dev_ptr() // out
-            );
-        }
-
-        calculate_flux<<<grid, block, 0, stream.get()>>>(
-            dev_pars.dev_ptr(), pars._width, pars._height,
-            step,
-
-            height_map.dev_ptr(),   // in
-            water_map.dev_ptr(),    // in
-            sediment_map.dev_ptr(), // in
-
-            _flux8.dev_ptr(),          // out
-            _sediment_flux8.dev_ptr(), // out
-            _slope_map.dev_ptr()       // out
-
-        );
-
-        apply_flux<<<grid, block, 0, stream.get()>>>(
-            dev_pars.dev_ptr(), pars._width, pars._height,
-
-            height_map.dev_ptr(),      // in
-            water_map.dev_ptr(),       // in
-            sediment_map.dev_ptr(),    // in
-            _flux8.dev_ptr(),          // in
-            _sediment_flux8.dev_ptr(), // in
-            _slope_map.dev_ptr(),      // in
-
-            _height_map_out.dev_ptr(),  // out
-            _water_map_out.dev_ptr(),   // out
-            _sediment_map_out.dev_ptr() // out
-        );
-
-        // flip the in/out maps
-        std::swap(height_map, _height_map_out);
-        std::swap(water_map, _water_map_out);
-        std::swap(sediment_map, _sediment_map_out);
-    }
-
-    timer.mark_time();
-    pars._calculation_time = timer.elapsed_seconds();
-    if (pars.debug_print) {
-        printf("⏱️ calculation time: %.3f seconds\n", timer.elapsed_seconds());
-        // core::logging::printf("⏱️ calculation time: %.3f seconds\n", timer.elapsed_seconds());
-    }
-}
-
-void TEMPLATE_CLASS_NAME::process01() {
-
     allocate_device();
     configure_device();
     stream.sync();
 
     for (int step = 0; step < pars.steps; ++step) {
 
-        if (pars._layers > 0) {
-            precalc_layer_height<<<grid, block, 0, stream.get()>>>(
-                dev_pars.dev_ptr(),
-                dev_array_ptrs.dev_ptr());
-        };
+        add_rain3<<<grid, block, 0, stream.get()>>>(
+            dev_pars.dev_ptr(),
+            dev_array_ptrs.dev_ptr());
 
-        calculate_flux2<<<grid, block, 0, stream.get()>>>(
+        // if (pars._layers > 0) {
+        //     precalc_layer_height<<<grid, block, 0, stream.get()>>>(
+        //         dev_pars.dev_ptr(),
+        //         dev_array_ptrs.dev_ptr());
+        // };
+
+        calculate_flux3<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(),
             dev_array_ptrs.dev_ptr(),
             debug_outputs.dev_ptr(),
             step);
 
-        apply_flux2<<<grid, block, 0, stream.get()>>>(
+        apply_flux3<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(),
             dev_array_ptrs.dev_ptr(),
             debug_outputs.dev_ptr(),
             step);
     }
 
-    stream.sync();
+    // stream.sync();
 }
 
 void TEMPLATE_CLASS_NAME::debug_update() {

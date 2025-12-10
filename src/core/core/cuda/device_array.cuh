@@ -65,16 +65,13 @@ class TempBuffer {
 };
 
 class DeviceArrayBase {
-
   protected:
     cudaStream_t _stream{nullptr}; // optional stream
-
   public:
     // get stream
     cudaStream_t get_stream() const { return _stream; }
     // set optional stream
     void set_stream(cudaStream_t stream) { _stream = stream; }
-
     // the total array size
     virtual size_t size() const = 0;
     // array size in bytes
@@ -85,8 +82,7 @@ class DeviceArrayBase {
     virtual void zero_device() = 0;
     // is empty
     bool empty() const { return size() == 0; }
-
-    //
+    // deconstructor
     virtual ~DeviceArrayBase() = default;
 };
 
@@ -96,6 +92,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 
     std::array<size_t, Dim> _dimensions{}; // default dimensions will be 0
 
+    // device side pointer
     T *_dev_ptr = nullptr;
 
     // allocate device is private as this is achieved by resizing for the user
@@ -190,6 +187,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         }
     }
 
+    // device side pointer accessors
     T *dev_ptr() {
         return _dev_ptr;
     }
