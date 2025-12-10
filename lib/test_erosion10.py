@@ -65,9 +65,9 @@ def test_mode_1():
         # tools.arrays.normalized(height_map)
 
     # erosion pars
-    erosion.rain_rate = 0.0007 * 10.0
-    erosion.erosion_rate = 0.01 * 10.0
-    erosion.evaporation_rate = 0.0002
+    erosion.rain_rate = 0.0007
+    erosion.erosion_rate = 0.01
+    erosion.evaporation_rate = 0.0002 * 1.5
     erosion.min_height = 0.0
     # erosion.drain_rate = 0.001
     erosion.slope_jitter = 1.0

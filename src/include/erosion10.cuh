@@ -110,7 +110,7 @@ using Float2 = std::array<float, 2>;
     X(float, min_height, -1000000.0, "minimum height the terrain can erode down to")             \
     X(float, max_height, 1000000.0, "maximum height the terrain can erode down to")              \
     X(float, rain_rate, 0.0, "")                                                                 \
-    X(float, flow_rate, 0.0, "")                                                                 \
+    X(float, flow_rate, 1.0, "")                                                                 \
     X(float, evaporation_rate, 0.0, "speed at which water disappears")                           \
     X(float, drain_rate, 0.0, "rate of water drain when reaching minimum height")                \
     X(int, slope_jitter_mode, 0, "0 is based on step, 1 is frozen")                              \

@@ -178,18 +178,18 @@ __global__ void calculate_flux3(
     float xn_surface = xn_height + xn_water;
     float yn_surface = yn_height + yn_water;
 
+    // optional jitter
     if (pars->slope_jitter) {
-
         switch (pars->slope_jitter_mode) {
-        case 0:
-            xp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 10) * pars->slope_jitter;
-            yp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 11) * pars->slope_jitter;
-            xn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 12) * pars->slope_jitter;
-            yn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 13) * pars->slope_jitter;
+        case 1: // uses 4 hashes
+            xp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 0) * pars->slope_jitter;
+            yp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 1) * pars->slope_jitter;
+            xn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 2) * pars->slope_jitter;
+            yn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 3) * pars->slope_jitter;
             break;
 
-        case 1:
-            uint32_t h = cuda_math::hash_uint(pos.x, pos.y, step, 10);
+        case 0:
+            uint32_t h = cuda_math::hash_uint(pos.x, pos.y, step, 0); // one hash used for 4 numbers, potentially cheaper
             xp_surface += jitter_from_byte(h, 0) * pars->slope_jitter;
             yp_surface += jitter_from_byte(h, 1) * pars->slope_jitter;
             xn_surface += jitter_from_byte(h, 2) * pars->slope_jitter;
@@ -231,8 +231,8 @@ __global__ void calculate_flux3(
         product = max(product, 0.0);                               // positive only
 
         // if (pars->mode == 1) { // manning mode
-            // flux = powf(water, 2.0f / 3.0f) * sqrtf(p_slope_grad); // based on manning with no roughness
-            // flux *= pars->flow_rate;                               // scale with a flow rate, lowering this number will slow all flow
+        // flux = powf(water, 2.0f / 3.0f) * sqrtf(p_slope_grad); // based on manning with no roughness
+        // flux *= pars->flow_rate;                               // scale with a flow rate, lowering this number will slow all flow
         // }
 
         fluxes[n] = product;
@@ -373,7 +373,10 @@ __global__ void apply_flux3(
         height += deposit;
     }
     // ================================================================
+    height = cuda_math::clamp(height, pars->min_height, pars->max_height);
     water = max(water, 0.0f);
+    sediment = max(sediment, 0.0f);
+
     height_map[idx] = height;
     water_map[idx] = water;
     sediment_map[idx] = sediment;
@@ -474,7 +477,7 @@ void TEMPLATE_CLASS_NAME::process() {
             step);
     }
 
-    // stream.sync();
+    stream.sync();
 }
 
 void TEMPLATE_CLASS_NAME::debug_update() {
