@@ -106,15 +106,15 @@ using Float2 = std::array<float, 2>;
     X(int, mode, 0, "🚧 different modes for serious refactors")                                  \
     X(int, steps, 1024, "simulation steps to run")                                               \
     X(bool, wrap, true, "wrap the errosion from one side to the other (making result tileable)") \
-    X(float, scale, 1.0, "real world size of pixel")                                             \
+    X(float, scale, 1.0, "real world size of pixel, will make slopes more gradual")              \
     X(float, min_height, -1000000.0, "minimum height the terrain can erode down to")             \
     X(float, max_height, 1000000.0, "maximum height the terrain can erode down to")              \
-    X(float, rain_rate, 0.0, "")                                                                 \
+    X(float, rain_rate, 0.0, "< 0.0: add water uniform or multiplied by rain map")               \
     X(float, flow_rate, 1.0, "")                                                                 \
     X(float, evaporation_rate, 0.0, "speed at which water disappears")                           \
     X(float, drain_rate, 0.0, "rate of water drain when reaching minimum height")                \
-    X(int, slope_jitter_mode, 0, "0 is based on step, 1 is frozen")                              \
-    X(float, slope_jitter, 0.0, "added jitter to the calculate slope values")                    \
+    X(float, slope_jitter, 0.0, "< 0.0: added jitter to the calculate slope values")             \
+    X(int, slope_jitter_mode, 0, "0: 32 bit hash for 4 values (fast); 1: 4 x 32 bit hash")       \
     X(float, max_water_outflow, 1000000.0, "max outflow from a cell per a turn")                 \
     X(int, erosion_mode, 0, "erosion mode")                                                      \
     X(float, erosion_rate, 0.0, "rate at which height becomes sediment based on water outflow")  \
@@ -138,15 +138,15 @@ using Float2 = std::array<float, 2>;
     X(float, 2, _water_out, "current water, optionally set this map at start")                       \
     X(float, 2, sediment_map, "current sediment,  optionally set this map at start")                 \
     X(float, 2, _sediment_out, "current sediment,  optionally set this map at start")                \
-    X(float, 2, rain_map, "optional rain map, multiply by this")                                     \
     X(float, 1, _flux8, "8 water flow out to 8 neighbours")                                          \
     X(float, 1, _sediment_flux8, "sediment flow out to 8 neighbours")                                \
-    X(float, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB") \
-    X(float, 3, _layer_map_out, "layer out")                                                         \
-    X(float, 2, hardness_map, "optional hardness map")                                               \
     X(float, 2, _slope_vector2, "gradient vectors give slope direction and strength")                \
     X(float, 2, _slope_magnitude, "calculation of strength based on gradient vector")                \
-    X(float, 2, _water_velocity, "🧪 scalar water velocity")
+    X(float, 2, _water_velocity, "🧪 scalar water velocity")                                         \
+    X(float, 2, rain_map, "optional rain map, multiply by this")                                     \
+    X(float, 2, hardness_map, "optional hardness map")                                               \
+    X(float, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB") \
+    X(float, 3, _layer_map_out, "layer out")
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
 // #define TEMPLATE_CLASS_PRIVATE_DEVICE_ARRAYS

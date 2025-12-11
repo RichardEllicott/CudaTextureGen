@@ -45,7 +45,7 @@ class Erosion10:
     min_height: float
     mode: int
     rain_map: Incomplete
-    rain_rate: Incomplete
+    rain_rate: float
     scale: float
     sediment_capacity: float
     sediment_map: Incomplete

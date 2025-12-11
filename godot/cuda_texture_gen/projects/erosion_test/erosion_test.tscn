@@ -1,5 +1,6 @@
-[gd_scene load_steps=13 format=3 uid="uid://7gbwq76p8pim"]
+[gd_scene load_steps=14 format=3 uid="uid://7gbwq76p8pim"]
 
+[ext_resource type="Script" uid="uid://7x541f72rqc2" path="res://projects/erosion_test/erosion_test.gd" id="1_3yk81"]
 [ext_resource type="Material" uid="uid://bpmirx26gh3l8" path="res://projects/erosion_test/erosion_test.tres" id="1_h552o"]
 [ext_resource type="Texture2D" uid="uid://cus1ghso80e1w" path="res://projects/erosion_test/erosion.height.png" id="2_bom1d"]
 [ext_resource type="Texture2D" uid="uid://c4emxtf8mcvws" path="res://projects/erosion_test/erosion.ao.png" id="3_rssbv"]
@@ -41,15 +42,16 @@ fog_light_color = Color(0.355174, 0.3948, 0.478013, 1)
 fog_density = 0.0348
 
 [node name="Tests" type="Node3D"]
+script = ExtResource("1_3yk81")
 
-[node name="WithAlbedo" type="MeshInstance3D" parent="."]
+[node name="Parallax_WithAlbedo" type="MeshInstance3D" parent="."]
 transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0)
-visible = false
 mesh = SubResource("PlaneMesh_ipkew")
 surface_material_override/0 = ExtResource("1_h552o")
 
-[node name="HeightAsAlbedo" type="MeshInstance3D" parent="."]
+[node name="Parallax_HeightAsAlbedo" type="MeshInstance3D" parent="."]
 transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, 0.0007338524, 0, -0.0074784756)
+visible = false
 mesh = SubResource("PlaneMesh_ipkew")
 surface_material_override/0 = SubResource("StandardMaterial3D_kl0yu")
 
@@ -65,19 +67,19 @@ transform = Transform3D(0.927092, -0.049801, -0.37151, 0.187173, 0.920227, 0.343
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_soec6")
 
-[node name="start" type="TextureRect" parent="."]
+[node name="GridContainer" type="GridContainer" parent="."]
 offset_right = 40.0
 offset_bottom = 40.0
+columns = 3
+
+[node name="start" type="TextureRect" parent="GridContainer"]
+layout_mode = 2
 texture = ExtResource("5_kl0yu")
 
-[node name="height_map" type="TextureRect" parent="."]
-offset_left = 1088.0
-offset_right = 2112.0
-offset_bottom = 1024.0
+[node name="height_map" type="TextureRect" parent="GridContainer"]
+layout_mode = 2
 texture = ExtResource("2_bom1d")
 
-[node name="albedo" type="TextureRect" parent="."]
-offset_top = 1088.0
-offset_right = 1024.0
-offset_bottom = 2112.0
+[node name="albedo" type="TextureRect" parent="GridContainer"]
+layout_mode = 2
 texture = ExtResource("6_3yk81")

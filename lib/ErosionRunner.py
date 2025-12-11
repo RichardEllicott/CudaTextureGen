@@ -152,9 +152,9 @@ class ErosionRunner:
 
     # godot\cuda_texture_gen\projects\erosion_test
 
-    folder: str = "E:/"
+    # folder: str = "E:/"
     # folder: str = "./output/"
-    # folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
+    folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
 
     filename_base: str = "erosion"
 

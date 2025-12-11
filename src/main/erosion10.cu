@@ -51,14 +51,6 @@ __device__ __forceinline__ void write_map_out(MapPtr in, MapPtr out, int step, i
     get_map_ptr(in, out, step)[idx] = value;
 }
 
-__device__ __forceinline__ int pos_to_idx(int2 pos, int map_width) {
-    return pos.y * map_width + pos.x;
-}
-
-__device__ __forceinline__ int pos_to_idx(int x, int y, int map_width) {
-    return y * map_width + x;
-}
-
 #pragma endregion
 
 #pragma region KERNELS2
@@ -79,14 +71,14 @@ __device__ inline float get_layered_height(
 }
 
 __global__ void precalc_layer_height(
-    const Parameters *pars,
-    const ArrayPtrs *arrays) {
+    const Parameters *__restrict__ pars,
+    const ArrayPtrs *__restrict__ arrays) {
     // ================================================================
     int2 map_size = make_int2(pars->_width, pars->_height);
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = pos_to_idx(pos, map_size.x);
+    int idx = cuda_math::pos_to_idx(pos, map_size.x);
     // ================================================================
     arrays->height_map[idx] = get_layered_height(arrays->layer_map, pos.x, pars->_layers, pos);
 }
@@ -94,13 +86,6 @@ __global__ void precalc_layer_height(
 #pragma endregion
 
 #pragma region KERNELS3
-
-// could inline
-// __global__ void add_rain3(
-//     const Parameters *pars,
-//     const ArrayPtrs *arrays) {
-
-// __restrict__ here, might be good it promises only one thing points to this, so it's not added twice
 
 __global__ void add_rain3(
     const Parameters *__restrict__ pars,
@@ -110,7 +95,7 @@ __global__ void add_rain3(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = pos_to_idx(pos, map_size.x);
+    int idx = cuda_math::pos_to_idx(pos, map_size.x);
     // ================================================================
     // [Rain]
     // ----------------------------------------------------------------
@@ -119,13 +104,6 @@ __global__ void add_rain3(
         rain *= arrays->rain_map[idx]; // multiply by rain_map if != nullptr
     }
     arrays->water_map[idx] += rain;
-}
-
-// get 4 random float's from one 32 bit hash, they are not so random though with about 255 possible values
-__device__ __forceinline__ float jitter_from_byte(uint32_t h, int byte_index) {
-    uint32_t byte = (h >> (8 * byte_index)) & 0xFFu;
-    // map 0..255 to -1..1
-    return (float(byte) / 127.5f) - 1.0f;
 }
 
 __global__ void calculate_flux3(
@@ -138,16 +116,16 @@ __global__ void calculate_flux3(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = pos_to_idx(pos, map_size.x);
+    int idx = cuda_math::pos_to_idx(pos, map_size.x);
     // ================================================================
     float *height_map = arrays->height_map;
     float *water_map = arrays->water_map;
     float *sediment_map = arrays->sediment_map;
     // ================================================================
-    float height = height_map[idx];
+    // float height = height_map[idx];
     float water = water_map[idx];
     float sediment = sediment_map[idx];
-    float surface = height + water;
+    // float surface = height + water;
     // ================================================================
     // Calculate Slope Vector
     // ----------------------------------------------------------------
@@ -177,30 +155,47 @@ __global__ void calculate_flux3(
     float yn_water = water_map[yn_idx];
     float xn_surface = xn_height + xn_water;
     float yn_surface = yn_height + yn_water;
-
+    // ----------------------------------------------------------------
     // optional jitter
     if (pars->slope_jitter) {
-        switch (pars->slope_jitter_mode) {
-        case 1: // uses 4 hashes
+        // switch (pars->slope_jitter_mode) {
+        // case 0:
+        //     // cheaper, reuses one hash, lower quality random shouldn't be a problem over frames
+        //     uint32_t h = cuda_math::hash_uint(pos.x, pos.y, step, 0);
+        //     xp_surface += cuda_math::hash_to_4randf(h, 0) * pars->slope_jitter;
+        //     yp_surface += cuda_math::hash_to_4randf(h, 1) * pars->slope_jitter;
+        //     xn_surface += cuda_math::hash_to_4randf(h, 2) * pars->slope_jitter;
+        //     yn_surface += cuda_math::hash_to_4randf(h, 3) * pars->slope_jitter;
+        //     break;
+        // case 1:
+        //     // uses 4 hashes, technically better random
+        //     xp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 0) * pars->slope_jitter;
+        //     yp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 1) * pars->slope_jitter;
+        //     xn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 2) * pars->slope_jitter;
+        //     yn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 3) * pars->slope_jitter;
+        //     break;
+        // }
+
+        if (pars->slope_jitter_mode == 0) {
+            //  cheaper, reuses one hash, lower quality random shouldn't be a problem over frames
+            uint32_t h = cuda_math::hash_uint(pos.x, pos.y, step, 0);
+            xp_surface += cuda_math::hash_to_4randf(h, 0) * pars->slope_jitter;
+            yp_surface += cuda_math::hash_to_4randf(h, 1) * pars->slope_jitter;
+            xn_surface += cuda_math::hash_to_4randf(h, 2) * pars->slope_jitter;
+            yn_surface += cuda_math::hash_to_4randf(h, 3) * pars->slope_jitter;
+        } else {
+            // uses 4 hashes, technically better random
             xp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 0) * pars->slope_jitter;
             yp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 1) * pars->slope_jitter;
             xn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 2) * pars->slope_jitter;
             yn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 3) * pars->slope_jitter;
-            break;
-
-        case 0:
-            uint32_t h = cuda_math::hash_uint(pos.x, pos.y, step, 0); // one hash used for 4 numbers, potentially cheaper
-            xp_surface += jitter_from_byte(h, 0) * pars->slope_jitter;
-            yp_surface += jitter_from_byte(h, 1) * pars->slope_jitter;
-            xn_surface += jitter_from_byte(h, 2) * pars->slope_jitter;
-            yn_surface += jitter_from_byte(h, 3) * pars->slope_jitter;
-            break;
         }
     }
-
+    // ----------------------------------------------------------------
     float2 slope_vector = float2{xn_surface - xp_surface, yn_surface - yp_surface}; // note slope may be double actual (use scale to compensate)
+    slope_vector /= pars->scale;                                                    // scale such that double world size would mean half gradients
 
-    slope_vector /= pars->scale; // scale such that double world size would mean half gradients
+    // ----------------------------------------------------------------
 
     // save to a Flow map for later use
     int idx2 = idx * 2;
@@ -209,6 +204,7 @@ __global__ void calculate_flux3(
 
     float slope_magnitude = cuda_math::length(slope_vector);
     arrays->_slope_magnitude[idx] = slope_magnitude;
+    // ================================================================
 
     // 🧪 manning based velocity??
     float water_velocity = pow(water, 2.0f / 3.0f) * sqrt(slope_magnitude);
@@ -272,6 +268,35 @@ __global__ void calculate_flux3(
 #endif
 }
 
+// __device__ __forceinline__ float compute_erosion(
+//     int idx,
+//     const Parameters *pars,
+//     const ArrayPtrs *arrays,
+//     float water,
+//     float water_out) {
+
+//     float erosion = 0.0f;
+
+//     switch (pars->erosion_mode) {
+//     case 0:
+//         erosion = water_out * pars->erosion_rate;
+//         break;
+//     case 1:
+//         erosion = water_out * pars->erosion_rate * arrays->_slope_magnitude[idx];
+//         break;
+//     case 2:
+//         erosion = water * pars->erosion_rate * arrays->_slope_magnitude[idx];
+//         break;
+//     case 3:
+//         erosion = water * pars->erosion_rate * arrays->_water_velocity[idx];
+//         break;
+//     case 4:
+//         erosion = cuda_math::soft_saturate(arrays->_water_velocity[idx], pars->erosion_rate, 1.0f);
+//         break;
+//     }
+//     return erosion;
+// }
+
 __global__ void apply_flux3(
     const Parameters *__restrict__ pars,
     const ArrayPtrs *__restrict__ arrays,
@@ -282,8 +307,8 @@ __global__ void apply_flux3(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = pos_to_idx(pos, map_size.x);
-    int idx8 = idx * 8;
+    int idx = cuda_math::pos_to_idx(pos, map_size.x);
+    // int idx8 = idx * 8;
     // ================================================================
     float *height_map = arrays->height_map;
     float *water_map = arrays->water_map;
@@ -315,7 +340,7 @@ __global__ void apply_flux3(
 #endif
 
         int2 new_pos = cuda_math::wrap_or_clamp_index(pos + OFFSETS[n], map_size, pars->wrap);
-        int new_idx = pos_to_idx(new_pos, map_size.x);
+        int new_idx = cuda_math::pos_to_idx(new_pos, map_size.x);
         int new_idx8 = new_idx * 8;
         int opposite_ref = OFFSET_OPPOSITE_REFS[n];
 
@@ -335,20 +360,22 @@ __global__ void apply_flux3(
     // ----------------------------------------------------------------
     float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
     float erosion;
-    float slope_magnitude = arrays->_slope_magnitude[idx];
 
     switch (pars->erosion_mode) {
-    case 0:
-        erosion = water_out * pars->erosion_rate; // max possible erosion
+    case 0: // simple water * erosion_rate
+        erosion = water_out * pars->erosion_rate;
         break;
     case 1:
-        erosion = water_out * pars->erosion_rate * slope_magnitude; // with slope_magnitude ⚠️ BROKE?
+        erosion = water_out * pars->erosion_rate * arrays->_slope_magnitude[idx]; // with slope_magnitude ⚠️ BROKE?
         break;
     case 2:
-        erosion = water * pars->erosion_rate * slope_magnitude; // maybe based on total water?
+        erosion = water * pars->erosion_rate * arrays->_slope_magnitude[idx]; // maybe based on total water?
         break;
     case 3:
         erosion = water * pars->erosion_rate * arrays->_water_velocity[idx]; // maybe based on total water?
+        break;
+    case 4: // soft saturation scheme (limits the max erosion)
+        erosion = cuda_math::soft_saturate(arrays->_water_velocity[idx], pars->erosion_rate, 1.0);
         break;
     }
 
