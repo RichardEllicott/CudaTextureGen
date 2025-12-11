@@ -159,7 +159,7 @@ static_assert(std::is_trivially_copyable<DebugOutputs>::value, "DebugOutputs mus
 class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
 
   protected:
-    core::cuda::DeviceSyncedStruct<DebugOutputs> debug_outputs; // device side pars (new synced wrapper keeps a local copy)
+    core::cuda::SyncedDeviceStruct<DebugOutputs> debug_outputs; // device side pars (new synced wrapper keeps a local copy)
     core::cuda::DeviceStruct<ArrayPtrs> dev_array_ptrs;         // device side pars
 
   public:

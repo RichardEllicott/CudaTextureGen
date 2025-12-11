@@ -1,3 +1,19 @@
+/*
+
+Dynamic behaviors:
+
+Ice: erodes when warm/fast, grows when cold/slow.
+
+Sand: high erosiveness, but can redeposit downstream.
+
+Clay: erodes slowly, but once exposed it can slump catastrophically.
+
+Bedrock: nearly immune, only erodes under extreme conditions.
+
+
+*/
+
+
 #include "core/cuda/curand_array_2d.cuh"
 #include "erosion10.cuh"
 // #include "erosion9_kernels.cuh"
@@ -312,7 +328,41 @@ __global__ void apply_flux3(
     erosion = min(erosion, available_erosion); // can't erode more than we have rock
     erosion = max(erosion, 0.0f);              // erosion can't be negative
 
-    height -= erosion;
+    //
+    //
+    //
+    // note this new thing:
+    // #pragma unroll
+
+    // we could even concider runtime compile of stuff!
+    // https://copilot.microsoft.com/chats/UnoMio7MXZLWKrCQAQzed
+
+    // we may precompute this exposed layer
+    if (pars->_layers > 1) {
+        int exposed_layer = 0;
+        int layer_idx = idx * pars->_layers;
+        for (int n = 0; n < pars->_layers; ++n) {
+            float value = arrays->layer_map[layer_idx + n];
+            if (value <= 0.0f) {
+                exposed_layer = n + 1; // first exposed layer is next layer (possibly)
+            } else {
+                break; // layer is empty
+            }
+        }
+        if (exposed_layer < pars->_layers) { // valid layer
+            float layer_erosiveness = arrays->layer_erosiveness[exposed_layer];
+            float layer_height = arrays->layer_map[layer_idx + exposed_layer];
+            layer_height -= erosion * layer_erosiveness; // use actual layer properties
+            layer_height = max(layer_height, 0.0f);      // no lower than 0.0
+            arrays->layer_map[layer_idx + exposed_layer] = layer_height;
+        }
+    } else {
+        height -= erosion; // normal mode
+    }
+    //
+    //
+    //
+
     sediment += erosion * pars->sediment_yield;
 
     // ================================================================
@@ -351,6 +401,18 @@ __global__ void apply_flux3(
     sediment_map[idx] = sediment;
 }
 
+
+
+
+
+__global__ void sea_pass3(
+    const Parameters *__restrict__ pars,
+    const ArrayPtrs *__restrict__ arrays,
+    DebugOutputs *__restrict__ debug,
+    const int step) {
+
+    }
+
 #pragma endregion
 
 void TEMPLATE_CLASS_NAME::allocate_device() {
@@ -368,22 +430,23 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
         height_map.set_stream(stream.get());
         height_map.resize({pars._width, pars._height}); // allocate the heightmap still, we will copy the total height to it
 
-// // ensure we have layer data
-// #define LAYER_DATA_ARRAYS \
-//     X(layer_erosiveness)  \
-//     X(layer_yield)        \
-//     X(layer_permeability) \
-//     X(layer_erosion_threshold)
-// #define X(NAME)                                                                          \
-//     if ((NAME).size() < pars._layers || (NAME).size() > 100) {                           \
-//         throw std::runtime_error(std::string("Invalid size for ") + #NAME +              \
-//                                  ": got " + std::to_string((NAME).size()) +              \
-//                                  ", expected at least " + std::to_string(pars._layers) + \
-//                                  " and no more than 100");                               \
-//     }
-//         LAYER_DATA_ARRAYS
-
+        // ensure all arrays have 1's
+        std::vector<float> ones(pars._layers, 1.0f); // vector of 1.0's
+#define LAYER_DATA_ARRAYS \
+    X(layer_erosiveness)  \
+    X(layer_yield)        \
+    X(layer_permeability) \
+    X(layer_erosion_threshold)
+#define X(NAME)                                                      \
+    if (NAME.size() < pars._layers) {                                \
+        printf("warning: %s size mismatch (got %zu, expected %d)\n", \
+               #NAME, NAME.size(), pars._layers);                    \
+        NAME.resize({pars._layers});                                 \
+        NAME.upload(ones.data(), {pars._layers});                    \
+    }
+        LAYER_DATA_ARRAYS
 #undef X
+        stream.sync(); // ensure we don't free the vector before upload
 #undef LAYER_DATA_ARRAYS
 
         // stream.sync();
@@ -464,7 +527,7 @@ void TEMPLATE_CLASS_NAME::process() {
     configure_device();
     stream.sync();
 
-    for (int step = 0; step < pars.steps; ++step) {
+    for (int i = 0; i < pars.steps; ++i) {
 
         add_rain3<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(),
@@ -474,13 +537,16 @@ void TEMPLATE_CLASS_NAME::process() {
             dev_pars.dev_ptr(),
             dev_array_ptrs.dev_ptr(),
             debug_outputs.dev_ptr(),
-            step);
+            pars._step);
 
         apply_flux3<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(),
             dev_array_ptrs.dev_ptr(),
             debug_outputs.dev_ptr(),
-            step);
+            pars._step);
+
+
+        pars._step++;
     }
 
     stream.sync();

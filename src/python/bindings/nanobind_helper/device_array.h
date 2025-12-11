@@ -22,13 +22,11 @@ namespace nb = nanobind; // shortcut
 
 #pragma region DEVICE_ARRAY
 
-
-
 // convert DeviceArray to ndarray<T> (DOWNLOAD)
 template <typename T, int Dim>
 inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray<T, Dim> &device_array) {
-    // Internal order: width, height, depth...
-    auto shape = device_array.dimensions();
+
+    auto shape = device_array.dimensions(); // getting the numpy shape to create (which needs to swap W and H)
 
     // Flip for NumPy if Dim >= 2
     if constexpr (Dim >= 2) {
@@ -36,8 +34,6 @@ inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray<T, Dim> 
     }
 
     auto array = get_array<T, Dim>(shape);
-
-    //
     auto data_ptr = array.data();
 
     // #ifdef CONVERT_3D_HWC_CHW

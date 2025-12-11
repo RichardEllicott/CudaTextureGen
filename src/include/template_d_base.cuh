@@ -77,8 +77,9 @@ template <typename ParametersT>
 class TemplateD : public Base {
 
   protected:
-    ParametersT pars;                               // local pars
+    ParametersT pars;                               // local par
     core::cuda::DeviceStruct<ParametersT> dev_pars; // device side pars
+    // SyncedDeviceStruct<ParametersT> pars;
 
     // call before launching a kernel to ensure pars are uploaded and block/grid calculated
     void configure_device() override {
@@ -86,6 +87,7 @@ class TemplateD : public Base {
             block = dim3(pars._block, pars._block);
             grid = dim3((pars._width + block.x - 1) / block.x, (pars._height + block.y - 1) / block.y);
             dev_pars.upload(pars);
+            // pars.upload();
             _device_configured = true;
         }
     }

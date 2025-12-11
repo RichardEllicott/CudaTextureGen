@@ -95,35 +95,38 @@ using Float2 = std::array<float, 2>;
 //     X(int, manning_mode, 0, "for second erorsion model only, trying different manning calculations")
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_PARAMETERS                                                                   \
-    X(bool, _debug, false, "track certain information for monitoring")                              \
-    X(bool, debug_print, false, "print out information to console")                                 \
-    X(int, debug_mod, 1, "frequency to print the debug output")                                     \
-    X(size_t, _block, 16, "gpu block size (best at 16)")                                            \
-    X(size_t, _width, 512, "map width")                                                             \
-    X(size_t, _height, 512, "map height")                                                           \
-    X(size_t, _layers, 0, "layers for layer mode")                                                  \
-    X(int, mode, 0, "🚧 different modes for serious refactors")                                     \
-    X(int, steps, 1024, "simulation steps to run")                                                  \
-    X(bool, wrap, true, "wrap the errosion from one side to the other (making result tileable)")    \
-    X(float, scale, 1.0, "real world size of pixel, will make slopes more gradual")                 \
-    X(float, min_height, -1000000.0, "minimum height the terrain can erode down to")                \
-    X(float, max_height, 1000000.0, "maximum height the terrain can erode down to")                 \
-    X(float, rain_rate, 0.0, "< 0.0: add water uniform or multiplied by rain map")                  \
-    X(float, flow_rate, 1.0, "")                                                                    \
-    X(float, slope_jitter, 0.0, "< 0.0: added jitter to the calculate slope values")                \
-    X(int, slope_jitter_mode, 0, "0: 32 bit hash for 4 values (fast); 1: 4 x 32 bit hash")          \
-    X(float, max_water_outflow, 1000000.0, "max outflow from a cell per a turn")                    \
-    X(int, erosion_mode, 0, "erosion mode")                                                         \
-    X(float, erosion_rate, 0.0, "rate at which height becomes sediment based on water outflow")     \
-    X(float, sediment_yield, 0.0, "amount of sediment generated from erosion, set [0,1]")           \
-    X(float, sediment_capacity, 0.0, "sediment capacity of the water [0,1]")                        \
-    X(int, deposition_mode, 0, "UNUSED")                                                            \
-    X(float, deposition_threshold, 1000000.0, "deposit if outflow below threshold")                 \
-    X(float, deposition_rate, 0.0, "rate sediment becomes height or rock again, deposition_mode 0") \
-    X(float, drain_rate, 0.0, "rate of water drain when reaching minimum height")                   \
-    X(int, evaporation_mode, 0, "0: basic; 1: shallow water quicker")                               \
-    X(float, evaporation_rate, 0.0, "speed at which water disappears")
+#define TEMPLATE_CLASS_PARAMETERS                                                                                   \
+    X(bool, _debug, false, "track certain information for monitoring")                                              \
+    X(bool, debug_print, false, "print out information to console")                                                 \
+    X(int, debug_mod, 1, "frequency to print the debug output")                                                     \
+    X(size_t, _block, 16, "gpu block size (best at 16)")                                                            \
+    X(size_t, _width, 512, "map width")                                                                             \
+    X(size_t, _height, 512, "map height")                                                                           \
+    X(size_t, _layers, 0, "layers for layer mode")                                                                  \
+    X(int, mode, 0, "❌ [0]: Default")                                                                              \
+    X(int, steps, 512, "simulation steps to run")                                                                   \
+    X(int, _step, 0, "current step")                                                                   \
+    X(bool, wrap, true, "wrap the errosion from one side to the other (making result tileable)")                    \
+    X(float, scale, 1.0, "[<0.0]: real world size of pixel, will make slopes more gradual")                         \
+    X(float, min_height, -1000000.0, "[-∞,∞]: minimum height the terrain can erode down to")                        \
+    X(float, max_height, 1000000.0, "[-∞,∞]: maximum height the terrain can erode down to")                         \
+    X(float, rain_rate, 0.0, "[<0.0]: add water uniform or multiplied by rain map")                                 \
+    X(float, flow_rate, 1.0, "[<0.0]: speed of the outflow, still capped by max_water_outflow and available water") \
+    X(float, slope_jitter, 0.0, "[<0.0]: added jitter to the calculate slope values")                               \
+    X(int, slope_jitter_mode, 0, "[0]: 32 bit hash for 4 values (fast); [1]: 4 x 32 bit hash")                      \
+    X(float, max_water_outflow, 1000000.0, "[0,∞]: max outflow from a cell per a turn")                             \
+    X(int, erosion_mode, 0, "erosion mode")                                                                         \
+    X(float, erosion_rate, 0.0, "rate at which height becomes sediment based on water outflow")                     \
+    X(float, sediment_yield, 0.0, "amount of sediment generated from erosion, set [0,1]")                           \
+    X(float, sediment_capacity, 0.0, "sediment capacity of the water [0,1]")                                        \
+    X(int, deposition_mode, 0, "UNUSED")                                                                            \
+    X(float, deposition_threshold, 1000000.0, "deposit if outflow below threshold")                                 \
+    X(float, deposition_rate, 0.0, "rate sediment becomes height or rock again, deposition_mode 0")                 \
+    X(float, drain_rate, 0.0, "rate of water drain when reaching minimum height")                                   \
+    X(int, evaporation_mode, 0, "0: basic; 1: shallow water quicker")                                               \
+    X(float, evaporation_rate, 0.0, "speed at which water disappears")                                              \
+    X(bool, sea_pass, false, "🚧")                                                                                  \
+    X(float, sea_level, 0.0, "🚧")
 
 #define TEMPLATE_DEBUG_OUTPUTS                                    \
     X(float, _debug_rain_total, 0.0, "tracking total rain")       \
@@ -197,7 +200,7 @@ static_assert(std::is_trivially_copyable<DebugOutputs>::value, "DebugOutputs mus
 class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
 
   protected:
-    core::cuda::DeviceSyncedStruct<DebugOutputs> debug_outputs; // device side pars (new synced wrapper keeps a local copy)
+    core::cuda::SyncedDeviceStruct<DebugOutputs> debug_outputs; // device side pars (new synced wrapper keeps a local copy)
     core::cuda::DeviceStruct<ArrayPtrs> dev_array_ptrs;         // device side pars
 
   public:
@@ -209,6 +212,17 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
+
+
+//     // getter/setters for the pars
+// #ifdef TEMPLATE_CLASS_PARAMETERS
+// #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)   \
+//     TYPE get_##NAME() const { return pars.host().NAME; } \
+//     void set_##NAME(TYPE value) { set_par(pars.host().NAME, value); }
+//     TEMPLATE_CLASS_PARAMETERS
+// #undef X
+// #endif
+
 
     // getter/setters for the debug output's
 #ifdef TEMPLATE_DEBUG_OUTPUTS

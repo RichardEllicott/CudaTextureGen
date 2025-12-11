@@ -139,4 +139,20 @@ def test_mode_2():
     runner.process()
 
 
-test_mode_2()
+# test_mode_2()
+
+
+def test_patterns():
+    """
+    patterns test
+    """
+    runner = ErosionRunner()
+    erosion = runner.erosion
+    island_generator = IslandGenerator()
+
+
+    num_array = [0.55, 0.22, 0.11, 1.1]
+    # erosion.layer_erosion_threshold = np.array(num_array, dtype=np.float32) 
+    erosion.height_map = np.array(num_array, dtype=np.float32) 
+
+test_patterns()
