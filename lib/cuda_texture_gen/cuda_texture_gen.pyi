@@ -30,16 +30,22 @@ class Erosion10:
     _width: int
     debug_mod: int
     debug_print: bool
+    deposition_mode: int
     deposition_rate: float
     deposition_threshold: float
     drain_rate: float
     erosion_mode: int
     erosion_rate: float
+    evaporation_mode: int
     evaporation_rate: float
     flow_rate: Incomplete
     hardness_map: Incomplete
     height_map: Incomplete
+    layer_erosion_threshold: Incomplete
+    layer_erosiveness: Incomplete
     layer_map: Incomplete
+    layer_permeability: Incomplete
+    layer_yield: Incomplete
     max_height: float
     max_water_outflow: float
     min_height: float

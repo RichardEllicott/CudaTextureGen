@@ -14,105 +14,6 @@ from ErosionRunner import ErosionRunner
 from IslandGenerator import IslandGenerator
 
 
-def test_mode_1():
-    """
-    layers test
-    """
-    runner = ErosionRunner()
-    erosion = runner.erosion
-    island_generator = IslandGenerator()
-
-    # runner.output_preset_01()
-    runner.output_preset_02()
-    # runner.output_preset_03()
-
-    runner.image_profiles = {}  # disable images
-    # runner.movie_profiles = {}  # disable movies
-
-    map_size = 1024 // 2
-
-    # erosion.mode = 1  # 🧪
-    # erosion.mode = 2  # 🧪
-    erosion.mode = 3  # 🧪 manning based?
-
-    runner.nearest_neighbor_upscale = 1
-    map_width = map_size
-    map_height = map_size
-
-    map_width //= runner.nearest_neighbor_upscale
-    map_height //= runner.nearest_neighbor_upscale
-
-    height_scale = 64.0
-    # height_scale = 24.0
-    scale_stretch = 1  # stretching time
-
-    # gen heightmaps
-    octaves = 8
-    # octaves = 5
-    base_period = 1
-    height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves, base_period=base_period)
-
-    cut_island = True
-    if cut_island:
-        # island cut
-        island_generator.width = map_width
-        island_generator.height = map_height
-        island_generator.preset00()
-        island_generator.pre_blur = 32.0
-        island = island_generator.island
-        height_map *= island
-        # plus adding a bit of island height back
-        # height_map += island * 2.0
-        # tools.arrays.normalized(height_map)
-
-    # erosion pars
-    erosion.rain_rate = 0.0007
-    erosion.erosion_rate = 0.01
-    erosion.evaporation_rate = 0.0002 * 1.5
-    erosion.min_height = 0.0
-    # erosion.drain_rate = 0.001
-    erosion.slope_jitter = 1.0
-    # erosion.slope_jitter_mode = 1
-
-    # erosion.flow_rate = 0.125
-    erosion.max_water_outflow = 0.125
-    # erosion.max_water_outflow = 1.0
-
-    # sediment
-
-    sediment_tests = False
-    # sediment_tests = True
-    if sediment_tests:
-        # erosion.deposition_mode = 1
-        erosion.sediment_yield = 0.125
-        erosion.sediment_capacity = 0.5
-        erosion.deposition_rate = 0.5
-        # erosion.deposition_threshold = 0.125
-
-    # runner
-    runner.frame_count = 256
-    # runner.frame_count = 128
-    runner.steps_per_frame = 16
-    # runner.steps_per_frame = 64
-
-    # scale stretch (if used)
-    erosion.rain_rate /= scale_stretch
-    # erosion.erosion_rate /= scale_stretch # maybe leave the same as we have less water per frame
-    erosion.evaporation_rate /= scale_stretch
-    erosion.max_water_outflow /= scale_stretch
-    runner.steps_per_frame *= scale_stretch
-    erosion.drain_rate /= scale_stretch
-    # erosion.positive_slope_gradient_cap /= scale_stretch
-
-    erosion.height_map = height_map * height_scale
-
-    runner.process()
-
-
-# test_mode_1()
-
-
-
 def test_mode_2():
     """
     layers test
@@ -121,8 +22,14 @@ def test_mode_2():
     erosion = runner.erosion
     island_generator = IslandGenerator()
 
-    # runner.output_preset_01()
-    runner.output_preset_02()
+    LAYER_MODE = False
+    ISLAND_MODE = False
+
+    LAYER_MODE = True
+    ISLAND_MODE = True
+
+    runner.output_preset_01()
+    # runner.output_preset_02()
     # runner.output_preset_03()
 
     # runner.image_profiles = {}  # disable images
@@ -136,15 +43,13 @@ def test_mode_2():
     erosion.mode = 4  # 🧪 soft saturation based
 
     # erosion pars
-    erosion.rain_rate = 0.007 
+    erosion.rain_rate = 0.007
     erosion.erosion_rate = 1.0 / 8.0 / 4.0
     erosion.evaporation_rate = 0.002
     erosion.min_height = 0.0
     # erosion.drain_rate = 0.001
     # erosion.slope_jitter = 1.0
     # erosion.slope_jitter_mode = 1
-
-
 
     runner.nearest_neighbor_upscale = 1
     map_width = map_size
@@ -161,22 +66,28 @@ def test_mode_2():
     # octaves = 8
     octaves = 7
     base_period = 1
-    height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves, base_period=base_period)
 
-    cut_island = True
-    if cut_island:
+    # layers
+    layers = [tools.noise.fractal(width=map_width, height=map_height, octaves=octaves, base_period=base_period, seed=0)]
+    if LAYER_MODE:
+        for i in range(2):
+            height_map = tools.noise.fractal(width=map_width, height=map_height, octaves=octaves, base_period=base_period, seed=i+1)
+            layers.append(height_map)
+
+    if ISLAND_MODE:
         # island cut
         island_generator.width = map_width
         island_generator.height = map_height
         island_generator.preset00()
         island_generator.pre_blur = 32.0
         island = island_generator.island
-        height_map *= island
+
+        for layer in layers:
+            layer *= island
+
         # plus adding a bit of island height back
         # height_map += island * 2.0
         # tools.arrays.normalized(height_map)
-
-
 
     # erosion.flow_rate = 0.125
     erosion.max_water_outflow = 1.0 / 8.0
@@ -185,10 +96,10 @@ def test_mode_2():
     # sediment
 
     sediment_tests = False
-    # sediment_tests = True
+    sediment_tests = True
     if sediment_tests:
         # erosion.deposition_mode = 1
-        erosion.sediment_yield = 0.125
+        erosion.sediment_yield = 0.125 / 8.0
         erosion.sediment_capacity = 0.5
         erosion.deposition_rate = 0.5
         # erosion.deposition_threshold = 0.125
@@ -208,7 +119,22 @@ def test_mode_2():
     erosion.drain_rate /= scale_stretch
     # erosion.positive_slope_gradient_cap /= scale_stretch
 
-    erosion.height_map = height_map * height_scale
+    if LAYER_MODE:
+
+        assert (len(layers) == 3)
+        # Merge into one 3D array (height x width x channels)
+        rgb = np.stack(layers, axis=-1)
+        rgb *= height_scale
+        erosion.layer_map = rgb
+
+        # # Split back into separate channels (EXAMPLE)
+        # R2, G2, B2 = np.dsplit(rgb, 3)   # each has shape (100, 100, 1)
+        # R2 = R2.squeeze()
+        # G2 = G2.squeeze()
+        # B2 = B2.squeeze()
+
+    else:
+        erosion.height_map = layers[0] * height_scale
 
     runner.process()
 

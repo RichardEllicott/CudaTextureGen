@@ -6,6 +6,7 @@ new DeviceArray pattern
 
 */
 #pragma once
+// #define CONVERT_3D_HWC_CHW
 
 #include "cuda_types.cuh"
 #include "numpy.h" // numpy helper in same folder
@@ -21,7 +22,9 @@ namespace nb = nanobind; // shortcut
 
 #pragma region DEVICE_ARRAY
 
-// convert DeviceArray to ndarray<T>
+
+
+// convert DeviceArray to ndarray<T> (DOWNLOAD)
 template <typename T, int Dim>
 inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray<T, Dim> &device_array) {
     // Internal order: width, height, depth...
@@ -34,19 +37,24 @@ inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray<T, Dim> 
 
     auto array = get_array<T, Dim>(shape);
 
-    // // convert CHW (3,64,64) → HWC (64,64,3)
+    //
     auto data_ptr = array.data();
-    // if constexpr (Dim == 3) {
-    //     printf("trigger conversion...");
-    //     auto tmp = core::arrays::permute_to_vector(data, shape, std::array{2, 0, 1});
-    //     data = temp.data();
-    // }
+
+    // #ifdef CONVERT_3D_HWC_CHW
+    //     // convert CHW (3,64,64) → HWC (64,64,3)
+    //     if constexpr (Dim == 3) {
+    //         printf("trigger conversion {2, 0, 1}...");
+    // 🧪  check if that stream is set???/
+    //         auto temp = core::arrays::permute_to_vector(data_ptr, shape, std::array{2, 0, 1});
+    //         data_ptr = temp.data();
+    //     }
+    // #endif
 
     device_array.download(data_ptr);
     return array;
 }
 
-// copy numpy array to DeviceArray
+// copy numpy array to DeviceArray (UPLOAD)
 template <typename T, int Dim>
 inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cuda::DeviceArray<T, Dim> &destination) {
     if (source.ndim() != Dim)
@@ -59,19 +67,30 @@ inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cu
 
     // Flip back to internal order (width, height, depth)
     std::array<size_t, Dim> internal_dims = np_dims;
-    if constexpr (Dim >= 2)
+    if constexpr (Dim >= 2) {
         std::swap(internal_dims[0], internal_dims[1]);
+    }
 
-    // // convert HWC (64,64,3) → CHW (3,64,64)
     auto data_ptr = source.data();
-    // if constexpr (Dim == 3) {
-    //     printf("trigger conversion...");
-    //     auto tmp = core::arrays::permute_to_vector(data, shape, std::array{2, 0, 1});
-    //     data = temp.data();
-    // }
+
+#ifdef CONVERT_3D_HWC_CHW
+    if constexpr (Dim == 3) {
+        // convert HWC (64,64,3) → CHW (3,64,64)
+        printf("trigger conversion {2, 0, 1}...");
+        // printf();
+
+        auto temp = core::arrays::permute_to_vector(data_ptr, internal_dims, std::array{2, 0, 1}); // ⚠️ np_dims ? not working
+        data_ptr = temp.data();
+    }
+#endif
 
     destination.resize(internal_dims);
     destination.upload(data_ptr, internal_dims);
+
+#ifdef CONVERT_3D_HWC_CHW
+    destination.sync();
+    cudaDeviceSynchronize();
+#endif
 }
 
 #pragma endregion

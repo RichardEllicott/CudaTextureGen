@@ -7,7 +7,7 @@ cuda math functions
 #include <cuda_runtime.h>
 
 #define D_INLINE __device__ __forceinline__
-#define DH_INLINE     __device__ __host__ __forceinline__
+#define DH_INLINE __device__ __host__ __forceinline__
 
 namespace cuda_math {
 
@@ -23,14 +23,14 @@ constexpr float GOLDEN_RATIO = 1.6180339887498948482f;
 
 #pragma region IDX
 
-// pos to idx formula
-DH_INLINE int pos_to_idx(int2 pos, int map_width) {
-    return pos.y * map_width + pos.x;
+// pos to idx, note if we have layers (usually colour channels) we multiply the idx, then (R,G,B) = (idx+0, idx+1, idx+2)
+DH_INLINE int pos_to_idx(int2 pos, int map_width, int layers = 1) {
+    return (pos.y * map_width + pos.x) * layers;
 }
 
 // pos to idx formula
-DH_INLINE int pos_to_idx(int x, int y, int map_width) {
-    return y * map_width + x;
+DH_INLINE int pos_to_idx(int x, int y, int map_width, int layers = 1) {
+    return (y * map_width + x) * layers;
 }
 
 #pragma endregion
@@ -118,6 +118,7 @@ DH_INLINE float2 normalize(const float2 &v) {
     float len = sqrtf(v.x * v.x + v.y * v.y);
     return (len > 1e-6f) ? make_float2(v.x / len, v.y / len) : make_float2(0.0f, 0.0f);
 }
+
 #pragma endregion
 
 #pragma region HASH

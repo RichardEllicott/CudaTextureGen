@@ -17,6 +17,7 @@ import imageio.v2 as imageio  # v2 uses numpy arrays
 from numpy.typing import NDArray
 from enum import Enum
 import json
+import warnings
 
 
 class FrameProfile:
@@ -57,7 +58,14 @@ class FrameProfile:
             # gradient: tools.gradients.Gradient = tools.gradients.get_test_gradient_02(0, 128)
             self._gradient_strip = gradient.render(512)
 
-        map = map - self.runner.starting_heightmap
+
+        starting_heightmap = self.runner.starting_heightmap
+        
+        if starting_heightmap is not None and starting_heightmap.size > 0:
+            map = map - starting_heightmap
+        else:
+            warnings.warn("starting_heightmap empty or missing!")
+
         # map = self.runner.starting_heightmap - map
         tools.arrays.normalize(map)
 
@@ -152,9 +160,9 @@ class ErosionRunner:
 
     # godot\cuda_texture_gen\projects\erosion_test
 
-    # folder: str = "E:/"
+    folder: str = "E:/"
     # folder: str = "./output/"
-    folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
+    # folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
 
     filename_base: str = "erosion"
 
@@ -356,8 +364,10 @@ class ErosionRunner:
     def PRESET_simple_erosion(self):
 
         # self.erosion.slope_threshold = 1.0  # optional will stop light slopes deteriorating
-        self.erosion.simple_erosion_rate = 0.01
+        # self.erosion.simple_erosion_rate = 0.01
         # self.erosion.outflow_carve = 0.01
+
+        pass
 
     def PRESET_erosion_01(self) -> None:
         """
@@ -419,6 +429,7 @@ class ErosionRunner:
     def _download_maps(self):
         self._maps.clear()
         for name in self.map_names:
+            # print(f"download map: {name}")
             map = getattr(self.erosion, name)
             self._maps[name] = map
 
@@ -460,7 +471,11 @@ class ErosionRunner:
         erosion = self.erosion
 
         self.starting_heightmap = erosion.height_map
-        if self.starting_heightmap is not None:
+        if self.starting_heightmap is not None and self.starting_heightmap.size > 0:
+
+            tools.arrays.print_array_information(self.starting_heightmap)
+
+
             tools.images.save(
                 tools.arrays.normalized(self.starting_heightmap),
                 f"{self.folder}/{self.filename_base}.start.png")
@@ -468,7 +483,7 @@ class ErosionRunner:
         erosion._debug = self.debug
         if self.debug:
             erosion.allocate_device()  # pre-allocate to allow debug download
-            self._download_maps()  # ⚠️ donwnloads even though it uploaded (slow)
+            self._download_maps()  # ⚠️ downloads even though it uploaded (slow)
             print("🚀 launch erosion...")
             print("-" * 64)
             self.print_metric_data()  # ⚠️ gets meta data (slow)
