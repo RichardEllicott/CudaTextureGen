@@ -138,31 +138,29 @@ using Float2 = std::array<float, 2>;
 // X(int2, test_int2, DEFAULT_INT2, "test a Int2")
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_DEVICE_ARRAYS                                                                 \
-    X(float, 2, height_map, "current height, set this map to start the simulation")                  \
-    X(float, 2, water_map, "current water, optionally set this map at start")                        \
-    X(float, 2, _water_out, "current water, optionally set this map at start")                       \
-    X(float, 2, sediment_map, "current sediment,  optionally set this map at start")                 \
-    X(float, 2, _sediment_out, "current sediment,  optionally set this map at start")                \
-    X(float, 1, _flux8, "8 water flow out to 8 neighbours")                                          \
-    X(float, 1, _sediment_flux8, "sediment flow out to 8 neighbours")                                \
-    X(float, 2, _slope_vector2, "gradient vectors give slope direction and strength")                \
-    X(float, 2, _slope_magnitude, "calculation of strength based on gradient vector")                \
-    X(float, 2, _water_velocity, "🧪 scalar water velocity")                                         \
-    X(float, 2, rain_map, "optional rain map, multiply by this")                                     \
-    X(float, 2, hardness_map, "optional hardness map")                                               \
-    X(float, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB") \
-    X(float, 3, sediment_layer_map, "optional storage of different sediment types")                  \
-    X(float, 1, layer_erosiveness, "array of erosion rate of layer (higher is faster)")              \
-    X(float, 1, layer_yield, "array erosion rate of layer (higher is faster)")                       \
-    X(float, 1, layer_permeability, "❓ water drainage?")                                            \
-    X(float, 1, layer_erosion_threshold, "❓ erosion rate of layer (higher is faster)")              \
-    X(float, 1, layer_solubility, "array of sediment solubility of layer (if using sediment_layer_mode)")\
-    X(int, 2, _exposed_layer_map, "getting exposed layer")                                               \
+#define TEMPLATE_CLASS_DEVICE_ARRAYS                                                                      \
+    X(float, 2, height_map, "current height, set this map to start the simulation")                       \
+    X(float, 2, water_map, "current water, optionally set this map at start")                             \
+    X(float, 2, _water_out, "current water, optionally set this map at start")                            \
+    X(float, 2, sediment_map, "current sediment,  optionally set this map at start")                      \
+    X(float, 2, _sediment_out, "current sediment,  optionally set this map at start")                     \
+    X(float, 1, _flux8, "8 water flow out to 8 neighbours")                                               \
+    X(float, 1, _sediment_flux8, "sediment flow out to 8 neighbours")                                     \
+    X(float, 2, _slope_vector2, "gradient vectors give slope direction and strength")                     \
+    X(float, 2, _slope_magnitude, "calculation of strength based on gradient vector")                     \
+    X(float, 2, _water_velocity, "🧪 scalar water velocity")                                              \
+    X(float, 2, rain_map, "optional rain map, multiply by this")                                          \
+    X(float, 2, hardness_map, "optional hardness map")                                                    \
+    X(float, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB")      \
+    X(float, 3, sediment_layer_map, "optional storage of different sediment types")                       \
+    X(float, 1, layer_erosiveness, "array of erosion rate of layer (higher is faster)")                   \
+    X(float, 1, layer_yield, "array erosion rate of layer (higher is faster)")                            \
+    X(float, 1, layer_permeability, "❓ water drainage?")                                                 \
+    X(float, 1, layer_erosion_threshold, "❓ erosion rate of layer (higher is faster)")                   \
+    X(float, 1, layer_solubility, "array of sediment solubility of layer (if using sediment_layer_mode)") \
+    X(int, 2, _exposed_layer_map, "getting exposed layer")
 
-
-    // problem with int?
-
+// problem with int?
 
 // ================================================================ //
 
