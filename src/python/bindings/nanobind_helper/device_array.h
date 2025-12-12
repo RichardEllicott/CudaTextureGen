@@ -6,7 +6,6 @@ new DeviceArray pattern
 
 */
 #pragma once
-// #define CONVERT_3D_HWC_CHW
 
 #include "cuda_types.cuh"
 #include "numpy.h" // numpy helper in same folder
@@ -34,19 +33,7 @@ inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray<T, Dim> 
     }
 
     auto array = get_array<T, Dim>(shape);
-    auto data_ptr = array.data();
-
-    // #ifdef CONVERT_3D_HWC_CHW
-    //     // convert CHW (3,64,64) → HWC (64,64,3)
-    //     if constexpr (Dim == 3) {
-    //         printf("trigger conversion {2, 0, 1}...");
-    // 🧪  check if that stream is set???/
-    //         auto temp = core::arrays::permute_to_vector(data_ptr, shape, std::array{2, 0, 1});
-    //         data_ptr = temp.data();
-    //     }
-    // #endif
-
-    device_array.download(data_ptr);
+    device_array.download(array.data());
     return array;
 }
 
@@ -67,26 +54,8 @@ inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cu
         std::swap(internal_dims[0], internal_dims[1]);
     }
 
-    auto data_ptr = source.data();
-
-#ifdef CONVERT_3D_HWC_CHW
-    if constexpr (Dim == 3) {
-        // convert HWC (64,64,3) → CHW (3,64,64)
-        printf("trigger conversion {2, 0, 1}...");
-        // printf();
-
-        auto temp = core::arrays::permute_to_vector(data_ptr, internal_dims, std::array{2, 0, 1}); // ⚠️ np_dims ? not working
-        data_ptr = temp.data();
-    }
-#endif
-
     destination.resize(internal_dims);
-    destination.upload(data_ptr, internal_dims);
-
-#ifdef CONVERT_3D_HWC_CHW
-    destination.sync();
-    cudaDeviceSynchronize();
-#endif
+    destination.upload(source.data(), internal_dims);
 }
 
 #pragma endregion

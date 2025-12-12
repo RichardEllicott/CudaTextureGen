@@ -19,12 +19,12 @@ class Erosion10:
     _debug_rain_total: float
     _flux8: Incomplete
     _height: int
-    _layer_map_out: Incomplete
     _layers: int
     _sediment_flux8: Incomplete
     _sediment_out: Incomplete
     _slope_magnitude: Incomplete
     _slope_vector2: Incomplete
+    _step: int
     _water_out: Incomplete
     _water_velocity: Incomplete
     _width: int
@@ -38,13 +38,14 @@ class Erosion10:
     erosion_rate: float
     evaporation_mode: int
     evaporation_rate: float
-    flow_rate: Incomplete
+    flow_rate: float
     hardness_map: Incomplete
     height_map: Incomplete
     layer_erosion_threshold: Incomplete
     layer_erosiveness: Incomplete
     layer_map: Incomplete
     layer_permeability: Incomplete
+    layer_solubility: Incomplete
     layer_yield: Incomplete
     max_height: float
     max_water_outflow: float
@@ -53,7 +54,11 @@ class Erosion10:
     rain_map: Incomplete
     rain_rate: float
     scale: float
+    sea_level: float
+    sea_pass: bool
     sediment_capacity: float
+    sediment_layer_map: Incomplete
+    sediment_layer_mode: bool
     sediment_map: Incomplete
     sediment_yield: float
     slope_jitter: float

@@ -13,7 +13,6 @@ Bedrock: nearly immune, only erodes under extreme conditions.
 
 */
 
-
 #include "core/cuda/curand_array_2d.cuh"
 #include "erosion10.cuh"
 // #include "erosion9_kernels.cuh"
@@ -83,10 +82,28 @@ __device__ inline float get_layered_height(
 
     int idx = cuda_math::pos_to_idx(pos, map_size.x, layers);
     for (int layer = 0; layer < layers; ++layer) {
-        height += layer_map[idx + layer]; // the data is arranged like C W H (even though numpy calls this C H W)
+        height += layer_map[idx + layer];
     }
 
     return height;
+}
+
+// return exposed layer id, or if all layers empty return invalid ref == to total layers
+__device__ inline int get_exposed_layer(
+    const float *layer_map,
+    const int layers,
+    const int layer_idx // 2D idx * the layer count
+) {
+    int exposed_layer;
+    for (int n = 0; n < layers; ++n) {
+        float value = layer_map[layer_idx + n];
+        if (value <= 0.0f) {
+            exposed_layer = n + 1; // first exposed layer is next layer (possibly)
+        } else {
+            break; // layer is empty
+        }
+    }
+    return exposed_layer;
 }
 
 __global__ void precalc_layer_height(
@@ -98,8 +115,35 @@ __global__ void precalc_layer_height(
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
     int idx = cuda_math::pos_to_idx(pos, map_size.x);
+    int layer_idx = idx * pars->_layers;
     // ================================================================
-    arrays->height_map[idx] = get_layered_height(arrays->layer_map, map_size, pars->_layers, pos);
+    // arrays->height_map[idx] = get_layered_height(arrays->layer_map, map_size, pars->_layers, pos);
+
+#define FIND_EXPOSED_LAYER
+
+    float height = 0.0;
+
+    for (int n = 0; n < pars->_layers; ++n) {
+        height += arrays->layer_map[layer_idx + n];
+    }
+
+    //     int exposed_layer = 0;
+    // int layer_idx = idx * pars->_layers;
+    // for (int n = 0; n < pars->_layers; ++n) {
+    //     float value = arrays->layer_map[layer_idx + n];
+    //     if (value <= 0.0f) {
+    //         exposed_layer = n + 1; // first exposed layer is next layer (possibly)
+    //     } else {
+    //         break; // layer is empty
+    //     }
+    // }
+    // if (exposed_layer < pars->_layers) { // valid layer
+    //     float layer_erosiveness = arrays->layer_erosiveness[exposed_layer];
+    //     float layer_height = arrays->layer_map[layer_idx + exposed_layer];
+    //     layer_height -= erosion * layer_erosiveness; // use actual layer properties
+    //     layer_height = max(layer_height, 0.0f);      // no lower than 0.0
+    //     arrays->layer_map[layer_idx + exposed_layer] = layer_height;
+    // }
 }
 
 #pragma endregion
@@ -210,19 +254,17 @@ __global__ void calculate_flux3(
     float water_velocity = pow(water, 2.0f / 3.0f) * sqrt(slope_magnitude); // 🧪 manning based velocity??
     arrays->_water_velocity[idx] = water_velocity;
 
-// ================================================================
-// Calculate Fluxes
-// ----------------------------------------------------------------
-#define BAKE_SCALE_TO_UNIT_OFFSETS_8
-#ifdef BAKE_SCALE_TO_UNIT_OFFSETS_8
-    constexpr float2 UNIT_OFFSETS_8[8] = {
-        {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}}; // baking scale here penalizes the dot product result of diagonals
-#endif
+    // ================================================================
+    // Calculate Fluxes
+    // ----------------------------------------------------------------
+
+    // these offsets scale the result of the diagonals down by using a magnitude of 1/SQRT(2), the axis of this is 0.5
+    constexpr float2 DOT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}};
 
     float fluxes[8];
     float flux_total = 0.0f;
     for (int n = 0; n < 8; ++n) {
-        float2 unit_offset = UNIT_OFFSETS_8[n];                    // cell offset as a float vector, not normalized as this helps scale
+        float2 unit_offset = DOT_OFFSETS_8[n];                     // cell offset as a float vector, not normalized as this helps scale
         float product = cuda_math::dot(unit_offset, slope_vector); // dot product gets how strongly we push into this direction
         product = max(product, 0.0);                               // positive only
         fluxes[n] = product;
@@ -231,13 +273,9 @@ __global__ void calculate_flux3(
 
     // normalize (all add up to 1.0)
     if (flux_total > 1e-6f) {
-        for (int n = 0; n < 8; ++n) {
-            fluxes[n] /= flux_total;
-        }
+        for (int n = 0; n < 8; ++n) { fluxes[n] /= flux_total; }
     } else {
-        for (int n = 0; n < 8; ++n) {
-            fluxes[n] = 0.0f;
-        }
+        for (int n = 0; n < 8; ++n) { fluxes[n] = 0.0f; } // prevents div by zero (just set 0)
     }
 
     float water_outflow = flux_total * pars->flow_rate;          // water outflow total
@@ -282,6 +320,16 @@ __global__ void apply_flux3(
     float water = water_map[idx];
     float sediment = sediment_map[idx];
     // float surface = height + water;
+    // ================================================================
+    // Find Exposed Layer (if layer mode active)
+    // ----------------------------------------------------------------
+    bool layer_mode = pars->_layers > 0; // if layer mode active
+    int exposed_layer;
+    int layer_idx;
+    if (layer_mode) {
+        layer_idx = idx * pars->_layers;
+        exposed_layer = get_exposed_layer(arrays->layer_map, pars->_layers, layer_idx);
+    }
     // ================================================================
     // Flow
     // ----------------------------------------------------------------
@@ -336,34 +384,30 @@ __global__ void apply_flux3(
 
     // we could even concider runtime compile of stuff!
     // https://copilot.microsoft.com/chats/UnoMio7MXZLWKrCQAQzed
-
     // we may precompute this exposed layer
-    if (pars->_layers > 1) {
-        int exposed_layer = 0;
-        int layer_idx = idx * pars->_layers;
-        for (int n = 0; n < pars->_layers; ++n) {
-            float value = arrays->layer_map[layer_idx + n];
-            if (value <= 0.0f) {
-                exposed_layer = n + 1; // first exposed layer is next layer (possibly)
-            } else {
-                break; // layer is empty
-            }
-        }
-        if (exposed_layer < pars->_layers) { // valid layer
+
+    // ================================================================
+
+    // get_exposed_layer
+
+    if (layer_mode) {
+        if (exposed_layer < pars->_layers) { // if layers not empty
             float layer_erosiveness = arrays->layer_erosiveness[exposed_layer];
             float layer_height = arrays->layer_map[layer_idx + exposed_layer];
             layer_height -= erosion * layer_erosiveness; // use actual layer properties
             layer_height = max(layer_height, 0.0f);      // no lower than 0.0
             arrays->layer_map[layer_idx + exposed_layer] = layer_height;
         }
+
     } else {
         height -= erosion; // normal mode
     }
-    //
-    //
-    //
 
-    sediment += erosion * pars->sediment_yield;
+    if (pars->sediment_layer_mode) {
+
+    } else {
+        sediment += erosion * pars->sediment_yield;
+    }
 
     // ================================================================
     // [Deposition]
@@ -401,17 +445,12 @@ __global__ void apply_flux3(
     sediment_map[idx] = sediment;
 }
 
-
-
-
-
 __global__ void sea_pass3(
     const Parameters *__restrict__ pars,
     const ArrayPtrs *__restrict__ arrays,
     DebugOutputs *__restrict__ debug,
     const int step) {
-
-    }
+}
 
 #pragma endregion
 
@@ -430,19 +469,23 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
         height_map.set_stream(stream.get());
         height_map.resize({pars._width, pars._height}); // allocate the heightmap still, we will copy the total height to it
 
+        if (pars.sediment_layer_mode) {
+            sediment_layer_map.resize(layer_map.dimensions());
+        }
+
         // ensure all arrays have 1's
         std::vector<float> ones(pars._layers, 1.0f); // vector of 1.0's
-#define LAYER_DATA_ARRAYS \
-    X(layer_erosiveness)  \
-    X(layer_yield)        \
-    X(layer_permeability) \
-    X(layer_erosion_threshold)
-#define X(NAME)                                                      \
-    if (NAME.size() < pars._layers) {                                \
-        printf("warning: %s size mismatch (got %zu, expected %d)\n", \
-               #NAME, NAME.size(), pars._layers);                    \
-        NAME.resize({pars._layers});                                 \
-        NAME.upload(ones.data(), {pars._layers});                    \
+#define LAYER_DATA_ARRAYS      \
+    X(layer_erosiveness)       \
+    X(layer_yield)             \
+    X(layer_permeability)      \
+    X(layer_erosion_threshold) \
+    X(layer_solubility)
+
+#define X(NAME)                                   \
+    if (NAME.size() < pars._layers) {             \
+        NAME.resize({pars._layers});              \
+        NAME.upload(ones.data(), {pars._layers}); \
     }
         LAYER_DATA_ARRAYS
 #undef X
@@ -454,7 +497,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
         printf("🐡 height_map detected...\n");
         pars._width = height_map.dimensions()[0];
         pars._height = height_map.dimensions()[1];
-        pars._layers = 1;
+        // pars._layers = 1;
     } else {
         throw std::runtime_error("layer_map and height_map empty!");
     }
@@ -473,16 +516,14 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     _sediment_flux8.resize({array_size * 8});               // sediment flux output
     _slope_vector2.resize({pars._width * 2, pars._height}); // double size
 
-// _layer_map_out.resize({pars._width, pars._height, pars._layers});
-
 // allocate and zero arrays
 #define ZERO_ARRAYS \
     X(water_map)    \
     X(sediment_map)
-#define X(NAME)                                   \
-    if (NAME.empty()) {                           \
-        NAME.resize({pars._width, pars._height}); \
-        NAME.zero_device();                       \
+#define X(NAME)                               \
+    if (NAME.empty()) {                       \
+        NAME.resize(height_map.dimensions()); \
+        NAME.zero_device();                   \
     }
     ZERO_ARRAYS
 #undef X
@@ -495,7 +536,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     X(_sediment_out)    \
     X(_water_velocity)
 #define X(NAME) \
-    NAME.resize({pars._width, pars._height});
+    NAME.resize(height_map.dimensions());
     ALLOCATE_ARRAYS
 #undef X
 #undef ALLOCATE_ARRAYS
@@ -503,13 +544,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     dev_array_ptrs.upload(get_array_ptrs());
 
 #ifdef DEBUGGING_LAYERS
-    if (pars._layers > 1) {
-
-        if (stream.get()) {
-            printf("💡 stream detected!\n");
-        } else {
-            printf("💥 no stream detected!\n");
-        }
+    if (pars._layers > 0) {
 
         precalc_layer_height<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(),
@@ -529,6 +564,12 @@ void TEMPLATE_CLASS_NAME::process() {
 
     for (int i = 0; i < pars.steps; ++i) {
 
+        if (pars._layers > 0) {
+            precalc_layer_height<<<grid, block, 0, stream.get()>>>(
+                dev_pars.dev_ptr(),
+                dev_array_ptrs.dev_ptr());
+        }
+
         add_rain3<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(),
             dev_array_ptrs.dev_ptr());
@@ -544,7 +585,6 @@ void TEMPLATE_CLASS_NAME::process() {
             dev_array_ptrs.dev_ptr(),
             debug_outputs.dev_ptr(),
             pars._step);
-
 
         pars._step++;
     }

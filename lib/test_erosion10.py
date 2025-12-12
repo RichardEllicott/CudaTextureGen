@@ -25,7 +25,7 @@ def test_mode_2():
     LAYER_MODE = False
     ISLAND_MODE = False
 
-    LAYER_MODE = True
+    # LAYER_MODE = True
     ISLAND_MODE = True
 
     runner.output_preset_01()
@@ -139,7 +139,7 @@ def test_mode_2():
     runner.process()
 
 
-# test_mode_2()
+test_mode_2()
 
 
 def test_patterns():
@@ -155,4 +155,4 @@ def test_patterns():
     # erosion.layer_erosion_threshold = np.array(num_array, dtype=np.float32) 
     erosion.height_map = np.array(num_array, dtype=np.float32) 
 
-test_patterns()
+# test_patterns()

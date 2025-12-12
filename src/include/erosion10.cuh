@@ -105,7 +105,7 @@ using Float2 = std::array<float, 2>;
     X(size_t, _layers, 0, "layers for layer mode")                                                                  \
     X(int, mode, 0, "❌ [0]: Default")                                                                              \
     X(int, steps, 512, "simulation steps to run")                                                                   \
-    X(int, _step, 0, "current step")                                                                   \
+    X(int, _step, 0, "current step")                                                                                \
     X(bool, wrap, true, "wrap the errosion from one side to the other (making result tileable)")                    \
     X(float, scale, 1.0, "[<0.0]: real world size of pixel, will make slopes more gradual")                         \
     X(float, min_height, -1000000.0, "[-∞,∞]: minimum height the terrain can erode down to")                        \
@@ -126,7 +126,8 @@ using Float2 = std::array<float, 2>;
     X(int, evaporation_mode, 0, "0: basic; 1: shallow water quicker")                                               \
     X(float, evaporation_rate, 0.0, "speed at which water disappears")                                              \
     X(bool, sea_pass, false, "🚧")                                                                                  \
-    X(float, sea_level, 0.0, "🚧")
+    X(float, sea_level, 0.0, "🚧")                                                                                  \
+    X(bool, sediment_layer_mode, false, "if active, store differing sediment types")
 
 #define TEMPLATE_DEBUG_OUTPUTS                                    \
     X(float, _debug_rain_total, 0.0, "tracking total rain")       \
@@ -151,11 +152,18 @@ using Float2 = std::array<float, 2>;
     X(float, 2, rain_map, "optional rain map, multiply by this")                                     \
     X(float, 2, hardness_map, "optional hardness map")                                               \
     X(float, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB") \
-    X(float, 3, _layer_map_out, "layer out")                                                         \
-    X(float, 1, layer_erosiveness, "erosion rate of layer (higher is faster)")                       \
-    X(float, 1, layer_yield, "erosion rate of layer (higher is faster)")                             \
+    X(float, 3, sediment_layer_map, "optional storage of different sediment types")                  \
+    X(float, 1, layer_erosiveness, "array of erosion rate of layer (higher is faster)")              \
+    X(float, 1, layer_yield, "array erosion rate of layer (higher is faster)")                       \
     X(float, 1, layer_permeability, "❓ water drainage?")                                            \
-    X(float, 1, layer_erosion_threshold, "❓ erosion rate of layer (higher is faster)")
+    X(float, 1, layer_erosion_threshold, "❓ erosion rate of layer (higher is faster)")              \
+    X(float, 1, layer_solubility, "array of sediment solubility of layer (if using sediment_layer_mode)")\
+    X(int, 2, _exposed_layer_map, "getting exposed layer")                                               \
+
+
+    // problem with int?
+
+
 // ================================================================ //
 
 // standard pattern to expan a define to a "string" (with the quote marks)
@@ -213,16 +221,14 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
 #undef X
 #endif
 
-
-//     // getter/setters for the pars
-// #ifdef TEMPLATE_CLASS_PARAMETERS
-// #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)   \
+    //     // getter/setters for the pars
+    // #ifdef TEMPLATE_CLASS_PARAMETERS
+    // #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)   \
 //     TYPE get_##NAME() const { return pars.host().NAME; } \
 //     void set_##NAME(TYPE value) { set_par(pars.host().NAME, value); }
-//     TEMPLATE_CLASS_PARAMETERS
-// #undef X
-// #endif
-
+    //     TEMPLATE_CLASS_PARAMETERS
+    // #undef X
+    // #endif
 
     // getter/setters for the debug output's
 #ifdef TEMPLATE_DEBUG_OUTPUTS
