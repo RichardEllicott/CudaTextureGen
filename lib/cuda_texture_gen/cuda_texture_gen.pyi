@@ -17,6 +17,7 @@ class Erosion10:
     _debug_erosion_total: float
     _debug_evaporation_total: float
     _debug_rain_total: float
+    _exposed_layer_map: Incomplete
     _flux8: Incomplete
     _height: int
     _layers: int

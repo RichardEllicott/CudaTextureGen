@@ -146,7 +146,7 @@ using Float2 = std::array<float, 2>;
     X(float, 2, _sediment_out, "current sediment,  optionally set this map at start")                     \
     X(float, 1, _flux8, "8 water flow out to 8 neighbours")                                               \
     X(float, 1, _sediment_flux8, "sediment flow out to 8 neighbours")                                     \
-    X(float, 2, _slope_vector2, "gradient vectors give slope direction and strength")                     \
+    X(float, 3, _slope_vector2, "gradient vectors give slope direction and strength")                     \
     X(float, 2, _slope_magnitude, "calculation of strength based on gradient vector")                     \
     X(float, 2, _water_velocity, "🧪 scalar water velocity")                                              \
     X(float, 2, rain_map, "optional rain map, multiply by this")                                          \

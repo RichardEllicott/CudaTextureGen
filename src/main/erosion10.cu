@@ -106,7 +106,7 @@ __device__ inline int get_exposed_layer(
     return exposed_layer;
 }
 
-__global__ void precalc_layer_height(
+__global__ void layer_mode_calculations3(
     const Parameters *__restrict__ pars,
     const ArrayPtrs *__restrict__ arrays) {
     // ================================================================
@@ -127,23 +127,7 @@ __global__ void precalc_layer_height(
         height += arrays->layer_map[layer_idx + n];
     }
 
-    //     int exposed_layer = 0;
-    // int layer_idx = idx * pars->_layers;
-    // for (int n = 0; n < pars->_layers; ++n) {
-    //     float value = arrays->layer_map[layer_idx + n];
-    //     if (value <= 0.0f) {
-    //         exposed_layer = n + 1; // first exposed layer is next layer (possibly)
-    //     } else {
-    //         break; // layer is empty
-    //     }
-    // }
-    // if (exposed_layer < pars->_layers) { // valid layer
-    //     float layer_erosiveness = arrays->layer_erosiveness[exposed_layer];
-    //     float layer_height = arrays->layer_map[layer_idx + exposed_layer];
-    //     layer_height -= erosion * layer_erosiveness; // use actual layer properties
-    //     layer_height = max(layer_height, 0.0f);      // no lower than 0.0
-    //     arrays->layer_map[layer_idx + exposed_layer] = layer_height;
-    // }
+
 }
 
 #pragma endregion
@@ -473,6 +457,10 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
             sediment_layer_map.resize(layer_map.dimensions());
         }
 
+        _exposed_layer_map.resize(height_map.dimensions()); // set _exposed_layer_map to height_map dimensions
+
+
+
         // ensure all arrays have 1's
         std::vector<float> ones(pars._layers, 1.0f); // vector of 1.0's
 #define LAYER_DATA_ARRAYS      \
@@ -514,7 +502,9 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     _flux8.resize({array_size * 8});                        // flux output
     _sediment_flux8.resize({array_size * 8});               // sediment flux output
-    _slope_vector2.resize({pars._width * 2, pars._height}); // double size
+    _slope_vector2.resize({pars._width, pars._height, 2}); // 2D vectors
+
+
 
 // allocate and zero arrays
 #define ZERO_ARRAYS \
@@ -546,7 +536,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 #ifdef DEBUGGING_LAYERS
     if (pars._layers > 0) {
 
-        precalc_layer_height<<<grid, block, 0, stream.get()>>>(
+        layer_mode_calculations3<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(),
             dev_array_ptrs.dev_ptr());
     };
@@ -565,7 +555,7 @@ void TEMPLATE_CLASS_NAME::process() {
     for (int i = 0; i < pars.steps; ++i) {
 
         if (pars._layers > 0) {
-            precalc_layer_height<<<grid, block, 0, stream.get()>>>(
+            layer_mode_calculations3<<<grid, block, 0, stream.get()>>>(
                 dev_pars.dev_ptr(),
                 dev_array_ptrs.dev_ptr());
         }
