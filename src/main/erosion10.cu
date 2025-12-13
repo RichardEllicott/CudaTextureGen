@@ -73,30 +73,27 @@ __device__ __forceinline__ void write_map_out(MapPtr in, MapPtr out, int step, i
 
 #pragma region KERNELS2
 
+// get total height of ground iterating the layers
 __device__ inline float get_layered_height(
     const float *layer_map,
-    const int2 map_size,
     const int layers,
-    const int2 pos) {
+    const int layer_idx) {
 
     float height = 0.0;
-
-    int idx = cuda_math::pos_to_idx(pos, map_size.x, layers);
-    for (int layer = 0; layer < layers; ++layer) {
-        height += layer_map[idx + layer];
+    for (int n = 0; n < layers; ++n) {
+        height += layer_map[layer_idx + n];
     }
-
     return height;
 }
 
 // return exposed layer id, or if all layers empty return invalid ref == to total layers
 __device__ inline int get_exposed_layer(
-    const float *layer_map,
-    const int layers,
+    const float *__restrict__ layer_map,
+    const int layer_count,
     const int layer_idx // 2D idx * the layer count
 ) {
     int exposed_layer;
-    for (int n = 0; n < layers; ++n) {
+    for (int n = 0; n < layer_count; ++n) {
         float value = layer_map[layer_idx + n];
         if (value <= 0.0f) {
             exposed_layer = n + 1; // first exposed layer is next layer (possibly)
@@ -111,6 +108,7 @@ __device__ inline int get_exposed_layer(
 
 #pragma region KERNELS3
 
+// calculate the height based on layers and get exposed layer
 __global__ void layer_mode_calculations3(
     const Parameters *__restrict__ pars,
     const ArrayPtrs *__restrict__ arrays) {
@@ -122,13 +120,8 @@ __global__ void layer_mode_calculations3(
     int idx = cuda_math::pos_to_idx(pos, map_size.x);
     int layer_idx = idx * pars->_layers;
     // ================================================================
-    // arrays->height_map[idx] = get_layered_height(arrays->layer_map, map_size, pars->_layers, pos);
 
-    float height = 0.0;
-
-    for (int n = 0; n < pars->_layers; ++n) {
-        height += arrays->layer_map[layer_idx + n];
-    }
+    arrays->height_map[idx] = get_layered_height(arrays->layer_map, pars->_layers, layer_idx);
 
 #ifdef PRECALCULATE_EXPOSED_LAYER
     int exposed_layer = get_exposed_layer(arrays->layer_map, pars->_layers, layer_idx);
@@ -136,6 +129,7 @@ __global__ void layer_mode_calculations3(
 #endif
 }
 
+// add rain
 __global__ void add_rain3(
     const Parameters *__restrict__ pars,
     const ArrayPtrs *__restrict__ arrays) {
@@ -155,7 +149,8 @@ __global__ void add_rain3(
     arrays->water_map[idx] += rain;
 }
 
-__global__ void calculate_flux3(
+// calculate water and sediment flux (or total outflow)
+__global__ void calculate_outflow3(
     const Parameters *__restrict__ pars,
     const ArrayPtrs *__restrict__ arrays,
     DebugOutputs *__restrict__ debug,
@@ -285,6 +280,7 @@ __global__ void calculate_flux3(
     arrays->_sediment_out[idx] = sediment_outflow;
 }
 
+// apply flows and erosion etc
 __global__ void apply_flux3(
     const Parameters *__restrict__ pars,
     const ArrayPtrs *__restrict__ arrays,
@@ -346,6 +342,7 @@ __global__ void apply_flux3(
     // ----------------------------------------------------------------
     float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
     float erosion;
+
     switch (pars->erosion_mode) {
     case 0: // simple water * erosion_rate
         erosion = water_out * pars->erosion_rate;
@@ -364,29 +361,23 @@ __global__ void apply_flux3(
         break;
     }
 
-    erosion = min(erosion, available_erosion); // can't erode more than we have rock
-    erosion = max(erosion, 0.0f);              // erosion can't be negative
+    // apply layer erosiveness after the erosion calculation (seems best if we use soft_saturate)
+    if (layer_mode) {
+        float layer_erosiveness = arrays->layer_erosiveness[exposed_layer];
+        erosion *= layer_erosiveness;
+    }
 
-    //
-    //
-    //
-    // note this new thing:
-    // #pragma unroll
-
-    // we could even concider runtime compile of stuff!
-    // https://copilot.microsoft.com/chats/UnoMio7MXZLWKrCQAQzed
-    // we may precompute this exposed layer
+    erosion = cuda_math::clamp(erosion, 0.0f, available_erosion); // ensure not negative and not more than available_erosion
 
     // ================================================================
-
-    // get_exposed_layer
-
+    // [Apply Erosion to Height]
+    // ----------------------------------------------------------------
     if (layer_mode) {
         if (exposed_layer < pars->_layers) { // if layers not empty
-            float layer_erosiveness = arrays->layer_erosiveness[exposed_layer];
+
             float layer_height = arrays->layer_map[layer_idx + exposed_layer];
-            layer_height -= erosion * layer_erosiveness; // use actual layer properties
-            layer_height = max(layer_height, 0.0f);      // no lower than 0.0
+            layer_height -= erosion;
+            layer_height = max(layer_height, 0.0f); // no lower than 0.0
             arrays->layer_map[layer_idx + exposed_layer] = layer_height;
         }
 
@@ -406,7 +397,16 @@ __global__ void apply_flux3(
     if (water_out < pars->deposition_threshold) {
         float deposit = sediment * pars->deposition_rate;
         sediment -= deposit;
-        height += deposit;
+
+        if (layer_mode) {
+            if (pars->sediment_layer_mode) {
+
+            } else {
+            }
+
+        } else {
+            height += deposit;
+        }
     }
     // ================================================================
     // Drain
@@ -427,13 +427,14 @@ __global__ void apply_flux3(
     // ================================================================
     // [Output]
     // ----------------------------------------------------------------
-    height = cuda_math::clamp(height, pars->min_height, pars->max_height);
-    water = max(water, 0.0f); // prevent negative water
-    sediment = max(sediment, 0.0f);
 
-    height_map[idx] = height;
-    water_map[idx] = water;
-    sediment_map[idx] = sediment;
+    if (layer_mode){
+        // already applied height to layer
+    }else{
+        height_map[idx] = cuda_math::clamp(height, pars->min_height, pars->max_height);;
+    }
+    water_map[idx] =  max(water, 0.0f);;
+    sediment_map[idx] = max(sediment, 0.0f);
 }
 
 __global__ void sea_pass3(
@@ -455,6 +456,8 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     if (!layer_map.empty()) {
         printf("🐡 layer_map detected...\n");
+        core::logging::println("dimensions: ", height_map.dimensions());
+
         pars._width = layer_map.dimensions()[0];
         pars._height = layer_map.dimensions()[1];
         pars._layers = layer_map.dimensions()[2]; // marks layers mode as active
@@ -492,6 +495,8 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
         // stream.sync();
     } else if (!height_map.empty()) {
         printf("🐡 height_map detected...\n");
+        core::logging::println("dimensions: ", height_map.dimensions());
+
         pars._width = height_map.dimensions()[0];
         pars._height = height_map.dimensions()[1];
         // pars._layers = 1;
@@ -539,15 +544,15 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     dev_array_ptrs.upload(get_array_ptrs());
 
-#ifdef DEBUGGING_EROSION_LAYERS
-    if (pars._layers > 0) {
+    // #ifdef DEBUGGING_EROSION_LAYERS
+    //     if (pars._layers > 0) {
 
-        layer_mode_calculations3<<<grid, block, 0, stream.get()>>>(
-            dev_pars.dev_ptr(),
-            dev_array_ptrs.dev_ptr());
-    };
-#endif
-#undef DEBUGGING_LAYERS
+    //         layer_mode_calculations3<<<grid, block, 0, stream.get()>>>(
+    //             dev_pars.dev_ptr(),
+    //             dev_array_ptrs.dev_ptr());
+    //     };
+    // #endif
+    // #undef DEBUGGING_LAYERS
 
     _device_allocated = true;
 } // namespace TEMPLATE_NAMESPACE
@@ -561,6 +566,7 @@ void TEMPLATE_CLASS_NAME::process() {
     for (int i = 0; i < pars.steps; ++i) {
 
         if (pars._layers > 0) {
+            // printf("layer_mode_calculations3...\n");
             layer_mode_calculations3<<<grid, block, 0, stream.get()>>>(
                 dev_pars.dev_ptr(),
                 dev_array_ptrs.dev_ptr());
@@ -570,7 +576,7 @@ void TEMPLATE_CLASS_NAME::process() {
             dev_pars.dev_ptr(),
             dev_array_ptrs.dev_ptr());
 
-        calculate_flux3<<<grid, block, 0, stream.get()>>>(
+        calculate_outflow3<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(),
             dev_array_ptrs.dev_ptr(),
             debug_outputs.dev_ptr(),

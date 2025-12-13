@@ -58,9 +58,8 @@ class FrameProfile:
             # gradient: tools.gradients.Gradient = tools.gradients.get_test_gradient_02(0, 128)
             self._gradient_strip = gradient.render(512)
 
-
         starting_heightmap = self.runner.starting_heightmap
-        
+
         if starting_heightmap is not None and starting_heightmap.size > 0:
             map = map - starting_heightmap
         else:
@@ -219,9 +218,9 @@ class ErosionRunner:
         self.erosion: cuda_texture_gen.Erosion10 = cuda_texture_gen.Erosion10()  # or None if lazy init
 
         self._default_pars = tools.dicts.from_object(self.erosion)
-        self.output_preset_01()  # defaults
+        self.OUTPUT_PRESET_01()  # defaults
 
-    def output_preset_01(self):
+    def OUTPUT_PRESET_01(self):
 
         self.movie_profiles = {}
         self.image_profiles = {}
@@ -278,7 +277,7 @@ class ErosionRunner:
         image_profile.channels = ["height_map"]
         self.image_profiles["albedo.png"] = image_profile
 
-    def output_preset_02(self):
+    def OUTPUT_PRESET_02(self):
 
         self.output_preset_01()
         # combined map movie
@@ -288,7 +287,7 @@ class ErosionRunner:
         # movie_profile.clip = [None, None, 1.0]
         self.movie_profiles["combined"] = movie_profile
 
-    def output_preset_03(self):
+    def OUTPUT_PRESET_03(self):
 
         self.output_preset_01()
         # combined map movie
@@ -297,6 +296,21 @@ class ErosionRunner:
         movie_profile.channels = ["height_map", "height_map", "water_map"]  # height does yellow
         movie_profile.clip = [None, None, 1.0]
         self.movie_profiles["combined"] = movie_profile
+
+    def OUTPUT_PRESET_add_layers_01(self) -> None:
+        """
+        setup ready for layer mode
+
+        """
+        self.map_names.append("layer_map")
+
+        # height map image
+        image_profile = FrameProfile(self)
+        image_profile.channels = ["layer_map"]
+        image_profile.normalize = [True]
+        self.image_profiles["layers.png"] = image_profile
+
+
 
     def get_erosion_pars(self) -> dict[str, Any]:
         """
@@ -361,70 +375,7 @@ class ErosionRunner:
         except FileNotFoundError:
             return {}
 
-    def PRESET_simple_erosion(self):
 
-        # self.erosion.slope_threshold = 1.0  # optional will stop light slopes deteriorating
-        # self.erosion.simple_erosion_rate = 0.01
-        # self.erosion.outflow_carve = 0.01
-
-        pass
-
-    def PRESET_erosion_01(self) -> None:
-        """
-        we have some working settings here
-        """
-        erosion = self.erosion
-
-        # add water
-        erosion.rain_rate = 0.05
-        erosion.rain_rate = 0.01
-
-        erosion.max_water_outflow = 1.0
-        erosion.erosion_mode = 1
-        erosion.erosion_mode = 1
-        erosion.deposition_rate = 0.5 / 10.0
-        erosion.erosion_rate = 0.1
-
-        # remove water
-        erosion.evaporation_rate = 0.001
-        erosion.drain_rate = 1000000.0
-
-        erosion.min_height = 0.0
-
-        # trying to spread water
-        # self._erosion.diffusion_rate = 0.001 # seems buggy
-        # self._erosion.max_water_outflow = 0.2
-
-        # changed_pars = dict_changes(default_pars, object_pars_to_dict(erosion))
-        # print("🏔️", changed_pars)
-
-    def PRESET_erosion_02(self) -> None:
-        """
-        we have some working settings here
-        """
-        erosion = self.erosion
-
-        # add water
-        erosion.rain_rate = 0.05
-        erosion.rain_rate = 0.01
-
-        erosion.max_water_outflow = 1.0
-        erosion.erosion_mode = 1
-        erosion.erosion_mode = 1
-        erosion.deposition_rate = 0.5 / 10.0
-        erosion.erosion_rate = 0.1
-
-        # remove water
-        erosion.evaporation_rate = 0.001
-        erosion.drain_rate = 1000000.0
-        erosion.min_height = 0.0
-
-        # trying to spread water
-        # self._erosion.diffusion_rate = 0.001 # seems buggy
-        # self._erosion.max_water_outflow = 0.2
-
-        # changed_pars = dict_changes(default_pars, object_pars_to_dict(erosion))
-        # print("🏔️", changed_pars)
 
     def _download_maps(self):
         self._maps.clear()
@@ -434,6 +385,8 @@ class ErosionRunner:
             self._maps[name] = map
 
     _metric_data = {}
+
+
 
     def get_metric_data(self) -> dict:
 
@@ -465,7 +418,18 @@ class ErosionRunner:
         # Print as table
         print(tabulate(rows, headers=["Name", "Min", "Max", "Mean", "Std"], floatfmt=".4f"))
 
-    def process(self):
+    def _setup(self):
+        """
+        run at start of process
+        """
+        # self.map_names = ["height_map", "water_map", "sediment_map"]
+        pass
+
+    def process(self) -> None:
+        """
+
+        """
+        self._setup()
 
         start_time = time.perf_counter()
         erosion = self.erosion
@@ -474,7 +438,6 @@ class ErosionRunner:
         if self.starting_heightmap is not None and self.starting_heightmap.size > 0:
 
             tools.arrays.print_array_information(self.starting_heightmap)
-
 
             tools.images.save(
                 tools.arrays.normalized(self.starting_heightmap),

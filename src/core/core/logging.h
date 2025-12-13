@@ -1,11 +1,17 @@
 /*
 
-includes print functions ... these functions printed emojee unicode on linux, but don't work on windows
+includes print functions
+
+init_console() will ensure unicode support on Windows (for other print functions to)
+
+print functions here
 
 */
 
 #pragma once
 
+#include <array>
+#include <cstddef>
 #include <iostream>
 #include <string>
 
@@ -30,6 +36,20 @@ static void print() {
     // nothing to print
 }
 
+// Array print (needs to be first for Linux?)
+template <typename T, std::size_t N>
+inline void print(const std::array<T, N> &arr) {
+    std::cout << "{ ";
+    for (std::size_t i = 0; i < N; ++i) {
+        std::cout << arr[i];
+        if (i + 1 < N) std::cout << ", ";
+    }
+    std::cout << " }";
+}
+
+
+
+
 // Single argument
 template <typename T>
 inline void print(const T &t) {
@@ -42,6 +62,8 @@ inline void print(const T &t, const Args &...args) {
     std::cout << t;
     print(args...);
 }
+
+
 
 // With newline
 template <typename... Args>

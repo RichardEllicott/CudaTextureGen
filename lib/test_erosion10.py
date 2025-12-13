@@ -28,9 +28,10 @@ def test_mode_2():
     LAYER_MODE = True
     ISLAND_MODE = True
 
-    runner.output_preset_01()
-    # runner.output_preset_02()
-    # runner.output_preset_03()
+    runner.OUTPUT_PRESET_01()
+    # runner.OUTPUT_PRESET_02()
+    # runner.OUTPUT_PRESET_03()
+    runner.OUTPUT_PRESET_add_layers_01()
 
     # runner.image_profiles = {}  # disable images
     # runner.movie_profiles = {}  # disable movies
@@ -125,6 +126,10 @@ def test_mode_2():
         # Merge into one 3D array (height x width x channels)
         rgb = np.stack(layers, axis=-1)
         rgb *= height_scale
+
+
+        tools.arrays.print_array_information(rgb)
+
         erosion.layer_map = rgb
 
         # # Split back into separate channels (EXAMPLE)
