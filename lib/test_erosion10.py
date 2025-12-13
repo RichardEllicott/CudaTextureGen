@@ -25,7 +25,7 @@ def test_mode_2():
     LAYER_MODE = False
     ISLAND_MODE = False
 
-    # LAYER_MODE = True
+    LAYER_MODE = True
     ISLAND_MODE = True
 
     runner.output_preset_01()

@@ -12,6 +12,9 @@ Bedrock: nearly immune, only erodes under extreme conditions.
 
 
 */
+#define PRECALCULATE_EXPOSED_LAYER
+#define LAYER_ARRAY_LAYOUT 0
+#define DEBUGGING_EROSION_LAYERS // mainly some syncs and preload layers to heightmap
 
 #include "core/cuda/curand_array_2d.cuh"
 #include "erosion10.cuh"
@@ -21,8 +24,6 @@ Bedrock: nearly immune, only erodes under extreme conditions.
 #include "cuda_math.cuh"
 #include <stdexcept> // std::runtime_error
 #include <stdint.h>
-
-#define LAYER_ARRAY_LAYOUT 0
 
 #define EROSION_OUTFLOW_PRECALCULATION
 
@@ -106,6 +107,10 @@ __device__ inline int get_exposed_layer(
     return exposed_layer;
 }
 
+#pragma endregion
+
+#pragma region KERNELS3
+
 __global__ void layer_mode_calculations3(
     const Parameters *__restrict__ pars,
     const ArrayPtrs *__restrict__ arrays) {
@@ -119,20 +124,17 @@ __global__ void layer_mode_calculations3(
     // ================================================================
     // arrays->height_map[idx] = get_layered_height(arrays->layer_map, map_size, pars->_layers, pos);
 
-#define FIND_EXPOSED_LAYER
-
     float height = 0.0;
 
     for (int n = 0; n < pars->_layers; ++n) {
         height += arrays->layer_map[layer_idx + n];
     }
 
-
+#ifdef PRECALCULATE_EXPOSED_LAYER
+    int exposed_layer = get_exposed_layer(arrays->layer_map, pars->_layers, layer_idx);
+    arrays->_exposed_layer_map[idx] = exposed_layer;
+#endif
 }
-
-#pragma endregion
-
-#pragma region KERNELS3
 
 __global__ void add_rain3(
     const Parameters *__restrict__ pars,
@@ -312,7 +314,12 @@ __global__ void apply_flux3(
     int layer_idx;
     if (layer_mode) {
         layer_idx = idx * pars->_layers;
+
+#ifdef PRECALCULATE_EXPOSED_LAYER
+        exposed_layer = arrays->_exposed_layer_map[idx];
+#else
         exposed_layer = get_exposed_layer(arrays->layer_map, pars->_layers, layer_idx);
+#endif
     }
     // ================================================================
     // Flow
@@ -438,6 +445,8 @@ __global__ void sea_pass3(
 
 #pragma endregion
 
+#pragma region MAIN
+
 void TEMPLATE_CLASS_NAME::allocate_device() {
 
     if (_device_allocated) { return; }
@@ -457,9 +466,9 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
             sediment_layer_map.resize(layer_map.dimensions());
         }
 
+#ifdef PRECALCULATE_EXPOSED_LAYER
         _exposed_layer_map.resize(height_map.dimensions()); // set _exposed_layer_map to height_map dimensions
-
-
+#endif
 
         // ensure all arrays have 1's
         std::vector<float> ones(pars._layers, 1.0f); // vector of 1.0's
@@ -490,8 +499,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
         throw std::runtime_error("layer_map and height_map empty!");
     }
 
-#define DEBUGGING_LAYERS
-#ifdef DEBUGGING_LAYERS
+#ifdef DEBUGGING_EROSION_LAYERS
     // will move to main loop eventually
     stream.sync();
     configure_device();
@@ -500,11 +508,9 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     size_t array_size = pars._width * pars._height;
 
-    _flux8.resize({array_size * 8});                        // flux output
-    _sediment_flux8.resize({array_size * 8});               // sediment flux output
+    _flux8.resize({array_size * 8});                       // flux output
+    _sediment_flux8.resize({array_size * 8});              // sediment flux output
     _slope_vector2.resize({pars._width, pars._height, 2}); // 2D vectors
-
-
 
 // allocate and zero arrays
 #define ZERO_ARRAYS \
@@ -533,7 +539,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     dev_array_ptrs.upload(get_array_ptrs());
 
-#ifdef DEBUGGING_LAYERS
+#ifdef DEBUGGING_EROSION_LAYERS
     if (pars._layers > 0) {
 
         layer_mode_calculations3<<<grid, block, 0, stream.get()>>>(
@@ -590,6 +596,8 @@ void TEMPLATE_CLASS_NAME::debug_update() {
     debug_outputs.set_stream(stream.get());
     debug_outputs.download();
 }
+
+#pragma endregion
 
 } // namespace TEMPLATE_NAMESPACE
 

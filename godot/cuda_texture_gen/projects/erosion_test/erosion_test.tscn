@@ -83,3 +83,7 @@ texture = ExtResource("2_bom1d")
 [node name="albedo" type="TextureRect" parent="GridContainer"]
 layout_mode = 2
 texture = ExtResource("6_3yk81")
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="."]
+offset_right = 40.0
+offset_bottom = 40.0

@@ -20,6 +20,14 @@ will have a common interface of "DeviceArrayBase"
 #include <stdexcept>      // std::runtime_error
 #include <utility>        // std::swap (needed for your swap implementation)
 
+// new aysnc
+#include <functional> // for std::function
+#include <iostream>   // if you’re printing/logging inside the callback
+
+// thread pattern?? c++ heavier
+#include <thread> // for std::thread
+#include <vector> // if you use temporary host buffers
+
 namespace core::cuda {
 
 // BREAKS LINUX???
@@ -239,8 +247,20 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         }
     }
 
+    // // Upload from host pointer
+    // void upload(const T *host_ptr, std::array<size_t, Dim> dimensions) {
+
+    //     resize(dimensions); // resize, will reallocate if the size changes
+    //     if (size() == 0)
+    //         return;
+
+    //     cudaError_t err = cudaMemcpyAsync(_dev_ptr, host_ptr, size_bytes(), cudaMemcpyHostToDevice, _stream);
+    //     if (err != cudaSuccess)
+    //         throw std::runtime_error("cudaMemcpy (Host->Device) failed");
+    // }
+
     // Upload from host pointer
-    void upload(const T *host_ptr, std::array<size_t, Dim> dimensions) {
+    void upload(const T *host_ptr, std::array<size_t, Dim> dimensions, std::function<void()> callback = {}) {
 
         resize(dimensions); // resize, will reallocate if the size changes
         if (size() == 0)
@@ -249,6 +269,36 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         cudaError_t err = cudaMemcpyAsync(_dev_ptr, host_ptr, size_bytes(), cudaMemcpyHostToDevice, _stream);
         if (err != cudaSuccess)
             throw std::runtime_error("cudaMemcpy (Host->Device) failed");
+
+#define CODE_ROUTE 0
+#if CODE_ROUTE == 0
+        // CUDA callback
+        if (callback) {
+            // Attach host callback
+            cudaLaunchHostFunc(
+                _stream,
+                [](void *userData) {
+                    auto *cb = static_cast<std::function<void()> *>(userData);
+                    (*cb)();
+                    delete cb;
+                },
+                new std::function<void()>(callback));
+        }
+#elif CODE_ROUTE == 1
+        // C++ thread callback
+        if (callback) {
+            // Launch a detached thread that waits for completion
+            std::thread([this, callback]() {
+                cudaError_t syncErr = cudaStreamSynchronize(_stream);
+                if (syncErr != cudaSuccess) {
+                    // You could log or throw here, depending on your design
+                    std::cerr << "Upload failed during sync\n";
+                }
+                callback(); // run user callback
+            }).detach();
+        }
+#endif
+#undef CODE_ROUTE
     }
 
     // Download to host pointer (dangerous if the sizes don't match!)
@@ -277,6 +327,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         a.swap(b);
     }
 #pragma endregion
+
 #pragma region COPY
 
     // COPY
@@ -331,6 +382,8 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
     }
 
 #pragma endregion
+
+
 };
 
 // thin wrapper for 1D
