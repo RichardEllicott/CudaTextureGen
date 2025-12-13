@@ -21,6 +21,7 @@ class Erosion10:
     _flux8: Incomplete
     _height: int
     _layers: int
+    _sea_map: Incomplete
     _sediment_flux8: Incomplete
     _sediment_out: Incomplete
     _slope_magnitude: Incomplete

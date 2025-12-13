@@ -14,7 +14,6 @@ Bedrock: nearly immune, only erodes under extreme conditions.
 */
 #define PRECALCULATE_EXPOSED_LAYER
 #define LAYER_ARRAY_LAYOUT 0
-#define DEBUGGING_EROSION_LAYERS // mainly some syncs and preload layers to heightmap
 
 #include "core/cuda/curand_array_2d.cuh"
 #include "erosion10.cuh"
@@ -439,6 +438,19 @@ __global__ void apply_flux3(
     sediment_map[idx] = max(sediment, 0.0f);
 }
 
+__device__ inline float sea_fade_sine(float height, float avg_sea, float tide_range) {
+    float half = 0.5f * tide_range;
+    float low = avg_sea - half;
+    float high = avg_sea + half;
+
+    if (height <= low) return 1.0f;  // always submerged
+    if (height >= high) return 0.0f; // never submerged
+
+    float rel = (height - low) / tide_range;                      // 0..1
+    float fade = 1.0f - acosf(1.0f - 2.0f * rel) / cuda_math::PI; // sine exposure fraction
+    return fade;
+}
+
 __global__ void sea_pass3(
     const Parameters *__restrict__ pars,
     const ArrayPtrs *__restrict__ arrays,
@@ -462,24 +474,16 @@ __global__ void sea_pass3(
     float sediment = sediment_map[idx];
     // float surface = height + water;
     // ================================================================
-    float sea_level = pars->sea_level;
+    // [Tidal Fade]
+    // ----------------------------------------------------------------
+    float sea_fade = sea_fade_sine(height, pars->sea_level, pars->sea_tidal_range);
+    arrays->_sea_fade_mask[idx] = sea_fade;
     // ================================================================
-
-    if (height < sea_level) {
-        // Clamp terrain to sea level
-        height = sea_level;
-
-        // Optionally: treat submerged cells as ocean
-        water = fmaxf(water, sea_level - height_map[idx]); // add water fill
-        sediment = 0.0f;                                   // clear sediment below sea
-    }
 
     // ================================================================
     height_map[idx] = height;
     water_map[idx] = water;
     sediment_map[idx] = sediment;
-
-
 }
 
 #pragma endregion
@@ -488,22 +492,24 @@ __global__ void sea_pass3(
 
 void TEMPLATE_CLASS_NAME::allocate_device() {
 
+    auto &host_pars = pars.host();
+
     if (_device_allocated) { return; }
 
-    if (pars._debug) { printf("⚠️  debug mode active!\n"); }
+    if (host_pars._debug) { printf("⚠️  debug mode active!\n"); }
 
     if (!layer_map.empty()) {
         printf("🐡 layer_map detected...\n");
         core::logging::println("dimensions: ", height_map.dimensions());
 
-        pars._width = layer_map.dimensions()[0];
-        pars._height = layer_map.dimensions()[1];
-        pars._layers = layer_map.dimensions()[2]; // marks layers mode as active
+        host_pars._width = layer_map.dimensions()[0];
+        host_pars._height = layer_map.dimensions()[1];
+        host_pars._layers = layer_map.dimensions()[2]; // marks layers mode as active
 
         height_map.set_stream(stream.get());
-        height_map.resize({pars._width, pars._height}); // allocate the heightmap still, we will copy the total height to it
+        height_map.resize({host_pars._width, host_pars._height}); // allocate the heightmap still, we will copy the total height to it
 
-        if (pars.sediment_layer_mode) {
+        if (host_pars.sediment_layer_mode) {
             sediment_layer_map.resize(layer_map.dimensions());
         }
 
@@ -512,7 +518,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 #endif
 
         // ensure all arrays have 1's
-        std::vector<float> ones(pars._layers, 1.0f); // vector of 1.0's
+        std::vector<float> ones(host_pars._layers, 1.0f); // vector of 1.0's
 #define LAYER_DATA_ARRAYS      \
     X(layer_erosiveness)       \
     X(layer_yield)             \
@@ -520,10 +526,10 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     X(layer_erosion_threshold) \
     X(layer_solubility)
 
-#define X(NAME)                                   \
-    if (NAME.size() < pars._layers) {             \
-        NAME.resize({pars._layers});              \
-        NAME.upload(ones.data(), {pars._layers}); \
+#define X(NAME)                                        \
+    if (NAME.size() < host_pars._layers) {             \
+        NAME.resize({host_pars._layers});              \
+        NAME.upload(ones.data(), {host_pars._layers}); \
     }
         LAYER_DATA_ARRAYS
 #undef X
@@ -535,25 +541,25 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
         printf("🐡 height_map detected...\n");
         core::logging::println("dimensions: ", height_map.dimensions());
 
-        pars._width = height_map.dimensions()[0];
-        pars._height = height_map.dimensions()[1];
+        host_pars._width = height_map.dimensions()[0];
+        host_pars._height = height_map.dimensions()[1];
         // pars._layers = 1;
     } else {
         throw std::runtime_error("layer_map and height_map empty!");
     }
 
-#ifdef DEBUGGING_EROSION_LAYERS
-    // will move to main loop eventually
-    stream.sync();
-    configure_device();
-    stream.sync();
-#endif
+    // #ifdef DEBUGGING_EROSION_LAYERS
+    //     // will move to main loop eventually
+    //     stream.sync();
+    //     configure_device();
+    //     stream.sync();
+    // #endif
 
-    size_t array_size = pars._width * pars._height;
+    size_t array_size = host_pars._width * host_pars._height;
 
-    _flux8.resize({array_size * 8});                       // flux output
-    _sediment_flux8.resize({array_size * 8});              // sediment flux output
-    _slope_vector2.resize({pars._width, pars._height, 2}); // 2D vectors
+    _flux8.resize({array_size * 8});                                 // flux output
+    _sediment_flux8.resize({array_size * 8});                        // sediment flux output
+    _slope_vector2.resize({host_pars._width, host_pars._height, 2}); // 2D vectors
 
 // allocate and zero arrays
 #define ZERO_ARRAYS \
@@ -582,6 +588,10 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     dev_array_ptrs.upload(get_array_ptrs());
 
+    if (host_pars.sea_pass) {
+        _sea_map.resize(height_map.dimensions());
+    }
+
     // #ifdef DEBUGGING_EROSION_LAYERS
     //     if (pars._layers > 0) {
 
@@ -601,9 +611,12 @@ void TEMPLATE_CLASS_NAME::process() {
     configure_device();
     stream.sync();
 
-    for (int i = 0; i < pars.steps; ++i) {
+    auto &dev_pars = pars;
+    auto &host_pars = pars.host();
 
-        if (pars._layers > 0) {
+    for (int i = 0; i < host_pars.steps; ++i) {
+
+        if (host_pars._layers > 0) {
             // printf("layer_mode_calculations3...\n");
             layer_mode_calculations3<<<grid, block, 0, stream.get()>>>(
                 dev_pars.dev_ptr(),
@@ -618,18 +631,23 @@ void TEMPLATE_CLASS_NAME::process() {
             dev_pars.dev_ptr(),
             dev_array_ptrs.dev_ptr(),
             debug_outputs.dev_ptr(),
-            pars._step);
+            host_pars._step);
 
         apply_flux3<<<grid, block, 0, stream.get()>>>(
             dev_pars.dev_ptr(),
             dev_array_ptrs.dev_ptr(),
             debug_outputs.dev_ptr(),
-            pars._step);
+            host_pars._step);
 
-    
-        
+        if (host_pars.sea_pass) {
+            sea_pass3<<<grid, block, 0, stream.get()>>>(
+                dev_pars.dev_ptr(),
+                dev_array_ptrs.dev_ptr(),
+                debug_outputs.dev_ptr(),
+                host_pars._step);
+        }
 
-        pars._step++;
+        host_pars._step++;
     }
 
     stream.sync();

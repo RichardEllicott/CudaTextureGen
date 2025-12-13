@@ -10,7 +10,8 @@ central file for the python bindings
 // tests and templates
 // ----------------------------------------------------------------
 #include "template_class_4.bind.h"  //
-#include "template_d_test.bind.h"   //  multi part template test
+#include "template_d_test.bind.h"   //  multi part template test 🚧🚧🚧🚧🚧 i broke it!
+// #include "template_e_test.bind.h"   //  multi part template test 🚧🚧🚧🚧🚧 i broke it!
 #include "template_darray_1.bind.h" //
 #include "tests.bind.h"             // ✔️ simple hello from gpu
 // #include "x_template_test.bind.h" //  auto generating template test // BROKEN!
@@ -129,6 +130,7 @@ NB_MODULE(cuda_texture_gen, m) {
     tests::bind(m);
     template_class_4::bind(m);
     template_d_test::bind(m);
+    // template_e_test::bind(m);
     template_darray_1::bind(m);
 
     // x_template_test::bind(m); // BROKEN!

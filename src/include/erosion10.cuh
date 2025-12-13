@@ -1,13 +1,12 @@
 /*
 
-🦑 TEMPLATE_D 20251130-1
-
-2-part, trying constexpr
+👻 TEMPLATE_E 20251213
 
 */
 
 #pragma once
-#include "template_d_base.cuh"
+// #include "template_d_base.cuh"
+#include "template_e_base.cuh"
 
 // ================================================================ //
 #define TEMPLATE_CLASS_NAME Erosion10
@@ -125,9 +124,10 @@ using Float2 = std::array<float, 2>;
     X(float, drain_rate, 0.0, "rate of water drain when reaching minimum height")                                   \
     X(int, evaporation_mode, 0, "0: basic; 1: shallow water quicker")                                               \
     X(float, evaporation_rate, 0.0, "speed at which water disappears")                                              \
+    X(bool, sediment_layer_mode, false, "if active, store differing sediment types")\
     X(bool, sea_pass, false, "🚧")                                                                                  \
     X(float, sea_level, 0.0, "🚧")                                                                                  \
-    X(bool, sediment_layer_mode, false, "if active, store differing sediment types")
+    X(float, sea_tidal_range, 0.0, "🚧")                                                                                  \
 
 #define TEMPLATE_DEBUG_OUTPUTS                                    \
     X(float, _debug_rain_total, 0.0, "tracking total rain")       \
@@ -158,7 +158,8 @@ using Float2 = std::array<float, 2>;
     X(float, 1, layer_permeability, "❓ water drainage?")                                                 \
     X(float, 1, layer_erosion_threshold, "❓ erosion rate of layer (higher is faster)")                   \
     X(float, 1, layer_solubility, "array of sediment solubility of layer (if using sediment_layer_mode)") \
-    X(int, 2, _exposed_layer_map, "getting exposed layer")
+    X(int, 2, _exposed_layer_map, "getting exposed layer")                                                \
+    X(float, 2, _sea_fade_mask, "the time from 0-1 a tile spends under the tide")
 
 // problem with int?
 
@@ -203,7 +204,7 @@ struct DebugOutputs {
 };
 static_assert(std::is_trivially_copyable<DebugOutputs>::value, "DebugOutputs must remain trivially copyable for CUDA memcpy"); // optional
 
-class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
+class TEMPLATE_CLASS_NAME : public template_e::TemplateE<Parameters> {
 
   protected:
     core::cuda::SyncedDeviceStruct<DebugOutputs> debug_outputs; // device side pars (new synced wrapper keeps a local copy)
@@ -212,21 +213,12 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
   public:
     // getter/setters for the pars
 #ifdef TEMPLATE_CLASS_PARAMETERS
-#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)   \
-    TYPE get_##NAME() const { return pars.NAME; } \
-    void set_##NAME(TYPE value) { set_par(pars.NAME, value); }
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)          \
+    TYPE get_##NAME() const { return pars.host().NAME; } \
+    void set_##NAME(TYPE value) { set_par(pars.host().NAME, value); }
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
-
-    //     // getter/setters for the pars
-    // #ifdef TEMPLATE_CLASS_PARAMETERS
-    // #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)   \
-//     TYPE get_##NAME() const { return pars.host().NAME; } \
-//     void set_##NAME(TYPE value) { set_par(pars.host().NAME, value); }
-    //     TEMPLATE_CLASS_PARAMETERS
-    // #undef X
-    // #endif
 
     // getter/setters for the debug output's
 #ifdef TEMPLATE_DEBUG_OUTPUTS
