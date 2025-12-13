@@ -279,7 +279,7 @@ class ErosionRunner:
 
     def OUTPUT_PRESET_02(self):
 
-        self.output_preset_01()
+        self.OUTPUT_PRESET_01()
         # combined map movie
         movie_profile = MovieProfile(self)
         # movie_profile.channels = ["sediment_map", "height_map", "water_map"]  # all channels
@@ -289,7 +289,7 @@ class ErosionRunner:
 
     def OUTPUT_PRESET_03(self):
 
-        self.output_preset_01()
+        self.OUTPUT_PRESET_01()
         # combined map movie
         movie_profile = MovieProfile(self)
         # movie_profile.channels = ["sediment_map", "height_map", "water_map"]  # all channels

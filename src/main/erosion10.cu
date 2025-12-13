@@ -318,7 +318,7 @@ __global__ void apply_flux3(
 #endif
     }
     // ================================================================
-    // Flow
+    // [Flow]
     // ----------------------------------------------------------------
     float water_out = arrays->_water_out[idx];           // water out already calculated
     float sediment_change = -arrays->_sediment_out[idx]; // sediment out already calculated
@@ -338,7 +338,7 @@ __global__ void apply_flux3(
     water -= water_out;
 
     // ================================================================
-    // Erosion
+    // [Erosion]
     // ----------------------------------------------------------------
     float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
     float erosion;
@@ -409,13 +409,13 @@ __global__ void apply_flux3(
         }
     }
     // ================================================================
-    // Drain
+    // [Drain]
     // ----------------------------------------------------------------
     if (pars->drain_rate > 0.0f && height <= pars->min_height) {
         water -= pars->drain_rate; // minus drain (could be negative)
     }
     // ================================================================
-    // Evaporation
+    // [Evaporation]
     // ----------------------------------------------------------------
     switch (pars->evaporation_mode) {
     case 0:
@@ -428,12 +428,14 @@ __global__ void apply_flux3(
     // [Output]
     // ----------------------------------------------------------------
 
-    if (layer_mode){
+    if (layer_mode) {
         // already applied height to layer
-    }else{
-        height_map[idx] = cuda_math::clamp(height, pars->min_height, pars->max_height);;
+    } else {
+        height_map[idx] = cuda_math::clamp(height, pars->min_height, pars->max_height);
+        ;
     }
-    water_map[idx] =  max(water, 0.0f);;
+    water_map[idx] = max(water, 0.0f);
+    ;
     sediment_map[idx] = max(sediment, 0.0f);
 }
 
@@ -442,6 +444,42 @@ __global__ void sea_pass3(
     const ArrayPtrs *__restrict__ arrays,
     DebugOutputs *__restrict__ debug,
     const int step) {
+    // ================================================================
+    int2 map_size = make_int2(pars->_width, pars->_height);
+    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
+        return;
+    int idx = cuda_math::pos_to_idx(pos, map_size.x);
+    // int idx8 = idx * 8;
+    // ================================================================
+    // ================================================================
+    float *height_map = arrays->height_map;
+    float *water_map = arrays->water_map;
+    float *sediment_map = arrays->sediment_map;
+    // ================================================================
+    float height = height_map[idx];
+    float water = water_map[idx];
+    float sediment = sediment_map[idx];
+    // float surface = height + water;
+    // ================================================================
+    float sea_level = pars->sea_level;
+    // ================================================================
+
+    if (height < sea_level) {
+        // Clamp terrain to sea level
+        height = sea_level;
+
+        // Optionally: treat submerged cells as ocean
+        water = fmaxf(water, sea_level - height_map[idx]); // add water fill
+        sediment = 0.0f;                                   // clear sediment below sea
+    }
+
+    // ================================================================
+    height_map[idx] = height;
+    water_map[idx] = water;
+    sediment_map[idx] = sediment;
+
+
 }
 
 #pragma endregion
@@ -587,6 +625,9 @@ void TEMPLATE_CLASS_NAME::process() {
             dev_array_ptrs.dev_ptr(),
             debug_outputs.dev_ptr(),
             pars._step);
+
+    
+        
 
         pars._step++;
     }
