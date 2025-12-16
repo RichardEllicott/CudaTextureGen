@@ -24,14 +24,24 @@ def test_mode_2():
 
     LAYER_MODE = False
     ISLAND_MODE = False
-
-    LAYER_MODE = True
+    # LAYER_MODE = True
     ISLAND_MODE = True
+
+    # new simple erode test
+    TEST_SIMPLE_ERODE = False
+    TEST_SIMPLE_ERODE = True
+    if TEST_SIMPLE_ERODE:
+        erosion._main_loop = False
+        erosion.simple_collapse = True
+        erosion.simple_collapse_amount = 1.0 / 16.0
+        erosion.simple_collapse_threshold = 0.0
+        erosion.simple_collapse_yield = 0.0
+        erosion.simple_collapse_yield = 0.5
 
     runner.OUTPUT_PRESET_01()
     # runner.OUTPUT_PRESET_02()
     # runner.OUTPUT_PRESET_03()
-    runner.OUTPUT_PRESET_add_layers_01()
+    # runner.OUTPUT_PRESET_add_layers_01() #WILL CRASH WITH NORMALIZE???
 
     # runner.image_profiles = {}  # disable images
     # runner.movie_profiles = {}  # disable movies
@@ -127,8 +137,7 @@ def test_mode_2():
         rgb = np.stack(layers, axis=-1)
         rgb *= height_scale
 
-
-        tools.arrays.print_array_information(rgb)
+        # tools.arrays.print_array_information(rgb)
 
         erosion.layer_map = rgb
 
@@ -155,9 +164,8 @@ def test_patterns():
     erosion = runner.erosion
     island_generator = IslandGenerator()
 
-
     num_array = [0.55, 0.22, 0.11, 1.1]
-    # erosion.layer_erosion_threshold = np.array(num_array, dtype=np.float32) 
-    erosion.height_map = np.array(num_array, dtype=np.float32) 
+    # erosion.layer_erosion_threshold = np.array(num_array, dtype=np.float32)
+    erosion.height_map = np.array(num_array, dtype=np.float32)
 
 # test_patterns()

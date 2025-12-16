@@ -102,10 +102,11 @@ using Float2 = std::array<float, 2>;
     X(size_t, _width, 512, "map width")                                                                             \
     X(size_t, _height, 512, "map height")                                                                           \
     X(size_t, _layers, 0, "layers for layer mode")                                                                  \
-    X(int, mode, 0, "❌ [0]: Default")                                                                              \
+    X(int, mode, 0, "❌ [0]: Default, [1]: Test Wind")                                                                              \
     X(int, steps, 512, "simulation steps to run")                                                                   \
     X(int, _step, 0, "current step")                                                                                \
     X(bool, wrap, true, "wrap the errosion from one side to the other (making result tileable)")                    \
+    X(bool, _main_loop, true, "⛰️ run the main erosion loop (option to disable for testing)")                        \
     X(float, scale, 1.0, "[<0.0]: real world size of pixel, will make slopes more gradual")                         \
     X(float, min_height, -1000000.0, "[-∞,∞]: minimum height the terrain can erode down to")                        \
     X(float, max_height, 1000000.0, "[-∞,∞]: maximum height the terrain can erode down to")                         \
@@ -124,10 +125,15 @@ using Float2 = std::array<float, 2>;
     X(float, drain_rate, 0.0, "rate of water drain when reaching minimum height")                                   \
     X(int, evaporation_mode, 0, "0: basic; 1: shallow water quicker")                                               \
     X(float, evaporation_rate, 0.0, "speed at which water disappears")                                              \
-    X(bool, sediment_layer_mode, false, "if active, store differing sediment types")\
-    X(bool, sea_pass, false, "🚧")                                                                                  \
-    X(float, sea_level, 0.0, "🚧")                                                                                  \
-    X(float, sea_tidal_range, 0.0, "🚧")                                                                                  \
+    X(bool, sediment_layer_mode, false, "if active, store differing sediment types")                                \
+    X(bool, sea_pass, false, "🌊 enable sea pass")                                                                  \
+    X(float, sea_level, 0.0, "🌊 average sea level")                                                                \
+    X(float, sea_tidal_range, 1.0, "🌊 mean tidal range")                                                           \
+    X(bool, simple_collapse, false, "🏜️ simple gradient based collapse")                                            \
+    X(float, simple_collapse_amount, 0.0, "🏜️ simple gradient based collapse")                                      \
+    X(float, simple_collapse_threshold, 0.0, "🏜️ simple gradient based collapse")                                   \
+    X(float, simple_collapse_yield, 1.0, "🏜️ simple gradient based collapse")                                       \
+    X(float, simple_collapse_jitter, 0.0, "🏜️ simple gradient based collapse")
 
 #define TEMPLATE_DEBUG_OUTPUTS                                    \
     X(float, _debug_rain_total, 0.0, "tracking total rain")       \
@@ -159,9 +165,8 @@ using Float2 = std::array<float, 2>;
     X(float, 1, layer_erosion_threshold, "❓ erosion rate of layer (higher is faster)")                   \
     X(float, 1, layer_solubility, "array of sediment solubility of layer (if using sediment_layer_mode)") \
     X(int, 2, _exposed_layer_map, "getting exposed layer")                                                \
-    X(float, 2, _sea_fade_mask, "the time from 0-1 a tile spends under the tide")
-
-// problem with int?
+    X(float, 2, _sea_map, "the time from 0-1 a tile spends under the tide")                               \
+    X(float, 3, _wind_vector2, "wind directions for dust blowing")
 
 // ================================================================ //
 
@@ -213,9 +218,9 @@ class TEMPLATE_CLASS_NAME : public template_e::TemplateE<Parameters> {
   public:
     // getter/setters for the pars
 #ifdef TEMPLATE_CLASS_PARAMETERS
-#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)          \
-    TYPE get_##NAME() const { return pars.host().NAME; } \
-    void set_##NAME(TYPE value) { set_par(pars.host().NAME, value); }
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION)           \
+    TYPE get_##NAME() const { return _pars.host().NAME; } \
+    void set_##NAME(TYPE value) { set_par(_pars.host().NAME, value); }
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
@@ -284,7 +289,14 @@ class TEMPLATE_CLASS_NAME : public template_e::TemplateE<Parameters> {
 
     void allocate_device() override;
     void process() override;
+    void _process(); //
+    void _process_test();
+
+
+    
     void debug_update();
+
+    void STAGE_calculate_slopes();
 };
 
 } // namespace TEMPLATE_NAMESPACE

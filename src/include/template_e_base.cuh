@@ -78,12 +78,12 @@ class TemplateE : public Base {
     // ParametersT pars;                               // local par
     // core::cuda::DeviceStruct<ParametersT> dev_pars; // device side pars
 
-    core::cuda::SyncedDeviceStruct<ParametersT> pars;
+    core::cuda::SyncedDeviceStruct<ParametersT> _pars;
 
     // call before launching a kernel to ensure pars are uploaded and block/grid calculated
     void configure_device() override {
 
-        auto &host_pars = pars.host();
+        auto &host_pars = _pars.host();
 
         auto _block = host_pars._block;
         auto width = host_pars._width;
@@ -93,7 +93,7 @@ class TemplateE : public Base {
             block = dim3(_block, _block);
             grid = dim3((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
             // dev_pars.upload(pars);
-            pars.upload();
+            _pars.upload();
             _device_configured = true;
         }
     }
@@ -104,7 +104,7 @@ class TemplateE : public Base {
             ptr->set_stream(stream.get());
         }
         curand_array_2d.set_stream(stream.get());
-        pars.set_stream(stream.get());
+        _pars.set_stream(stream.get());
     }
 };
 

@@ -21,6 +21,7 @@ class Erosion10:
     _flux8: Incomplete
     _height: int
     _layers: int
+    _main_loop: bool
     _sea_map: Incomplete
     _sediment_flux8: Incomplete
     _sediment_out: Incomplete
@@ -30,6 +31,7 @@ class Erosion10:
     _water_out: Incomplete
     _water_velocity: Incomplete
     _width: int
+    _wind_vector2: Incomplete
     debug_mod: int
     debug_print: bool
     deposition_mode: int
@@ -58,11 +60,17 @@ class Erosion10:
     scale: float
     sea_level: float
     sea_pass: bool
+    sea_tidal_range: float
     sediment_capacity: float
     sediment_layer_map: Incomplete
     sediment_layer_mode: bool
     sediment_map: Incomplete
     sediment_yield: float
+    simple_collapse: bool
+    simple_collapse_amount: float
+    simple_collapse_jitter: float
+    simple_collapse_threshold: float
+    simple_collapse_yield: float
     slope_jitter: float
     slope_jitter_mode: int
     steps: int
