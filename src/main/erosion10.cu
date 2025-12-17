@@ -115,7 +115,7 @@ __global__ void layer_mode_calculations3(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = cuda_math::pos_to_idx(pos, map_size.x);
+    int idx = core::cuda::math::pos_to_idx(pos, map_size.x);
     int layer_idx = idx * pars->_layers;
     // ================================================================
 
@@ -139,7 +139,7 @@ __global__ void add_rain3(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = cuda_math::pos_to_idx(pos, map_size.x);
+    int idx = core::cuda::math::pos_to_idx(pos, map_size.x);
     // ================================================================
     // [Rain]
     // ----------------------------------------------------------------
@@ -172,7 +172,7 @@ __global__ void calculate_outflow3(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = cuda_math::pos_to_idx(pos, map_size.x);
+    int idx = core::cuda::math::pos_to_idx(pos, map_size.x);
     // ================================================================
     float *height_map = arrays->height_map;
     float *water_map = arrays->water_map;
@@ -186,10 +186,10 @@ __global__ void calculate_outflow3(
     // Calculate Slope Vector
     // ----------------------------------------------------------------
 
-    int xp = cuda_math::wrap_or_clamp_index(pos.x + 1, map_size.x, pars->wrap); // x + 1
-    int xn = cuda_math::wrap_or_clamp_index(pos.x - 1, map_size.x, pars->wrap); // x - 1
-    int yp = cuda_math::wrap_or_clamp_index(pos.y + 1, map_size.y, pars->wrap); // y + 1
-    int yn = cuda_math::wrap_or_clamp_index(pos.y - 1, map_size.y, pars->wrap); // y - 1
+    int xp = core::cuda::math::wrap_or_clamp_index(pos.x + 1, map_size.x, pars->wrap); // x + 1
+    int xn = core::cuda::math::wrap_or_clamp_index(pos.x - 1, map_size.x, pars->wrap); // x - 1
+    int yp = core::cuda::math::wrap_or_clamp_index(pos.y + 1, map_size.y, pars->wrap); // y + 1
+    int yn = core::cuda::math::wrap_or_clamp_index(pos.y - 1, map_size.y, pars->wrap); // y - 1
 
     int xp_idx = pos.y * map_size.x + xp; // {+1,0}
     int xn_idx = pos.y * map_size.x + xn; // {-1,0}
@@ -216,18 +216,18 @@ __global__ void calculate_outflow3(
     if (pars->slope_jitter) {
         switch (pars->slope_jitter_mode) {
         case 0: { // cheaper, reuses one hash, lower quality random shouldn't be a problem over frames
-            uint32_t h = cuda_math::hash_uint(pos.x, pos.y, step, 0);
-            xp_surface += cuda_math::hash_to_4randf(h, 0) * pars->slope_jitter;
-            yp_surface += cuda_math::hash_to_4randf(h, 1) * pars->slope_jitter;
-            xn_surface += cuda_math::hash_to_4randf(h, 2) * pars->slope_jitter;
-            yn_surface += cuda_math::hash_to_4randf(h, 3) * pars->slope_jitter;
+            uint32_t h = core::cuda::math::hash_uint(pos.x, pos.y, step, 0);
+            xp_surface += core::cuda::math::hash_to_4randf(h, 0) * pars->slope_jitter;
+            yp_surface += core::cuda::math::hash_to_4randf(h, 1) * pars->slope_jitter;
+            xn_surface += core::cuda::math::hash_to_4randf(h, 2) * pars->slope_jitter;
+            yn_surface += core::cuda::math::hash_to_4randf(h, 3) * pars->slope_jitter;
             break;
         }
         case 1: { // uses 4 hashes, technically better random
-            xp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 0) * pars->slope_jitter;
-            yp_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 1) * pars->slope_jitter;
-            xn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 2) * pars->slope_jitter;
-            yn_surface += cuda_math::hash_float_signed(pos.x, pos.y, step, 3) * pars->slope_jitter;
+            xp_surface += core::cuda::math::hash_float_signed(pos.x, pos.y, step, 0) * pars->slope_jitter;
+            yp_surface += core::cuda::math::hash_float_signed(pos.x, pos.y, step, 1) * pars->slope_jitter;
+            xn_surface += core::cuda::math::hash_float_signed(pos.x, pos.y, step, 2) * pars->slope_jitter;
+            yn_surface += core::cuda::math::hash_float_signed(pos.x, pos.y, step, 3) * pars->slope_jitter;
             break;
         }
         }
@@ -241,7 +241,7 @@ __global__ void calculate_outflow3(
     arrays->_slope_vector2[idx2] = slope_vector.x; // save to a vector map for later use
     arrays->_slope_vector2[idx2 + 1] = slope_vector.y;
 
-    float slope_magnitude = cuda_math::length(slope_vector); // 🧪 save magnitude (OPTIONAL)
+    float slope_magnitude = core::cuda::math::length(slope_vector); // 🧪 save magnitude (OPTIONAL)
     arrays->_slope_magnitude[idx] = slope_magnitude;
 
     float water_velocity = pow(water, 2.0f / 3.0f) * sqrt(slope_magnitude); // 🧪 manning based velocity??
@@ -258,7 +258,7 @@ __global__ void calculate_outflow3(
     float flux_total = 0.0f;
     for (int n = 0; n < 8; ++n) {
         float2 unit_offset = DOT_OFFSETS_8[n];                     // cell offset as a float vector, not normalized as this helps scale
-        float product = cuda_math::dot(unit_offset, slope_vector); // dot product gets how strongly we push into this direction
+        float product = core::cuda::math::dot(unit_offset, slope_vector); // dot product gets how strongly we push into this direction
         product = max(product, 0.0);                               // positive only
         fluxes[n] = product;
         flux_total += product;
@@ -311,7 +311,7 @@ __global__ void apply_flux3(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = cuda_math::pos_to_idx(pos, map_size.x);
+    int idx = core::cuda::math::pos_to_idx(pos, map_size.x);
     // int idx8 = idx * 8;
     // ================================================================
     float *height_map = arrays->height_map;
@@ -345,8 +345,8 @@ __global__ void apply_flux3(
     float water_in = 0.0f;                               // to calculate from neighbours
 
     for (int n = 0; n < 8; ++n) {
-        int2 new_pos = cuda_math::wrap_or_clamp_index(pos + OFFSETS[n], map_size, pars->wrap);
-        int new_idx = cuda_math::pos_to_idx(new_pos, map_size.x);
+        int2 new_pos = core::cuda::math::wrap_or_clamp_index(pos + OFFSETS[n], map_size, pars->wrap);
+        int new_idx = core::cuda::math::pos_to_idx(new_pos, map_size.x);
         int new_idx8 = new_idx * 8;
         int opposite_ref = OFFSET_OPPOSITE_REFS[n];
 
@@ -377,7 +377,7 @@ __global__ void apply_flux3(
         erosion = water * pars->erosion_rate * arrays->_water_velocity[idx]; // maybe based on total water?
         break;
     case 4: // soft saturation scheme (limits the max erosion)
-        erosion = cuda_math::soft_saturate(arrays->_water_velocity[idx], pars->erosion_rate, 1.0);
+        erosion = core::cuda::math::soft_saturate(arrays->_water_velocity[idx], pars->erosion_rate, 1.0);
         break;
     }
 
@@ -387,7 +387,7 @@ __global__ void apply_flux3(
         erosion *= layer_erosiveness;
     }
 
-    erosion = cuda_math::clamp(erosion, 0.0f, available_erosion); // ensure not negative and not more than available_erosion
+    erosion = core::cuda::math::clamp(erosion, 0.0f, available_erosion); // ensure not negative and not more than available_erosion
 
     // ================================================================
     // [Apply Erosion to Height]
@@ -451,7 +451,7 @@ __global__ void apply_flux3(
     if (layer_mode) {
         // already applied height to layer
     } else {
-        height_map[idx] = cuda_math::clamp(height, pars->min_height, pars->max_height);
+        height_map[idx] = core::cuda::math::clamp(height, pars->min_height, pars->max_height);
     }
     water_map[idx] = max(water, 0.0f);
     sediment_map[idx] = max(sediment, 0.0f);
@@ -468,7 +468,7 @@ DH_INLINE float sea_fade_sine(float height, float avg_sea, float tide_range) {
     if (height >= high) return 0.0f; // never submerged
 
     float rel = (height - low) / tide_range;                      // 0..1
-    float fade = 1.0f - acosf(1.0f - 2.0f * rel) / cuda_math::PI; // sine exposure fraction
+    float fade = 1.0f - acosf(1.0f - 2.0f * rel) / core::cuda::math::PI; // sine exposure fraction
     return fade;
 }
 
@@ -482,7 +482,7 @@ __global__ void sea_pass3(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = cuda_math::pos_to_idx(pos, map_size.x);
+    int idx = core::cuda::math::pos_to_idx(pos, map_size.x);
     // int idx8 = idx * 8;
     // ================================================================
     float *height_map = arrays->height_map;
@@ -515,7 +515,7 @@ __global__ void simple_collapse4(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = cuda_math::pos_to_idx(pos, map_size.x);
+    int idx = core::cuda::math::pos_to_idx(pos, map_size.x);
     // ================================================================
     const int offset_count = 4;
     float slope_threshold = pars->simple_collapse_threshold;
@@ -526,7 +526,7 @@ __global__ void simple_collapse4(
 
     float height = height_map[idx];
     if (jitter > 0.0f) {
-        height += cuda_math::hash_float_signed(pos.x, pos.y, step, 482) * jitter;
+        height += core::cuda::math::hash_float_signed(pos.x, pos.y, step, 482) * jitter;
     }
 
     // ================================================================
@@ -536,15 +536,15 @@ __global__ void simple_collapse4(
     float slopes[offset_count];
     int idxs[offset_count];
     for (int n = 0; n < offset_count; ++n) {
-        int2 new_pos = cuda_math::wrap_or_clamp_index(pos + OFFSETS[n], map_size, pars->wrap);
-        int new_idx = cuda_math::pos_to_idx(new_pos, map_size.x);
+        int2 new_pos = core::cuda::math::wrap_or_clamp_index(pos + OFFSETS[n], map_size, pars->wrap);
+        int new_idx = core::cuda::math::pos_to_idx(new_pos, map_size.x);
         idxs[n] = new_idx;
 
         float new_height = height_map[new_idx];
         float difference = height - new_height;                        // positive if center is higher
         difference = difference > slope_threshold ? difference : 0.0f; // threshold
 
-        if (offset_count > 4 && n > 4) difference /= cuda_math::SQRT2; // if we have more than 4 neighbours, the next 8 are diagonal so adjust weight
+        if (offset_count > 4 && n > 4) difference /= core::cuda::math::SQRT2; // if we have more than 4 neighbours, the next 8 are diagonal so adjust weight
 
         slopes[n] = difference;
         total_slope += difference;
@@ -576,17 +576,17 @@ DH_INLINE float2 get_random_wind(int2 pos, int step) {
 #define CODE_ROUTE 1
 #if CODE_ROUTE == 0
     // First hash → angle in [0, 2π)
-    float h1 = cuda_math::hash_float_signed(pos.x, pos.y, step, 2834);
+    float h1 = core::cuda::math::hash_float_signed(pos.x, pos.y, step, 2834);
     float angle = h1 * PI_F; // scale [-1,1] → [-π, π]
     // Second hash → magnitude in [0,1]
-    float h2 = cuda_math::hash_float_signed(pos.x, pos.y, step, 9173);
+    float h2 = core::cuda::math::hash_float_signed(pos.x, pos.y, step, 9173);
     float mag = fabsf(h2); // ensure non-negative
     // Final vector
     float2 wind = make_float2(cosf(angle) * mag, sinf(angle) * mag);
 
 #elif CODE_ROUTE == 1 // cheaper, 1 hash
-    float h = cuda_math::hash_float_signed(pos.x, pos.y, step, 2834);
-    float angle = h * cuda_math::PI; // [-π, π]
+    float h = core::cuda::math::hash_float_signed(pos.x, pos.y, step, 2834);
+    float angle = h * core::cuda::math::PI; // [-π, π]
     float mag = fabsf(h);   // [0,1]
     float2 wind = make_float2(cosf(angle) * mag, sinf(angle) * mag);
 #endif
@@ -607,7 +607,7 @@ __global__ void dust_cloud(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = cuda_math::pos_to_idx(pos, map_size.x);
+    int idx = core::cuda::math::pos_to_idx(pos, map_size.x);
     int idx2 = idx * 2;
     // ================================================================
 
@@ -616,7 +616,7 @@ __global__ void dust_cloud(
 
     float2 random_wind = get_random_wind(pos, step);
 
-    current_wind = cuda_math::lerp(current_wind, random_wind, 0.125);
+    current_wind = core::cuda::math::lerp(current_wind, random_wind, 0.125);
 }
 
 #pragma endregion
@@ -639,9 +639,9 @@ __global__ void calculate_slope_vectors_kernel(
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
-    int idx = cuda_math::pos_to_idx(pos, map_size.x) * 2;
+    int idx = core::cuda::math::pos_to_idx(pos, map_size.x) * 2;
     // ================================================================
-    float2 slope_vector = cuda_math::calculate_slope_vector(height_map1, height_map2, height_map3, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
+    float2 slope_vector = core::cuda::math::calculate_slope_vector(height_map1, height_map2, height_map3, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
     slope_vectors_out[idx] = slope_vector.x;
     slope_vectors_out[idx + 1] = slope_vector.y;
 }

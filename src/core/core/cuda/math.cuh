@@ -9,7 +9,7 @@ cuda math functions
 #define D_INLINE __device__ __forceinline__
 #define DH_INLINE __device__ __host__ __forceinline__
 
-namespace cuda_math {
+namespace core::cuda::math {
 
 #pragma region CONSTANTS
 
@@ -244,10 +244,10 @@ DH_INLINE float2 calculate_slope_vector(
 
 ) {
 
-    int xp = cuda_math::wrap_or_clamp_index(pos.x + 1, map_size.x, wrap); // x + 1
-    int xn = cuda_math::wrap_or_clamp_index(pos.x - 1, map_size.x, wrap); // x - 1
-    int yp = cuda_math::wrap_or_clamp_index(pos.y + 1, map_size.y, wrap); // y + 1
-    int yn = cuda_math::wrap_or_clamp_index(pos.y - 1, map_size.y, wrap); // y - 1
+    int xp = wrap_or_clamp_index(pos.x + 1, map_size.x, wrap); // x + 1
+    int xn = wrap_or_clamp_index(pos.x - 1, map_size.x, wrap); // x - 1
+    int yp = wrap_or_clamp_index(pos.y + 1, map_size.y, wrap); // y + 1
+    int yn = wrap_or_clamp_index(pos.y - 1, map_size.y, wrap); // y - 1
 
     int xp_idx = pos.y * map_size.x + xp; // {+1,0}
     int xn_idx = pos.y * map_size.x + xn; // {-1,0}
@@ -284,18 +284,18 @@ DH_INLINE float2 calculate_slope_vector(
     if (jitter > 0.0f) {
         switch (jitter_mode) {
         case 0: { // cheaper, reuses one hash, lower quality random shouldn't be a problem over frames
-            uint32_t h = cuda_math::hash_uint(pos.x, pos.y, step, jitter_seed);
-            xp_height += cuda_math::hash_to_4randf(h, 0) * jitter;
-            yp_height += cuda_math::hash_to_4randf(h, 1) * jitter;
-            xn_height += cuda_math::hash_to_4randf(h, 2) * jitter;
-            yn_height += cuda_math::hash_to_4randf(h, 3) * jitter;
+            uint32_t h = hash_uint(pos.x, pos.y, step, jitter_seed);
+            xp_height += hash_to_4randf(h, 0) * jitter;
+            yp_height += hash_to_4randf(h, 1) * jitter;
+            xn_height += hash_to_4randf(h, 2) * jitter;
+            yn_height += hash_to_4randf(h, 3) * jitter;
             break;
         }
         case 1: { // uses 4 hashes, technically better random
-            xp_height += cuda_math::hash_float_signed(pos.x, pos.y, step, jitter_seed + 0) * jitter;
-            yp_height += cuda_math::hash_float_signed(pos.x, pos.y, step, jitter_seed + 1) * jitter;
-            xn_height += cuda_math::hash_float_signed(pos.x, pos.y, step, jitter_seed + 2) * jitter;
-            yn_height += cuda_math::hash_float_signed(pos.x, pos.y, step, jitter_seed + 3) * jitter;
+            xp_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 0) * jitter;
+            yp_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 1) * jitter;
+            xn_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 2) * jitter;
+            yn_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 3) * jitter;
             break;
         }
         }
@@ -343,7 +343,7 @@ DH_INLINE float2 calculate_slope_vector(
 //     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
 //     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
 //         return;
-//     int idx = cuda_math::pos_to_idx(pos, map_size.x);
+//     int idx = pos_to_idx(pos, map_size.x);
 //     // ================================================================
 //     float2 slope_vector = calculate_slope_vector(height_map1, height_map2, height_map3, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
 //     slope_vectors_out[idx] = slope_vector;
@@ -366,7 +366,7 @@ DH_INLINE float2 calculate_slope_vector(
 //     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
 //     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
 //         return;
-//     int idx = cuda_math::pos_to_idx(pos, map_size.x) * 2;
+//     int idx = pos_to_idx(pos, map_size.x) * 2;
 //     // ================================================================
 //     float2 slope_vector = calculate_slope_vector(height_map1, height_map2, height_map3, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
 //     slope_vectors_out[idx] = slope_vector.x;
@@ -375,7 +375,7 @@ DH_INLINE float2 calculate_slope_vector(
 
 #pragma endregion
 
-} // namespace cuda_math
+} 
 
 #pragma region EQUALITY_OPERATORS // equality for vector 2D and 3D vector types
 
