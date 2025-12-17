@@ -3,7 +3,8 @@
 #include "erosion9_kernels.cuh"
 // #include "noise_util.cuh"
 #include "core.h" // timer
-#include "cuda_math.cuh"
+// #include "cuda_math.cuh"
+#include "core/cuda/math.cuh"
 #include <stdexcept> // std::runtime_error
 
 // #define EROSION_OUTFLOW_PRECALCULATION

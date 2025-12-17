@@ -20,7 +20,7 @@ Bedrock: nearly immune, only erodes under extreme conditions.
 // #include "erosion9_kernels.cuh"
 // #include "noise_util.cuh"
 #include "core.h" // timer
-#include "cuda_math.cuh"
+#include "core/cuda/math.cuh"
 #include <stdexcept> // std::runtime_error
 #include <stdint.h>
 
@@ -565,10 +565,13 @@ __global__ void simple_collapse4(
     atomicAdd(&height_map[idx], -erosion);
 }
 
+
+
+
 // hash_float_signed returns a signed float in [-1,1]
 DH_INLINE float2 get_random_wind(int2 pos, int step) {
 
-#define PI_F 3.14159265358979323846f;
+// #define PI_F 3.14159265358979323846f;
 
 #define CODE_ROUTE 1
 #if CODE_ROUTE == 0
@@ -583,7 +586,7 @@ DH_INLINE float2 get_random_wind(int2 pos, int step) {
 
 #elif CODE_ROUTE == 1 // cheaper, 1 hash
     float h = cuda_math::hash_float_signed(pos.x, pos.y, step, 2834);
-    float angle = h * PI_F; // [-π, π]
+    float angle = h * cuda_math::PI; // [-π, π]
     float mag = fabsf(h);   // [0,1]
     float2 wind = make_float2(cosf(angle) * mag, sinf(angle) * mag);
 #endif
@@ -591,7 +594,7 @@ DH_INLINE float2 get_random_wind(int2 pos, int step) {
 
     return wind;
 
-#undef PI_F
+// #undef PI_F
 }
 
 // dust guided by wind

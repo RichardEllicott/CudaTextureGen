@@ -1,5 +1,7 @@
 /*
 
+⚠️ not using this yet, kept as notes
+
 convert numpy arrays to and from DeviceArray's
 
 new DeviceArray pattern

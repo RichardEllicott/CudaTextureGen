@@ -5,7 +5,7 @@ store some kernels
 */
 // #pragma once
 
-#include "cuda_math.cuh"
+#include "core/cuda/math.cuh"
 #include <cuda_runtime.h>
 
 namespace TEMPLATE_NAMESPACE {

@@ -13,7 +13,7 @@ namespace cuda_math {
 
 #pragma region CONSTANTS
 
-// device code can't see constexpr
+// // device code can't see constexpr?? seems it might
 constexpr float SQRT2 = 1.4142135623730950488f;      // root of 2
 constexpr float INV_SQRT2 = 0.70710678118654752440f; // inverse root of 2
 constexpr float PI = 3.14159265358979323846f;
@@ -498,3 +498,6 @@ DH_INLINE float2 &operator*=(float2 &a, float s) {
 }
 
 #pragma endregion
+
+// #undef D_INLINE
+// #undef DH_INLINE
