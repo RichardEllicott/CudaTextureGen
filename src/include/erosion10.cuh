@@ -6,7 +6,10 @@
 
 #pragma once
 // #include "template_d_base.cuh"
+#include "core.h"
 #include "template_e_base.cuh"
+#include <stdexcept>
+#include <unordered_set>
 
 // ================================================================ //
 #define TEMPLATE_CLASS_NAME Erosion10
@@ -102,7 +105,7 @@ using Float2 = std::array<float, 2>;
     X(size_t, _width, 512, "map width")                                                                             \
     X(size_t, _height, 512, "map height")                                                                           \
     X(size_t, _layers, 0, "layers for layer mode")                                                                  \
-    X(int, mode, 0, "❌ [0]: Default, [1]: Test Wind")                                                                              \
+    X(int, mode, 0, "❌ [0]: Default, [1]: Test Wind")                                                              \
     X(int, steps, 512, "simulation steps to run")                                                                   \
     X(int, _step, 0, "current step")                                                                                \
     X(bool, wrap, true, "wrap the errosion from one side to the other (making result tileable)")                    \
@@ -133,40 +136,40 @@ using Float2 = std::array<float, 2>;
     X(float, simple_collapse_amount, 0.0, "🏜️ simple gradient based collapse")                                      \
     X(float, simple_collapse_threshold, 0.0, "🏜️ simple gradient based collapse")                                   \
     X(float, simple_collapse_yield, 1.0, "🏜️ simple gradient based collapse")                                       \
-    X(float, simple_collapse_jitter, 0.0, "🏜️ simple gradient based collapse")
+    X(float, simple_collapse_jitter, 0.0, "🏜️ simple gradient based collapse")                                      \
+    X(float, wind_strength, 0.0, "🍃 NEW TEST ... wind simulation")
 
+// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_DEBUG_OUTPUTS                                    \
     X(float, _debug_rain_total, 0.0, "tracking total rain")       \
     X(float, _debug_drain_total, 0.0, "tracking total drain")     \
     X(float, _debug_erosion_total, 0.0, "tracking total erosion") \
     X(float, _debug_evaporation_total, 0.0, "tracking total erosion")
 
-// X(int2, test_int2, DEFAULT_INT2, "test a Int2")
-
-// (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_DEVICE_ARRAYS                                                                      \
-    X(float, 2, height_map, "current height, set this map to start the simulation")                       \
-    X(float, 2, water_map, "current water, optionally set this map at start")                             \
-    X(float, 2, _water_out, "current water, optionally set this map at start")                            \
-    X(float, 2, sediment_map, "current sediment,  optionally set this map at start")                      \
-    X(float, 2, _sediment_out, "current sediment,  optionally set this map at start")                     \
-    X(float, 1, _flux8, "8 water flow out to 8 neighbours")                                               \
-    X(float, 1, _sediment_flux8, "sediment flow out to 8 neighbours")                                     \
-    X(float, 3, _slope_vector2, "gradient vectors give slope direction and strength")                     \
-    X(float, 2, _slope_magnitude, "calculation of strength based on gradient vector")                     \
-    X(float, 2, _water_velocity, "🧪 scalar water velocity")                                              \
-    X(float, 2, rain_map, "optional rain map, multiply by this")                                          \
-    X(float, 2, hardness_map, "optional hardness map")                                                    \
-    X(float, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB")      \
-    X(float, 3, sediment_layer_map, "optional storage of different sediment types")                       \
-    X(float, 1, layer_erosiveness, "array of erosion rate of layer (higher is faster)")                   \
-    X(float, 1, layer_yield, "array erosion rate of layer (higher is faster)")                            \
-    X(float, 1, layer_permeability, "❓ water drainage?")                                                 \
-    X(float, 1, layer_erosion_threshold, "❓ erosion rate of layer (higher is faster)")                   \
-    X(float, 1, layer_solubility, "array of sediment solubility of layer (if using sediment_layer_mode)") \
-    X(int, 2, _exposed_layer_map, "getting exposed layer")                                                \
-    X(float, 2, _sea_map, "the time from 0-1 a tile spends under the tide")                               \
-    X(float, 3, _wind_vector2, "wind directions for dust blowing")
+// (TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_DEVICE_ARRAYS                                                                         \
+    X(float, 2, 1, height_map, "current height, set this map to start the simulation")                       \
+    X(float, 2, 1, water_map, "current water, optionally set this map at start")                             \
+    X(float, 2, 1, _water_out, "current water, optionally set this map at start")                            \
+    X(float, 2, 1, sediment_map, "current sediment,  optionally set this map at start")                      \
+    X(float, 2, 1, _sediment_out, "current sediment,  optionally set this map at start")                     \
+    X(float, 3, 8, _flux8, "8 water flow out to 8 neighbours")                                               \
+    X(float, 3, 8, _sediment_flux8, "sediment flow out to 8 neighbours")                                     \
+    X(float, 3, 2, _slope_vector2, "gradient vectors give slope direction and strength")                     \
+    X(float, 2, 1, _slope_magnitude, "calculation of strength based on gradient vector")                     \
+    X(float, 2, 1, _water_velocity, "🧪 scalar water velocity")                                              \
+    X(float, 2, 1, rain_map, "optional rain map, multiply by this")                                          \
+    X(float, 2, 1, hardness_map, "optional hardness map")                                                    \
+    X(float, 3, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB")      \
+    X(float, 3, 3, sediment_layer_map, "optional storage of different sediment types")                       \
+    X(float, 1, 1, layer_erosiveness, "array of erosion rate of layer (higher is faster)")                   \
+    X(float, 1, 1, layer_yield, "array erosion rate of layer (higher is faster)")                            \
+    X(float, 1, 1, layer_permeability, "❓ water drainage?")                                                 \
+    X(float, 1, 1, layer_erosion_threshold, "❓ erosion rate of layer (higher is faster)")                   \
+    X(float, 1, 1, layer_solubility, "array of sediment solubility of layer (if using sediment_layer_mode)") \
+    X(int, 2, 1, _exposed_layer_map, "getting exposed layer")                                                \
+    X(float, 2, 1, _sea_map, "the time from 0-1 a tile spends under the tide")                               \
+    X(float, 3, 2, _wind_vector2, "wind directions for dust blowing")
 
 // ================================================================ //
 
@@ -175,6 +178,27 @@ using Float2 = std::array<float, 2>;
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
 
 namespace TEMPLATE_NAMESPACE {
+
+//
+//
+//
+class TEMPLATE_CLASS_NAME; // forward declaration
+
+class Stage {
+  public:
+    TEMPLATE_CLASS_NAME *parent = nullptr; // non-owning
+    bool is_configured = false;
+
+    Stage(TEMPLATE_CLASS_NAME *p) : parent(p) {}
+
+    virtual ~Stage() = default;
+
+    virtual void configure() = 0;
+    virtual void process() = 0;
+};
+//
+//
+//
 
 // Parameters struct for uploading to GPU
 struct Parameters {
@@ -190,7 +214,7 @@ static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must re
 // ⚠️ Array struct for uploading to GPU
 struct ArrayPtrs {
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
     TYPE *NAME = nullptr;
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
@@ -236,8 +260,22 @@ class TEMPLATE_CLASS_NAME : public template_e::TemplateE<Parameters> {
 
 // DeviceArray's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
     core::cuda::DeviceArray<TYPE, DIMENSIONS> NAME;
+    TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
+
+// Alocate DeviceArray's
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION)                             \
+    void allocate_##NAME() {                                                     \
+        if (height_map.empty()) throw std::runtime_error("height_map is empty"); \
+        if (NAME.empty()) {                                                      \
+            NAME.resize_helper(_pars.host()._width, _pars.host()._height, DIM3); \
+            NAME.zero_device();                                                  \
+        }                                                                        \
+    }
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
 #endif
@@ -246,7 +284,7 @@ class TEMPLATE_CLASS_NAME : public template_e::TemplateE<Parameters> {
     std::vector<core::cuda::DeviceArrayBase *> get_device_array_n_ptrs() override {
         if (_device_array_n_ptrs.empty()) {
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+#define X(TYPE, DIMENSION, DIM3, NAME, DESCRIPTION) \
     _device_array_n_ptrs.push_back(&NAME);
             TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
@@ -261,7 +299,7 @@ class TEMPLATE_CLASS_NAME : public template_e::TemplateE<Parameters> {
     ArrayPtrs get_array_ptrs() {
         return {
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
+#define X(TYPE, DIMENSION, DIM3, NAME, DESCRIPTION) \
     NAME.dev_ptr(),
             TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
@@ -273,7 +311,7 @@ class TEMPLATE_CLASS_NAME : public template_e::TemplateE<Parameters> {
     const std::vector<std::string> &get_array_names() {
         static const std::vector<std::string> names = {
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSION, NAME, DESCRIPTION) #NAME,
+#define X(TYPE, DIMENSION, DIM3, NAME, DESCRIPTION) #NAME,
             TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
 #endif
@@ -289,14 +327,92 @@ class TEMPLATE_CLASS_NAME : public template_e::TemplateE<Parameters> {
 
     void allocate_device() override;
     void process() override;
-    void _process(); //
-    void _process_test();
+    void _process1(); //
+    void _process2();
 
-
-    
     void debug_update();
 
-    void STAGE_calculate_slopes();
+    //
+    //
+    //
+
+    // // recursive
+    // constexpr uint32_t fnv1a(const char *str, uint32_t hash = 2166136261u) {
+    //     return (*str) ? fnv1a(str + 1, (hash ^ uint32_t(*str)) * 16777619u) : hash;
+    // }
+    // non recursive for C++ 17
+    constexpr uint32_t fnv1a(const char *str) {
+        uint32_t hash = 2166136261u;
+        for (size_t i = 0; str[i] != '\0'; ++i) {
+            hash ^= static_cast<uint32_t>(str[i]);
+            hash *= 16777619u;
+        }
+        return hash;
+    }
+    // constexpr uint32_t HeightMapReady = fnv1a("HeightMapReady"); // hash idea
+
+    // constexpr uint32_t HeightMapReady = fnv1a("HeightMapReady");
+    // constexpr uint32_t SlopesCalculated = fnv1a("SlopesCalculated");
+
+    // std::unordered_set<uint32_t> flags;
+    // flags.insert(HeightMapReady);
+
+    // if (flags.count(SlopesCalculated)) {
+    //     // already done
+    // }
+
+    //
+    //
+    //
+// Stage Enumerations
+// (NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_STAGES                                 \
+    X(SIMPLE_COLLAPSE, "simple slope based collapse erosion") \
+    X(CALCULATE_SLOPES, "calculate slopes")                   \
+    X(RAIN, "")                                               \
+    X(MAIN, "")                                               \
+    X(SEA_PASS, "")
+
+#ifdef TEMPLATE_CLASS_STAGES
+    enum class Stage {
+#define X(NAME, DESCRIPTION) \
+    NAME,
+        TEMPLATE_CLASS_STAGES
+#undef X
+    };
+#define X(NAME, DESCRIPTION) \
+    void STAGE_##NAME();
+    TEMPLATE_CLASS_STAGES
+#undef X
+
+    void RUN_STAGE(Stage stage) {
+        switch (stage) {
+#define X(NAME, DESCRIPTION) \
+    case Stage::NAME:        \
+        STAGE_##NAME();      \
+        break;
+            TEMPLATE_CLASS_STAGES
+#undef X
+        }
+    }
+#endif
+
+    //
+    //
+    //
+
+    // mark if stage has run (so it has set it's memory up)
+    // if(_stage_configured.count(stage))
+    // _stage_configured.insert(stage);
+    std::unordered_set<Stage> _stage_configured;
+
+    //
+    //
+    //
+
+    //
+    //
+    //
 };
 
 } // namespace TEMPLATE_NAMESPACE

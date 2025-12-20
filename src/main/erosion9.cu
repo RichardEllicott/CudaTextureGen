@@ -116,9 +116,9 @@ __global__ void calculate_flux2(
     // optional jitter added by offsetting surface by random value
     if (pars->slope_jitter > 0.0f) {
         if (pars->slope_jitter_mode == 0) {
-            surface_height += hash_float_signed(pos.x, pos.y, step, 1234) * pars->slope_jitter; // change each step
+            surface_height += core::cuda::math::hash_float_signed(pos.x, pos.y, step, 1234) * pars->slope_jitter; // change each step
         } else {
-            surface_height += hash_float_signed(pos.x, pos.y, 0, 1234) * pars->slope_jitter; // same each step (probabally doesn't really do anything)
+            surface_height += core::cuda::math::hash_float_signed(pos.x, pos.y, 0, 1234) * pars->slope_jitter; // same each step (probabally doesn't really do anything)
         }
     }
 

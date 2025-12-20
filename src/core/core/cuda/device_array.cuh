@@ -92,6 +92,8 @@ class DeviceArrayBase {
     bool empty() const { return size() == 0; }
     // deconstructor
     virtual ~DeviceArrayBase() = default;
+    // callable on any base object, designed for easy macro usage
+    virtual void resize_helper(size_t width, size_t height = 1, size_t depth = 1) = 0;
 };
 
 template <typename T, int Dim>
@@ -211,68 +213,60 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         allocate_device();
     }
 
-    // resize helper (works on any dimension)
-    void resize_helper(size_t width, size_t height = 1, size_t depth = 1) {
+    // resize overload
+    void resize_helper(size_t width, size_t height = 1, size_t depth = 1) override {
         if constexpr (Dim == 1) {
-            resize({width});
-            if (height > 1 || depth > 1) {
-            }
+            resize(std::array<size_t, 1>{width});
         } else if constexpr (Dim == 2) {
-            resize({width, height});
-            if (depth > 1) {
-            }
+            resize(std::array<size_t, 2>{width, height});
         } else if constexpr (Dim == 3) {
-            resize({width, height, depth});
+            resize(std::array<size_t, 3>{width, height, depth});
+        } else {
+            static_assert(Dim <= 3, "resize overload only supports Dim = 1, 2, or 3");
         }
     }
 
+    // resize overload
+    template <typename... Sizes>
+    void resize(Sizes... sizes) {
+        static_assert(sizeof...(Sizes) == Dim, "resize requires exactly Dim arguments");
+        resize(std::array<size_t, Dim>{static_cast<size_t>(sizes)...}); // Pack into std::array and forward to canonical resize
+    }
+
+    // fill out device memory with zeros
     void zero_device() override {
 
-        if (!_dev_ptr) // no allocated memory (we just pass with no error for now)
-            return;
-
+        if (!_dev_ptr) return; // no allocated memory (we just pass with no error for now)
         cudaError_t err = cudaMemsetAsync(_dev_ptr, 0, size_bytes(), _stream);
-        if (err != cudaSuccess) {
-            throw std::runtime_error("cudaMemset failed");
-        }
+        if (err != cudaSuccess) throw std::runtime_error("cudaMemset failed");
     }
 
+    // overload with dimensions
+    void zero_device(std::array<size_t, Dim> dimensions) {
+        resize(dimensions);
+        zero_device();
+    }
+
+    // wait for sync on this stream (if stream)
     void sync() const {
-        if (_stream) {
-            // Wait only for this stream
-            cudaStreamSynchronize(_stream);
-        } else {
-            // No stream set → default stream, so wait for all outstanding work
-            cudaDeviceSynchronize();
-        }
+        if (_stream)
+            cudaStreamSynchronize(_stream); // Wait only for this stream
+        else
+            cudaDeviceSynchronize(); // No stream set → default stream, so wait for all outstanding work
     }
 
-    // // Upload from host pointer
-    // void upload(const T *host_ptr, std::array<size_t, Dim> dimensions) {
-
-    //     resize(dimensions); // resize, will reallocate if the size changes
-    //     if (size() == 0)
-    //         return;
-
-    //     cudaError_t err = cudaMemcpyAsync(_dev_ptr, host_ptr, size_bytes(), cudaMemcpyHostToDevice, _stream);
-    //     if (err != cudaSuccess)
-    //         throw std::runtime_error("cudaMemcpy (Host->Device) failed");
-    // }
-
-    // Upload from host pointer
+    // Upload from host pointer (optional callback)
     void upload(const T *host_ptr, std::array<size_t, Dim> dimensions, std::function<void()> callback = {}) {
 
         resize(dimensions); // resize, will reallocate if the size changes
-        if (size() == 0)
-            return;
+        if (size() == 0) return;
 
         cudaError_t err = cudaMemcpyAsync(_dev_ptr, host_ptr, size_bytes(), cudaMemcpyHostToDevice, _stream);
-        if (err != cudaSuccess)
-            throw std::runtime_error("cudaMemcpy (Host->Device) failed");
+        if (err != cudaSuccess) throw std::runtime_error("cudaMemcpy (Host->Device) failed");
 
 #define CODE_ROUTE 0
-#if CODE_ROUTE == 0
-        // CUDA callback
+#if CODE_ROUTE == 0 // CUDA callback
+
         if (callback) {
             // Attach host callback
             cudaLaunchHostFunc(
@@ -284,8 +278,8 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
                 },
                 new std::function<void()>(callback));
         }
-#elif CODE_ROUTE == 1
-        // C++ thread callback
+#elif CODE_ROUTE == 1 // C++ thread callback
+
         if (callback) {
             // Launch a detached thread that waits for completion
             std::thread([this, callback]() {
@@ -382,8 +376,6 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
     }
 
 #pragma endregion
-
-
 };
 
 // thin wrapper for 1D

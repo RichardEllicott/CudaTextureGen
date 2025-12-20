@@ -83,19 +83,19 @@ class TemplateE : public Base {
     // call before launching a kernel to ensure pars are uploaded and block/grid calculated
     void configure_device() override {
 
+        if (_device_configured) return;
+
         auto &host_pars = _pars.host();
 
         auto _block = host_pars._block;
         auto width = host_pars._width;
         auto height = host_pars._height;
 
-        if (!_device_configured) {
-            block = dim3(_block, _block);
-            grid = dim3((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
-            // dev_pars.upload(pars);
-            _pars.upload();
-            _device_configured = true;
-        }
+        block = dim3(_block, _block);
+        grid = dim3((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
+        // dev_pars.upload(pars);
+        _pars.upload();
+        _device_configured = true;
     }
 
     // init function, but needs to be called in derived
@@ -108,4 +108,4 @@ class TemplateE : public Base {
     }
 };
 
-} // namespace template_d
+} // namespace template_e

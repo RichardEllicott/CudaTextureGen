@@ -14,13 +14,16 @@ from ErosionRunner import ErosionRunner
 from IslandGenerator import IslandGenerator
 
 
+runner = ErosionRunner()
+erosion = runner.erosion
+island_generator = IslandGenerator()
+
+
 def test_mode_2():
     """
     layers test
     """
-    runner = ErosionRunner()
-    erosion = runner.erosion
-    island_generator = IslandGenerator()
+
 
     LAYER_MODE = False
     ISLAND_MODE = False
@@ -29,7 +32,7 @@ def test_mode_2():
 
     # new simple erode test
     TEST_SIMPLE_ERODE = False
-    TEST_SIMPLE_ERODE = True
+    # TEST_SIMPLE_ERODE = True
     if TEST_SIMPLE_ERODE:
         erosion._main_loop = False
         erosion.simple_collapse = True
@@ -46,12 +49,13 @@ def test_mode_2():
     # runner.image_profiles = {}  # disable images
     # runner.movie_profiles = {}  # disable movies
 
+
     map_size = 1024 // 2
 
-    # erosion.mode = 1  # 🧪
-    # erosion.mode = 2  # 🧪
-    # erosion.mode = 3  # 🧪 manning based?
-    erosion.mode = 4  # 🧪 soft saturation based
+    # erosion.erosion_mode = 1  # 🧪 WEIRD SQUARE RESULT
+    # erosion.erosion_mode = 2  # 🧪 WEIRD SQUARE RESULT
+    # erosion.erosion_mode = 3  # 🧪 less square?
+    # erosion.erosion_mode = 4  # 🧪 soft saturation based
 
     # erosion pars
     erosion.rain_rate = 0.007
@@ -59,7 +63,7 @@ def test_mode_2():
     erosion.evaporation_rate = 0.002
     erosion.min_height = 0.0
     # erosion.drain_rate = 0.001
-    # erosion.slope_jitter = 1.0
+    erosion.slope_jitter = 1.0
     # erosion.slope_jitter_mode = 1
 
     runner.nearest_neighbor_upscale = 1
@@ -101,13 +105,13 @@ def test_mode_2():
         # tools.arrays.normalized(height_map)
 
     # erosion.flow_rate = 0.125
-    erosion.max_water_outflow = 1.0 / 8.0
+    # erosion.max_water_outflow = 1.0 / 8.0
     # erosion.max_water_outflow = 1.0
 
     # sediment
 
     sediment_tests = False
-    sediment_tests = True
+    # sediment_tests = True
     if sediment_tests:
         # erosion.deposition_mode = 1
         erosion.sediment_yield = 0.125 / 8.0
@@ -150,22 +154,43 @@ def test_mode_2():
     else:
         erosion.height_map = layers[0] * height_scale
 
-    runner.process()
+    
+def test_mode_2_mod():
+
+
+    # erosion pars
+    erosion.rain_rate = 0.0007  # increasing rain rate barely making difference!
+    erosion.erosion_rate = 0.01
+    erosion.evaporation_rate = 0.0002
+    erosion.min_height = 0.0
+    # erosion.drain_rate = 0.001
+    erosion.slope_jitter = 1.0
+
+    # erosion.flow_rate = 0.125
+    erosion.max_water_outflow = 0.125
+
+    # sediment
+    erosion.sediment_yield = 0.5
+    erosion.sediment_capacity = 1.0
+    # # erosion.deposition_mode = 1
+    # # erosion.deposition_rate = 0.125
+    # # erosion.deposition_threshold = 0.125
+
+    # runner
+    runner.frame_count = 256
+    runner.frame_count = 128
+    runner.steps_per_frame = 16
+
+
+    erosion.erosion_mode = 4
 
 
 test_mode_2()
 
+test_mode_2_mod()
 
-def test_patterns():
-    """
-    patterns test
-    """
-    runner = ErosionRunner()
-    erosion = runner.erosion
-    island_generator = IslandGenerator()
 
-    num_array = [0.55, 0.22, 0.11, 1.1]
-    # erosion.layer_erosion_threshold = np.array(num_array, dtype=np.float32)
-    erosion.height_map = np.array(num_array, dtype=np.float32)
 
-# test_patterns()
+runner.process()
+
+

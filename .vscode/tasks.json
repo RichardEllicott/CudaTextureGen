@@ -1,0 +1,15 @@
+// .vscode/tasks.json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run My Program",
+      "type": "shell",
+      "command": "./BUILD.ps1",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}

@@ -12,31 +12,31 @@ namespace TEMPLATE_NAMESPACE {
 
 #pragma region HASH
 
-// Modern integer hash (based on MurmurHash3 finalizer)
-__device__ __forceinline__ int hash_int(int x, int y, int z, int seed) {
-    int n = x + y * 374761393 + z * 668265263 + seed * 1274126177;
+// // Modern integer hash (based on MurmurHash3 finalizer)
+// __device__ __forceinline__ int hash_int(int x, int y, int z, int seed) {
+//     int n = x + y * 374761393 + z * 668265263 + seed * 1274126177;
 
-    n ^= n >> 16;
-    n *= 0x85ebca6b;
-    n ^= n >> 13;
-    n *= 0xc2b2ae35;
-    n ^= n >> 16;
+//     n ^= n >> 16;
+//     n *= 0x85ebca6b;
+//     n ^= n >> 13;
+//     n *= 0xc2b2ae35;
+//     n ^= n >> 16;
 
-    return n & 0x7fffffff; // Keep positive for compatibility
-}
+//     return n & 0x7fffffff; // Keep positive for compatibility
+// }
 
-// Hash returning float in [0,1)
-__device__ __forceinline__ float hash_float(int x, int y, int z, int seed) {
-    int h = hash_int(x, y, z, seed);
-    // Scale to [0,1). Use 1.0f / 2147483648.0f (2^31)
-    return static_cast<float>(h) * (1.0f / 2147483648.0f);
-}
+// // Hash returning float in [0,1)
+// __device__ __forceinline__ float hash_float(int x, int y, int z, int seed) {
+//     int h = hash_int(x, y, z, seed);
+//     // Scale to [0,1). Use 1.0f / 2147483648.0f (2^31)
+//     return static_cast<float>(h) * (1.0f / 2147483648.0f);
+// }
 
-// If you want [-1,1] range:
-__device__ __forceinline__ float hash_float_signed(int x, int y, int z, int seed) {
-    int h = hash_int(x, y, z, seed);
-    return static_cast<float>(h) * (2.0f / 2147483648.0f) - 1.0f;
-}
+// // If you want [-1,1] range:
+// __device__ __forceinline__ float hash_float_signed(int x, int y, int z, int seed) {
+//     int h = hash_int(x, y, z, seed);
+//     return static_cast<float>(h) * (2.0f / 2147483648.0f) - 1.0f;
+// }
 
 #pragma endregion
 
@@ -132,7 +132,7 @@ __global__ void calculate_flux(
 
         if (pars->slope_jitter > 0.0f) {
             // float jitter = pars->slope_jitter * noise_util::trig_hash(x, y, n + 1234, step);
-            float jitter = pars->slope_jitter * hash_float_signed(x, y, n, step);
+            float jitter = pars->slope_jitter * core::cuda::math::hash_float_signed(x, y, n, step);
             difference += jitter;
         }
 

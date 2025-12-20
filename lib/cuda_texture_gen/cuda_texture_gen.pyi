@@ -75,6 +75,7 @@ class Erosion10:
     slope_jitter_mode: int
     steps: int
     water_map: Incomplete
+    wind_strength: float
     wrap: bool
     def __init__(self) -> None: ...
     def allocate_device(self) -> None: ...
