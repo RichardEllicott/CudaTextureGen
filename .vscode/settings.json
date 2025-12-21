@@ -346,6 +346,30 @@
         {
             "folderPath": "cuda_texture_gen\\src\\python\\bindings\\template_e_test.bind.h\\",
             "badge": "👻"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\graph_node_a.bind.h\\",
+            "badge": "🦄"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\graph_node_a.cuh\\",
+            "badge": "🦄"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\gna_node.bind.h\\",
+            "badge": "🦄"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\gna_device_array.bind.h\\",
+            "badge": "🦄"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\GNA_node.cuh\\",
+            "badge": "🦄"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\GNA_device_array.cuh\\",
+            "badge": "🦄"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",

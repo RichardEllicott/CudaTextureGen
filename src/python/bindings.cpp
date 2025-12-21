@@ -4,13 +4,11 @@ central file for the python bindings
 
 */
 
-
-
 // ================================================================
 // tests and templates
 // ----------------------------------------------------------------
-#include "template_class_4.bind.h"  //
-#include "template_d_test.bind.h"   //  multi part template test 🚧🚧🚧🚧🚧 i broke it!
+#include "template_class_4.bind.h" //
+#include "template_d_test.bind.h"  //  multi part template test 🚧🚧🚧🚧🚧 i broke it!
 // #include "template_e_test.bind.h"   //  multi part template test 🚧🚧🚧🚧🚧 i broke it!
 #include "template_darray_1.bind.h" //
 #include "tests.bind.h"             // ✔️ simple hello from gpu
@@ -33,8 +31,8 @@ central file for the python bindings
 // #include "erosion4.bind.h" // ✔️ simple erode refactored
 // #include "erosion7.bind.h" // ✔️ advanced erosion with DeviceArray's
 // #include "erosion8.bind.h" // 🚧 new features
-#include "erosion9.bind.h" // 🐙 main version
 #include "erosion10.bind.h" // 🐙 main version
+#include "erosion9.bind.h"  // 🐙 main version
 
 // ================================================================
 // experiments
@@ -57,6 +55,17 @@ central file for the python bindings
 #include <array>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/array.h> // ❗ allows std::array compatability
+
+// ================================================================
+// Nanobind compatability features
+// ----------------------------------------------------------------
+
+#include <nanobind/stl/shared_ptr.h>
+
+#include "gna_device_array.bind.h"
+#include "gna_graph_node.bind.h"
+
+// ================================================================
 
 // other options for nanobind support:
 // #include <nanobind/stl/array.h>        // std::array
@@ -151,4 +160,9 @@ NB_MODULE(cuda_texture_gen, m) {
     fluid_simulation::bind(m);
     tectonics::bind(m);
     misc::bind(m);
+
+    // GNA
+    gna_device_array::bind(m);
+    gna_graph_node::bind(m);
+
 }
