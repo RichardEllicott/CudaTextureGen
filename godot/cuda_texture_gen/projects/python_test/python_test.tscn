@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://dwfvlmiyx5b85"]
+
+[ext_resource type="Script" uid="uid://c0o648dknu426" path="res://projects/python_test/python_test.gd" id="1_mr1p4"]
+[ext_resource type="Script" uid="uid://bkbcx6ie8fsmv" path="res://projects/python_test/PythonBridge.cs" id="2_ti8dm"]
+
+[node name="PythonTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PythonTest" type="Control" parent="."]
+anchors_preset = 0
+script = ExtResource("1_mr1p4")
+
+[node name="PythonBridge" type="Node" parent="PythonTest"]
+script = ExtResource("2_ti8dm")
+metadata/_custom_type_script = "uid://bkbcx6ie8fsmv"

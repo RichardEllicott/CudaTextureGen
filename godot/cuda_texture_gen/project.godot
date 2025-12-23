@@ -11,8 +11,12 @@ config_version=5
 [application]
 
 config/name="Cuda Texture Gen"
-config/features=PackedStringArray("4.5", "GL Compatibility")
+config/features=PackedStringArray("4.5", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[dotnet]
+
+project/assembly_name="Cuda Texture Gen"
 
 [rendering]
 
