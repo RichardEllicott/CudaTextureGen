@@ -39,10 +39,8 @@ def test():
     # Check equality
     print("\nMatch:", np.allclose(host, out))
 
-
     print(f"device_array.dev_ptr() = {device_array.dev_ptr()}")
     print(f"device_array.size() = {device_array.size()}")
-
 
     graph_node = cuda_texture_gen.GraphNode()
     print(f"graph_node.output = {graph_node.output}")
@@ -50,4 +48,44 @@ def test():
     print(f"graph_node.output = {graph_node.output}")
 
 
-test()
+# test()
+
+def connect_node(
+        from_node: cuda_texture_gen.GraphNode,
+        from_port: int,
+        to_node: cuda_texture_gen.GraphNode,
+        to_port: int):
+
+    to_node.connect_input(from_node, from_port, to_port)
+
+
+def test2():
+
+    graph_node1 = cuda_texture_gen.GraphNode()
+    graph_node2 = cuda_texture_gen.GraphNode()
+
+    # print(graph_node1.connect_output(0, graph_node2, 0))
+    # print(graph_node2.connect_input(graph_node1, 0, 0))
+
+    connect_node(graph_node1, 0, graph_node2, 0)
+    
+
+
+# test2()
+
+
+def test_gui():
+    import tkinter as tk
+
+    root = tk.Tk()
+    root.title("My GUI")
+    root.geometry("400x300")
+
+    label = tk.Label(root, text="Hello world")
+    label.pack()
+
+    root.mainloop()
+
+
+
+test_gui()
