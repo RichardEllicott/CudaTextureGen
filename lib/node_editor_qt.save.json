@@ -1,95 +1,193 @@
 {
-  "graph":{
-    "layout_direction":0,
-    "acyclic":true,
-    "pipe_collision":false,
-    "pipe_slicing":true,
-    "pipe_style":1,
-    "accept_connection_types":"{}",
-    "reject_connection_types":"{}"
-  },
-  "nodes":{
-    "0x2d193b6f9d0":{
-      "type_":"example.MyNode",
-      "icon":null,
-      "name":"Node A",
-      "color":[
-        13,
-        18,
-        23,
-        255
-      ],
-      "border_color":[
-        74,
-        84,
-        85,
-        255
-      ],
-      "text_color":[
-        255,
-        255,
-        255,
-        180
-      ],
-      "disabled":false,
-      "selected":false,
-      "visible":true,
-      "width":160,
-      "height":60,
-      "pos":[
-        0.0,
-        0.0
-      ],
-      "layout_direction":0,
-      "port_deletion_allowed":false,
-      "subgraph_session":{}
+    "graph": {
+        "layout_direction": 0,
+        "acyclic": true,
+        "pipe_collision": false,
+        "pipe_slicing": true,
+        "pipe_style": 1,
+        "accept_connection_types": "{}",
+        "reject_connection_types": "{}"
     },
-    "0x2d193b1b100":{
-      "type_":"example.MyNode",
-      "icon":null,
-      "name":"Node B",
-      "color":[
-        13,
-        18,
-        23,
-        255
-      ],
-      "border_color":[
-        74,
-        84,
-        85,
-        255
-      ],
-      "text_color":[
-        255,
-        255,
-        255,
-        180
-      ],
-      "disabled":false,
-      "selected":true,
-      "visible":true,
-      "width":160,
-      "height":60,
-      "pos":[
-        437.42468809731963,
-        -137.5520243117668
-      ],
-      "layout_direction":0,
-      "port_deletion_allowed":false,
-      "subgraph_session":{}
+    "nodes": {
+        "0x1962e407c50": {
+            "type_": "node.GraphNode",
+            "icon": null,
+            "name": "GraphNode",
+            "color": [
+                13,
+                18,
+                23,
+                255
+            ],
+            "border_color": [
+                74,
+                84,
+                85,
+                255
+            ],
+            "text_color": [
+                255,
+                255,
+                255,
+                180
+            ],
+            "disabled": false,
+            "selected": false,
+            "visible": true,
+            "width": 160,
+            "height": 60,
+            "pos": [
+                491.0855986463258,
+                383.8960010711364
+            ],
+            "layout_direction": 0,
+            "port_deletion_allowed": false,
+            "subgraph_session": {}
+        },
+        "0x1962e3b3100": {
+            "type_": "node.GraphNode",
+            "icon": null,
+            "name": "Node A",
+            "color": [
+                13,
+                18,
+                23,
+                255
+            ],
+            "border_color": [
+                74,
+                84,
+                85,
+                255
+            ],
+            "text_color": [
+                255,
+                255,
+                255,
+                180
+            ],
+            "disabled": false,
+            "selected": false,
+            "visible": true,
+            "width": 160,
+            "height": 60,
+            "pos": [
+                -14.474234959514732,
+                369.4102190995743
+            ],
+            "layout_direction": 0,
+            "port_deletion_allowed": false,
+            "subgraph_session": {}
+        },
+        "0x1962e3b3360": {
+            "type_": "node.GraphNode",
+            "icon": null,
+            "name": "Node B",
+            "color": [
+                13,
+                18,
+                23,
+                255
+            ],
+            "border_color": [
+                74,
+                84,
+                85,
+                255
+            ],
+            "text_color": [
+                255,
+                255,
+                255,
+                180
+            ],
+            "disabled": false,
+            "selected": false,
+            "visible": true,
+            "width": 160,
+            "height": 60,
+            "pos": [
+                538.2447365336966,
+                207.57218194682736
+            ],
+            "layout_direction": 0,
+            "port_deletion_allowed": false,
+            "subgraph_session": {}
+        },
+        "0x1962e373770": {
+            "type_": "node.ImageNode",
+            "icon": null,
+            "name": "ImageNode",
+            "color": [
+                13,
+                18,
+                23,
+                255
+            ],
+            "border_color": [
+                74,
+                84,
+                85,
+                255
+            ],
+            "text_color": [
+                255,
+                255,
+                255,
+                180
+            ],
+            "disabled": false,
+            "selected": false,
+            "visible": true,
+            "width": 160,
+            "height": 60,
+            "pos": [
+                254.17540524214286,
+                374.6654415573073
+            ],
+            "layout_direction": 0,
+            "port_deletion_allowed": false,
+            "subgraph_session": {}
+        }
+    },
+    "connections": [
+        {
+            "in": [
+                "0x1962e407c50",
+                "in"
+            ],
+            "out": [
+                "0x1962e3b3360",
+                "out"
+            ]
+        },
+        {
+            "out": [
+                "0x1962e3b3100",
+                "out"
+            ],
+            "in": [
+                "0x1962e373770",
+                "in"
+            ]
+        },
+        {
+            "out": [
+                "0x1962e3b3100",
+                "out"
+            ],
+            "in": [
+                "0x1962e3b3360",
+                "in"
+            ]
+        }
+    ],
+    "meta": {
+        "zoom": -0.23,
+        "center": {
+            "x": 424.56030975865445,
+            "y": 399.89166790723414
+        },
+        "app_version": "1.0.0"
     }
-  },
-  "connections":[
-    {
-      "out":[
-        "0x2d193b6f9d0",
-        "out"
-      ],
-      "in":[
-        "0x2d193b1b100",
-        "in"
-      ]
-    }
-  ]
 }
