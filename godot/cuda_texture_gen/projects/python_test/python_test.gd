@@ -1,6 +1,6 @@
 """
 """
-@tool
+#@tool
 extends Control
 
 

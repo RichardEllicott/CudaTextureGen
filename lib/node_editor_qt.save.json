@@ -9,7 +9,7 @@
         "reject_connection_types": "{}"
     },
     "nodes": {
-        "0x1962e407c50": {
+        "0x22deb36bd90": {
             "type_": "node.GraphNode",
             "icon": null,
             "name": "GraphNode",
@@ -44,7 +44,7 @@
             "port_deletion_allowed": false,
             "subgraph_session": {}
         },
-        "0x1962e3b3100": {
+        "0x22deb317360": {
             "type_": "node.GraphNode",
             "icon": null,
             "name": "Node A",
@@ -79,7 +79,7 @@
             "port_deletion_allowed": false,
             "subgraph_session": {}
         },
-        "0x1962e3b3360": {
+        "0x22deb3175c0": {
             "type_": "node.GraphNode",
             "icon": null,
             "name": "Node B",
@@ -114,10 +114,10 @@
             "port_deletion_allowed": false,
             "subgraph_session": {}
         },
-        "0x1962e373770": {
-            "type_": "node.ImageNode",
+        "0x22deb303650": {
+            "type_": "node.TestNode",
             "icon": null,
-            "name": "ImageNode",
+            "name": "TestNode",
             "color": [
                 13,
                 18,
@@ -142,42 +142,110 @@
             "width": 160,
             "height": 60,
             "pos": [
-                254.17540524214286,
-                374.6654415573073
+                72.70757598313348,
+                59.72408027185964
             ],
             "layout_direction": 0,
             "port_deletion_allowed": false,
             "subgraph_session": {}
+        },
+        "0x22deb303770": {
+            "type_": "custom.ImageNode",
+            "icon": null,
+            "name": "ImageNode",
+            "color": [
+                13,
+                18,
+                23,
+                255
+            ],
+            "border_color": [
+                74,
+                84,
+                85,
+                255
+            ],
+            "text_color": [
+                255,
+                255,
+                255,
+                180
+            ],
+            "disabled": false,
+            "selected": false,
+            "visible": true,
+            "width": 311.265625,
+            "height": 247.45000000000002,
+            "pos": [
+                275.2501090790053,
+                -67.51417769862395
+            ],
+            "layout_direction": 0,
+            "port_deletion_allowed": false,
+            "subgraph_session": {},
+            "custom": {
+                "image_display": null,
+                "image_path": "C:\\Users\\Richard\\github\\cuda_texture_gen\\lib/node_editor_qt.icon.png"
+            }
+        },
+        "0x22deb303890": {
+            "type_": "custom.ImageNode",
+            "icon": null,
+            "name": "ImageNode 1",
+            "color": [
+                13,
+                18,
+                23,
+                255
+            ],
+            "border_color": [
+                74,
+                84,
+                85,
+                255
+            ],
+            "text_color": [
+                255,
+                255,
+                255,
+                180
+            ],
+            "disabled": false,
+            "selected": true,
+            "visible": true,
+            "width": 321.015625,
+            "height": 247.45000000000002,
+            "pos": [
+                0.0,
+                0.0
+            ],
+            "layout_direction": 0,
+            "port_deletion_allowed": false,
+            "subgraph_session": {},
+            "custom": {
+                "image_display": null,
+                "image_path": "C:\\Users\\Richard\\github\\cuda_texture_gen\\lib/node_editor_qt.icon.png"
+            }
         }
     },
     "connections": [
         {
             "in": [
-                "0x1962e407c50",
+                "0x22deb36bd90",
                 "in"
             ],
             "out": [
-                "0x1962e3b3360",
+                "0x22deb3175c0",
                 "out"
             ]
         },
         {
             "out": [
-                "0x1962e3b3100",
+                "0x22deb317360",
                 "out"
             ],
             "in": [
-                "0x1962e373770",
-                "in"
-            ]
-        },
-        {
-            "out": [
-                "0x1962e3b3100",
-                "out"
-            ],
-            "in": [
-                "0x1962e3b3360",
+                "0x22deb3175c0",
                 "in"
             ]
         }
@@ -185,8 +253,8 @@
     "meta": {
         "zoom": -0.23,
         "center": {
-            "x": 424.56030975865445,
-            "y": 399.89166790723414
+            "x": 441.4388541833104,
+            "y": 281.7418569346422
         },
         "app_version": "1.0.0"
     }

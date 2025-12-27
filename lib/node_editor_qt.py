@@ -5,11 +5,19 @@ node editor
 pip install NodeGraphQt
 pip install PySide6
 
-🎨🐌
+
+built with:
+NodeGraphQt 0.6.43
+PySide6 6.10.1
 
 """
-
-
+from PySide6 import QtCore
+from NodeGraphQt.constants import Z_VAL_NODE_WIDGET
+from PySide6 import QtWidgets, QtCore, QtGui
+from NodeGraphQt import BaseNode
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout
+from NodeGraphQt import BaseNode, Port
 import sys
 import json
 from NodeGraphQt import NodeGraph, BaseNode, BackdropNode
@@ -20,6 +28,12 @@ from pathlib import Path
 from PySide6 import QtCore, QtGui, QtWidgets
 from NodeGraphQt.qgraphics.node_base import NodeItem
 from PySide6.QtCore import Qt
+
+
+from NodeGraphQt.widgets.node_widgets import NodeBaseWidget
+
+import NodeGraphQt
+import PySide6
 
 # these five this actual script
 script_dir = Path(__file__).resolve().parent
@@ -95,6 +109,9 @@ class PersistentSettings:
         self._synced = True
 
     def __del__(self):
+        """
+        WARNING cannot guarantee will always fire
+        """
         self.save()
 
 
@@ -114,16 +131,13 @@ class AboutDialog(QDialog):
         layout.addWidget(close_btn)
 
 
-# to figure out the image loading:
-# https://claude.ai/chat/fbdfe94e-c006-45b6-b3d8-567a3bc8e967
-
 class CustomBaseNode(BaseNode):
     """
     Docstring for BaseNode2
     """
 
-    __identifier__ = 'node'
-    NODE_NAME = 'CustomBaseNode'
+    # __identifier__ = 'node'
+    # NODE_NAME = 'CustomBaseNode'
 
     def __init__(self):
         super().__init__()
@@ -166,6 +180,21 @@ class GraphNode(CustomBaseNode):
         self.add_output('out')
 
 
+class TestNode(CustomBaseNode):
+
+    __identifier__ = 'node'
+    NODE_NAME = 'TestNode'
+
+    def __init__(self):
+        super().__init__()
+
+        self.add_input('in')
+        self.add_output('out')
+
+        self.add_input('Image', color=(50, 150, 200))
+        self.add_output('Float', color=(200, 150, 50))
+
+
 class ImageNode(CustomBaseNode):
     """Custom node that displays an image"""
 
@@ -203,6 +232,91 @@ class ImageNode(CustomBaseNode):
         self.view.update()
 
 
+# 🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺
+
+class ImageWidget(QtWidgets.QLabel):
+    valueChanged = QtCore.Signal(str)
+    sizeHintChanged = QtCore.Signal()
+
+    def __init__(self, parent=None, image_path=""):
+        super().__init__(parent)
+        # self.setAlignment(QtCore.Qt.AlignCenter)
+        self.setStyleSheet("background: transparent; border: none;")
+
+        self._image_path = image_path
+        self._pixmap = None
+
+        if image_path:
+            self.set_value(image_path)
+
+    def set_value(self, image_path: str):
+        self._image_path = image_path
+        pix = QtGui.QPixmap(image_path)
+
+        if pix.isNull():
+            self.setText("Image not found")
+            self._pixmap = None
+        else:
+            self._pixmap = pix
+            self.setPixmap(pix)
+
+        self.updateGeometry()
+        self.sizeHintChanged.emit()
+        self.valueChanged.emit(image_path)
+
+    def get_value(self):
+        return self._image_path
+
+    def sizeHint(self):
+        if self._pixmap:
+            return self._pixmap.size()
+        return QtCore.QSize(200, 150)
+
+
+
+from NodeGraphQt.widgets.node_widgets import NodeBaseWidget
+from NodeGraphQt.constants import Z_VAL_NODE_WIDGET
+from PySide6 import QtCore
+
+
+class ImageWidgetWrapper(NodeBaseWidget):
+    def __init__(self, parent=None, node=None):
+        super().__init__(parent, node)
+
+        self.setZValue(Z_VAL_NODE_WIDGET)
+
+        widget = ImageWidget(image_path="")
+        self.set_custom_widget(widget)
+
+        widget.valueChanged.connect(self.on_value_changed)
+        widget.sizeHintChanged.connect(self._update_node)
+
+    def _update_node(self):
+        if self.node and self.node.graph:
+            QtCore.QTimer.singleShot(0, self.node.graph.viewer().force_update)
+
+    def get_value(self):
+        return self.get_custom_widget().get_value()
+
+    def set_value(self, value: str):
+        self.get_custom_widget().set_value(value)
+
+
+
+
+class ImageNode2(BaseNode):
+    __identifier__ = "demo"
+    NODE_NAME = "ImageNode2"
+
+    def __init__(self):
+        super().__init__()
+        self.add_custom_widget(ImageWidgetWrapper, "image")
+
+
+
+# 🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺🍺
+
+
 class NodeEditorSettings(PersistentSettings):
 
     pass
@@ -214,7 +328,14 @@ class MyNodeEditor:
     app_version: str = "1.0.0"
 
     save_path: str
-    autoload: bool = True
+    autoload: bool = False
+
+    node_types: list[type[BaseNode]] = [
+        GraphNode,
+        ImageNode,
+        ImageNode2,
+        TestNode,
+    ]
 
     def save_settings(self) -> None:
         """
@@ -402,8 +523,18 @@ class MyNodeEditor:
         # ----------------------------------------------------------------
         # [Nodes]
         menu = add_menu("Nodes")
-        add_menu_entry(menu, "Add Node", self._add_node)
-        add_menu_entry(menu, "Add Node 2", self._add_node2)
+        for node_type in self.node_types:
+
+            print("👻", node_type)
+
+            key: str = f"{node_type.__identifier__}.{node_type.NODE_NAME}"  # the key required to add node
+            name: str = f"Add {node_type.NODE_NAME}"  # menu name
+
+            print("👻", key)
+
+            def callback(checked=False, k=key) -> None: return self.graph.create_node(k)  # callback to create node
+            add_menu_entry(menu, name, callback)
+
         # ----------------------------------------------------------------
         # [View]
         menu = add_menu("View")
@@ -426,15 +557,6 @@ class MyNodeEditor:
 
         # Universal port connection API
         node_a.output_ports()[0].connect_to(node_b.input_ports()[0])
-
-    def _add_node(self) -> None:
-        # self.graph.create_node('example.MyNode', name='New Node', pos=(100, 100))
-        self.graph.create_node('node.GraphNode', pos=(100, 100))
-
-    def _add_node2(self) -> None:
-        # node = self.graph.create_node('custom.ImageNode', name='Image Node', pos=(100, 100))
-        node = self.graph.create_node('node.ImageNode', pos=(100, 100))
-        # node.set_image(icon_path)
 
     # ================================================================
     # ⚠️ not working
@@ -478,8 +600,8 @@ class MyNodeEditor:
         self.window.setCentralWidget(cast(QWidget, self.graph.widget))  # cast for pylance
 
         # Register nodes
-        self.graph.register_node(GraphNode)
-        self.graph.register_node(ImageNode)
+        for node_type in self.node_types:
+            self.graph.register_node(node_type)
 
         # Build UI
         self._create_menu_bar()
@@ -503,5 +625,9 @@ class MyNodeEditor:
 
 
 if __name__ == '__main__':
+
+    print("NodeGraphQt.__version__:", NodeGraphQt.__version__)
+    print("PySide6.__version__:", PySide6.__version__)
+
     editor = MyNodeEditor(f"{script_dir}/{scrip_stem}.settings.json")
     editor.run()
