@@ -12,7 +12,7 @@
     //
     //
     //
-    "workbench.colorTheme": "Monokai",
+    "workbench.colorTheme": "Default Dark Modern",
     "C_Cpp.intelliSenseEngine": "default",
     "files.eol": "\n",
     "files.associations": {

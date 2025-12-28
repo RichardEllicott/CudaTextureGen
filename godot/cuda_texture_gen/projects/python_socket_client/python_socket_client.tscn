@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://4d5vfx7usmyw"]
+
+[ext_resource type="Script" uid="uid://sdqidlp53al" path="res://projects/python_socket_client/python_socket_client.gd" id="1_ftlgp"]
+
+[node name="PythonSocketClient" type="Node2D"]
+
+[node name="PythonSocketClient" type="Node" parent="."]
+script = ExtResource("1_ftlgp")
+
+[node name="TextureRect" type="TextureRect" parent="PythonSocketClient"]
+offset_right = 40.0
+offset_bottom = 40.0
