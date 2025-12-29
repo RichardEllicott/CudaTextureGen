@@ -42,7 +42,7 @@ class CurandArray {
 
     void resize(std::array<size_t, Dim> dimensions) {
 
-        if (device_array.dimensions() != dimensions) {
+        if (device_array.shape() != dimensions) {
             device_array.resize(dimensions);
             init();
         }

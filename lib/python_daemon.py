@@ -15,7 +15,7 @@ import inspect
 from websockets.asyncio.server import ServerConnection
 
 
-class ServerBase:
+class Server:
     """
     server base
 
@@ -50,13 +50,13 @@ class ServerBase:
                     continue
 
                 cmd: str = data.get("cmd")  # command string
-                cmd = cmd.capitalize()  # ensure capitals
+                cmd = cmd.upper()  # ensure capitals
                 handler = getattr(self, f"CMD_{cmd}", None)  # get function
 
                 if inspect.iscoroutinefunction(handler):  # check is an aysync def
                     await handler(websocket, data)
                 else:
-                    await websocket.send(json.dumps({"error": "unknown_command"}))
+                    await websocket.send(json.dumps({"error": f"unknown_command: {cmd}"}))
 
         except websockets.exceptions.ConnectionClosedError:
             print("Client disconnected cleanly")
@@ -80,7 +80,7 @@ class ServerBase:
         asyncio.run(self.main())
 
 
-class Server(ServerBase):
+class ServerTest(Server):
 
     async def CMD_PING(self, websocket: ServerConnection, data) -> None:
 
@@ -110,23 +110,24 @@ class Server(ServerBase):
             width = int(data.get("width", width))
             height = int(data.get("height", height))
 
+        arr = np.linspace(0.0, 1.0, height*width, dtype=np.float32).reshape((height, width))  # Create a 2D float32 array gradient in range [0, 1]
+        bytes = arr.tobytes()
+
         header = {
             "type": "image",
             "format": "f32",
             "width": width,
             "height": height,
-            "label": "preview"
+            "label": "preview",
+            "size_bytes": len(bytes),
         }
+
         await websocket.send(json.dumps(header))  # send header
+        await websocket.send(bytes)  # send array bytes
 
-        arr = np.linspace(0.0, 1.0, height*width, dtype=np.float32).reshape((height, width))  # Create a 2D float32 array gradient in range [0, 1]
-        await websocket.send(arr.tobytes())  # send array bytes
-
-
-
-
+        # ⚠️ we are not chunking data and may start to run into problems as we go beyond abot 4MB
 
 
 # launch example
 if __name__ == "__main__":
-    Server().launch()
+    ServerTest().launch()

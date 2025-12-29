@@ -15,7 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # will generate compile_commands.json for 
 # # ⚠️⚠️⚠️⚠️
 
 # ================================================================================================================================
-# 🐍 Find Python
+# [🐍 Find Python]
 # --------------------------------------------------------------------------------------------------------------------------------
 
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
@@ -30,22 +30,25 @@ if(WIN32 AND NOT TARGET Python::Module)
 endif()
 
 # ================================================================================================================================
-# 🍅 Add cu/cpp source files
+# [🍅 Add Source Files]
 # --------------------------------------------------------------------------------------------------------------------------------
 
 # Recursively find all .cu and .cpp files in src/main/ note GLOB_RECURSE instead
 # of GLOB
 
-file(
-  GLOB_RECURSE
-  CUDA_CPP_SOURCES
-  CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/main/*.cu"
+
+file(GLOB_RECURSE CUDA_CPP_SOURCES CONFIGURE_DEPENDS # recurse source folders
+
+  # main source folder 
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/main/*.cu" 
   "${CMAKE_CURRENT_SOURCE_DIR}/src/main/*.cpp"
 
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cu" # NEW
+  # core library
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cu" 
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/kernels/*.cu" # NEW
+
+  # extra kernels
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/kernels/*.cu"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/kernels/*.cpp"
 )
 
@@ -53,7 +56,7 @@ file(
 add_library(cuda_core STATIC ${CUDA_CPP_SOURCES}) # NOTE "cuda_core"
 
 # ================================================================================================================================
-# 📦 add include directories and our python bits
+# 📦 [Include Directories and Python Stuff]
 # --------------------------------------------------------------------------------------------------------------------------------
 
 # Tell CMake that the target `cuda_core` should look for headers in the
@@ -61,11 +64,10 @@ add_library(cuda_core STATIC ${CUDA_CPP_SOURCES}) # NOTE "cuda_core"
 # adds that directory to the compiler's search path (-I flag). You still need to
 # #include the headers you want in your .cpp files.
 
-target_include_directories(
-  cuda_core
-  PUBLIC src/include # headers
-         src/core # core helpers, mainly templates to manage cuda
-         src/kernels # some extra kernel only files
+target_include_directories(cuda_core PUBLIC 
+  src/include # headers
+  src/core # core helpers, mainly templates to manage cuda
+  src/kernels # some extra kernel only files
 )
 
 # Mark the `cuda_core` target as position-independent code (PIC). This is
@@ -79,7 +81,7 @@ set_target_properties(cuda_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(src/python)
 
 # ================================================================================================================================
-# 🚀 Test Executables (don't rely on python at all)
+# 🚀 [Test Executables (not python)]
 # --------------------------------------------------------------------------------------------------------------------------------
 
 option(ENABLE_TESTS "Build the test executables" ON)
@@ -102,7 +104,7 @@ if(ENABLE_TESTS)
 endif()
 
 # ================================================================================================================================
-# 🔗 testing cross platform dlls (not using boost or sane they broke)
+# 🔗 [Cross Platform Plugin Generation (not python)]
 # --------------------------------------------------------------------------------------------------------------------------------
 
 # note this comes out in the windows folder, top level

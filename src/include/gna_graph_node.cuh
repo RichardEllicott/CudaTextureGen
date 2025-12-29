@@ -22,6 +22,8 @@ GN-A
 #include "macros.h"
 #include <memory> // shared_ptr
 #include <variant>
+#include "template_macro_undef.h"
+
 
 // ================================================================================================================================
 // [Definitions]

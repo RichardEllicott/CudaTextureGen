@@ -31,3 +31,6 @@ included at the bottom of the bind headers that use the template pattern
 #undef LAYER_YIELD_DEFAULT
 #undef LAYER_PERMEABILITY_DEFAULT
 #undef LAYER_THRESHOLD_DEFAULT
+
+#define STRINGIFY(x) #x
+#define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)

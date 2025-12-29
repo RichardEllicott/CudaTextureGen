@@ -59,13 +59,14 @@ central file for the python bindings
 // [Graph Nodes]
 // ----------------------------------------------------------------
 #include "device_array.bind.h"
+#include "gna/gna_base.bind.h"
 #include "gna_graph_node.bind.h"
 
 // ================================================================
 // [Nanobind Options]
 // ----------------------------------------------------------------
-#include <nanobind/stl/array.h> // std::array
-#include <nanobind/stl/vector.h>       // std::vector
+#include <nanobind/stl/array.h>  // std::array
+#include <nanobind/stl/vector.h> // std::vector
 // #include <nanobind/stl/string.h>       // std::string
 // #include <nanobind/stl/map.h>          // std::map, std::unordered_map
 // #include <nanobind/stl/set.h>          // std::set, std::unordered_set
@@ -73,7 +74,7 @@ central file for the python bindings
 // #include <nanobind/stl/pair.h>         // std::pair
 // #include <nanobind/stl/tuple.h>        // std::tuple
 // #include <nanobind/stl/optional.h>     // std::optional
-#include <nanobind/stl/variant.h>      // std::variant
+#include <nanobind/stl/variant.h> // std::variant
 // #include <nanobind/stl/filesystem.h>   // std::filesystem::path
 #include <nanobind/stl/shared_ptr.h> // std::shared_ptr
 // #include <nanobind/stl/unique_ptr.h>   // std::unique_ptr
@@ -113,4 +114,5 @@ NB_MODULE(cuda_texture_gen, m) {
     // GNA
     device_array::bind(m);
     gna_graph_node::bind(m);
+    gna_base::bind(m);
 }

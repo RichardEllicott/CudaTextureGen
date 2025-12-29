@@ -356,8 +356,8 @@ void TEMPLATE_CLASS_NAME::allocate_device00() {
     if (_device_allocated)
         return;
 
-    pars._width = height_map.dimensions()[0];
-    pars._height = height_map.dimensions()[1];
+    pars._width = height_map.shape()[0];
+    pars._height = height_map.shape()[1];
     size_t array_size = pars._width * pars._height;
 
 // allocate and zero arrays
@@ -409,15 +409,15 @@ void TEMPLATE_CLASS_NAME::allocate_device01() {
 
     if (!layer_map.empty()) {
         printf("🐙 layer_map detected...\n");
-        pars._width = layer_map.dimensions()[0];
-        pars._height = layer_map.dimensions()[1];
-        pars._layers = layer_map.dimensions()[2]; // marks layers mode as active
+        pars._width = layer_map.shape()[0];
+        pars._height = layer_map.shape()[1];
+        pars._layers = layer_map.shape()[2]; // marks layers mode as active
         setup_layer_mode01();
 
     } else if (!height_map.empty()) {
         printf("🐙 height_map detected...\n");
-        pars._width = height_map.dimensions()[0];
-        pars._height = height_map.dimensions()[1];
+        pars._width = height_map.shape()[0];
+        pars._height = height_map.shape()[1];
         pars._layers = 0;
     } else {
         throw std::runtime_error("layer_map and height_map empty!");

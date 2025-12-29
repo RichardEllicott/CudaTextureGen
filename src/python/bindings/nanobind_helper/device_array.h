@@ -25,7 +25,7 @@ namespace nb = nanobind; // shortcut
 template <typename T, int Dim>
 inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray<T, Dim> &device_array) {
 
-    auto shape = device_array.dimensions(); // getting the numpy shape to create (which needs to swap W and H)
+    auto shape = device_array.shape(); // getting the numpy shape to create (which needs to swap W and H)
 
     // Flip for NumPy if Dim >= 2
     if constexpr (Dim >= 2) {

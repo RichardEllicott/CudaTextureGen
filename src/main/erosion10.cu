@@ -716,21 +716,21 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     if (!layer_map.empty()) {
         printf("🐡 layer_map detected...\n");
-        core::logging::println("dimensions: ", height_map.dimensions());
+        core::logging::println("shape: ", height_map.shape());
 
-        pars._width = layer_map.dimensions()[0];
-        pars._height = layer_map.dimensions()[1];
-        pars._layers = layer_map.dimensions()[2]; // marks layers mode as active
+        pars._width = layer_map.shape()[0];
+        pars._height = layer_map.shape()[1];
+        pars._layers = layer_map.shape()[2]; // marks layers mode as active
 
         height_map.set_stream(stream.get());
         height_map.resize({pars._width, pars._height}); // allocate the heightmap still, we will copy the total height to it
 
         if (pars.sediment_layer_mode) {
-            sediment_layer_map.resize(layer_map.dimensions());
+            sediment_layer_map.resize(layer_map.shape());
         }
 
 #ifdef PRECALCULATE_EXPOSED_LAYER
-        _exposed_layer_map.resize(height_map.dimensions()); // set _exposed_layer_map to height_map dimensions
+        _exposed_layer_map.resize(height_map.shape()); // set _exposed_layer_map to height_map dimensions
 #endif
 
         // ensure all arrays have 1's
@@ -755,10 +755,10 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
         // stream.sync();
     } else if (!height_map.empty()) {
         printf("🐡 height_map detected...\n");
-        core::logging::println("dimensions: ", height_map.dimensions());
+        core::logging::println("shape: ", height_map.shape());
 
-        pars._width = height_map.dimensions()[0];
-        pars._height = height_map.dimensions()[1];
+        pars._width = height_map.shape()[0];
+        pars._height = height_map.shape()[1];
         // pars._layers = 1;
     } else {
         throw std::runtime_error("layer_map and height_map empty!");
@@ -777,7 +777,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     _slope_vector2.resize({pars._width, pars._height, 2}); // 2D vectors
 
     if (pars.sea_pass) {
-        _sea_map.resize(height_map.dimensions());
+        _sea_map.resize(height_map.shape());
     }
 
     switch (pars.mode) {
@@ -795,7 +795,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     X(sediment_map)
 #define X(NAME)                               \
     if (NAME.empty()) {                       \
-        NAME.resize(height_map.dimensions()); \
+        NAME.resize(height_map.shape()); \
         NAME.zero_device();                   \
     }
     ZERO_ARRAYS
@@ -809,7 +809,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     X(_sediment_out)    \
     X(_water_velocity)
 #define X(NAME) \
-    NAME.resize(height_map.dimensions());
+    NAME.resize(height_map.shape());
     ALLOCATE_ARRAYS
 #undef X
 #undef ALLOCATE_ARRAYS
@@ -1024,7 +1024,7 @@ void TEMPLATE_CLASS_NAME::STAGE_MAIN() {
 
         // if the height_map is empty and the layer_map not, we want to use layer mode
         if (height_map.empty() && !layer_map.empty()) {
-            auto &dim = layer_map.dimensions();
+            auto &dim = layer_map.shape();
             height_map.resize({dim[0], dim[1]});
             pars._layers = dim[2];
         }

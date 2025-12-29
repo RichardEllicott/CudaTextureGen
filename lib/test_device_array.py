@@ -71,21 +71,5 @@ def test2():
     
 
 
-# test2()
+test2() # testing the graph nodes
 
-
-def test_gui():
-    import tkinter as tk
-
-    root = tk.Tk()
-    root.title("My GUI")
-    root.geometry("400x300")
-
-    label = tk.Label(root, text="Hello world")
-    label.pack()
-
-    root.mainloop()
-
-
-
-test_gui()

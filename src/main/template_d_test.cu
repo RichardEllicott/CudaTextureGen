@@ -26,8 +26,8 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
     if (_device_allocated)
         return;
 
-    pars._width = image.dimensions()[0];
-    pars._height = image.dimensions()[1];
+    pars._width = image.shape()[0];
+    pars._height = image.shape()[1];
 
     _device_allocated = true;
 }

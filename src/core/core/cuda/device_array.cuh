@@ -100,7 +100,7 @@ template <typename T, int Dim>
 class DeviceArray : public core::cuda::DeviceArrayBase {
     static_assert(Dim > 0, "DeviceArray requires Dim > 0");
 
-    std::array<size_t, Dim> _dimensions{}; // default dimensions will be 0
+    std::array<size_t, Dim> _shape{}; // default dimensions will be 0
 
     // device side pointer
     T *_dev_ptr = nullptr;
@@ -129,7 +129,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
     // the total array size
     size_t size() const override {
         size_t total = 1;
-        for (auto d : _dimensions) total *= d;
+        for (auto d : _shape) total *= d;
         return total;
     }
 
@@ -138,20 +138,25 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         return sizeof(T) * size();
     }
 
-    // Return dimensions by const reference (safe if _dimensions is stable)
-    const std::array<size_t, Dim> &dimensions() const noexcept {
-        return _dimensions;
+    // // Return dimensions by const reference (safe if _shape is stable)
+    // const std::array<size_t, Dim> &dimensions() const noexcept {
+    //     return _shape;
+    // }
+
+    // Alias
+    const std::array<size_t, Dim> &shape() const noexcept {
+        return _shape;
     }
 
     // width always exists
     size_t width() const noexcept {
-        return _dimensions[0];
+        return _shape[0];
     }
 
     // height only if Dim >= 2, else 1
     size_t height() const noexcept {
         if constexpr (Dim >= 2) {
-            return _dimensions[1];
+            return _shape[1];
         }
         return 1;
     }
@@ -159,31 +164,33 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
     // depth only if Dim >= 3, else 1
     size_t depth() const noexcept {
         if constexpr (Dim >= 3) {
-            return _dimensions[2];
+            return _shape[2];
         }
         return 1;
     }
 
-    // Return dimensions in NumPy order (height, width, depth...)
-    std::array<size_t, Dim> numpy_dimensions() const noexcept {
-        std::array<size_t, Dim> np_dims{};
-        if constexpr (Dim == 1) {
-            np_dims[0] = _dimensions[0]; // same
-        } else if constexpr (Dim == 2) {
-            np_dims[0] = _dimensions[1]; // height
-            np_dims[1] = _dimensions[0]; // width
-        } else if constexpr (Dim == 3) {
-            np_dims[0] = _dimensions[1]; // height
-            np_dims[1] = _dimensions[0]; // width
-            np_dims[2] = _dimensions[2]; // depth
-        } else {
-            // For higher dimensions, you can decide a consistent policy
-            // e.g. swap first two, leave the rest
-            np_dims = _dimensions;
-            std::swap(np_dims[0], np_dims[1]);
-        }
-        return np_dims;
-    }
+    // 🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪
+    // // Return dimensions in NumPy order (height, width, depth...)
+    // std::array<size_t, Dim> numpy_dimensions() const noexcept {
+    //     std::array<size_t, Dim> np_dims{};
+    //     if constexpr (Dim == 1) {
+    //         np_dims[0] = _shape[0]; // same
+    //     } else if constexpr (Dim == 2) {
+    //         np_dims[0] = _shape[1]; // height
+    //         np_dims[1] = _shape[0]; // width
+    //     } else if constexpr (Dim == 3) {
+    //         np_dims[0] = _shape[1]; // height
+    //         np_dims[1] = _shape[0]; // width
+    //         np_dims[2] = _shape[2]; // depth
+    //     } else {
+    //         // For higher dimensions, you can decide a consistent policy
+    //         // e.g. swap first two, leave the rest
+    //         np_dims = _shape;
+    //         std::swap(np_dims[0], np_dims[1]);
+    //     }
+    //     return np_dims;
+    // }
+    // 🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪
 
     // free the device, will also set the dimensions to 0 (which is the same as freeing the device)
     void free_device() override {
@@ -193,7 +200,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
                 throw std::runtime_error("cudaFreeAsync failed");
             }
             _dev_ptr = nullptr;
-            _dimensions = {};
+            _shape = {};
         }
     }
 
@@ -204,12 +211,12 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 
     // resize dimensions, free and allocate memory as required
     void resize(std::array<size_t, Dim> dimensions) {
-        if (_dimensions == dimensions) {
+        if (_shape == dimensions) {
             return; // nothing changed, skip reallocation
         }
 
         free_device();
-        _dimensions = dimensions;
+        _shape = dimensions;
         allocate_device();
     }
 
@@ -222,7 +229,8 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         } else if constexpr (Dim == 3) {
             resize(std::array<size_t, 3>{width, height, depth});
         } else {
-            static_assert(Dim <= 3, "resize overload only supports Dim = 1, 2, or 3");
+            // static_assert(Dim <= 3, "resize_helper overload only supports Dim = 1, 2, or 3");
+            throw std::runtime_error("resize_helper overload only supports Dim = 1, 2, or 3");
         }
     }
 
@@ -312,7 +320,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         using std::swap;
         swap(_dev_ptr, other._dev_ptr);
         swap(_stream, other._stream);
-        swap(_dimensions, other._dimensions);
+        swap(_shape, other._shape);
     }
 
     // freind is a syntatic sugar to avoid putting the non-member function outside
@@ -326,7 +334,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 
     // COPY
     DeviceArray(const DeviceArray &other) {
-        _dimensions = other._dimensions;
+        _shape = other._shape;
         _stream = other._stream;
         _dev_ptr = nullptr;
 
@@ -335,8 +343,6 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
             if (err != cudaSuccess) {
                 throw std::runtime_error("cudaMallocAsync failed in copy ctor");
             }
-
-            // resize(_dimensions); // 🚧 we might reduce logic around here
 
             err = cudaMemcpyAsync(_dev_ptr, other._dev_ptr, size_bytes(), cudaMemcpyDeviceToDevice, _stream);
             if (err != cudaSuccess) {
@@ -360,7 +366,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
     DeviceArray(DeviceArray &&other) noexcept {
         swap(other);
         other._dev_ptr = nullptr;
-        other._dimensions = {};
+        other._shape = {};
         other._stream = nullptr;
     }
 
@@ -369,7 +375,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
             free_device(); // release current
             swap(other);
             other._dev_ptr = nullptr;
-            other._dimensions = {};
+            other._shape = {};
             other._stream = nullptr;
         }
         return *this;
@@ -415,8 +421,8 @@ class DeviceArray2D : public DeviceArray<T, 2> {
         Base::upload(host_ptr, {width, height});
     }
 
-    // size_t width() const { return this->dimensions()[0]; }
-    // size_t height() const { return this->dimensions()[1]; }
+    // size_t width() const { return this->shape()[0]; }
+    // size_t height() const { return this->shape()[1]; }
 };
 
 // thin wrapper for 3D
@@ -437,9 +443,9 @@ class DeviceArray3D : public DeviceArray<T, 3> {
         Base::upload(host_ptr, {width, height, depth});
     }
 
-    // size_t width() const { return this->dimensions()[0]; }
-    // size_t height() const { return this->dimensions()[1]; }
-    // size_t depth() const { return this->dimensions()[2]; }
+    // size_t width() const { return this->shape()[0]; }
+    // size_t height() const { return this->shape()[1]; }
+    // size_t depth() const { return this->shape()[2]; }
 };
 
 } // namespace core::cuda

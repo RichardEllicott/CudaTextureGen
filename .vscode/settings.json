@@ -386,6 +386,22 @@
         {
             "folderPath": "cuda_texture_gen\\src\\include\\gna_graph.cuh\\",
             "badge": "🦄"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\",
+            "color": "foldercolorizer.color_00cc00"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\core\\",
+            "color": "foldercolorizer.color_33cc33"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\main\\",
+            "color": "foldercolorizer.color_cc0099"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\kernels\\",
+            "color": "foldercolorizer.color_33cc33"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",
