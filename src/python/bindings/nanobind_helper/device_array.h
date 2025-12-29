@@ -7,7 +7,7 @@ new DeviceArray pattern
 */
 #pragma once
 
-#include "cuda_types.cuh"
+#include "core/cuda/types.cuh"
 #include "numpy.h" // numpy helper in same folder
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>

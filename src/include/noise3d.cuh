@@ -66,7 +66,7 @@ using Float9Raw = float[9];          // For device structs
 
 // ================================================================ //
 
-#include "cuda_types.cuh"
+#include "core/cuda/types.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 

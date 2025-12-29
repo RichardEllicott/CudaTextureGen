@@ -12,7 +12,7 @@
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
 
-#include "cuda_types.cuh"
+#include "core/cuda/types.cuh"
 #include <iostream>
 #include <string> // not sure?
 #include <typeindex>

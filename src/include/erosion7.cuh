@@ -71,7 +71,7 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
 // ================================================================ //
 
 #include "core.h"
-#include "cuda_types.cuh"
+#include "core/cuda/types.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 

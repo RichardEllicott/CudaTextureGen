@@ -82,6 +82,49 @@ central file for the python bindings
 // #include <nanobind/stl/chrono.h>       // std::chrono types
 // ================================================================
 
+// ================================================================
+
+
+// ================================================================
+// [Type Caster For my Smart Ref]
+// ----------------------------------------------------------------
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+
+namespace nb = nanobind;
+
+template <typename T>
+struct nb::detail::type_caster<core::Ref<T>> {
+    using Value = core::Ref<T>;
+    using Inner = std::shared_ptr<T>;
+
+    NB_TYPE_CASTER(Value, const_name("Ref[") + make_caster<T>::Name + const_name("]"));
+
+    // Python → C++
+    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+        make_caster<Inner> inner_caster;
+        if (!inner_caster.from_python(src, flags, cleanup))
+            return false;
+
+        value.shared_ptr = cast<Inner>(src);
+        return true;
+    }
+
+    // C++ → Python
+    static handle from_cpp(const Value &v, rv_policy policy, cleanup_list *cleanup) noexcept {
+        return make_caster<Inner>::from_cpp(v.shared_ptr, policy, cleanup);
+    }
+};
+
+// #include "nanobind_helper/ref.h" // ⚠️ moved it here (BROKEN)
+
+
+// ================================================================
+
+
+
+
+
 NB_MODULE(cuda_texture_gen, m) {
 
     core::logging::init_console(); // ensure windows console supports unicode

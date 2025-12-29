@@ -11,6 +11,10 @@ custom global stuff
 
 
 #include "core/util/timer.h"   // timer
+
+
+#include "core/ref.h" // shared_ptr wrapper that emulates godot
+
 // #include "core/config.h"    // global constants or flags
 
 

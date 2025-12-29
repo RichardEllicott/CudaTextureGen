@@ -29,7 +29,7 @@ this one uses more clever types and classes, needing less horrible macros
 
 // ════════════════════════════════════════════════ //
 
-#include "cuda_types.cuh"
+#include "core/cuda/types.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 

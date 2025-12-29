@@ -16,7 +16,10 @@
 #include <string>
 #include <unordered_map>
 
-#include "cuda_types.cuh" // DeviceArray
+#include "core.h"
+#include "core/cuda/types.cuh" // DeviceArray
+
+#define GNA_CODE_ROUTE 1 // 0 = smart ptr, 1 = core::Ref
 
 // ================================================================ //
 #define TEMPLATE_CLASS_NAME GNA_Base
@@ -57,6 +60,11 @@ class TEMPLATE_CLASS_NAME {
         vars[key] = value;
     }
 
+    // ================================================================================================================================
+
+#if GNA_CODE_ROUTE == 0
+
+    // straight shared_ptr
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
 #define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
     std::shared_ptr<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
@@ -64,44 +72,45 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
+    // ensure all smart pointers have a device array available
     void ensure_arrays() {
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION)                          \
-    if (!NAME) {                                                              \
-        NAME = std::make_shared<core::cuda::DeviceArray<TYPE, DIMENSIONS>>(); \
+#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION)                                     \
+    if (!NAME) { NAME = std::make_shared<core::cuda::DeviceArray<TYPE, DIMENSIONS>>(); } \
+    TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
     }
+
+#elif GNA_CODE_ROUTE == 1
+
+    //
+    // custom Ref version
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
+    core::Ref<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
+    TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
+
+#endif
+
+    // ================================================================================================================================
+
+    TEMPLATE_CLASS_NAME(){
+
+    // set streams
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
+    NAME.set_stream(stream.get())                    \
         TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
 #endif
     }
 
-    void process() {
+    core::cuda::Stream stream;
 
-        // if (!input) throw std::runtime_error("GNA_Base.input is not set");
-        // auto &input_ref = *input;
-        // if (input_ref.empty()) throw std::runtime_error("GNA_Base.input is empty");
-
-        // if (!output) {
-        //     output
-        // }
-
-        ensure_arrays();
-        auto &input_ref = *input;
-        auto &output_ref = *output;
-
-        if (input_ref.empty()) throw std::runtime_error("GNA_Base.input is empty");
-
-        output_ref.resize(input_ref.shape());
-
-
-
-        // now use arr freely
-        // arr.empty()
-        // arr.data()
-        // arr.size()
-        // arr.upload(...)
-        // arr.download(...)
-    }
+    void process();
 };
 
 } // namespace TEMPLATE_NAMESPACE
