@@ -11,6 +11,9 @@ functions to covert numpy arrays back and forth to std::vector and core::Array2D
 #include "nanobind_helper/device_array.h"
 #include "nanobind_helper/numpy.h"
 #include "nanobind_helper/vector.h"
+#include "nanobind_helper/bind_dynamic_properties.h" // binding python property setting to a has/get/set functions
+
+#include "nanobind_helper/ref.h" // type caster for core::Ref
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
@@ -41,14 +44,12 @@ inline nb::object get_list_of_lists(int height, int width) {
     return outer; // Python will see a list of lists
 }
 
-// throw a Python warning, note normal exceptions should use C++ syntax 
+// throw a Python warning, note normal exceptions should use C++ syntax
 // ⚠️ USING THIS WITH LINUX CAUSED AN ERROR... it's to do with the order.... add back later?
-inline void warn(const char* message, const char* category = "UserWarning") {
+inline void warn(const char *message, const char *category = "UserWarning") {
     nb::module_ warnings = nb::module_::import_("warnings");
     nb::module_ builtins = nb::module_::import_("builtins");
     warnings.attr("warn")(message, builtins.attr(category));
 }
 
-
-
-}
+} // namespace nanobind::helper

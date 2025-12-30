@@ -2,8 +2,6 @@
 
 convert numpy arrays to and from DeviceArray's
 
-new DeviceArray pattern
-
 */
 #pragma once
 
@@ -11,7 +9,7 @@ new DeviceArray pattern
 #include "numpy.h" // numpy helper in same folder
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
-// #include <cstring> // required for std::memcpy in linux (not windows)
+#include <cstring> // required for std::memcpy in linux (not windows)
 
 #include "core/arrays/permute.h"
 

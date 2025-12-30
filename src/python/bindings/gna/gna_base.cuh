@@ -45,19 +45,22 @@ namespace nb = nanobind;
 class TEMPLATE_CLASS_NAME {
 
   public:
-    std::unordered_map<std::string, nb::object> vars;
+    std::unordered_map<std::string, nb::object> properties;
 
-    nb::object getattr(const std::string &key) const {
-        auto it = vars.find(key);
-        if (it == vars.end()) {
-            // throw nb::attribute_error("Attribute not found: " + key);
+    bool has_property(const std::string &key) const {
+        return properties.find(key) != properties.end();
+    }
+
+    nb::object get_property(const std::string &key) const {
+        auto it = properties.find(key);
+        if (it == properties.end()) {
             throw nb::attribute_error((std::string("Attribute not found: ") + key).c_str());
         }
         return it->second;
     }
 
-    void setattr(const std::string &key, nb::object value) {
-        vars[key] = value;
+    void set_property(const std::string &key, nb::object value) {
+        properties[key] = value;
     }
 
     // ================================================================================================================================

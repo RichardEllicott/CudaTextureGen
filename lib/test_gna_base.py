@@ -13,10 +13,34 @@ import numpy as np
 
 import numpy as np
 import cuda_texture_gen
+from pathlib import Path
+
+
+
+script_path = Path(__file__)
+
+# these five this actual script
+script_dir = Path(__file__).resolve().parent
+icon_path = f"{script_dir}/node_editor_qt.icon.png"
+
+script_filename = Path(__file__).name
+scrip_stem = Path(__file__).stem  # minus the extension
+
+
+
+
+def get_test_gradient(width = 128, height = 128):
+    return np.linspace(0.0, 1.0, height*width, dtype=np.float32).reshape((height, width))  # Create a 2D float32 array gradient in range [0, 1]
+
 
 
 def test():
     print("test()...")
+
+    test_gradient = get_test_gradient()
+    tools.images.save(test_gradient, f"{script_path}.png")
+
+
 
     gna_base = cuda_texture_gen.GNA_Base()
 
@@ -28,15 +52,21 @@ def test():
     print(f"input = {gna_base.input}")
 
     device_array_2d = cuda_texture_gen.DeviceArrayFloat2D()
-    device_array_2d.resize([32, 32])
+    # device_array_2d.resize([32, 32])
+
+    device_array_2d.array = test_gradient
 
 
     print(f"device_array_2d = {device_array_2d}")
     gna_base.input = device_array_2d
     print(f"gna_base.input = {gna_base.input}")
 
-
     gna_base.process()
+
+    tools.images.save(gna_base.input.array, f"{script_path}.input.png")
+    tools.images.save(gna_base.output.array, f"{script_path}.output.png")
+
+
 
     pass
 

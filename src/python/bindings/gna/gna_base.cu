@@ -53,6 +53,31 @@ void TEMPLATE_CLASS_NAME::process() {
         printf("🧠 input->size() => %zu\n", input->size());
     }
 
+    if (!input.is_valid()) throw std::runtime_error("GNA_Base.input is not valid");
+    if (input->empty()) throw std::runtime_error("GNA_Base.input is empty");
+    if (!output.is_valid()) output.instantiate();
+
+    auto &input_ref = *input.shared_ptr;
+    auto &output_ref = *output.shared_ptr;
+    output_ref = input_ref; // should copy on gpu
+
+    auto width = input->width();
+    auto height = input->height();
+    dim3 block(16, 16);
+    dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
+
+    chequer_test<<<grid, block, 0, stream.get()>>>(
+        width, height,
+        output->dev_ptr());
+
+    stream.sync();
+
+
+     printf("🧠 GNA_CODE_ROUTE 1 TEST FINISHED\n");
+
+    // output.get() = input.get();
+    // *output = *input;
+
 #endif
 }
 

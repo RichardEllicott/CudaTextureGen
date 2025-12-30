@@ -16,7 +16,7 @@ template <typename T>
 class Ref {
 
   public:
-    std::shared_ptr<T> shared_ptr; //  seems to need to be public??
+    std::shared_ptr<T> shared_ptr; // i need to leave this public to allow the type caster to see it
 
     // Godot-style: explicitly create the object
     template <typename... Args>
