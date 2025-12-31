@@ -3,117 +3,49 @@
 
 */
 #pragma once
-// #include "template_d_base.cuh"
-// #include "core.h"
-// #include "template_e_base.cuh"
-// #include <stdexcept>
-// #include <unordered_set>
-#include "template_macro_undef.h"
-#include <nanobind/nanobind.h>
-#include <unordered_map>
 
-#include <memory> // shared_ptr
+#include <nanobind/nanobind.h>
 #include <string>
 #include <unordered_map>
 
-#include "core.h"
-#include "core/cuda/types.cuh" // DeviceArray
+// #include "core.h"
+#include "core/cuda/types.cuh"
 
-#define GNA_CODE_ROUTE 1 // 0 = smart ptr, 1 = core::Ref
+class GNA_Base {
 
-// ================================================================ //
-#define TEMPLATE_CLASS_NAME GNA_Base
-#define TEMPLATE_NAMESPACE gna_base
-
-// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_PARAMETERS \
-    X(bool, _debug, false, "")    \
-    X(int, test_int, false, "")   \
-    X(float, test_float, false, "")
-
-// (TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_DEVICE_ARRAYS \
-    X(float, 2, 1, input, "")        \
-    X(float, 2, 1, output, "")
-
-// ================================================================ //
-
-namespace TEMPLATE_NAMESPACE {
-
-namespace nb = nanobind;
-
-class TEMPLATE_CLASS_NAME {
+    std::unordered_map<std::string, nanobind::object> properties; // store of python properties
 
   public:
-    std::unordered_map<std::string, nb::object> properties;
-
+    // has a key
     bool has_property(const std::string &key) const {
         return properties.find(key) != properties.end();
     }
 
-    nb::object get_property(const std::string &key) const {
+    // get a property
+    nanobind::object get_property(const std::string &key) const {
         auto it = properties.find(key);
         if (it == properties.end()) {
-            throw nb::attribute_error((std::string("Attribute not found: ") + key).c_str());
+            throw nanobind::attribute_error((std::string("Attribute not found: ") + key).c_str());
         }
         return it->second;
     }
 
-    void set_property(const std::string &key, nb::object value) {
+    // set a property
+    void set_property(const std::string &key, nanobind::object value) {
         properties[key] = value;
     }
 
-    // ================================================================================================================================
-
-#if GNA_CODE_ROUTE == 0
-
-    // straight shared_ptr
-#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
-    std::shared_ptr<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
-    TEMPLATE_CLASS_DEVICE_ARRAYS
-#undef X
-#endif
-
-    // ensure all smart pointers have a device array available
-    void ensure_arrays() {
-#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION)                                     \
-    if (!NAME) { NAME = std::make_shared<core::cuda::DeviceArray<TYPE, DIMENSIONS>>(); } \
-    TEMPLATE_CLASS_DEVICE_ARRAYS
-#undef X
-#endif
-    }
-
-#elif GNA_CODE_ROUTE == 1
-
-    //
-    // custom Ref version
-#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
-    core::Ref<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
-    TEMPLATE_CLASS_DEVICE_ARRAYS
-#undef X
-#endif
-
-#endif
-
-    // ================================================================================================================================
-
-    TEMPLATE_CLASS_NAME(){
-
-    // set streams
-#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
-    NAME.set_stream(stream.get())                    \
-        TEMPLATE_CLASS_DEVICE_ARRAYS
-#undef X
-#endif
+    // get property or default
+    template <typename T>
+    T get_property_or_default(const std::string &key, const T &default_value) const {
+        auto it = properties.find(key);
+        if (it == properties.end()) {
+            return default_value;
+        }
+        return nanobind::cast<T>(it->second);
     }
 
     core::cuda::Stream stream;
 
-    void process();
+    virtual void process() = 0;
 };
-
-} // namespace TEMPLATE_NAMESPACE

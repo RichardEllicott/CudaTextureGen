@@ -96,4 +96,16 @@ void bind_dynamic_properties(
     });
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
 } // namespace nanobind::helper
