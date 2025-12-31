@@ -7,13 +7,19 @@ functions to covert numpy arrays back and forth to std::vector and core::Array2D
 */
 #pragma once
 
-#include "nanobind_helper/array_nd.h"
+#include "nanobind_helper/array_nd.h" // old array nd might be removing
 #include "nanobind_helper/device_array.h"
 #include "nanobind_helper/numpy.h"
 #include "nanobind_helper/vector.h"
 #include "nanobind_helper/bind_dynamic_properties.h" // binding python property setting to a has/get/set functions
 
+
+#include "nanobind_helper/nb_object_to_any.h" // conversion of nanobind objects to and from std::any (with fixed types)
+
 #include "nanobind_helper/ref.h" // type caster for core::Ref
+
+
+
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>

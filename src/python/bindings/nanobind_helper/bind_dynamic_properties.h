@@ -45,9 +45,8 @@ namespace nanobind::helper {
 
 namespace nb = nanobind;
 
-// // bind python to has_property, get_property and set_property functions
-// // this allows setting the vars to a hashset or other storage
-// // this pattern doesn't override the nanobinds though, so if they exist, will use instead of the functions
+// bind dynamic properties, but note the container set will store nanobind object's
+// therefore this pattern is entirely dependant on nanobind
 template <typename T>
 void bind_dynamic_properties(
     nb::class_<T> &cls,
@@ -95,17 +94,5 @@ void bind_dynamic_properties(
         (cpp.*set_property)(key, value);
     });
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 } // namespace nanobind::helper

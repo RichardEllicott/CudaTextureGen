@@ -88,6 +88,30 @@ class GNB_Base {
 #endif
     }
 
+    //
+    //
+
+
+#if GNB_BASE_GENERIC_TYPE == 0
+    // explicit any-based API for bindings
+    void set_property_any(const std::string& key, std::any v) {
+        properties[key] = std::move(v);
+    }
+
+    const std::any& get_property_any(const std::string& key) const {
+        auto it = properties.find(key);
+        if (it == properties.end())
+            throw std::runtime_error("Property not found: " + key);
+        return it->second;
+    }
+#endif
+
+
+    //
+    //
+
+
+
     core::cuda::Stream stream;
 
     virtual void process() = 0;
