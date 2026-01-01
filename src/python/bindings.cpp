@@ -58,7 +58,7 @@ central file for the python bindings
 // ================================================================
 // [Graph Nodes]
 // ----------------------------------------------------------------
-#include "device_array.bind.h"
+#include "core/cuda/device_array.bind.h"
 #include "gna_graph_node.bind.h"
 
 #include "gna/gna_example.bind.h"

@@ -72,7 +72,10 @@ struct nb_convert {
 // template <>
 // struct nb_convert<int> {
 //     static bool match_py(const nb::object &o) { return nb::isinstance<nb::int_>(o); }
-//     static int from_py(const nb::object &o) { return nb::cast<int>(o); }
+//     static int from_py(const nb::object &o) { 
+//         // printf("TRIGGER nb_convert for int\n"); // proves this overrides the generic trait
+//         return nb::cast<int>(o); 
+//     }
 //     static nb::object to_py(const int &v) { return nb::cast(v); }
 // };
 

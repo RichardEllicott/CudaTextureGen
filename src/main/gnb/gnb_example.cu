@@ -1,5 +1,3 @@
-#pragma once
-
 #include "gnb/gnb_example.cuh"
 
 namespace TEMPLATE_NAMESPACE {

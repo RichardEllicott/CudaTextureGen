@@ -115,6 +115,9 @@ get_array(int height, int width) {
 template <typename T>
 inline nb::ndarray<nb::numpy, T>
 get_array(int height, int width, int depth) {
+
+    printf("⚠️ WARNING... i think the logic is wrong but we won't know until we use more 3D arrays");
+
     return get_array<T, 3>({static_cast<size_t>(height), static_cast<size_t>(width), static_cast<size_t>(depth)});
 }
 

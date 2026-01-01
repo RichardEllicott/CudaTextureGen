@@ -406,6 +406,10 @@
         {
             "folderPath": "cuda_texture_gen\\src\\python\\bindings\\",
             "color": "foldercolorizer.color_ffcc00"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\lib\\",
+            "color": "foldercolorizer.color_00cccc"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",

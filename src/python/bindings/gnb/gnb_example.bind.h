@@ -1,7 +1,9 @@
 #pragma once
 
-#include "gnb/gnb_example.cuh"
+
 #include "nanobind_helper.h"
+
+#include "gnb/gnb_example.cuh"
 
 
 
@@ -16,45 +18,49 @@ namespace nb = nanobind;
 
 // ================================================================================================================================
 
-// binding pattern, supporting std::any
-template <typename T>
-void bind_dynamic_properties_any(
-    nb::class_<T> &cls,
-    bool (T::*has_property)(const std::string &) const,
-    const std::any &(T::*get_property_any)(const std::string &) const,
-    void (T::*set_property_any)(const std::string &, std::any)
+// // binding pattern, supporting std::any
+// template <typename T>
+// void bind_dynamic_properties_any(
+//     nb::class_<T> &cls,
+//     bool (T::*has_property)(const std::string &) const,
+//     const std::any &(T::*get_property_any)(const std::string &) const,
+//     void (T::*set_property_any)(const std::string &, std::any)
 
-) {
-    cls.def("__getattr__", [=](nb::handle self, const char *key) -> nb::object {
-        nb::object key_obj = nb::str(key);
+// ) {
+//     cls.def("__getattr__", [=](nb::handle self, const char *key) -> nb::object {
+//         nb::object key_obj = nb::str(key);
 
-        if (PyObject *result = PyObject_GenericGetAttr(self.ptr(), key_obj.ptr()))
-            return nb::steal<nb::object>(result);
+//         if (PyObject *result = PyObject_GenericGetAttr(self.ptr(), key_obj.ptr()))
+//             return nb::steal<nb::object>(result);
 
-        PyErr_Clear();
+//         PyErr_Clear();
 
-        auto &cpp = nb::cast<T &>(self);
-        if ((cpp.*has_property)(key)) {
-            const std::any &v = (cpp.*get_property_any)(key);
-            return any_to_nb_object(v);
-        }
+//         auto &cpp = nb::cast<T &>(self);
+//         if ((cpp.*has_property)(key)) {
+//             const std::any &v = (cpp.*get_property_any)(key);
+//             return any_to_nb_object(v);
+//         }
 
-        PyErr_Format(PyExc_AttributeError, "No such attribute: %s", key);
-        throw nb::python_error();
-    });
+//         PyErr_Format(PyExc_AttributeError, "No such attribute: %s", key);
+//         throw nb::python_error();
+//     });
 
-    cls.def("__setattr__", [=](nb::handle self, const char *key, nb::object value) {
-        nb::object key_obj = nb::str(key);
+//     cls.def("__setattr__", [=](nb::handle self, const char *key, nb::object value) {
+//         nb::object key_obj = nb::str(key);
 
-        if (PyObject_GenericSetAttr(self.ptr(), key_obj.ptr(), value.ptr()) == 0)
-            return;
+//         if (PyObject_GenericSetAttr(self.ptr(), key_obj.ptr(), value.ptr()) == 0)
+//             return;
 
-        PyErr_Clear();
+//         PyErr_Clear();
 
-        auto &cpp = nb::cast<T &>(self);
-        (cpp.*set_property_any)(key, nb_object_to_any(value));
-    });
-}
+//         auto &cpp = nb::cast<T &>(self);
+//         (cpp.*set_property_any)(key, nb_object_to_any(value));
+//     });
+// }
+
+// ================================================================================================================================
+
+
 
 inline void bind(nb::module_ &m) {
 

@@ -1,11 +1,13 @@
 /*
 
+base class for a type of generic object with generic storage
 
 */
 #pragma once
 
 #define GNB_BASE_GENERIC_TYPE 0 // 0 = any, 1 = variant
 
+#include "core/cuda/types.cuh"
 #include <string>
 #include <unordered_map>
 
@@ -14,8 +16,6 @@
 #elif GNB_BASE_GENERIC_TYPE == 1
 #include <variant>
 #endif
-
-#include "core/cuda/types.cuh"
 
 // void set_property_from_python(GNB_Base* self, const std::string& key, nb::object value) {
 //     if (nb::isinstance<nb::int_>(value)) {
@@ -91,14 +91,13 @@ class GNB_Base {
     //
     //
 
-
 #if GNB_BASE_GENERIC_TYPE == 0
     // explicit any-based API for bindings
-    void set_property_any(const std::string& key, std::any v) {
+    void set_property_any(const std::string &key, std::any v) {
         properties[key] = std::move(v);
     }
 
-    const std::any& get_property_any(const std::string& key) const {
+    const std::any &get_property_any(const std::string &key) const {
         auto it = properties.find(key);
         if (it == properties.end())
             throw std::runtime_error("Property not found: " + key);
@@ -106,11 +105,8 @@ class GNB_Base {
     }
 #endif
 
-
     //
     //
-
-
 
     core::cuda::Stream stream;
 
