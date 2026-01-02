@@ -1,5 +1,3 @@
-#pragma once
-
 #include "gna/gna_example.cuh"
 
 namespace TEMPLATE_NAMESPACE {

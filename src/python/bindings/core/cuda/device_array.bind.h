@@ -1,8 +1,5 @@
 /*
-
-exposing the DeviceArray to python
-
-
+python bindings for DeviceArray
 */
 #pragma once
 
@@ -28,24 +25,10 @@ void bind_device_array(nb::module_ &m, const char *name) {
     auto get_shape = [](DeviceArray &self) { return self.shape(); };
     ngd.def_prop_ro("shape", get_shape, "Array shape"); // shape()
 
-    // size() => int
-    ngd.def("size", &DeviceArray::size);
+    ngd.def("size", &DeviceArray::size); // size() => int
 
-    //
-    //
-    //
-    //
-    // this is a "pointer‑to‑member‑function"
-    // it is brittle
-    // ngd.def("resize", (void (DeviceArray::*)(std::array<size_t, Dim>))&DeviceArray::resize); // binding resize to take a list [] WORKS
-
-    // best lambda
-    ngd.def("resize", [](DeviceArray &self, std::array<size_t, Dim> dims) { self.resize(dims); }); // much better to use lambda
-
-    //
-    //
-    //
-    //
+    // ngd.def("resize", (void (DeviceArray::*)(std::array<size_t, Dim>))&DeviceArray::resize); // brittle if we add overloads
+    ngd.def("resize", [](DeviceArray &self, std::array<size_t, Dim> dims) { self.resize(dims); }); // lambda avoids overload issues
 
     // dev_ptr() => int
     auto get_dev_ptr = [](DeviceArray &self) { return (uintptr_t)self.dev_ptr(); };
@@ -63,17 +46,15 @@ void bind_device_array(nb::module_ &m, const char *name) {
 
 inline void bind(nb::module_ &m) {
 
-    // float 1D, 2D, 3D, 4D
-    bind_device_array<float, 1>(m, "DeviceArrayFloat1D"); // std::shared_ptr<core::cuda::DeviceArray<float, 1>> output;
-    bind_device_array<float, 2>(m, "DeviceArrayFloat2D"); // std::shared_ptr<core::cuda::DeviceArray<float, 2>> output;
-    bind_device_array<float, 3>(m, "DeviceArrayFloat3D"); // std::shared_ptr<core::cuda::DeviceArray<float, 3>> output;
-    bind_device_array<float, 4>(m, "DeviceArrayFloat4D"); // std::shared_ptr<core::cuda::DeviceArray<float, 4>> output;
+    // float 1D, 2D, 3D
+    bind_device_array<float, 1>(m, "DeviceArrayFloat1D"); // core::cuda::DeviceArray<float, 1>
+    bind_device_array<float, 2>(m, "DeviceArrayFloat2D"); // core::cuda::DeviceArray<float, 2>
+    bind_device_array<float, 3>(m, "DeviceArrayFloat3D"); // core::cuda::DeviceArray<float, 3>
 
-    // int 1D, 2D, 3D, 4D
-    bind_device_array<int, 1>(m, "DeviceArrayInt1D"); // std::shared_ptr<core::cuda::DeviceArray<int, 1>> output;
-    bind_device_array<int, 2>(m, "DeviceArrayInt2D"); // std::shared_ptr<core::cuda::DeviceArray<int, 2>> output;
-    bind_device_array<int, 3>(m, "DeviceArrayInt3D"); // std::shared_ptr<core::cuda::DeviceArray<int, 3>> output;
-    bind_device_array<int, 4>(m, "DeviceArrayInt4D"); // std::shared_ptr<core::cuda::DeviceArray<int, 4>> output;
+    // int 1D, 2D, 3D
+    bind_device_array<int, 1>(m, "DeviceArrayInt1D"); // core::cuda::DeviceArray<int, 1>
+    bind_device_array<int, 2>(m, "DeviceArrayInt2D"); // core::cuda::DeviceArray<int, 2>
+    bind_device_array<int, 3>(m, "DeviceArrayInt3D"); // core::cuda::DeviceArray<int, 3>
 }
 
 } // namespace device_array

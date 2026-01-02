@@ -7,6 +7,7 @@ base class for a type of generic object with generic storage
 
 #define GNB_BASE_GENERIC_TYPE 0 // 0 = any, 1 = variant
 
+#include "core.h"
 #include "core/cuda/types.cuh"
 #include <string>
 #include <unordered_map>
@@ -105,10 +106,13 @@ class GNB_Base {
     }
 #endif
 
-    //
-    //
+  
 
-    core::cuda::Stream stream;
+    core::Ref<core::cuda::Stream> stream;
 
     virtual void process() = 0;
+
+    GNB_Base() {
+        stream.instantiate();
+    }
 };

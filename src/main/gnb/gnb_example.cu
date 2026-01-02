@@ -34,12 +34,14 @@ void TEMPLATE_CLASS_NAME::process() {
 
     int tile_size = get_property_or_default<int>("tile_size", 16);
 
-    chequer_test<<<grid, block, 0, stream.get()>>>(
+    if (!stream.is_valid()) stream.instantiate(); // ensure we have a stream
+
+    chequer_test<<<grid, block, 0, stream->get()>>>(
         width, height,
         output->dev_ptr(),
         tile_size);
 
-    stream.sync();
+    // stream->sync();
 }
 
 } // namespace TEMPLATE_NAMESPACE

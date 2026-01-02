@@ -14,6 +14,10 @@ it's sort of like a firewall really as it block dissalowed types, the main probl
 #include <any>
 #include <nanobind/nanobind.h>
 
+#include "core.h"
+// #include "core_cuda.h" // will break
+#include "core/cuda/device_array.cuh"
+
 namespace nanobind::helper {
 
 namespace nb = nanobind;
@@ -72,9 +76,9 @@ struct nb_convert {
 // template <>
 // struct nb_convert<int> {
 //     static bool match_py(const nb::object &o) { return nb::isinstance<nb::int_>(o); }
-//     static int from_py(const nb::object &o) { 
+//     static int from_py(const nb::object &o) {
 //         // printf("TRIGGER nb_convert for int\n"); // proves this overrides the generic trait
-//         return nb::cast<int>(o); 
+//         return nb::cast<int>(o);
 //     }
 //     static nb::object to_py(const int &v) { return nb::cast(v); }
 // };
@@ -132,7 +136,27 @@ nb::object any_to_nb_object_typed(const std::any &v) {
     return result;
 }
 
-#define SUPPORTED_TYPES int, float, bool, std::string
+// #define SUPPORTED_TYPES int, float, bool, std::string
+
+using DeviceArrayFloat1D = core::Ref<core::cuda::DeviceArray<float, 1>>;
+using DeviceArrayFloat2D = core::Ref<core::cuda::DeviceArray<float, 2>>;
+using DeviceArrayFloat3D = core::Ref<core::cuda::DeviceArray<float, 3>>;
+
+using DeviceArrayInt1D = core::Ref<core::cuda::DeviceArray<int, 1>>;
+using DeviceArrayInt2D = core::Ref<core::cuda::DeviceArray<int, 2>>;
+using DeviceArrayInt3D = core::Ref<core::cuda::DeviceArray<int, 3>>;
+
+#define SUPPORTED_TYPES     \
+    int,                    \
+        float,              \
+        bool,               \
+        std::string,        \
+        DeviceArrayFloat1D, \
+        DeviceArrayFloat2D, \
+        DeviceArrayFloat3D, \
+        DeviceArrayInt1D,   \
+        DeviceArrayInt2D,   \
+        DeviceArrayInt3D
 
 inline std::any nb_object_to_any(const nb::object &value) {
     return nb_object_to_any_typed<SUPPORTED_TYPES>(value);

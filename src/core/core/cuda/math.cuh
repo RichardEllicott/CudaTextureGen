@@ -7,6 +7,7 @@ cuda math functions
 // #include "math_constants.cuh"
 // #include "math_random.cuh"
 #include <cuda_runtime.h>
+// #include <math_functions.h>  // for fmaxf, fminf, etc.
 
 #define D_INLINE __device__ __forceinline__
 #define DH_INLINE __device__ __host__ __forceinline__

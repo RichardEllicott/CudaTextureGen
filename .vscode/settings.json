@@ -380,10 +380,6 @@
             "badge": "🦄"
         },
         {
-            "folderPath": "cuda_texture_gen\\src\\python\\bindings.cpp\\",
-            "badge": "👑"
-        },
-        {
             "folderPath": "cuda_texture_gen\\src\\include\\gna_graph.cuh\\",
             "badge": "🦄"
         },
@@ -397,7 +393,7 @@
         },
         {
             "folderPath": "cuda_texture_gen\\src\\main\\",
-            "color": "foldercolorizer.color_cc0099"
+            "color": "foldercolorizer.color_ff0066"
         },
         {
             "folderPath": "cuda_texture_gen\\src\\kernels\\",
@@ -410,6 +406,10 @@
         {
             "folderPath": "cuda_texture_gen\\lib\\",
             "color": "foldercolorizer.color_00cccc"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings.cpp\\",
+            "badge": "👑"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",

@@ -37,6 +37,18 @@
 
 namespace TEMPLATE_NAMESPACE {
 
+
+    // constexpr tuple of descriptors pattern
+    template <typename T>
+struct Field {
+    const char* name;
+    T* ptr;  // pointer-to-member
+};
+
+
+
+
+
 // namespace nb = nanobind;
 
 class TEMPLATE_CLASS_NAME : public GNB_Base {
@@ -55,13 +67,13 @@ class TEMPLATE_CLASS_NAME : public GNB_Base {
 
     TEMPLATE_CLASS_NAME() {
 
-        // set streams
-#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
-    NAME.set_stream(stream.get())                    \
-        TEMPLATE_CLASS_DEVICE_ARRAYS
-#undef X
-#endif
+//         //⚠️ WARNING WAS BAD!!!! set streams
+// #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+// #define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
+//     NAME.set_stream(stream.get())                    \
+//         TEMPLATE_CLASS_DEVICE_ARRAYS
+// #undef X
+// #endif
     }
 
     void process() override;

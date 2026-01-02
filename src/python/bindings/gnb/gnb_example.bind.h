@@ -1,20 +1,14 @@
 #pragma once
 
-
 #include "nanobind_helper.h"
 
 #include "gnb/gnb_example.cuh"
-
-
 
 #include <any>
 
 namespace TEMPLATE_NAMESPACE {
 
 namespace nb = nanobind;
-
-
-
 
 // ================================================================================================================================
 
@@ -60,21 +54,22 @@ namespace nb = nanobind;
 
 // ================================================================================================================================
 
-
-
 inline void bind(nb::module_ &m) {
 
     auto cls = nb::class_<TEMPLATE_CLASS_NAME>(m, EXPAND_AND_STRINGIFY(TEMPLATE_CLASS_NAME)).def(nb::init<>());
 
     // ================================================================================================================================
 
-    // bind Ref<DeviceArray>'s
+    // Ref<DeviceArray>'s
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
 #define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
     cls.def_rw(EXPAND_AND_STRINGIFY(NAME), &TEMPLATE_CLASS_NAME::NAME);
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
 #endif
+
+    // Ref<Stream>
+    cls.def_rw("stream", &TEMPLATE_CLASS_NAME::stream);
 
     // ================================================================================================================================
 

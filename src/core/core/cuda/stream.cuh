@@ -161,69 +161,7 @@ inline void share_with_weak_ptr_example() {
 
 #pragma endregion
 
-/*
-EXAMPLE, kept as notes
-
-#pragma region UNIQUE_PTR_ALTERNATIVE
-//
-// EXAMPLE USING A WRAPPED unique_ptr (not really a very good pattern, option to use it internally perhaps)
-//
-
-// Custom deleter for CUDA streams.
-// - unique_ptr calls this when the StreamHandle goes out of scope.
-// - The operator() signature matches what unique_ptr expects: it receives the raw pointer.
-// - cudaStream_t is itself a pointer type, so std::remove_pointer_t<cudaStream_t>
-//   gives the opaque pointee type. The deleter then receives a cudaStream_t.
-struct CudaStreamDeleter {
-    void operator()(std::remove_pointer_t<cudaStream_t> *stream) const {
-        if (stream) {
-            // Destroy the CUDA stream; return value ignored here.
-            cudaStreamDestroy(stream);
-        }
-    }
-};
-
-// Define a unique_ptr type that owns a CUDA stream.
-// - Element type: the pointee of cudaStream_t (opaque struct).
-// - Deleter: CudaStreamDeleter, which calls cudaStreamDestroy.
-using StreamHandle = std::unique_ptr<std::remove_pointer_t<cudaStream_t>, CudaStreamDeleter>;
-
-// Factory function to create a CUDA stream and wrap it in a StreamHandle.
-// - Calls cudaStreamCreateWithFlags to allocate the stream.
-// - Throws std::runtime_error if creation fails.
-// - Returns a unique_ptr that will automatically destroy the stream when it goes out of scope.
-inline StreamHandle create_stream(unsigned int flags = cudaStreamDefault) {
-    cudaStream_t s;
-    cudaError_t err = cudaStreamCreateWithFlags(&s, flags);
-    if (err != cudaSuccess) {
-        throw std::runtime_error("Failed to create CUDA stream: " +
-                                 std::string(cudaGetErrorString(err)));
-    }
-    return StreamHandle(s); // unique_ptr takes ownership of the raw handle
-}
 
 
-inline void using_unique_ptr_example() {
-    // Create a CUDA stream wrapped in a unique_ptr
-    auto stream_handle = create_stream();
-
-    // Get the raw cudaStream_t when you need to pass it to CUDA APIs
-    cudaStream_t raw = stream_handle.get();
-
-    // Example: launch a kernel or do a memcpy on this stream
-    // my_kernel<<<grid, block, 0, raw>>>(...);
-
-    // Synchronize the stream explicitly if needed
-    cudaError_t err = cudaStreamSynchronize(raw);
-    if (err != cudaSuccess) {
-        throw std::runtime_error("Stream sync failed: " +
-                                 std::string(cudaGetErrorString(err)));
-    }
-
-    // When stream_handle goes out of scope, the deleter runs and calls cudaStreamDestroy(raw).
-}
-*/
-
-#pragma endregion
 
 } // namespace core::cuda

@@ -2,9 +2,15 @@
 
 smart pointer wrapper based on Godot's Ref type, based on c++ shared_ptr
 
-created as this allows a very easy instantiate()
+created as this allows a very easy instantiate(), with shared_ptr's alone i required a macro
 
-created with CoPilot, uses mostly all shared_ptr features for copy/move/swap
+copy/move/swap is implicit
+
+
+custom type_caster in nanobind_helper allows python to work with this same as it does with shared_ptr
+
+
+created with CoPilot
 
 */
 #pragma once
