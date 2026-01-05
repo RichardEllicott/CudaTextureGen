@@ -4,9 +4,10 @@ nb_object_to_any and any_to_nb_object functions to convert from nanobind object 
 
 this is used to ensure that std::any will not contain a nanobind object as we get down to the C++/CUDA only layer
 
-
-
 it's sort of like a firewall really as it block dissalowed types, the main problem being python types being stored in std::any
+
+
+⚠️ i might opt out of this pattern, which sucks as it was difficult to achive, however i could instead use constexpr properties() type pattern
 
 */
 #pragma once

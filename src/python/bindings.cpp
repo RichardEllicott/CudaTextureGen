@@ -64,6 +64,8 @@ central file for the python bindings
 #include "gna/gna_example.bind.h"
 #include "gnb/gnb_example.bind.h"
 
+#include "gnc/gnc.bind.h"
+
 // ================================================================
 // [Nanobind Options]
 // ----------------------------------------------------------------
@@ -118,4 +120,8 @@ NB_MODULE(cuda_texture_gen, m) {
     gna_graph_node::bind(m);
     gna_example::bind(m);
     gnb_example::bind(m);
+    gnc::bind(m);
+
+
+
 }

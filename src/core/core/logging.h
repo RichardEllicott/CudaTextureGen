@@ -13,6 +13,7 @@ print functions here
 #include <array>
 #include <cstddef>
 #include <iostream>
+#include <sstream> // range_to_string
 #include <string>
 
 // block to support unicode in windows
@@ -23,6 +24,25 @@ print functions here
 #endif
 
 namespace core::logging {
+
+#pragma region EXPERIMENTAL
+
+// convert any range like array to a string
+template <typename Range>
+std::string range_to_string(const Range &r) {
+    std::ostringstream oss;
+    oss << "{";
+    bool first = true;
+    for (auto &x : r) {
+        if (!first) oss << ", ";
+        first = false;
+        oss << x;
+    }
+    oss << "}";
+    return oss.str();
+}
+
+#pragma endregion
 
 // required for windows to show unicode strings with emojees
 inline void init_console() {
@@ -47,9 +67,6 @@ inline void print(const std::array<T, N> &arr) {
     std::cout << " }";
 }
 
-
-
-
 // Single argument
 template <typename T>
 inline void print(const T &t) {
@@ -62,8 +79,6 @@ inline void print(const T &t, const Args &...args) {
     std::cout << t;
     print(args...);
 }
-
-
 
 // With newline
 template <typename... Args>

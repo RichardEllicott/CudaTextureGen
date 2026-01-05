@@ -522,7 +522,7 @@ __global__ void simple_collapse4(
     const int offset_count = 4;
     float slope_threshold = pars->simple_collapse_threshold;
     float erosion_rate = pars->simple_collapse_amount;
-    float min_height = pars->min_height;
+    // float min_height = pars->min_height;
     float erosion_yield = pars->simple_collapse_yield;
     float jitter = pars->simple_collapse_jitter;
 
@@ -766,7 +766,7 @@ void TEMPLATE_CLASS_NAME::allocate_device() {
 
     // ================================================================
 
-    size_t array_size = pars._width * pars._height;
+    // size_t array_size = pars._width * pars._height;
 
     // _flux8.resize({array_size * 8});                       // flux output
     // _sediment_flux8.resize({array_size * 8});              // sediment flux output

@@ -109,4 +109,19 @@ def test_gnb():
     tools.images.save(gna_base.output.array, f"{script_path}.output.png")
 
 
-test_gnb()
+# test_gnb()
+
+def test_gnb2():
+    print("test_gnb2()...")
+
+    gnb = cuda_texture_gen.GNB_Example()
+
+    print(gnb)
+    print(gnb.test_var)
+
+    print(gnb.output)
+
+
+    pass
+
+test_gnb2()

@@ -19,14 +19,12 @@ will have a common interface of "DeviceArrayBase"
 #include <memory>         // for std::unique_ptr
 #include <stdexcept>      // std::runtime_error
 #include <utility>        // std::swap (needed for your swap implementation)
-
-// new aysnc
 #include <functional> // for std::function
 #include <iostream>   // if you’re printing/logging inside the callback
-
-// thread pattern?? c++ heavier
 #include <thread> // for std::thread
 #include <vector> // if you use temporary host buffers
+#include <string>        // debug printing
+
 
 namespace core::cuda {
 
@@ -74,8 +72,20 @@ class TempBuffer {
 
 class DeviceArrayBase {
   protected:
-    cudaStream_t _stream{nullptr}; // optional stream
+    // optional stream
+    cudaStream_t _stream{nullptr};
+
+    // debug messages
+    bool _debug = false;
+    std::string _label;
+
   public:
+    bool get_debug() const noexcept { return _debug; } // putting noexcept for style, compiler likely finds these anyway (not sure on this yet i might omit them)
+    void set_debug(bool debug) noexcept { _debug = debug; }
+
+    const std::string &get_label() const noexcept { return _label; } // get label marked noexcept, compiler prob done this anyway
+    void set_label(std::string label) { _label = std::move(label); }
+
     // get stream
     cudaStream_t get_stream() const { return _stream; }
     // set optional stream
@@ -118,6 +128,40 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         }
     }
 
+    
+#pragma region DEBUG_MESSAGES
+
+    // for debug
+    std::string size_bytes_string() const {
+        return std::to_string(size_bytes()) + " bytes";
+    }
+
+    // string of shape like 16x16x3 (for debug)
+    std::string shape_string() const {
+        std::string s;
+        s.reserve(32);
+        for (size_t i = 0; i < Dim; ++i) {
+            s += std::to_string(_shape[i]);
+            if (i + 1 < Dim) s += "x";
+        }
+        return s;
+    }
+
+    // print debug data if in debug mode
+    void debug_print_upload(const void *host_ptr) const {
+        if (!_debug) return;
+
+        printf(
+            "upload(): host=%p -> device=%p | shape=%s | bytes=%zu | stream=%p\n",
+            host_ptr,
+            _dev_ptr,
+            shape_string().c_str(),
+            size_bytes(),
+            (void *)_stream);
+    }
+
+#pragma endregion
+
   public:
     DeviceArray() noexcept {
     }
@@ -138,12 +182,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         return sizeof(T) * size();
     }
 
-    // // Return dimensions by const reference (safe if _shape is stable)
-    // const std::array<size_t, Dim> &dimensions() const noexcept {
-    //     return _shape;
-    // }
-
-    // Alias
+    // shape or dimensions of array
     const std::array<size_t, Dim> &shape() const noexcept {
         return _shape;
     }
@@ -245,6 +284,9 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
     void zero_device() override {
 
         if (!_dev_ptr) return; // no allocated memory (we just pass with no error for now)
+
+        if (_debug) { printf("zero device()...\n"); }
+
         cudaError_t err = cudaMemsetAsync(_dev_ptr, 0, size_bytes(), _stream);
         if (err != cudaSuccess) throw std::runtime_error("cudaMemset failed");
     }
@@ -268,6 +310,8 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 
         resize(dimensions); // resize, will reallocate if the size changes
         if (size() == 0) return;
+
+        debug_print_upload(host_ptr);
 
         cudaError_t err = cudaMemcpyAsync(_dev_ptr, host_ptr, size_bytes(), cudaMemcpyHostToDevice, _stream);
         if (err != cudaSuccess) throw std::runtime_error("cudaMemcpy (Host->Device) failed");
@@ -334,16 +378,19 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 
     // COPY
     DeviceArray(const DeviceArray &other) {
-        _shape = other._shape;
+        _shape = other._shape; // gets the other's shape, now the size_bytes will be correct
         _stream = other._stream;
         _dev_ptr = nullptr;
 
-        if (other._dev_ptr) {
+        // resize(other._shape); // ALTERNATE?? could skip allocation with this
+
+        if (other._dev_ptr) { // if the other is allocated
             auto err = cudaMallocAsync(&_dev_ptr, size_bytes(), _stream);
             if (err != cudaSuccess) {
                 throw std::runtime_error("cudaMallocAsync failed in copy ctor");
             }
 
+            // copy to this one, from the other
             err = cudaMemcpyAsync(_dev_ptr, other._dev_ptr, size_bytes(), cudaMemcpyDeviceToDevice, _stream);
             if (err != cudaSuccess) {
                 throw std::runtime_error("cudaMemcpyAsync failed in copy ctor");
@@ -401,6 +448,7 @@ class DeviceArray1D : public DeviceArray<T, 1> {
         resize(size);
         Base::upload(host_ptr, {size});
     }
+
 };
 
 // thin wrapper for 2D

@@ -18,6 +18,8 @@
 
 #include "gnb_base.cuh"
 
+#include "macros.h"
+
 // ================================================================ //
 #define TEMPLATE_CLASS_NAME GNB_Example
 #define TEMPLATE_NAMESPACE gnb_example
@@ -37,21 +39,17 @@
 
 namespace TEMPLATE_NAMESPACE {
 
-
-    // constexpr tuple of descriptors pattern
-    template <typename T>
-struct Field {
-    const char* name;
-    T* ptr;  // pointer-to-member
+template <typename T, typename Member>
+struct Property {
+    const char *name;
+    Member member; // ✅ correct — Member *is already* a pointer-to-member
 };
-
-
-
-
 
 // namespace nb = nanobind;
 
 class TEMPLATE_CLASS_NAME : public GNB_Base {
+    using Self = TEMPLATE_CLASS_NAME;
+
   public:
     // ================================================================================================================================
 
@@ -64,17 +62,45 @@ class TEMPLATE_CLASS_NAME : public GNB_Base {
 #endif
 
     // ================================================================================================================================
+    float test_var = 777.0;
+
+    // could put this on the child objects
+    static constexpr auto properties() {
+        return std::make_tuple(
+        // Property<TEMPLATE_CLASS_NAME, decltype(&TEMPLATE_CLASS_NAME::input)>{"heightmap", &TEMPLATE_CLASS_NAME::input}
+        // Property<TEMPLATE_CLASS_NAME, decltype(&TEMPLATE_CLASS_NAME::flow)>{"flow", &TEMPLATE_CLASS_NAME::flow}
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
+    Property<Self, decltype(&Self::NAME)>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+            TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
+                Property<Self, decltype(&Self::test_var)>{"test_var", &Self::test_var});
+    }
+
+    // ================================================================================================================================
 
     TEMPLATE_CLASS_NAME() {
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
+    NAME.instantiate();
+        TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
 
-//         //⚠️ WARNING WAS BAD!!!! set streams
-// #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
-// #define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
-//     NAME.set_stream(stream.get())                    \
-//         TEMPLATE_CLASS_DEVICE_ARRAYS
-// #undef X
-// #endif
+        // stream.instantiate();
+        // input->set_stream(stream.get().get());
+
+        // ⚠️ WARNING WAS BAD!!!! set streams
+#ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
+#define X(TYPE, DIMENSIONS, DIM3, NAME, DESCRIPTION) \
+    NAME->set_stream(stream.get().get());            \
+    TEMPLATE_CLASS_DEVICE_ARRAYS
+#undef X
+#endif
     }
+
+    // ================================================================================================================================
 
     void process() override;
     // void process() override {
