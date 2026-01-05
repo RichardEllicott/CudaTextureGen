@@ -262,6 +262,17 @@ class GNC_Example:
     def __init__(self) -> None: ...
     def process(self) -> None: ...
 
+class GNC_Example2:
+    _debug: Incomplete
+    input: Incomplete
+    output: Incomplete
+    stream: Incomplete
+    test123: Incomplete
+    test_float: Incomplete
+    test_int: Incomplete
+    def __init__(self) -> None: ...
+    def process(self) -> None: ...
+
 class GraphNode:
     output: Incomplete
     def __init__(self) -> None: ...

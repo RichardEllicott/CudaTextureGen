@@ -20,6 +20,10 @@ dynamic properties for easy binding using CRTP and constexpr
     X(DeviceArrayFloat2D, input, {}, "") \
     X(DeviceArrayFloat2D, output, {}, "")
 
+// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
+#define TEMPLATE_CLASS_ARRAYS \
+    X(bool, _debug, false, "")
+
 // ================================================================================================================================
 // [Boilerplate]
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -68,3 +72,5 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME> {
 // undef defines
 #undef TEMPLATE_CLASS_NAME
 #undef TEMPLATE_CLASS_PARAMETERS
+#undef TEMPLATE_CLASS_ARRAYS
+
