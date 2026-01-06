@@ -36,12 +36,15 @@ class Ref {
     }
 
     // Godot-style: check validity
-    bool is_valid() const {
-        return static_cast<bool>(shared_ptr);
-    }
+    bool is_valid() const { return static_cast<bool>(shared_ptr); }
+    bool is_null() const { return !is_valid(); }
 
-    bool is_null() const {
-        return !shared_ptr;
+    // Instantiate if not already (with optional args)
+    template <typename... Args>
+    void instantiate_if_null(Args &&...args) {
+        if (is_null()) {
+            instantiate(std::forward<Args>(args)...);
+        }
     }
 
     // Access underlying object (no auto-create)

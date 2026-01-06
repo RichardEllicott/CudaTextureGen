@@ -12,10 +12,10 @@ binding for ALL the gnc modules
 // [Class List]
 // --------------------------------------------------------------------------------------------------------------------------------
 
-// (NAME)
-#define CLASS_NAMES \
-    X(GNC_Example)\
-    X(GNC_Example2)
+// (NAME, PYTHON_NAME)
+#define CLASS_NAMES         \
+    X(example::GNC_Example, GNC_Example) \
+    X(example2::GNC_Example2, GNC_Example2)
 
 // ================================================================================================================================
 
@@ -56,8 +56,8 @@ nb::class_<T> bind_class(nb::module_ &m, const char *name) {
 
 inline void bind(nb::module_ &m) {
 #ifdef CLASS_NAMES
-#define X(NAME) \
-    bind_class<NAME>(m, EXPAND_AND_STRINGIFY(NAME));
+#define X(NAME, PYTHON_NAME) \
+    bind_class<NAME>(m, EXPAND_AND_STRINGIFY(PYTHON_NAME));
     CLASS_NAMES
 #undef X
 #endif
@@ -65,6 +65,4 @@ inline void bind(nb::module_ &m) {
 
 } // namespace gnc
 
-
 #undef CLASS_NAMES
-
