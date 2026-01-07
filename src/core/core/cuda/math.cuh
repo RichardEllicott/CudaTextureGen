@@ -466,6 +466,15 @@ DH_INLINE float2 calculate_slope_vector(
 
 #pragma endregion
 
+#pragma region SMOOTHSTEP
+
+// quintic smoothstep
+// aka Perlin’s fade function
+// Creates an S-curve (sigmoid-like shape)
+__device__ __forceinline__ float quintic_smoothstep(float t) { return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f); }
+
+#pragma endregion
+
 } // namespace core::cuda::math
 
 #pragma region EQUALITY_OPERATORS // equality for vector 2D and 3D vector types

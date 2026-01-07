@@ -8,7 +8,7 @@ using namespace core::cuda::math;
 // quintic smoothstep
 // aka Perlin’s fade function
 // Creates an S-curve (sigmoid-like shape)
-__device__ __forceinline__ float quintic_smoothstep(float t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+__device__ __forceinline__ float quintic_smoothstep(float t) { return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f); }
 
 // 🧪  this could be cheaper than quintic_smoothstep, but less perfect
 __device__ __forceinline__ float smoothstep3(float t) { return t * t * (3 - 2 * t); }

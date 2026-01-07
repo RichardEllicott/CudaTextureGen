@@ -21,6 +21,8 @@ dynamic properties for easy binding using CRTP and constexpr
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS \
     X(bool, _debug, false, "")    \
+    X(bool, _layer_mode, false, "")    \
+    X(int, _layers, 0, "")    \
     X(int, tile_size, false, "for chequer_test")
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
