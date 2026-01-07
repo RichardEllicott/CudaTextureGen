@@ -288,23 +288,7 @@
             "badge": "🦑"
         },
         {
-            "folderPath": "cuda_texture_gen\\src\\include\\template_d_base.cuh\\",
-            "badge": "🦑"
-        },
-        {
             "folderPath": "cuda_texture_gen\\src\\include\\template_d.cuh\\",
-            "badge": "🦑"
-        },
-        {
-            "folderPath": "cuda_texture_gen\\src\\include\\template_d_test.cuh\\",
-            "badge": "🦑"
-        },
-        {
-            "folderPath": "cuda_texture_gen\\src\\main\\template_d_test.cu\\",
-            "badge": "🦑"
-        },
-        {
-            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\template_d_test.bind.h\\",
             "badge": "🦑"
         },
         {
@@ -413,6 +397,10 @@
         },
         {
             "folderPath": "cuda_texture_gen\\src\\include\\gnc\\",
+            "badge": "🦑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\python\\bindings\\gnc\\gnc.bind.h\\",
             "badge": "🦑"
         }
     ],

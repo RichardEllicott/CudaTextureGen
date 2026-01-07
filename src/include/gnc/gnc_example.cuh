@@ -25,6 +25,7 @@ dynamic properties for easy binding using CRTP and constexpr
     X(DeviceArrayFloat2D, input, {}, "") \
     X(DeviceArrayFloat2D, output, {}, "")
 
+#pragma region BOILERPLATE   
 // ================================================================================================================================
 // [Boilerplate (all below can be cocidered a copy, should match)]
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -50,8 +51,9 @@ struct Parameters {
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 };
-static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy"); // optional
-                                                                                                                           // ================================================================================================================================
+static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
+
+// ================================================================================================================================
 // Main Class
 // --------------------------------------------------------------------------------------------------------------------------------
 class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME> {
@@ -81,8 +83,4 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME> {
 };
 
 } // namespace TEMPLATE_NAMESPACE
-
-// undef defines
-// #undef TEMPLATE_CLASS_NAME
-// #undef TEMPLATE_CLASS_PARAMETERS
-// #undef TEMPLATE_CLASS_ARRAYS
+ #pragma endregion

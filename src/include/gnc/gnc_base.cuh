@@ -77,25 +77,58 @@ class GNC_Base {
 
     // ================================================================================================================================
 
+
+    // previous version worked with MSVC only
     // [REFLECTION ]
     // return vector pointers to members whose type is exactly T
+    // template <typename T>
+    // auto get_all_of_type() {
+    //     auto &self = static_cast<Derived &>(*this);
+    //     std::vector<T *> result;
+
+    //     std::apply(
+    //         [&](auto &...props) {
+    //             (([&] {
+    //                  using MemberT = decltype(self.*(props.member));
+
+    //                  if constexpr (std::is_same_v<MemberT, T>) {
+    //                      result.push_back(&(self.*(props.member)));
+    //                  }
+    //              }()),
+    //              ...);
+    //         },
+    //         Derived::properties());
+
+    //     return result;
+    // }
+    //
+    //
+    //
+
+    // corrected
     template <typename T>
     auto get_all_of_type() {
-        auto &self = static_cast<Derived &>(*this);
+        // auto &self = static_cast<Derived &>(*this); // GCC didn't like this
+        Derived &self = static_cast<Derived &>(*this); //
+
         std::vector<T *> result;
 
-        std::apply(
-            [&](auto &...props) {
-                (([&] {
-                     using MemberT = decltype(self.*(props.member));
+        auto props = Derived::properties();
 
-                     if constexpr (std::is_same_v<MemberT, T>) {
-                         result.push_back(&(self.*(props.member)));
-                     }
-                 }()),
+        std::apply(
+            [&](auto &...prop) {
+                // process each property individually
+                ([&](auto &p) {
+                    using MemberT = decltype(self.*(p.member));
+                    using DecayedMemberT = std::remove_reference_t<MemberT>;
+
+                    if constexpr (std::is_same_v<DecayedMemberT, T>) {
+                        result.push_back(&(self.*(p.member)));
+                    }
+                }(prop),
                  ...);
             },
-            Derived::properties());
+            props);
 
         return result;
     }
