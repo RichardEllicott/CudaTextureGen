@@ -8,7 +8,7 @@ base class for a type of generic object with generic storage
 #define GNB_BASE_GENERIC_TYPE 0 // 0 = any, 1 = variant
 
 #include "core.h"
-#include "core/cuda/types.cuh"
+#include "core/cuda/types_collection.cuh"
 #include <string>
 #include <unordered_map>
 

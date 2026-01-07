@@ -46,7 +46,7 @@ simple erosion that distributes sediment to neighbours
 
 // ════════════════════════════════════════════════ //
 
-#include "core/cuda/types.cuh"
+#include "core/cuda/types_collection.cuh"
 #include "core/cuda/cuda_array_2d.cuh"
 
 namespace TEMPLATE_NAMESPACE {

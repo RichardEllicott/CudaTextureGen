@@ -9,7 +9,7 @@
 #include <unordered_map>
 
 // #include "core.h"
-#include "core/cuda/types.cuh"
+#include "core/cuda/types_collection.cuh"
 
 class GNA_Base {
 

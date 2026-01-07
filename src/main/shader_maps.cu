@@ -1,5 +1,5 @@
 // #include "core.h"
-#include "core/cuda/types.cuh"
+#include "core/cuda/types_collection.cuh"
 #include "shader_maps.cuh"
 
 namespace shader_maps {

@@ -59,7 +59,7 @@ using new DeviceArray2D ... data is instantly uploaded and downloaded, no local 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
 
-#include "core/cuda/types.cuh"
+#include "core/cuda/types_collection.cuh"
 #include <string> // not sure?
 #include <typeindex>
 #include <vector>

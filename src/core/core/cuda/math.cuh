@@ -6,6 +6,7 @@ cuda math functions
 #pragma once
 // #include "math_constants.cuh"
 // #include "math_random.cuh"
+#include <cstdint> // uint32_t
 #include <cuda_runtime.h>
 // #include <math_functions.h>  // for fmaxf, fminf, etc.
 

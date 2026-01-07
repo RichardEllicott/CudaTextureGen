@@ -5,7 +5,7 @@ convert numpy arrays to and from DeviceArray's
 */
 #pragma once
 
-#include "core/cuda/types.cuh"
+#include "core/cuda/types_collection.cuh"
 #include "numpy.h" // numpy helper in same folder
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>

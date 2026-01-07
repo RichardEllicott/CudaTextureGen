@@ -14,7 +14,7 @@
 // #include <unordered_map>
 
 #include "core.h"
-// #include "core/cuda/types.cuh" // DeviceArray
+// #include "core/cuda/types_collection.cuh" // DeviceArray
 
 #include "gnb_base.cuh"
 
