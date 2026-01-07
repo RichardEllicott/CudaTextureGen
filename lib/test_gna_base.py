@@ -111,17 +111,21 @@ def test_gnb():
 
 # test_gnb()
 
-def test_gnb2():
-    print("test_gnb2()...")
+def test():
+    print("test()...")
 
-    gnb = cuda_texture_gen.GNB_Example()
+    gnc = cuda_texture_gen.GNC_Noise()
 
-    print(gnb)
-    print(gnb.test_var)
+    gnc.period = [5,5,5]
 
-    print(gnb.output)
+    gnc.process()
+
+    result = gnc.output.array
+    tools.arrays.normalize(result)
+    tools.images.save(result, f"{script_path}.output.png")
 
 
-    pass
+    # gnc.
 
-test_gnb2()
+
+test()

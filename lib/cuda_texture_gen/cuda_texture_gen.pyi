@@ -251,14 +251,23 @@ class GNB_Example:
     def __init__(self) -> None: ...
     def process(self) -> None: ...
 
+class GNC_Erosion:
+    _debug: Incomplete
+    input: Incomplete
+    output: Incomplete
+    stream: Incomplete
+    tile_size: Incomplete
+    width: Incomplete
+    def __init__(self) -> None: ...
+    def process(self) -> None: ...
+
 class GNC_Example:
     _debug: Incomplete
     input: Incomplete
     output: Incomplete
     stream: Incomplete
-    test123: Incomplete
-    test_float: Incomplete
-    test_int: Incomplete
+    tile_size: Incomplete
+    width: Incomplete
     def __init__(self) -> None: ...
     def process(self) -> None: ...
 
@@ -267,9 +276,19 @@ class GNC_Example2:
     input: Incomplete
     output: Incomplete
     stream: Incomplete
-    test123: Incomplete
-    test_float: Incomplete
-    test_int: Incomplete
+    tile_size: Incomplete
+    width: Incomplete
+    def __init__(self) -> None: ...
+    def process(self) -> None: ...
+
+class GNC_Noise:
+    _debug: Incomplete
+    offset: Incomplete
+    output: Incomplete
+    period: Incomplete
+    seed: Incomplete
+    stream: Incomplete
+    width: Incomplete
     def __init__(self) -> None: ...
     def process(self) -> None: ...
 

@@ -68,6 +68,7 @@ map pointer structure (UNUSED, i prefer to hardcode map pars allowing extra cons
 // ================================================================ //
 
 #include "core/cuda/types.cuh"
+#include "core/cuda/cuda_array_2d.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 

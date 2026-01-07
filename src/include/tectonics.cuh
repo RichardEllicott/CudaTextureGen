@@ -30,6 +30,7 @@ this one uses more clever types and classes, needing less horrible macros
 // ════════════════════════════════════════════════ //
 
 #include "core/cuda/types.cuh"
+#include "core/cuda/cuda_array_2d.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 

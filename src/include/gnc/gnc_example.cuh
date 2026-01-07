@@ -4,6 +4,10 @@
 
 dynamic properties for easy binding using CRTP and constexpr
 
+NOTES:
+
+- region BOILERPLATE (is a the main boilerplate, it is also in gnc_boilerplate.cuh)
+
 */
 #pragma once
 #include "template_macro_undef.h" // guard from defines
@@ -25,7 +29,7 @@ dynamic properties for easy binding using CRTP and constexpr
     X(DeviceArrayFloat2D, input, {}, "") \
     X(DeviceArrayFloat2D, output, {}, "")
 
-#pragma region BOILERPLATE   
+#pragma region BOILERPLATE
 // ================================================================================================================================
 // [Boilerplate (all below can be cocidered a copy, should match)]
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -83,4 +87,4 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME> {
 };
 
 } // namespace TEMPLATE_NAMESPACE
- #pragma endregion
+#pragma endregion
