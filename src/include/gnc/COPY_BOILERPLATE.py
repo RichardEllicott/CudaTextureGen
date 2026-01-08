@@ -41,7 +41,7 @@ def extract_region(src_path, dst_path, region_name="BOILERPLATE"):
 
 
 extract_region(
-    src_path=os.path.join(SCRIPT_DIR, "gnc_example.cuh"),
+    src_path=os.path.join(SCRIPT_DIR, "gnc_template.cuh"),
     dst_path=os.path.join(SCRIPT_DIR, "gnc_boilerplate.cuh"),
     region_name="BOILERPLATE"
 )
