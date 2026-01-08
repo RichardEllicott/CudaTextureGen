@@ -24,62 +24,164 @@ D_INLINE float get_layered_height(
     return height;
 }
 
-// a kernel example makes a chequer pattern
-__global__ void calculate_layer_height(
-    const int width, const int height, const int layers,
-    const float *__restrict__ layermap, // in
-    float *__restrict__ heightmap       // out
+// return exposed layer id, or if all layers empty return invalid ref == to total layers
+D_INLINE int get_exposed_layer(
+    const float *__restrict__ layer_map,
+    const int layer_count,
+    const int layer_idx // 2D idx * the layer count
 ) {
+    int exposed_layer;
+    for (int n = 0; n < layer_count; ++n) {
+        float value = layer_map[layer_idx + n];
+        if (value <= 0.0f) {
+            exposed_layer = n + 1; // first exposed layer is next layer (possibly)
+        } else {
+            break; // layer is empty
+        }
+    }
+    return exposed_layer;
+}
 
+// a kernel example makes a chequer pattern
+__global__ void layer_calculations(
+    const int width, const int height, const int layer_count,
+    const float *__restrict__ layer_map, // in
+    float *__restrict__ height_map,      // out
+    int *__restrict__ _exposed_layer     // out
+) {
+    // ================================================================
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= width || y >= height)
-        return;
+    if (x >= width || y >= height) return;
     int idx = y * width + x;
-    int layer_idx = idx * layers;
+    int layer_idx = idx * layer_count;
+    // ================================================================
+    float total_height = 0.0f;
+    int exposed_layer = -1; // top layer (-1 is invalid)
 
-    // float layer_height = 0.0;
-    // for (int n = 0; n < layers; ++n) {
-    //     layer_height += layermap[layer_idx + n];
-    // }
+    for (int n = layer_count - 1; n >= 0; --n) {
+        float value = layer_map[layer_idx + n];
+        total_height += value;
 
-    // heightmap[idx] = layer_height;
+        if (exposed_layer == -1 && value > 0.0f)
+            exposed_layer = n; // detected exposed layer
+    }
 
-    heightmap[idx] = get_layered_height(layermap, layers, layer_idx);
+    height_map[idx] = total_height;
+    _exposed_layer[idx] = exposed_layer;
 }
+
+__global__ void add_rain(
+    const int width, const int height,
+    float *__restrict__ water_map,
+    float *__restrict__ rain_map,
+    const float rain_rate) {
+    // ================================================================
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= width || y >= height) return;
+    int idx = y * width + x;
+    // ================================================================
+    float rain = rain_rate;
+    if (rain_map) rain *= rain_map[idx];
+    water_map[idx] += rain;
+}
+
+__global__ void calculate_slope_vectors(
+    const int2 map_size,
+    const float *__restrict__ height_map, // in
+    const float *__restrict__ water_map,  // in
+    float *__restrict__ _slope_vector2,   // out
+    const float jitter,
+    const int step,
+    const bool wrap = true,
+    const int jitter_mode = 0,
+    const float scale = 1.0f,
+    const int jitter_seed = 1234) {
+    // ================================================================
+    int2 pos = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
+    if (pos.x >= map_size.x || pos.y >= map_size.y) return;
+    int idx = pos.y * map_size.x + pos.x;
+    int idx2 = idx * 2;
+    // ================================================================
+
+    // float jitter = 1.0f;
+    // int step = 0;
+    // bool wrap = true;
+    // int jitter_mode = 0;
+    // float scale = 1.0f;
+    // int jitter_seed = 1234;
+
+    float2 slope_vector2 = core::cuda::math::calculate_slope_vector(
+        height_map, water_map, nullptr, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
+
+    // )
+    // // _slope_vector2[idx2]
+}
+
+// // std::array in kernel
+// __global__ void foo(std::array<float, 4> arr) {
+//     float x = arr[2];
+// }
 
 void TEMPLATE_CLASS_NAME::process() {
 
-    if (layermap.is_valid() && !layermap->empty()) { // layer mode
+    if (layer_map.is_valid() && !layer_map->empty()) { // layer mode
         _layer_mode = true;
-        heightmap.instantiate_if_null();
-        auto shape = layermap->shape();
-        heightmap->resize(shape[0], shape[1]);
-        _layers = shape[2];
+        height_map.instantiate_if_null();
+        auto shape = layer_map->shape();
+        height_map->resize(shape[0], shape[1]);
+        _layer_count = shape[2];
 
-    } else if (heightmap.is_valid() && !heightmap->empty()) { // heightmap only
+    } else if (height_map.is_valid() && !height_map->empty()) { // heightmap only
         _layer_mode = false;
-        _layers = 1;
+        _layer_count = 1;
 
     } else {
         throw std::runtime_error("layermap or heightmap is not valid");
     }
 
-    width = heightmap->width();
-    height = heightmap->height();
+    auto height_map_shape = height_map->shape();
+    width = height_map->width();
+    height = height_map->height();
+
+    _exposed_layer_map.instantiate_if_null();
+    _exposed_layer_map->resize(width, height);
+
+    _slope_vector2_map.instantiate_if_null();
+    _slope_vector2_map->resize(width, height, 2);
+
+    water_map.instantiate_if_null();
+    if (water_map->shape() != height_map_shape) {
+        water_map->resize(height_map_shape);
+        water_map->zero_device();
+    }
 
     stream.instantiate_if_null();
 
     dim3 block(16, 16);
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
 
+    int2 map_size = {width, height};
+
     // calculate the layer height for layer mode
     if (_layer_mode) {
-        calculate_layer_height<<<grid, block, 0, stream->get()>>>(
-            width, height, _layers,
-            layermap->dev_ptr(),
-            heightmap->dev_ptr());
+        layer_calculations<<<grid, block, 0, stream->get()>>>(
+            width, height, _layer_count,
+            layer_map->dev_ptr(),         // in
+            height_map->dev_ptr(),        // out
+            _exposed_layer_map->dev_ptr() // out
+        );
     }
+
+    // calculate_slope_vectors<<<grid, block, 0, stream->get()>>>(
+    //     map_size,
+    //     height_map->dev_ptr(),        // in
+    //     water_map->dev_ptr(),         // in
+    //     _slope_vector2_map->dev_ptr() // out
+    // );
+
+    _step++;
 
     // output.instantiate_if_null();           // if no DeviceArray make one
     // *output.shared_ptr = *input.shared_ptr; // will copy the memory (on the gpu) from input to output (by dereferencing)

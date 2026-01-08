@@ -396,24 +396,36 @@ DH_INLINE float2 calculate_slope_vector(
     return float2{xn_height - xp_height, yn_height - yp_height};
 }
 
-// Overload: one map
-DH_INLINE float2 calculate_slope_vector(
-    const float *__restrict__ height_map1,
-    const int2 map_size,
-    const int2 pos,
-    const bool wrap = true) {
-    return calculate_slope_vector(height_map1, nullptr, nullptr, map_size, pos, wrap);
-}
 
-// Overload: two maps
-DH_INLINE float2 calculate_slope_vector(
-    const float *__restrict__ height_map1,
-    const float *__restrict__ height_map2,
-    const int2 map_size,
-    const int2 pos,
-    const bool wrap = true) {
-    return calculate_slope_vector(height_map1, height_map2, nullptr, map_size, pos, wrap);
-}
+// float jitter = 1.0f;
+// int step = 0;
+// bool wrap = true;
+// int jitter_mode = 0;
+// float scale = 1.0f;
+// int jitter_seed = 1234;
+
+// float2 slope_vector2 = core::cuda::math::calculate_slope_vector(
+//     height_map, water_map, nullptr, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
+
+
+// // Overload: one map
+// DH_INLINE float2 calculate_slope_vector(
+//     const float *__restrict__ height_map1,
+//     const int2 map_size,
+//     const int2 pos,
+//     const bool wrap = true) {
+//     return calculate_slope_vector(height_map1, nullptr, nullptr, map_size, pos, wrap);
+// }
+
+// // Overload: two maps
+// DH_INLINE float2 calculate_slope_vector(
+//     const float *__restrict__ height_map1,
+//     const float *__restrict__ height_map2,
+//     const int2 map_size,
+//     const int2 pos,
+//     const bool wrap = true) {
+//     return calculate_slope_vector(height_map1, height_map2, nullptr, map_size, pos, wrap);
+// }
 
 // can't include here, would need cu file
 

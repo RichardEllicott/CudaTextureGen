@@ -99,13 +99,12 @@ __global__ void generate_gradient_noise3(
     float3 period,
     float3 offset,
     int seed) {
-
+    // ================================================================
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= width || y >= height)
-        return;
-
+    if (x >= width || y >= height) return;
     const int idx = y * width + x;
+    // ================================================================
 
     // Key fix: scale determines the noise frequency
     // The period should match the scaled coordinate space

@@ -12,6 +12,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include <type_traits> // optional but often useful for traits
 #include <utility>     // std::forward, std::index_sequence, etc.
 
+#include "core/cuda/device_struct.cuh"
 #include "core/cuda/stream.cuh"
 #include "core/cuda/types.cuh"
 #include "macros.h"
@@ -31,12 +32,28 @@ struct _Property {
 template <typename T, auto Member>
 using Property = _Property<T, decltype(Member)>;
 
-template <typename Derived>
+struct NoParams {}; // default if we don't use the params
+
+template <typename Derived, typename Parameters = NoParams>
 class GNC_Base {
     using Self = GNC_Base;
 
+  protected:
+    core::cuda::DeviceStruct<Parameters> parameters; // uploads parameters struct to device
+    bool _parameters_synced = false;
+
+    // template for setting a par, this will mark the device as requiring a new parameters upload
+    // this template must be called specially by the python bindings
+    template <typename T>
+    void set_par(T &field, const T &value) {
+        if (field != value) {
+            _parameters_synced = false;
+            field = value;
+        }
+    }
+
   public:
-    core::Ref<core::cuda::Stream> stream;
+    core::Ref<core::cuda::Stream> stream; // gets a stream
 
     int width = 128;
     int height = 128;
@@ -57,35 +74,7 @@ class GNC_Base {
     }
 
     // ================================================================================================================================
-
-    // previous version worked with MSVC only
-    // [REFLECTION ]
-    // return vector pointers to members whose type is exactly T
-    // template <typename T>
-    // auto get_all_of_type() {
-    //     auto &self = static_cast<Derived &>(*this);
-    //     std::vector<T *> result;
-
-    //     std::apply(
-    //         [&](auto &...props) {
-    //             (([&] {
-    //                  using MemberT = decltype(self.*(props.member));
-
-    //                  if constexpr (std::is_same_v<MemberT, T>) {
-    //                      result.push_back(&(self.*(props.member)));
-    //                  }
-    //              }()),
-    //              ...);
-    //         },
-    //         Derived::properties());
-
-    //     return result;
-    // }
-    //
-    //
-    //
-
-    // corrected
+    // [OPTIONAL REFLECTION] return vector pointers to members whose type is exactly T
     template <typename T>
     auto get_all_of_type() {
         // auto &self = static_cast<Derived &>(*this); // GCC didn't like this
