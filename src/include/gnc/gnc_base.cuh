@@ -38,10 +38,8 @@ template <typename Derived, typename Parameters = NoParams, typename ArrayPointe
 class GNC_Base {
     using Self = GNC_Base;
 
-  protected:
     core::cuda::DeviceStruct<Parameters> parameters;        // uploads parameters struct to device
     core::cuda::DeviceStruct<ArrayPointers> array_pointers; // uploads array_pointers struct to device
-
     bool _parameters_synced = false;
 
   public:
