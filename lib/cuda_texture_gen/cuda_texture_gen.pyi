@@ -292,7 +292,9 @@ class GNC_Erosion:
 
 class GNC_Example:
     _debug: Incomplete
+    float8: Incomplete
     input: Incomplete
+    int8: Incomplete
     output: Incomplete
     stream: Incomplete
     tile_size: Incomplete

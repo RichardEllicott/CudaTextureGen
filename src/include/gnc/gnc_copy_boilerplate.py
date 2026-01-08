@@ -9,7 +9,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def extract_region(src_path, dst_path, region_name="BOILERPLATE"):
     start_marker = f"#pragma region {region_name}"
-    end_marker   = "#pragma endregion"
+    end_marker = "#pragma endregion"
 
     inside = False
     collected = []
@@ -26,21 +26,22 @@ def extract_region(src_path, dst_path, region_name="BOILERPLATE"):
     if not collected:
         raise RuntimeError(f"Region '{region_name}' not found in {src_path}")
 
+    # --- overwrite warning ---
+    if os.path.exists(dst_path):
+        print(f"Warning: {dst_path} already exists.")
+        answer = input("Overwrite? [y/N]: ").strip().lower()
+        if answer != "y":
+            print("Aborted.")
+            return
+
     with open(dst_path, "w", encoding="utf-8") as f:
         f.writelines(collected)
 
     print(f"Extracted region '{region_name}' to {dst_path}")
 
 
-
 extract_region(
-    src_path=os.path.join(SCRIPT_DIR, "gnc_erosion.cuh"),
-    dst_path=os.path.join(SCRIPT_DIR, "test_run.cuh"),
+    src_path=os.path.join(SCRIPT_DIR, "gnc_example.cuh"),
+    dst_path=os.path.join(SCRIPT_DIR, "gnc_boilerplate.cuh"),
     region_name="BOILERPLATE"
 )
-
-
-
-
-
-

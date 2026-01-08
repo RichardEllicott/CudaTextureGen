@@ -44,6 +44,7 @@ class GNC_Base {
 
     bool _parameters_synced = false;
 
+  public:
     // template for setting a par, this will mark the device as requiring a new parameters upload
     // this template must be called specially by the python bindings
     template <typename T>
@@ -55,7 +56,6 @@ class GNC_Base {
         }
     }
 
-  public:
     core::Ref<core::cuda::Stream> stream; // gets a stream
 
     int width = 128;
