@@ -182,14 +182,39 @@ DH_INLINE float4 lerp(float4 a, float4 b, float fade) {
 
 #pragma region IDX // pos to idx formulae
 
-// pos to idx, note if we have layers (usually colour channels) we multiply the idx, then (R,G,B) = (idx+0, idx+1, idx+2)
-DH_INLINE int pos_to_idx(int2 pos, int map_width, int layers = 1) {
-    return (pos.y * map_width + pos.x) * layers;
+// pos to idx shortcut
+D_INLINE int pos_to_idx(const int2 pos, const int map_width) {
+    return pos.y * map_width + pos.x;
+}
+
+// pos to idx shortcut
+D_INLINE int pos_to_idx(const int2 pos, const int2 map_size) {
+    return pos.y * map_size.x + pos.x;
 }
 
 // pos to idx formula
-DH_INLINE int pos_to_idx(int x, int y, int map_width, int layers = 1) {
-    return (y * map_width + x) * layers;
+D_INLINE int pos_to_idx(const int x, const int y, const int map_width) {
+    return y * map_width + x;
+}
+
+// get position 1D
+D_INLINE int global_thread_pos1() {
+    return int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x);
+}
+
+// get position 2D
+D_INLINE int2 global_thread_pos2() {
+    return make_int2(
+        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
+        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y));
+}
+
+// get position 3D
+D_INLINE int3 global_thread_pos3() {
+    return make_int3(
+        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
+        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y),
+        int(blockIdx.z) * int(blockDim.z) + int(threadIdx.z));
 }
 
 #pragma endregion
@@ -396,7 +421,6 @@ DH_INLINE float2 calculate_slope_vector(
     return float2{xn_height - xp_height, yn_height - yp_height};
 }
 
-
 // float jitter = 1.0f;
 // int step = 0;
 // bool wrap = true;
@@ -406,7 +430,6 @@ DH_INLINE float2 calculate_slope_vector(
 
 // float2 slope_vector2 = core::cuda::math::calculate_slope_vector(
 //     height_map, water_map, nullptr, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
-
 
 // // Overload: one map
 // DH_INLINE float2 calculate_slope_vector(

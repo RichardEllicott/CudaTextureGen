@@ -47,6 +47,12 @@ using Int6 = std::array<int, 6>;
 using Int7 = std::array<int, 7>;
 using Int8 = std::array<int, 8>;
 
+template <std::size_t N>
+using FloatArray = std::array<float, N>;
+
+template <std::size_t N>
+using IntArray = std::array<int, N>;
+
 // host side helpers to convert to cuda versions
 
 // Float2 => float2

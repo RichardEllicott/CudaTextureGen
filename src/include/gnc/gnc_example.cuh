@@ -20,14 +20,21 @@ NOTES:
 
 // must be trivially_copyable
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_PARAMETERS \
-    X(bool, _debug, false, "")    \
-    X(int, tile_size, false, "for chequer_test")
+#define TEMPLATE_CLASS_PARAMETERS                    \
+    X(bool, _debug, false, "")                       \
+    X(int, tile_size, false, "for chequer_test")     \
+    X(FloatArray<8>, float8, {}, "float array test") \
+    X(IntArray<8>, int8, {}, "int array test")
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_ARRAYS            \
     X(DeviceArrayFloat2D, input, {}, "") \
     X(DeviceArrayFloat2D, output, {}, "")
+
+// (TYPE, DIMENSIONS, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_ARRAYS2 \
+    X(float, 2, input2, "")    \
+    X(float, 2, output2, "")
 
 #pragma region BOILERPLATE
 // ================================================================================================================================
@@ -56,33 +63,70 @@ struct Parameters {
 #undef X
 };
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
-
+// ================================================================================================================================
+// ArrayDevicePointers struct for uploading to GPU (UNUSED)
+// --------------------------------------------------------------------------------------------------------------------------------
+struct ArrayDevicePointers {
+#ifdef TEMPLATE_CLASS_ARRAYS2
+#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+    TYPE *NAME;
+    TEMPLATE_CLASS_ARRAYS2
+#undef X
+#endif
+};
+static_assert(std::is_trivially_copyable<ArrayDevicePointers>::value, "ArrayDevicePointers must remain trivially copyable for CUDA memcpy");
 // ================================================================================================================================
 // Main Class
 // --------------------------------------------------------------------------------------------------------------------------------
-class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME> {
+class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, ArrayDevicePointers> {
     using Self = TEMPLATE_CLASS_NAME;
 
-    // bind properties
+    // bind pars
+#ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
     TEMPLATE_CLASS_PARAMETERS
+#undef X
+#endif
+
+    // bind arrays
+#ifdef TEMPLATE_CLASS_ARRAYS
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    TYPE NAME = DEFAULT_VAL;
     TEMPLATE_CLASS_ARRAYS
 #undef X
+#endif
 
   public:
     // --------------------------------------------------------------------------------------------------------------------------------
     static constexpr auto properties_impl() {
         return std::tuple{
-        // macro expand to create tuple
+
+        // bind pars
+#ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
             TEMPLATE_CLASS_PARAMETERS
+#undef X
+#endif
+
+        // bind arrays
+#ifdef TEMPLATE_CLASS_ARRAYS
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
                 TEMPLATE_CLASS_ARRAYS
 #undef X
+#endif
+
         };
     }
     // --------------------------------------------------------------------------------------------------------------------------------
+
+    static constexpr auto properties2_impl() {
+        return std::tuple{};
+    }
+    // --------------------------------------------------------------------------------------------------------------------------------
+
     void process() override;
 };
 

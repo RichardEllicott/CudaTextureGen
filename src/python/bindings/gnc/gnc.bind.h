@@ -91,7 +91,7 @@ void bind_one_property(nb::class_<Class> &cls,
         },
         // setter
         [member, name](Class &self, const Field &value) {
-            printf("[GNC] parameter '%s' updated\n", name);
+            printf("[GNC] parameter '%s' updating...\n", name);
             self.set_par(self.*member, value); // hook setter
         });
 }

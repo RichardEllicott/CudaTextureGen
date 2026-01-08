@@ -16,7 +16,6 @@ it's sort of like a firewall really as it block dissalowed types, the main probl
 #include <nanobind/nanobind.h>
 
 #include "core.h"
-// #include "core_cuda.h" // will break
 #include "core/cuda/device_array.cuh"
 
 namespace nanobind::helper {

@@ -34,12 +34,14 @@ using Property = _Property<T, decltype(Member)>;
 
 struct NoParams {}; // default if we don't use the params
 
-template <typename Derived, typename Parameters = NoParams>
+template <typename Derived, typename Parameters = NoParams, typename ArrayPointers = NoParams>
 class GNC_Base {
     using Self = GNC_Base;
 
-  public:                                            // protected??
-    core::cuda::DeviceStruct<Parameters> parameters; // uploads parameters struct to device
+  protected:
+    core::cuda::DeviceStruct<Parameters> parameters;        // uploads parameters struct to device
+    core::cuda::DeviceStruct<ArrayPointers> array_pointers; // uploads array_pointers struct to device
+
     bool _parameters_synced = false;
 
     // template for setting a par, this will mark the device as requiring a new parameters upload
@@ -47,7 +49,7 @@ class GNC_Base {
     template <typename T>
     void set_par(T &field, const T &value) {
         if (field != value) {
-            printf("set_par()...");
+            printf("value changed!\n");
             _parameters_synced = false;
             field = value;
         }
@@ -70,6 +72,20 @@ class GNC_Base {
                                   Property<Self, &Self::stream>{"stream", &Self::stream},
                                   Property<Self, &Self::width>{"width", &Self::width},
                                   Property<Self, &Self::height>{"width", &Self::height},
+                                  // ================================================================
+                              });
+    }
+
+    // return properties plus defaults
+    static constexpr auto properties2() {
+        return std::tuple_cat(Derived::properties2_impl(),
+                              std::tuple{
+                                  // ================================================================
+                                  // [Default Properties]
+                                  // ----------------------------------------------------------------
+                                  //   Property<Self, &Self::stream>{"stream", &Self::stream},
+                                  //   Property<Self, &Self::width>{"width", &Self::width},
+                                  //   Property<Self, &Self::height>{"width", &Self::height},
                                   // ================================================================
                               });
     }
