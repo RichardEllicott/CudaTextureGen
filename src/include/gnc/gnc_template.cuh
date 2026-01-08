@@ -16,7 +16,7 @@ NOTES:
 // [Single Source of Truth]
 // --------------------------------------------------------------------------------------------------------------------------------
 #define TEMPLATE_CLASS_NAME GNC_Template
-#define TEMPLATE_NAMESPACE gnc::template2
+#define TEMPLATE_NAMESPACE gnc::_template // ❗ template is reserved
 
 // must be trivially_copyable
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)

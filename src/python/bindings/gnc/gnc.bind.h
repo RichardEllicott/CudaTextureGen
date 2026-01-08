@@ -4,9 +4,12 @@ binding for ALL the gnc modules
 
 */
 #pragma once
-#include "gnc/gnc_erosion.cuh"
+
 #include "gnc/gnc_template.cuh"
-#include "gnc/gnc_example2.cuh"
+
+
+#include "gnc/gnc_erosion.cuh"
+#include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
 #include "nanobind_helper.h"
 
@@ -16,8 +19,8 @@ binding for ALL the gnc modules
 
 // (NAME, PYTHON_NAME)
 #define CLASS_NAMES                         \
-    X(template2::GNC_Template, GNC_Template)    \
-    X(example2::GNC_Example2, GNC_Example2) \
+    X(_template::GNC_Template, GNC_Template)    \
+    X(example::GNC_Example, GNC_Example) \
     X(noise::GNC_Noise, GNC_Noise)          \
     X(erosion::GNC_Erosion, GNC_Erosion)
 

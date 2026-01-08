@@ -14,8 +14,8 @@ dynamic properties for easy binding using CRTP and constexpr
 // ================================================================================================================================
 // [Single Source of Truth]
 // --------------------------------------------------------------------------------------------------------------------------------
-#define TEMPLATE_CLASS_NAME GNC_Example2
-#define TEMPLATE_NAMESPACE gnc::example2
+#define TEMPLATE_CLASS_NAME GNC_Example
+#define TEMPLATE_NAMESPACE gnc::example
 
 // must be trivially_copyable
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)

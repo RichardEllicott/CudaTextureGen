@@ -1,4 +1,4 @@
-#include "gnc/gnc_example2.cuh"
+#include "gnc/gnc_example.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 
