@@ -118,11 +118,11 @@ def test():
 
     gnc.period = [5,5,5]
 
-    gnc.process()
+    # gnc.process()
 
-    result = gnc.output.array
-    tools.arrays.normalize(result)
-    tools.images.save(result, f"{script_path}.output.png")
+    # result = gnc.output.array
+    # tools.arrays.normalize(result)
+    # tools.images.save(result, f"{script_path}.output.png")
 
 
     # gnc.

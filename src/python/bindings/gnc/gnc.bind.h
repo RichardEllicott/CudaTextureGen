@@ -36,19 +36,78 @@ struct has_properties : std::false_type {};
 template <typename T>
 struct has_properties<T, std::void_t<decltype(T::properties())>> : std::true_type {};
 // --------------------------------------------------------------------------------------------------------------------------------
+
+//
+// VERSION TARGETS A PROP RAW
+//
+// template <typename T>
+// nb::class_<T> bind_class(nb::module_ &m, const char *name) {
+//     auto cls = nb::class_<T>(m, name).def(nb::init<>());
+
+//     // dynamic properties
+//     if constexpr (has_properties<T>::value) {
+//         std::apply([&](auto... p) {
+//             (cls.def_rw(p.name, p.member), ...);
+//         },
+//                    T::properties());
+//     }
+
+//     // process function
+//     cls.def("process", [](T &self) { self.process(); });
+
+//     return cls;
+// }
+//
+//
+//
+//
+// VERSION TARGETS A PROP SETTER
+
+template <typename Class, typename MemberPtr>
+void bind_one_property(nb::class_<Class> &cls,
+                       const char *name,
+                       MemberPtr member) {
+    using Field =
+        std::remove_reference_t<decltype(std::declval<Class>().*member)>;
+
+    // // WORKING
+    // cls.def_prop_rw(
+    //     name,
+    //     // getter
+    //     [member](Class &self) -> Field & {
+    //         return self.*member;
+    //     },
+    //     // setter
+    //     [member](Class &self, const Field &value) {
+    //         self.set_par(self.*member, value);
+    //     });
+
+    // with par name
+    cls.def_prop_rw(
+        name,
+        // getter
+        [member](Class &self) -> Field & {
+            return self.*member; // return raw
+        },
+        // setter
+        [member, name](Class &self, const Field &value) {
+            printf("[GNC] parameter '%s' updated\n", name);
+            self.set_par(self.*member, value); // hook setter
+        });
+}
+
 template <typename T>
 nb::class_<T> bind_class(nb::module_ &m, const char *name) {
     auto cls = nb::class_<T>(m, name).def(nb::init<>());
 
-    // dynamic properties
     if constexpr (has_properties<T>::value) {
-        std::apply([&](auto... p) {
-            (cls.def_rw(p.name, p.member), ...);
-        },
-                   T::properties());
+        std::apply(
+            [&](auto... p) {
+                (bind_one_property<T>(cls, p.name, p.member), ...);
+            },
+            T::properties());
     }
 
-    // process function
     cls.def("process", [](T &self) { self.process(); });
 
     return cls;

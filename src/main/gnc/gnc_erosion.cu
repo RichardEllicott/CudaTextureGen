@@ -87,6 +87,12 @@ __global__ void add_rain(
     water_map[idx] += rain;
 }
 
+__device__ __forceinline__ int2 global_thread_pos() {
+    int x = int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x);
+    int y = int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y);
+    return make_int2(x, y);
+}
+
 __global__ void calculate_slope_vectors(
     const int2 map_size,
     const float *__restrict__ height_map, // in
@@ -99,10 +105,13 @@ __global__ void calculate_slope_vectors(
     const float scale = 1.0f,
     const int jitter_seed = 1234) {
     // ================================================================
-    int2 pos = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
+    // int2 pos = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
+    // int2 pos = {int(blockIdx.x * blockDim.x + threadIdx.x), int(blockIdx.y * blockDim.y + threadIdx.y)};
+    int2 pos = global_thread_pos();
     if (pos.x >= map_size.x || pos.y >= map_size.y) return;
     int idx = pos.y * map_size.x + pos.x;
     int idx2 = idx * 2;
+
     // ================================================================
 
     // float jitter = 1.0f;

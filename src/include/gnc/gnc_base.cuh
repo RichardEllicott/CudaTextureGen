@@ -38,7 +38,7 @@ template <typename Derived, typename Parameters = NoParams>
 class GNC_Base {
     using Self = GNC_Base;
 
-  protected:
+  public:                                            // protected??
     core::cuda::DeviceStruct<Parameters> parameters; // uploads parameters struct to device
     bool _parameters_synced = false;
 
@@ -47,6 +47,7 @@ class GNC_Base {
     template <typename T>
     void set_par(T &field, const T &value) {
         if (field != value) {
+            printf("set_par()...");
             _parameters_synced = false;
             field = value;
         }
