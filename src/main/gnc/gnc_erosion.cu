@@ -91,8 +91,6 @@ __global__ void add_rain(
     water_map[idx] += rain;
 }
 
-
-
 __global__ void calculate_slope_vectors(
     const int2 map_size,
     const float *__restrict__ height_map, // in
@@ -130,18 +128,7 @@ __global__ void calculate_slope_vectors(
 //     float x = arr[2];
 // }
 
-
-
-
-
-
-
-void TEMPLATE_CLASS_NAME::process() {
-
-    // testing seed generator
-    printf("seed_test = %u\n", CONSTEXPR_LINE_SEED);
-    printf("seed_test = %u\n", CONSTEXPR_LINE_SEED);
-    printf("seed_test = %u\n", CONSTEXPR_LINE_SEED);
+void TEMPLATE_CLASS_NAME::_compute() {
 
     if (layer_map.is_valid() && !layer_map->empty()) { // layer mode
         _layer_mode = true;
@@ -199,8 +186,8 @@ void TEMPLATE_CLASS_NAME::process() {
         jitter,
         _step,
         true,
-        0, // jitter mode
-        1.0f, //scale
+        0,    // jitter mode
+        1.0f, // scale
         CONSTEXPR_LINE_SEED);
 
     _step++;

@@ -120,7 +120,7 @@ __global__ void generate_gradient_noise3(
         seed);
 }
 
-void TEMPLATE_CLASS_NAME::process() {
+void TEMPLATE_CLASS_NAME::_compute() {
 
     output.instantiate_if_null(); // ensure output
     stream.instantiate_if_null(); // ensure stream
@@ -139,5 +139,7 @@ void TEMPLATE_CLASS_NAME::process() {
         to_float3(offset),
         seed);
 }
+
+
 
 } // namespace TEMPLATE_NAMESPACE

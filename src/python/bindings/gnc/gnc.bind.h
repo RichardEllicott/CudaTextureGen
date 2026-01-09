@@ -147,9 +147,8 @@ nb::class_<T> bind_class(nb::module_ &m, const char *name) {
     }
     // ----------------------------------------------------------------
 
-    cls.def("process", [](T &self) { self.process(); });
-
     cls.def("compute", [](T &self) { self._compute(); });
+    cls.def("process", [](T &self) { self._compute(); }); // alias
 
     return cls;
 }

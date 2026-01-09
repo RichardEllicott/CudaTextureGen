@@ -19,7 +19,7 @@ __global__ void chequer_test(
     }
 }
 
-void TEMPLATE_CLASS_NAME::process() {
+void TEMPLATE_CLASS_NAME::_compute() {
 
     if (!input.is_valid()) throw std::runtime_error("GNA_Base.input is not valid"); // if no DeviceArray, error
     if (input->empty()) throw std::runtime_error("GNA_Base.input is empty");        // if DeviceArray is empty, error
@@ -41,5 +41,8 @@ void TEMPLATE_CLASS_NAME::process() {
 
     // // stream->sync();
 }
+
+
+
 
 } // namespace TEMPLATE_NAMESPACE

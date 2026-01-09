@@ -204,11 +204,10 @@ class GNC_Base {
         stream.instantiate_if_null();
     }
 
-    // TODO rename to "compute"
-    virtual void process() = 0; // must be implemented by child
-
+    // main execution function, ensure device ready and run
     void compute() {
-        Derived::_compute();
+        ready_device();      // ensure device ready
+        Derived::_compute(); // CRTP requirement
     }
     //
 };

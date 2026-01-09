@@ -223,13 +223,9 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #endif
     // --------------------------------------------------------------------------------------------------------------------------------
 
-    void process() override;
+    void _compute(); // CRTP
 
 
-
-    void _compute(){};
-
-    
 };
 } // namespace TEMPLATE_NAMESPACE
 
