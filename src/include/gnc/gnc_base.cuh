@@ -101,13 +101,16 @@ class GNC_Base {
 
     // ready device ensuring par structs are uploaded
     void ready_device() {
-        if (_parameters_synced) return;
-        Derived::_ready_device(); // CRTP requirement
+
+        if (_parameters_synced) return; // skip if already synced
+        stream.instantiate_if_null();   // ensure we have a stream
+        Derived::_ready_device();       // CRTP requirement
+        stream->sync();                 // wait on stream, to ensure copying completes
         _parameters_synced = true;
     }
 
-    int width = 128;
-    int height = 128;
+    // int width = 128;
+    // int height = 128;
     // dim3 block(16, 16); // ⚠️ breaks cuda
 
     // return properties plus defaults
@@ -118,8 +121,8 @@ class GNC_Base {
                                   // [Default Properties]
                                   // ----------------------------------------------------------------
                                   Property<Self, &Self::stream>{"stream", &Self::stream},
-                                  Property<Self, &Self::width>{"width", &Self::width},
-                                  Property<Self, &Self::height>{"width", &Self::height},
+                                  //   Property<Self, &Self::width>{"width", &Self::width},
+                                  //   Property<Self, &Self::height>{"width", &Self::height},
                                   // ================================================================
                               });
     }
@@ -200,7 +203,7 @@ class GNC_Base {
     }
 
     GNC_Base() {
-        instantiate_all_arrays();
+        // instantiate_all_arrays();
         stream.instantiate_if_null();
     }
 

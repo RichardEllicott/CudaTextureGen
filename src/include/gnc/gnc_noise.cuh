@@ -21,6 +21,8 @@ dynamic properties for easy binding using CRTP and constexpr
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS         \
     X(bool, _debug, false, "")            \
+    X(int, width, 256, "")                   \
+    X(int, height, 256, "")                   \
     X(int, seed, 0, "")                   \
     X(Float3, period, DEFAULT_PERIOD, "") \
     X(Float3, offset, {}, "")

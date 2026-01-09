@@ -21,7 +21,9 @@ dynamic properties for easy binding using CRTP and constexpr
 // must be trivially_copyable
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS \
-    X(bool, _debug, false, "")    \
+    X(bool, _debug, false, "")            \
+    X(int, _width, 0, "")                   \
+    X(int, _height, 0, "")                   \
     X(int, tile_size, false, "for chequer_test")
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)

@@ -23,6 +23,8 @@ NOTES:
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS                    \
     X(bool, _debug, false, "")                       \
+    X(int, _width, 0, "")                            \
+    X(int, _height, 0, "")                           \
     X(int, tile_size, false, "for chequer_test")     \
     X(FloatArray<8>, float8, {}, "float array test") \
     X(IntArray<8>, int8, {}, "int array test")
@@ -224,8 +226,6 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     // --------------------------------------------------------------------------------------------------------------------------------
 
     void _compute(); // CRTP
-
-
 };
 } // namespace TEMPLATE_NAMESPACE
 
