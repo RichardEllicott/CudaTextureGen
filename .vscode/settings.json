@@ -402,6 +402,18 @@
         {
             "folderPath": "cuda_texture_gen\\src\\python\\bindings\\gnc\\gnc.bind.h\\",
             "badge": "🦑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\gnc\\gnc_template.cuh\\",
+            "badge": "👑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\gnc\\gnc_base.cuh\\",
+            "badge": "👑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\include\\gnc\\gnc_boilerplate.cuh\\",
+            "badge": "📷"
         }
     ],
     "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",

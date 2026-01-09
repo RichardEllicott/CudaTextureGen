@@ -9,7 +9,8 @@ dynamic properties for easy binding using CRTP and constexpr
 
 */
 #pragma once
-#include "template_macro_undef.h" // guard from defines
+#include "_gnc_undef.h"
+#include "template_macro_undef.h"
 
 // ================================================================================================================================
 // [Single Source of Truth]

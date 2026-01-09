@@ -43,3 +43,4 @@ included at the bottom of the bind headers that use the template pattern
 #undef TEMPLATE_CLASS_PARAMETERS
 #undef TEMPLATE_CLASS_ARRAYS
 #undef TEMPLATE_CLASS_ARRAYS2
+#undef TEMPLATE_CLASS_METHODS

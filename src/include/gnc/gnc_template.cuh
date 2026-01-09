@@ -10,7 +10,8 @@ NOTES:
 
 */
 #pragma once
-#include "template_macro_undef.h" // guard from defines
+#include "_gnc_undef.h"
+#include "template_macro_undef.h"
 
 // ================================================================================================================================
 // [Single Source of Truth]
@@ -37,6 +38,11 @@ NOTES:
 #define TEMPLATE_CLASS_ARRAYS2 \
     X(float, 2, input2, "")    \
     X(float, 2, output2, "")
+
+// optional class methods extra
+// (TYPE, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_METHODS \
+    X(void, test, "test method")
 
 #pragma region BOILERPLATE
 // ================================================================================================================================
@@ -80,7 +86,11 @@ static_assert(std::is_trivially_copyable<ArrayPointers>::value, "ArrayPointers m
 class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, ArrayPointers> {
     using Self = TEMPLATE_CLASS_NAME;
 
-    // bind pars
+    // ================================================================
+    // [Create pars and arrays]
+    // ----------------------------------------------------------------
+
+    // create pars
 #ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
@@ -88,7 +98,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
-    // bind arrays
+    // create arrays
 #ifdef TEMPLATE_CLASS_ARRAYS
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
@@ -96,7 +106,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
-    // bind arrays2 (second pattern)
+    // create arrays2 (second pattern)
 #ifdef TEMPLATE_CLASS_ARRAYS2
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     core::Ref<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
@@ -105,8 +115,12 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #endif
 
   public:
-    // --------------------------------------------------------------------------------------------------------------------------------
-    static constexpr auto properties_impl() {
+    // ================================================================
+    // [Properties Binding]
+    // ----------------------------------------------------------------
+
+    // CRTP requirement
+    static constexpr auto _properties() {
         return std::tuple{
 
 #if REFACTOR_GNC_STORAGE_IN_PARS == 0
@@ -148,13 +162,36 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         };
     }
     // --------------------------------------------------------------------------------------------------------------------------------
+    // CRTP requirement
+    static constexpr auto _properties2() {
+        return std::tuple{
 
-    static constexpr auto properties2_impl() {
-        return std::tuple{};
+        };
     }
+
+    // ================================================================
+    // [Method Binding]
+    // ----------------------------------------------------------------
+
+    // CRTP requirement
+    static constexpr auto _methods() {
+        return std::tuple{
+        // Method<Self, &Self::test_method2>{"test_method2"},
+
+#ifdef TEMPLATE_CLASS_METHODS // bind methods
+#define X(TYPE, NAME, DESCRIPTION) \
+    Method<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME)},
+            TEMPLATE_CLASS_METHODS
+#undef X
+#endif
+
+        };
+    }
+
     // --------------------------------------------------------------------------------------------------------------------------------
 
-    void ready_device_impl() {
+    // CRTP requirement
+    void _ready_device() {
 
         // copy all pars to struct
 #ifdef TEMPLATE_CLASS_PARAMETERS
@@ -176,11 +213,24 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         dev_parameters.upload(parameters);
         dev_array_pointers.upload(array_pointers);
     }
+// --------------------------------------------------------------------------------------------------------------------------------
+// bind extra methods
+#ifdef TEMPLATE_CLASS_METHODS // bind arrays2 (second pattern)
+#define X(TYPE, NAME, DESCRIPTION) \
+    TYPE NAME();
+    TEMPLATE_CLASS_METHODS
+#undef X
+#endif
     // --------------------------------------------------------------------------------------------------------------------------------
 
     void process() override;
-};
 
+
+
+    void _compute(){};
+
+    
+};
 } // namespace TEMPLATE_NAMESPACE
 
 #undef REFACTOR_STORAGE_IN_PARS

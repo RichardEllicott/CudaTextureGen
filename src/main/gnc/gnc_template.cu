@@ -42,4 +42,7 @@ void TEMPLATE_CLASS_NAME::process() {
     // // stream->sync();
 }
 
+void TEMPLATE_CLASS_NAME::test() {
+}
+
 } // namespace TEMPLATE_NAMESPACE

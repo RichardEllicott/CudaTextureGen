@@ -20,7 +20,13 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def extract_region(src_path: str, dst_path: str, region_name: str):
+def extract_region(
+    src_path: str,
+    dst_path: str,
+    region_name: str,
+    notes: str = ""
+):
+
     start_marker = f"#pragma region {region_name}"
     end_marker = "#pragma endregion"
 
@@ -48,13 +54,26 @@ def extract_region(src_path: str, dst_path: str, region_name: str):
             return
 
     with open(dst_path, "w", encoding="utf-8") as f:
+        f.write(notes)
         f.writelines(collected)
+        
 
     print(f"Extracted region '{region_name}' to {dst_path}")
 
 
+src_filename = "gnc_template.cuh"
+dst_filename = "gnc_boilerplate.cuh"
+
+
+notes = ""
+notes += "//\n"
+notes += f"// ⚠️ THIS FILE IS COPIED OR GENERATED FROM '{src_filename}'\n"
+notes += "//\n"
+notes += "\n"
+
 extract_region(
-    src_path=os.path.join(SCRIPT_DIR, "gnc_template.cuh"),
-    dst_path=os.path.join(SCRIPT_DIR, "gnc_boilerplate.cuh"),
-    region_name="BOILERPLATE"
+    src_path=os.path.join(SCRIPT_DIR, src_filename),
+    dst_path=os.path.join(SCRIPT_DIR, dst_filename),
+    region_name="BOILERPLATE",
+    notes=notes
 )

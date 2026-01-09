@@ -7,7 +7,6 @@ binding for ALL the gnc modules
 
 #include "gnc/gnc_template.cuh"
 
-
 #include "gnc/gnc_erosion.cuh"
 #include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
@@ -18,14 +17,15 @@ binding for ALL the gnc modules
 // --------------------------------------------------------------------------------------------------------------------------------
 
 // (NAME, PYTHON_NAME)
-#define CLASS_NAMES                         \
-    X(_template::GNC_Template, GNC_Template)    \
-    X(example::GNC_Example, GNC_Example) \
-    X(noise::GNC_Noise, GNC_Noise)          \
+#define CLASS_NAMES                          \
+    X(_template::GNC_Template, GNC_Template) \
+    X(example::GNC_Example, GNC_Example)     \
+    X(noise::GNC_Noise, GNC_Noise)           \
     X(erosion::GNC_Erosion, GNC_Erosion)
 
 // ================================================================================================================================
 
+#pragma region BOILERPLATE
 namespace gnc {
 
 // ================================================================================================================================
@@ -99,11 +99,32 @@ void bind_one_property(nb::class_<Class> &cls,
         });
 }
 
+// ================================================================================================================================
+
+// 🧪 same as above but for method
+template <typename, typename = void>
+struct has_methods : std::false_type {};
+template <typename T>
+struct has_methods<T, std::void_t<decltype(T::methods())>> : std::true_type {};
+// --------------------------------------------------------------------------------------------------------------------------------
+// 🧪
+template <typename T, auto MethodPtr>
+void bind_one_method(nb::class_<T> &cls, const char *name) {
+    cls.def(name, MethodPtr);
+}
+// --------------------------------------------------------------------------------------------------------------------------------
+
 template <typename T>
 nb::class_<T> bind_class(nb::module_ &m, const char *name) {
     auto cls = nb::class_<T>(m, name).def(nb::init<>());
 
-    if constexpr (has_properties<T>::value) {
+    // ================================================================
+    // [Bind Properties]
+    // ----------------------------------------------------------------
+
+    static_assert(has_methods<T>::value, "Class T must define static constexpr methods()"); // optional check
+
+    if constexpr (has_properties<T>::value) { // optional check
         std::apply(
             [&](auto... p) {
                 (bind_one_property<T>(cls, p.name, p.member), ...);
@@ -111,7 +132,24 @@ nb::class_<T> bind_class(nb::module_ &m, const char *name) {
             T::properties());
     }
 
+    // ================================================================
+    // [Bind Methods]
+    // ----------------------------------------------------------------
+
+    static_assert(has_methods<T>::value, "Class T must define static constexpr methods()"); // optional check
+
+    if constexpr (has_methods<T>::value) { // optional check
+        std::apply(
+            [&](auto... mtd) {
+                (bind_one_method<T, mtd.member>(cls, mtd.name), ...);
+            },
+            T::methods());
+    }
+    // ----------------------------------------------------------------
+
     cls.def("process", [](T &self) { self.process(); });
+
+    cls.def("compute", [](T &self) { self._compute(); });
 
     return cls;
 }
@@ -130,5 +168,7 @@ inline void bind(nb::module_ &m) {
 }
 
 } // namespace gnc
+
+#pragma endregion
 
 #undef CLASS_NAMES

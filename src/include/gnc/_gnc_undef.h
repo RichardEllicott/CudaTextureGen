@@ -1,0 +1,13 @@
+/*
+
+undef defines, protects from pollution
+
+*/
+#undef TEMPLATE_CLASS_NAME
+#undef TEMPLATE_NAMESPACE
+#undef TEMPLATE_CLASS_PARAMETERS
+#undef TEMPLATE_CLASS_ARRAYS
+#undef TEMPLATE_CLASS_ARRAYS2
+#undef TEMPLATE_CLASS_METHODS
+
+#undef REFACTOR_GNC_STORAGE_IN_PARS // ongoing refactor

@@ -40,6 +40,19 @@ using Property = _Property<T, decltype(Member)>;
 //
 //
 //
+// 🧪 trying same for methods
+template <typename T, auto MethodPtr>
+struct Method {
+    const char *name;
+    static constexpr auto member = MethodPtr;
+    // if your property metadata exposes __this, add it too:
+    // using This = T;
+    // static constexpr auto __this = static_cast<T*>(nullptr);
+};
+
+//
+//
+//
 
 #if REFACTOR_GNC_STORAGE_IN_PARS == 1
 // 🧪 attempting to bind properties direct to structure, is more complicated
@@ -89,7 +102,7 @@ class GNC_Base {
     // ready device ensuring par structs are uploaded
     void ready_device() {
         if (_parameters_synced) return;
-        Derived::ready_device_impl(); // CRTP requirement
+        Derived::_ready_device(); // CRTP requirement
         _parameters_synced = true;
     }
 
@@ -99,7 +112,7 @@ class GNC_Base {
 
     // return properties plus defaults
     static constexpr auto properties() {
-        return std::tuple_cat(Derived::properties_impl(), // CRTP requirement
+        return std::tuple_cat(Derived::_properties(), // CRTP requirement
                               std::tuple{
                                   // ================================================================
                                   // [Default Properties]
@@ -113,7 +126,7 @@ class GNC_Base {
 
     // return properties plus defaults
     static constexpr auto properties2() {
-        return std::tuple_cat(Derived::properties2_impl(), // CRTP requirement
+        return std::tuple_cat(Derived::_properties2(), // CRTP requirement
                               std::tuple{
                                   // ================================================================
                                   // [Default Properties]
@@ -122,6 +135,15 @@ class GNC_Base {
                                   //   Property<Self, &Self::width>{"width", &Self::width},
                                   //   Property<Self, &Self::height>{"width", &Self::height},
                                   // ================================================================
+                              });
+    }
+
+    // 🧪 trying same with methods
+    // return properties plus defaults
+    static constexpr auto methods() {
+        return std::tuple_cat(Derived::_methods(), // CRTP requirement
+                              std::tuple{
+
                               });
     }
 
@@ -182,7 +204,13 @@ class GNC_Base {
         stream.instantiate_if_null();
     }
 
+    // TODO rename to "compute"
     virtual void process() = 0; // must be implemented by child
+
+    void compute() {
+        Derived::_compute();
+    }
+    //
 };
 
 } // namespace gnc
