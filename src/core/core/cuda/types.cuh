@@ -13,22 +13,13 @@ custom Cuda objects, designed to automaticly allocate and free memory, download 
 namespace core::cuda::types {
 
 // standard DeviceArray Refs
-using DeviceArrayFloat1D = core::Ref<core::cuda::DeviceArray<float, 1>>;
-using DeviceArrayFloat2D = core::Ref<core::cuda::DeviceArray<float, 2>>;
-using DeviceArrayFloat3D = core::Ref<core::cuda::DeviceArray<float, 3>>;
+using RefDeviceArrayFloat1D = core::Ref<core::cuda::DeviceArray<float, 1>>;
+using RefDeviceArrayFloat2D = core::Ref<core::cuda::DeviceArray<float, 2>>;
+using RefDeviceArrayFloat3D = core::Ref<core::cuda::DeviceArray<float, 3>>;
 
-using DeviceArrayInt1D = core::Ref<core::cuda::DeviceArray<int, 1>>;
-using DeviceArrayInt2D = core::Ref<core::cuda::DeviceArray<int, 2>>;
-using DeviceArrayInt3D = core::Ref<core::cuda::DeviceArray<int, 3>>;
-
-// (NAME)
-#define DEVICE_ARRAY_TYPES \
-    X(DeviceArrayFloat1D)  \
-    X(DeviceArrayFloat2D)  \
-    X(DeviceArrayFloat3D)  \
-    X(DeviceArrayInt1D)    \
-    X(DeviceArrayInt2D)    \
-    X(DeviceArrayInt3D)
+using RefDeviceArrayInt1D = core::Ref<core::cuda::DeviceArray<int, 1>>;
+using RefDeviceArrayInt2D = core::Ref<core::cuda::DeviceArray<int, 2>>;
+using RefDeviceArrayInt3D = core::Ref<core::cuda::DeviceArray<int, 3>>;
 
 // std::array aliases
 using Float2 = std::array<float, 2>;

@@ -26,7 +26,7 @@ dynamic properties for easy binding using CRTP and constexpr
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_ARRAYS \
-    X(DeviceArrayFloat2D, output, {}, "")
+    X(RefDeviceArrayFloat2D, output, {}, "")
 
 #include "gnc_boilerplate.cuh"
 

@@ -32,14 +32,39 @@ struct _Property {
 template <typename T, auto Member>
 using Property = _Property<T, decltype(Member)>;
 
+//
+//
+//
+
+
+template <typename T, auto SubobjectPtr, auto FieldPtr>
+struct NestedProperty {
+    const char* name;
+
+    // Accessor
+    auto& get(T& obj) const {
+        return (obj.*SubobjectPtr).*FieldPtr;
+    }
+};
+
+
+
+//
+//
+//
+
 struct NoParams {}; // default if we don't use the params
 
 template <typename Derived, typename Parameters = NoParams, typename ArrayPointers = NoParams>
 class GNC_Base {
     using Self = GNC_Base;
 
-    core::cuda::DeviceStruct<Parameters> parameters;        // uploads parameters struct to device
-    core::cuda::DeviceStruct<ArrayPointers> array_pointers; // uploads array_pointers struct to device
+  protected:
+    Parameters parameters;
+    ArrayPointers array_pointers;
+
+    core::cuda::DeviceStruct<Parameters> dev_parameters;        // uploads parameters struct to device
+    core::cuda::DeviceStruct<ArrayPointers> dev_array_pointers; // uploads array_pointers struct to device
     bool _parameters_synced = false;
 
   public:
@@ -56,13 +81,20 @@ class GNC_Base {
 
     core::Ref<core::cuda::Stream> stream; // gets a stream
 
+    // ready device ensuring par structs are uploaded
+    void ready_device() {
+        if (_parameters_synced) return;
+        Derived::ready_device_impl(); // CRTP requirement
+        _parameters_synced = true;
+    }
+
     int width = 128;
     int height = 128;
     // dim3 block(16, 16); // ⚠️ breaks cuda
 
     // return properties plus defaults
     static constexpr auto properties() {
-        return std::tuple_cat(Derived::properties_impl(),
+        return std::tuple_cat(Derived::properties_impl(), // CRTP requirement
                               std::tuple{
                                   // ================================================================
                                   // [Default Properties]
@@ -76,7 +108,7 @@ class GNC_Base {
 
     // return properties plus defaults
     static constexpr auto properties2() {
-        return std::tuple_cat(Derived::properties2_impl(),
+        return std::tuple_cat(Derived::properties2_impl(), // CRTP requirement
                               std::tuple{
                                   // ================================================================
                                   // [Default Properties]
@@ -121,13 +153,23 @@ class GNC_Base {
 
     // using get_all_of_type, ensure all arrays are instantiated (they will still be empty though)
     void instantiate_all_arrays() {
-#ifdef DEVICE_ARRAY_TYPES
+
+// (NAME)
+#define REF_DEVICE_ARRAY_TYPES \
+    X(RefDeviceArrayFloat1D)   \
+    X(RefDeviceArrayFloat2D)   \
+    X(RefDeviceArrayFloat3D)   \
+    X(RefDeviceArrayInt1D)     \
+    X(RefDeviceArrayInt2D)     \
+    X(RefDeviceArrayInt3D)
+#ifdef REF_DEVICE_ARRAY_TYPES
 #define X(NAME)                               \
     for (auto *arr : get_all_of_type<NAME>()) \
         arr->instantiate_if_null();
-        DEVICE_ARRAY_TYPES
+        REF_DEVICE_ARRAY_TYPES
 #undef X
 #endif
+#undef REF_DEVICE_ARRAY_TYPES
     }
 
     GNC_Base() {

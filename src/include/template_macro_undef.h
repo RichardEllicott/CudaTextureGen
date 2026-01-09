@@ -34,3 +34,12 @@ included at the bottom of the bind headers that use the template pattern
 
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
+
+
+
+// gnc
+#undef TEMPLATE_CLASS_NAME
+#undef TEMPLATE_NAMESPACE
+#undef TEMPLATE_CLASS_PARAMETERS
+#undef TEMPLATE_CLASS_ARRAYS
+#undef TEMPLATE_CLASS_ARRAYS2

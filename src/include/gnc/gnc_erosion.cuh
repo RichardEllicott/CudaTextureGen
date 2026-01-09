@@ -28,11 +28,11 @@ dynamic properties for easy binding using CRTP and constexpr
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_ARRAYS                                                 \
-    X(DeviceArrayFloat2D, height_map, {}, "")                                 \
-    X(DeviceArrayFloat2D, water_map, {}, "")                                 \
-    X(DeviceArrayFloat2D, sediment_map, {}, "")                                 \
-    X(DeviceArrayFloat3D, layer_map, {}, "")                                  \
-    X(DeviceArrayInt2D, _exposed_layer_map, {}, "top exposed layer to erode") \
-    X(DeviceArrayFloat3D, _slope_vector2_map, {}, "gradient vectors give slope direction and strength")
+    X(RefDeviceArrayFloat2D, height_map, {}, "")                                 \
+    X(RefDeviceArrayFloat2D, water_map, {}, "")                                 \
+    X(RefDeviceArrayFloat2D, sediment_map, {}, "")                                 \
+    X(RefDeviceArrayFloat3D, layer_map, {}, "")                                  \
+    X(RefDeviceArrayInt2D, _exposed_layer_map, {}, "top exposed layer to erode") \
+    X(RefDeviceArrayFloat3D, _slope_vector2_map, {}, "gradient vectors give slope direction and strength")
 
 #include "gnc_boilerplate.cuh"

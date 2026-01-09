@@ -1,5 +1,9 @@
 #pragma region BOILERPLATE
 // ================================================================================================================================
+// REFACTOR OPTIONS
+// --------------------------------------------------------------------------------------------------------------------------------
+#define REFACTOR_STORAGE_IN_PARS 0
+// ================================================================================================================================
 // [Boilerplate (all below can be cocidered a copy, should match)]
 // --------------------------------------------------------------------------------------------------------------------------------
 #include "gnc_base.cuh"
@@ -7,11 +11,8 @@
 #ifndef TEMPLATE_CLASS_NAME
 #error "TEMPLATE_CLASS_NAME must be defined before including this file"
 #endif
-#ifndef TEMPLATE_CLASS_ARRAYS
-#error "TEMPLATE_CLASS_ARRAYS must be defined before including this file"
-#endif
-#ifndef TEMPLATE_CLASS_PARAMETERS
-#error "TEMPLATE_CLASS_PARAMETERS must be defined before including this file"
+#ifndef TEMPLATE_NAMESPACE
+#error "TEMPLATE_NAMESPACE must be defined before including this file"
 #endif
 
 namespace TEMPLATE_NAMESPACE {
@@ -28,7 +29,7 @@ static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must re
 // ================================================================================================================================
 // ArrayDevicePointers struct for uploading to GPU (UNUSED)
 // --------------------------------------------------------------------------------------------------------------------------------
-struct ArrayDevicePointers {
+struct ArrayPointers {
 #ifdef TEMPLATE_CLASS_ARRAYS2
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     TYPE *NAME;
@@ -36,11 +37,11 @@ struct ArrayDevicePointers {
 #undef X
 #endif
 };
-static_assert(std::is_trivially_copyable<ArrayDevicePointers>::value, "ArrayDevicePointers must remain trivially copyable for CUDA memcpy");
+static_assert(std::is_trivially_copyable<ArrayPointers>::value, "ArrayPointers must remain trivially copyable for CUDA memcpy");
 // ================================================================================================================================
 // Main Class
 // --------------------------------------------------------------------------------------------------------------------------------
-class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, ArrayDevicePointers> {
+class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, ArrayPointers> {
     using Self = TEMPLATE_CLASS_NAME;
 
     // bind pars
@@ -59,27 +60,57 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
+    // bind arrays2 (second pattern)
+#ifdef TEMPLATE_CLASS_ARRAYS2
+#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+    core::Ref<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
+    TEMPLATE_CLASS_ARRAYS2
+#undef X
+#endif
+
+
+
   public:
     // --------------------------------------------------------------------------------------------------------------------------------
     static constexpr auto properties_impl() {
         return std::tuple{
 
-        // bind pars
-#ifdef TEMPLATE_CLASS_PARAMETERS
+#if REFACTOR_STORAGE_IN_PARS == 0
+
+        // referencing class body (old version)
+#ifdef TEMPLATE_CLASS_PARAMETERS // bind pars
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
             TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
 
-        // bind arrays
-#ifdef TEMPLATE_CLASS_ARRAYS
+#elif REFACTOR_STORAGE_IN_PARS == 1
+
+        // NestedProperty<Self, &Self::parameters, &Parameters::tile_size>{"tile_size"}, // tested working
+
+#ifdef TEMPLATE_CLASS_PARAMETERS // bind pars
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    NestedProperty<Self, &Self::parameters, &Parameters::NAME>{EXPAND_AND_STRINGIFY(NAME)},
+            TEMPLATE_CLASS_PARAMETERS
+#undef X
+#endif
+
+#endif
+
+#ifdef TEMPLATE_CLASS_ARRAYS // bind arrays
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
                 TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
 
+#ifdef TEMPLATE_CLASS_ARRAYS2 // bind arrays2 (second pattern)
+#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+                    TEMPLATE_CLASS_ARRAYS2
+#undef X
+#endif
         };
     }
     // --------------------------------------------------------------------------------------------------------------------------------
@@ -89,8 +120,37 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     }
     // --------------------------------------------------------------------------------------------------------------------------------
 
+    void ready_device_impl() {
+
+        // copy all pars to struct
+#ifdef TEMPLATE_CLASS_PARAMETERS
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    parameters.NAME = NAME;
+        TEMPLATE_CLASS_PARAMETERS
+#undef X
+#endif
+
+        // copy all array pointers
+#ifdef TEMPLATE_CLASS_ARRAYS2 // bind arrays2 (second pattern)
+#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+    array_pointers.NAME = nullptr;             \
+    if (NAME.is_valid()) array_pointers.NAME = NAME->dev_ptr();
+        TEMPLATE_CLASS_ARRAYS2
+#undef X
+#endif
+        // now upload the pars
+        dev_parameters.upload(parameters);
+        dev_array_pointers.upload(array_pointers);
+    }
+    // --------------------------------------------------------------------------------------------------------------------------------
+
     void process() override;
 };
 
 } // namespace TEMPLATE_NAMESPACE
+
+
+
+#undef REFACTOR_STORAGE_IN_PARS
+
 #pragma endregion
