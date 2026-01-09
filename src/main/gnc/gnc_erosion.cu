@@ -128,18 +128,6 @@ __global__ void calculate_slope_vectors(
 //     float x = arr[2];
 // }
 
-// calculate water and sediment flux (or total outflow)
-// requires:
-// height_map
-// water_map
-// sediment_map
-// _slope_vector2 ❓ UNUSED so far
-// _slope_magnitude ❓ USED FOR SOME EROSION MODES
-// _water_velocity ❓USED FOR SOME EROSION MODES
-// _flux8
-// _sediment_flux8
-// _water_out ❗ avoids recalculating
-// _sediment_out ❗ avoids recalculating
 __global__ void calculate_outflow3(
     const Parameters *__restrict__ pars,
     const ArrayPointers *__restrict__ arrays,

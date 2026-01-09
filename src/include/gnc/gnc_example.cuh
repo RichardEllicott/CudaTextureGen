@@ -18,17 +18,57 @@ dynamic properties for easy binding using CRTP and constexpr
 #define TEMPLATE_CLASS_NAME GNC_Example
 #define TEMPLATE_NAMESPACE gnc::example
 
-// must be trivially_copyable
-// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_PARAMETERS \
-    X(bool, _debug, false, "")            \
-    X(int, _width, 0, "")                   \
-    X(int, _height, 0, "")                   \
-    X(int, tile_size, false, "for chequer_test")
+// SUCESS!11
+#define TEMPLATE_CLASS_PARAMETERS_1 \
+    X(bool, _debug, false, "")      \
+    X(int, _width, 0, "")           \
+    X(int, _height, 0, "")          \
+    X(int, tile_size, 0, "for chequer_test")
 
-// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS            \
-    X(RefDeviceArrayFloat2D, input, {}, "") \
-    X(RefDeviceArrayFloat2D, output, {}, "")
+#define TEMPLATE_CLASS_PARAMETERS_2 \
+    X(bool, extra_test, false, "")
+
+#define TEMPLATE_CLASS_PARAMETERS_STRUCT \
+    TEMPLATE_CLASS_PARAMETERS_1          \
+    TEMPLATE_CLASS_PARAMETERS_2
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
+// // BROKEN ... NVCC will not expand early
+
+// // Force expansion with an extra level
+// #define EXPAND_PARAMS(a, b) a b
+
+// #define TEMPLATE_CLASS_PARAMETERS_STRUCT \
+//     EXPAND_PARAMS(TEMPLATE_CLASS_PARAMETERS_1, TEMPLATE_CLASS_PARAMETERS_2)
+
+// // // // Now you can undef the sub-lists
+// // #undef TEMPLATE_CLASS_PARAMETERS_1
+// #undef TEMPLATE_CLASS_PARAMETERS_2
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
+
+// NVCC will not expand early
+
+
+// #define EVAL(...) __VA_ARGS__
+// #define EXPAND(...) EVAL(EVAL(__VA_ARGS__))
+
+// #define TEMPLATE_CLASS_PARAMETERS \
+//     EXPAND(TEMPLATE_CLASS_PARAMETERS_1 TEMPLATE_CLASS_PARAMETERS_2)
+
+// // Now safe to undef
+// // #undef TEMPLATE_CLASS_PARAMETERS_1
+// // #undef TEMPLATE_CLASS_PARAMETERS_2
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
+// (TYPE, DIMENSIONS, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_ARRAYS2 \
+    X(float, 2, input, "")     \
+    X(float, 2, output, "")
+
+#
 
 #include "gnc_boilerplate.cuh"

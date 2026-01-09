@@ -22,7 +22,7 @@ namespace TEMPLATE_NAMESPACE {
 struct Parameters {
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
-    TEMPLATE_CLASS_PARAMETERS
+    TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 };
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
@@ -49,10 +49,10 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     // ----------------------------------------------------------------
 
     // create pars
-#ifdef TEMPLATE_CLASS_PARAMETERS
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
-    TEMPLATE_CLASS_PARAMETERS
+    TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 #endif
 
@@ -84,10 +84,10 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #if REFACTOR_GNC_STORAGE_IN_PARS == 0
 
         // referencing class body (old version)
-#ifdef TEMPLATE_CLASS_PARAMETERS // bind pars
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-            TEMPLATE_CLASS_PARAMETERS
+            TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 #endif
 
@@ -95,10 +95,10 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
         // NestedProperty<Self, &Self::parameters, &Parameters::tile_size>{"tile_size"}, // tested working
 
-#ifdef TEMPLATE_CLASS_PARAMETERS // bind pars
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     NestedProperty<Self, &Self::parameters, &Parameters::NAME>{EXPAND_AND_STRINGIFY(NAME)},
-            TEMPLATE_CLASS_PARAMETERS
+            TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 #endif
 
@@ -152,10 +152,10 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     void _ready_device() {
 
         // copy all pars to struct
-#ifdef TEMPLATE_CLASS_PARAMETERS
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     parameters.NAME = NAME;
-        TEMPLATE_CLASS_PARAMETERS
+        TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 #endif
 
@@ -182,8 +182,6 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     // --------------------------------------------------------------------------------------------------------------------------------
 
     void _compute(); // CRTP
-
-
 };
 } // namespace TEMPLATE_NAMESPACE
 
