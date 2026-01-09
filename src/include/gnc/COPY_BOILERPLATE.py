@@ -1,5 +1,18 @@
 """
 
+copy a region of code from a file to another file (overwrite)
+
+ie. anything between
+
+#pragma region REGION
+#pragma endregion
+
+gets copied to another file
+
+
+⚠️
+we could change to pathlib
+from pathlib import Path
 
 """
 import os
@@ -7,7 +20,7 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def extract_region(src_path, dst_path, region_name="BOILERPLATE"):
+def extract_region(src_path: str, dst_path: str, region_name: str):
     start_marker = f"#pragma region {region_name}"
     end_marker = "#pragma endregion"
 

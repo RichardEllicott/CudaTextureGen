@@ -17,6 +17,11 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include "core/cuda/types.cuh"
 #include "macros.h"
 
+// ================================================================================================================================
+// REFACTOR OPTIONS
+// --------------------------------------------------------------------------------------------------------------------------------
+#define REFACTOR_GNC_STORAGE_IN_PARS 0 // 0 is normal, 1 i was trying to refactor to point props to a member structure (lowering copying)
+
 namespace gnc {
 
 using namespace core::cuda::types; // include type aliases at top level
@@ -36,18 +41,18 @@ using Property = _Property<T, decltype(Member)>;
 //
 //
 
-
+#if REFACTOR_GNC_STORAGE_IN_PARS == 1
+// 🧪 attempting to bind properties direct to structure, is more complicated
 template <typename T, auto SubobjectPtr, auto FieldPtr>
 struct NestedProperty {
-    const char* name;
+    const char *name;
 
     // Accessor
-    auto& get(T& obj) const {
+    auto &get(T &obj) const {
         return (obj.*SubobjectPtr).*FieldPtr;
     }
 };
-
-
+#endif
 
 //
 //

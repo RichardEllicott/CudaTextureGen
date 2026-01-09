@@ -40,10 +40,6 @@ NOTES:
 
 #pragma region BOILERPLATE
 // ================================================================================================================================
-// REFACTOR OPTIONS
-// --------------------------------------------------------------------------------------------------------------------------------
-#define REFACTOR_STORAGE_IN_PARS 0
-// ================================================================================================================================
 // [Boilerplate (all below can be cocidered a copy, should match)]
 // --------------------------------------------------------------------------------------------------------------------------------
 #include "gnc_base.cuh"
@@ -113,7 +109,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     static constexpr auto properties_impl() {
         return std::tuple{
 
-#if REFACTOR_STORAGE_IN_PARS == 0
+#if REFACTOR_GNC_STORAGE_IN_PARS == 0
 
         // referencing class body (old version)
 #ifdef TEMPLATE_CLASS_PARAMETERS // bind pars
@@ -123,7 +119,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
-#elif REFACTOR_STORAGE_IN_PARS == 1
+#elif REFACTOR_GNC_STORAGE_IN_PARS == 1
 
         // NestedProperty<Self, &Self::parameters, &Parameters::tile_size>{"tile_size"}, // tested working
 
