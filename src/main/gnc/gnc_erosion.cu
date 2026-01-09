@@ -7,13 +7,35 @@ namespace TEMPLATE_NAMESPACE {
 namespace math = core::math;
 namespace cmath = core::cuda::math;
 
-// __device__ __constant__ int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}}; // 8 offsets with the opposites in pairs, first 4 cardinal
-// __device__ __constant__ float OFFSET_DISTANCES[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
-// __device__ __constant__ int OFFSET_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
-// __device__ __constant__ float2 UNIT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {INV_SQRT2, INV_SQRT2}, {-INV_SQRT2, -INV_SQRT2}, {INV_SQRT2, -INV_SQRT2}, {-INV_SQRT2, INV_SQRT2}};
+
+#pragma region CONSTANTS
+
+constexpr float SQRT2 = 1.4142135623730950488f;      // root of 2
+constexpr float INV_SQRT2 = 0.70710678118654752440f; // inverse root of 2
+// constexpr float PI = 3.14159265358979323846f;
+// constexpr float GOLDEN_RATIO = 1.6180339887498948482f;
+
+// doesn't like this in cuda
+// constexpr int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}}; // 8 offsets with the opposites in pairs, first 4 cardinal
+// constexpr float OFFSET_DISTANCES[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
+// constexpr int OFFSET_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
+// constexpr float2 UNIT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}};
+
+// GRID_OFFSETS_8 ??
+__device__ __constant__ int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}}; // 8 offsets with the opposites in pairs, first 4 cardinal
+__device__ __constant__ float OFFSET_DISTANCES[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
+__device__ __constant__ int OFFSET_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
+__device__ __constant__ float2 UNIT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {INV_SQRT2, INV_SQRT2}, {-INV_SQRT2, -INV_SQRT2}, {INV_SQRT2, -INV_SQRT2}, {-INV_SQRT2, INV_SQRT2}};
+
 
 // E, W, N, S, SE, NW, NE, SW
-static constexpr int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
+// static constexpr int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
+
+#pragma endregion
+
+
+
+
 
 // get total height of ground iterating the layers
 D_INLINE float get_layered_height(
@@ -264,6 +286,174 @@ __global__ void calculate_outflow3(
     arrays->_water_out[idx] = water_outflow;
     arrays->_sediment_out_map[idx] = sediment_outflow;
 }
+
+
+
+//
+//
+//
+
+__global__ void apply_flux3(
+    const Parameters *__restrict__ pars,
+    const ArrayPointers *__restrict__ arrays,
+    // DebugOutputs *__restrict__ debug,
+    const int step) {
+    // ================================================================
+    int2 map_size = make_int2(pars->_width, pars->_height);
+    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
+        return;
+    int idx = cmath::pos_to_idx(pos, map_size.x);
+    // int idx8 = idx * 8;
+    // ================================================================
+    float *height_map = arrays->height_map;
+    float *water_map = arrays->water_map;
+    float *sediment_map = arrays->sediment_map;
+    // ================================================================
+    float height = height_map[idx];
+    float water = water_map[idx];
+    float sediment = sediment_map[idx];
+    // float surface = height + water;
+    // ================================================================
+    // Find Exposed Layer (if layer mode active)
+    // ----------------------------------------------------------------
+    bool layer_mode = pars->_layer_count > 0; // if layer mode active
+    int exposed_layer;
+    int layer_idx;
+    if (layer_mode) {
+        layer_idx = idx * pars->_layer_count;
+
+#ifdef PRECALCULATE_EXPOSED_LAYER
+        exposed_layer = arrays->_exposed_layer_map[idx];
+#else
+        exposed_layer = get_exposed_layer(arrays->layer_map, pars->_layer_count, layer_idx);
+#endif
+    }
+    // ================================================================
+    // [Flow]
+    // ----------------------------------------------------------------
+    float water_out = arrays->_water_out[idx];           // water out already calculated
+    float sediment_change = -arrays->_sediment_out_map[idx]; // sediment out already calculated
+    float water_in = 0.0f;                               // to calculate from neighbours
+
+    for (int n = 0; n < 8; ++n) {
+        int2 new_pos = cmath::wrap_or_clamp_index(pos + OFFSETS[n], map_size, pars->wrap);
+        int new_idx = cmath::pos_to_idx(new_pos, map_size.x);
+        int new_idx8 = new_idx * 8;
+        int opposite_ref = OFFSET_OPPOSITE_REFS[n];
+
+        water_in += arrays->_flux8_map[new_idx8 + opposite_ref]; //  inflow from neighbouring tiles
+        sediment_change += arrays->_sediment_flux8_map[new_idx8 + opposite_ref];
+    }
+
+    water += water_in;
+    water -= water_out;
+
+    // ================================================================
+    // [Erosion]
+    // ----------------------------------------------------------------
+    float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
+    float erosion;
+
+    switch (pars->erosion_mode) {
+    case 0: // simple water * erosion_rate
+        erosion = water_out * pars->erosion_rate;
+        break;
+    case 1:
+        erosion = water_out * pars->erosion_rate * arrays->_slope_magnitude_map[idx]; // with slope_magnitude ⚠️ BROKE?
+        break;
+    case 2:
+        erosion = water * pars->erosion_rate * arrays->_slope_magnitude_map[idx]; // maybe based on total water?
+        break;
+    case 3:
+        erosion = water * pars->erosion_rate * arrays->_water_velocity_map[idx]; // total water and the water velocity (manning)
+        break;
+    case 4: // soft saturation scheme (limits the max erosion)
+        erosion = cmath::soft_saturate(arrays->_water_velocity_map[idx], pars->erosion_rate, 1.0);
+        break;
+    }
+
+    // apply layer erosiveness after the erosion calculation (seems best if we use soft_saturate)
+    if (layer_mode) {
+        float layer_erosiveness = arrays->layer_erosiveness_array[exposed_layer];
+        erosion *= layer_erosiveness;
+    }
+
+    erosion = cmath::clamp(erosion, 0.0f, available_erosion); // ensure not negative and not more than available_erosion
+
+    // ================================================================
+    // [Apply Erosion to Height]
+    // ----------------------------------------------------------------
+    if (layer_mode) {
+        if (exposed_layer < pars->_layer_count) { // if layers not empty
+
+            float layer_height = arrays->layer_map[layer_idx + exposed_layer];
+            layer_height -= erosion;
+            layer_height = max(layer_height, 0.0f); // no lower than 0.0
+            arrays->layer_map[layer_idx + exposed_layer] = layer_height;
+        }
+
+    } else {
+        height -= erosion; // normal mode
+    }
+
+    if (pars->sediment_layer_mode) {
+
+    } else {
+        sediment += erosion * pars->sediment_yield;
+    }
+
+    // ================================================================
+    // [Deposition]
+    // ----------------------------------------------------------------
+    if (water_out < pars->deposition_threshold) {
+        float deposit = sediment * pars->deposition_rate;
+        sediment -= deposit;
+
+        if (layer_mode) {
+            if (pars->sediment_layer_mode) {
+
+            } else {
+            }
+
+        } else {
+            height += deposit;
+        }
+    }
+    // ================================================================
+    // [Drain]
+    // ----------------------------------------------------------------
+    if (pars->drain_rate > 0.0f && height <= pars->min_height) {
+        water -= pars->drain_rate; // minus drain (could be negative)
+    }
+    // ================================================================
+    // [Evaporation]
+    // ----------------------------------------------------------------
+    switch (pars->evaporation_mode) {
+    case 0:
+        water -= pars->evaporation_rate; // normal (could be negative)
+        break;
+    case 1:
+        break;
+    }
+    // ================================================================
+    // [Output]
+    // ----------------------------------------------------------------
+
+    if (layer_mode) {
+        // already applied height to layer
+    } else {
+        height_map[idx] = cmath::clamp(height, pars->min_height, pars->max_height);
+    }
+    water_map[idx] = max(water, 0.0f);
+    sediment_map[idx] = max(sediment, 0.0f);
+}
+
+
+//
+//
+//
+
 
 void TEMPLATE_CLASS_NAME::_compute() {
 
