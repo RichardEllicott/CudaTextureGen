@@ -7,9 +7,9 @@ convert numpy arrays to and from DeviceArray's
 
 #include "core/cuda/types_collection.cuh"
 #include "numpy.h" // numpy helper in same folder
+#include <cstring> // required for std::memcpy in linux (not windows)
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
-#include <cstring> // required for std::memcpy in linux (not windows)
 
 #include "core/arrays/permute.h"
 
@@ -25,6 +25,7 @@ inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray<T, Dim> 
 
     auto shape = device_array.shape(); // getting the numpy shape to create (which needs to swap W and H)
 
+    // ⚠️ I AM NOT SURE THIS IS CORRECT ANYMORE!
     // Flip for NumPy if Dim >= 2
     if constexpr (Dim >= 2) {
         std::swap(shape[0], shape[1]);
@@ -46,6 +47,7 @@ inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cu
     for (int i = 0; i < Dim; ++i)
         np_dims[i] = static_cast<size_t>(source.shape(i));
 
+    // ⚠️ I AM NOT SURE THIS IS CORRECT ANYMORE!
     // Flip back to internal order (width, height, depth)
     std::array<size_t, Dim> internal_dims = np_dims;
     if constexpr (Dim >= 2) {

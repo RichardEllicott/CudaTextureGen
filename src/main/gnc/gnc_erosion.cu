@@ -7,7 +7,6 @@ namespace TEMPLATE_NAMESPACE {
 namespace math = core::math;
 namespace cmath = core::cuda::math;
 
-
 #pragma region CONSTANTS
 
 constexpr float SQRT2 = 1.4142135623730950488f;      // root of 2
@@ -27,15 +26,10 @@ __device__ __constant__ float OFFSET_DISTANCES[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQR
 __device__ __constant__ int OFFSET_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
 __device__ __constant__ float2 UNIT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {INV_SQRT2, INV_SQRT2}, {-INV_SQRT2, -INV_SQRT2}, {INV_SQRT2, -INV_SQRT2}, {-INV_SQRT2, INV_SQRT2}};
 
-
 // E, W, N, S, SE, NW, NE, SW
 // static constexpr int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
 
 #pragma endregion
-
-
-
-
 
 // get total height of ground iterating the layers
 D_INLINE float get_layered_height(
@@ -287,8 +281,6 @@ __global__ void calculate_outflow3(
     arrays->_sediment_out_map[idx] = sediment_outflow;
 }
 
-
-
 //
 //
 //
@@ -332,9 +324,9 @@ __global__ void apply_flux3(
     // ================================================================
     // [Flow]
     // ----------------------------------------------------------------
-    float water_out = arrays->_water_out[idx];           // water out already calculated
+    float water_out = arrays->_water_out[idx];               // water out already calculated
     float sediment_change = -arrays->_sediment_out_map[idx]; // sediment out already calculated
-    float water_in = 0.0f;                               // to calculate from neighbours
+    float water_in = 0.0f;                                   // to calculate from neighbours
 
     for (int n = 0; n < 8; ++n) {
         int2 new_pos = cmath::wrap_or_clamp_index(pos + OFFSETS[n], map_size, pars->wrap);
@@ -449,11 +441,23 @@ __global__ void apply_flux3(
     sediment_map[idx] = max(sediment, 0.0f);
 }
 
-
 //
 //
 //
 
+template <typename MapT, typename ShapeT>
+inline void ensure_map_ready(MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
+    map.instantiate_if_null();
+
+    if (map->shape() != desired_shape) {
+        map->resize(desired_shape);
+        if (zero_device)
+            map->zero_device();
+    }
+}
+//
+//
+//
 
 void TEMPLATE_CLASS_NAME::_compute() {
 
@@ -482,11 +486,16 @@ void TEMPLATE_CLASS_NAME::_compute() {
     _slope_vector2_map.instantiate_if_null();
     _slope_vector2_map->resize(_width, _height, 2);
 
-    water_map.instantiate_if_null();
-    if (water_map->shape() != height_map_shape) {
-        water_map->resize(height_map_shape);
-        water_map->zero_device();
-    }
+    // water_map.instantiate_if_null();
+    // if (water_map->shape() != height_map_shape) {
+    //     water_map->resize(height_map_shape);
+    //     water_map->zero_device();
+    // }
+
+    ensure_map_ready(water_map, height_map_shape, true);
+    //
+    //
+    //
 
     stream.instantiate_if_null();
 
