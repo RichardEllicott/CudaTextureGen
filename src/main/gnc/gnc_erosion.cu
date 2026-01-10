@@ -2,6 +2,8 @@
 #include "core/math.h"
 #include "gnc/gnc_erosion.cuh"
 
+#define PRECALCULATE_EXPOSED_LAYER
+
 namespace TEMPLATE_NAMESPACE {
 
 namespace math = core::math;
@@ -14,60 +16,46 @@ constexpr float INV_SQRT2 = 0.70710678118654752440f; // inverse root of 2
 // constexpr float PI = 3.14159265358979323846f;
 // constexpr float GOLDEN_RATIO = 1.6180339887498948482f;
 
-// doesn't like this in cuda
-// constexpr int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}}; // 8 offsets with the opposites in pairs, first 4 cardinal
-// constexpr float OFFSET_DISTANCES[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
-// constexpr int OFFSET_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
-// constexpr float2 UNIT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}};
-
-// GRID_OFFSETS_8 ??
-__device__ __constant__ int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}}; // 8 offsets with the opposites in pairs, first 4 cardinal
+__device__ __constant__ int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
 __device__ __constant__ float OFFSET_DISTANCES[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
 __device__ __constant__ int OFFSET_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
 __device__ __constant__ float2 UNIT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {INV_SQRT2, INV_SQRT2}, {-INV_SQRT2, -INV_SQRT2}, {INV_SQRT2, -INV_SQRT2}, {-INV_SQRT2, INV_SQRT2}};
 
-// E, W, N, S, SE, NW, NE, SW
-// static constexpr int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
+#pragma endregion
+
+#pragma region HELPERS
+
+struct LayerInfo {
+    float total_height;
+    int exposed_layer; // -1 is none
+};
+
+// find the layer total height and exposed layer
+D_INLINE LayerInfo compute_layer_info(
+    int layer_count,
+    const float *__restrict__ layer_map // pointer to position in layer map
+) {
+    // ================================================================
+    LayerInfo layer_info = {0.0f, -1};
+
+    for (int n = layer_count - 1; n >= 0; --n) {
+        float value = layer_map[n];
+        layer_info.total_height += value;
+
+        if (layer_info.exposed_layer == -1 && value > 0.0f) layer_info.exposed_layer = n; // found exposed layer
+    }
+    // ================================================================
+    return layer_info;
+}
 
 #pragma endregion
 
-// get total height of ground iterating the layers
-D_INLINE float get_layered_height(
-    const float *__restrict__ layer_map,
-    const int layers,
-    const int layer_idx) {
-
-    float height = 0.0;
-    for (int n = 0; n < layers; ++n) {
-        height += layer_map[layer_idx + n];
-    }
-    return height;
-}
-
-// return exposed layer id, or if all layers empty return invalid ref == to total layers
-D_INLINE int get_exposed_layer(
-    const float *__restrict__ layer_map,
-    const int layer_count,
-    const int layer_idx // 2D idx * the layer count
-) {
-    int exposed_layer;
-    for (int n = 0; n < layer_count; ++n) {
-        float value = layer_map[layer_idx + n];
-        if (value <= 0.0f) {
-            exposed_layer = n + 1; // first exposed layer is next layer (possibly)
-        } else {
-            break; // layer is empty
-        }
-    }
-    return exposed_layer;
-}
-
-// a kernel example makes a chequer pattern
 __global__ void layer_calculations(
     const int width, const int height, const int layer_count,
     const float *__restrict__ layer_map, // in
     float *__restrict__ height_map,      // out
     int *__restrict__ _exposed_layer     // out
+
 ) {
     // ================================================================
     int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -76,19 +64,11 @@ __global__ void layer_calculations(
     int idx = y * width + x;
     int layer_idx = idx * layer_count;
     // ================================================================
-    float total_height = 0.0f;
-    int exposed_layer = -1; // top layer (-1 is invalid)
-
-    for (int n = layer_count - 1; n >= 0; --n) {
-        float value = layer_map[layer_idx + n];
-        total_height += value;
-
-        if (exposed_layer == -1 && value > 0.0f)
-            exposed_layer = n; // detected exposed layer
-    }
-
-    height_map[idx] = total_height;
-    _exposed_layer[idx] = exposed_layer;
+    const float *pixel_layers = layer_map + layer_idx; // pointer to layer itself
+    LayerInfo info = compute_layer_info(layer_count, pixel_layers);
+    // ================================================================
+    height_map[idx] = info.total_height;
+    _exposed_layer[idx] = info.exposed_layer;
 }
 
 __global__ void add_rain(
@@ -125,13 +105,6 @@ __global__ void calculate_slope_vectors(
     int idx2 = idx * 2;
     // ================================================================
 
-    // float jitter = 1.0f;
-    // int step = 0;
-    // bool wrap = true;
-    // int jitter_mode = 0;
-    // float scale = 1.0f;
-    // int jitter_seed = 1234;
-
     float2 slope_vector2 = cmath::calculate_slope_vector(
         height_map, water_map, nullptr,
         map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
@@ -139,28 +112,18 @@ __global__ void calculate_slope_vectors(
     _slope_vector2[idx2 + 1] = slope_vector2.y;
 }
 
-// // std::array in kernel
-// __global__ void foo(std::array<float, 4> arr) {
-//     float x = arr[2];
-// }
-
 __global__ void calculate_outflow3(
     const Parameters *__restrict__ pars,
     const ArrayPointers *__restrict__ arrays,
     // DebugOutputs *__restrict__ debug,
     const int step) {
     // ================================================================
-    // int2 map_size = make_int2(pars->_width, pars->_height);
-    // int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
-    // if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
-    //     return;
-    // int idx = math::pos_to_idx(pos, map_size.x);
 
     int2 map_size = make_int2(pars->_width, pars->_height);
     int2 pos = cmath::global_thread_pos2();
     if (pos.x >= map_size.x || pos.y >= map_size.y) return;
     int idx = cmath::pos_to_idx(pos, map_size);
-    // int idx2 = idx * 2;
+    int idx2 = idx * 2;
 
     // ================================================================
     float *height_map = arrays->height_map;
@@ -172,66 +135,9 @@ __global__ void calculate_outflow3(
     float sediment = sediment_map[idx];
     // float surface = height + water;
     // ================================================================
-    // Calculate Slope Vector
-    // ----------------------------------------------------------------
 
-    int xp = cmath::wrap_or_clamp_index(pos.x + 1, map_size.x, pars->wrap); // x + 1
-    int xn = cmath::wrap_or_clamp_index(pos.x - 1, map_size.x, pars->wrap); // x - 1
-    int yp = cmath::wrap_or_clamp_index(pos.y + 1, map_size.y, pars->wrap); // y + 1
-    int yn = cmath::wrap_or_clamp_index(pos.y - 1, map_size.y, pars->wrap); // y - 1
-
-    int xp_idx = pos.y * map_size.x + xp; // {+1,0}
-    int xn_idx = pos.y * map_size.x + xn; // {-1,0}
-    int yp_idx = yp * map_size.x + pos.x; // {0,+1}
-    int yn_idx = yn * map_size.x + pos.x; // {0,-1}
-
-    // positive offsets data
-    float xp_height = height_map[xp_idx];
-    float yp_height = height_map[yp_idx];
-    float xp_water = water_map[xp_idx];
-    float yp_water = water_map[yp_idx];
-    float xp_surface = xp_height + xp_water;
-    float yp_surface = yp_height + yp_water;
-
-    // negative offsets data
-    float xn_height = height_map[xn_idx];
-    float yn_height = height_map[yn_idx];
-    float xn_water = water_map[xn_idx];
-    float yn_water = water_map[yn_idx];
-    float xn_surface = xn_height + xn_water;
-    float yn_surface = yn_height + yn_water;
-    // ----------------------------------------------------------------
-    // optional jitter
-    if (pars->slope_jitter) {
-        switch (pars->slope_jitter_mode) {
-        case 0: { // cheaper, reuses one hash, lower quality random shouldn't be a problem over frames
-            uint32_t h = cmath::hash_uint(pos.x, pos.y, step, 0);
-            xp_surface += cmath::hash_to_4randf(h, 0) * pars->slope_jitter;
-            yp_surface += cmath::hash_to_4randf(h, 1) * pars->slope_jitter;
-            xn_surface += cmath::hash_to_4randf(h, 2) * pars->slope_jitter;
-            yn_surface += cmath::hash_to_4randf(h, 3) * pars->slope_jitter;
-            break;
-        }
-        case 1: { // uses 4 hashes, technically better random
-            xp_surface += cmath::hash_float_signed(pos.x, pos.y, step, 0) * pars->slope_jitter;
-            yp_surface += cmath::hash_float_signed(pos.x, pos.y, step, 1) * pars->slope_jitter;
-            xn_surface += cmath::hash_float_signed(pos.x, pos.y, step, 2) * pars->slope_jitter;
-            yn_surface += cmath::hash_float_signed(pos.x, pos.y, step, 3) * pars->slope_jitter;
-            break;
-        }
-        }
-    }
-    // ----------------------------------------------------------------
-    float2 slope_vector = float2{xn_surface - xp_surface, yn_surface - yp_surface}; // note slope may be double actual (use scale to compensate)
-    slope_vector /= pars->scale;                                                    // scale such that double world size would mean half gradients
-    // ----------------------------------------------------------------
-
-    int idx2 = idx * 2;
-    arrays->_slope_vector2_map[idx2] = slope_vector.x; // save to a vector map for later use
-    arrays->_slope_vector2_map[idx2 + 1] = slope_vector.y;
-
-    float slope_magnitude = cmath::length(slope_vector); // 🧪 save magnitude (OPTIONAL)
-    arrays->_slope_magnitude_map[idx] = slope_magnitude;
+    float2 slope_vector = {arrays->_slope_vector2_map[idx2], arrays->_slope_vector2_map[idx2 + 1]};
+    float slope_magnitude = cmath::length(slope_vector);
 
     float water_velocity = pow(water, 2.0f / 3.0f) * sqrt(slope_magnitude); // 🧪 manning based velocity??
     arrays->_water_velocity_map[idx] = water_velocity;
@@ -277,13 +183,9 @@ __global__ void calculate_outflow3(
     }
 
     // save the total outflow's rather than add them up again later
-    arrays->_water_out[idx] = water_outflow;
+    arrays->_water_out_map[idx] = water_outflow;
     arrays->_sediment_out_map[idx] = sediment_outflow;
 }
-
-//
-//
-//
 
 __global__ void apply_flux3(
     const Parameters *__restrict__ pars,
@@ -296,6 +198,7 @@ __global__ void apply_flux3(
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
     int idx = cmath::pos_to_idx(pos, map_size.x);
+    int idx2 = idx * 2;
     // int idx8 = idx * 8;
     // ================================================================
     float *height_map = arrays->height_map;
@@ -324,7 +227,7 @@ __global__ void apply_flux3(
     // ================================================================
     // [Flow]
     // ----------------------------------------------------------------
-    float water_out = arrays->_water_out[idx];               // water out already calculated
+    float water_out = arrays->_water_out_map[idx];           // water out already calculated
     float sediment_change = -arrays->_sediment_out_map[idx]; // sediment out already calculated
     float water_in = 0.0f;                                   // to calculate from neighbours
 
@@ -347,15 +250,18 @@ __global__ void apply_flux3(
     float available_erosion = height - pars->min_height; // limit erosion to available rock above min_height
     float erosion;
 
+    float2 slope_vector = {arrays->_slope_vector2_map[idx2], arrays->_slope_vector2_map[idx2 + 1]};
+    float slope_magnitude = cmath::length(slope_vector);
+
     switch (pars->erosion_mode) {
     case 0: // simple water * erosion_rate
         erosion = water_out * pars->erosion_rate;
         break;
     case 1:
-        erosion = water_out * pars->erosion_rate * arrays->_slope_magnitude_map[idx]; // with slope_magnitude ⚠️ BROKE?
+        erosion = water_out * pars->erosion_rate * slope_magnitude; // with slope_magnitude ⚠️ BROKE?
         break;
     case 2:
-        erosion = water * pars->erosion_rate * arrays->_slope_magnitude_map[idx]; // maybe based on total water?
+        erosion = water * pars->erosion_rate * slope_magnitude; // maybe based on total water?
         break;
     case 3:
         erosion = water * pars->erosion_rate * arrays->_water_velocity_map[idx]; // total water and the water velocity (manning)
@@ -441,25 +347,14 @@ __global__ void apply_flux3(
     sediment_map[idx] = max(sediment, 0.0f);
 }
 
-//
-//
-//
-
-template <typename MapT, typename ShapeT>
-inline void ensure_map_ready(MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
-    map.instantiate_if_null();
-
-    if (map->shape() != desired_shape) {
-        map->resize(desired_shape);
-        if (zero_device)
-            map->zero_device();
-    }
+void TEMPLATE_CLASS_NAME::setup() {
 }
-//
-//
-//
 
 void TEMPLATE_CLASS_NAME::_compute() {
+
+    // ================================================================
+    // [Setup]
+    // ----------------------------------------------------------------
 
     if (layer_map.is_valid() && !layer_map->empty()) { // layer mode
         _layer_mode = true;
@@ -480,53 +375,81 @@ void TEMPLATE_CLASS_NAME::_compute() {
     _width = height_map->width();
     _height = height_map->height();
 
-    _exposed_layer_map.instantiate_if_null();
-    _exposed_layer_map->resize(_width, _height);
+#define CODE_ROUTE 1 // route 0 has restrictions but is failing linux?
+#if CODE_ROUTE == 0
+    ensure_array_ref_ready(water_map, height_map_shape, true);
+    ensure_array_ref_ready(sediment_map, height_map_shape, true);
 
-    _slope_vector2_map.instantiate_if_null();
-    _slope_vector2_map->resize(_width, _height, 2);
+    ensure_array_ref_ready(_water_out_map, height_map_shape);
+    ensure_array_ref_ready(_sediment_out_map, height_map_shape);
 
-    // water_map.instantiate_if_null();
-    // if (water_map->shape() != height_map_shape) {
-    //     water_map->resize(height_map_shape);
-    //     water_map->zero_device();
-    // }
+    ensure_array_ref_ready(_flux8_map, std::array{_width, _height, (size_t)8});
+    ensure_array_ref_ready(_sediment_flux8_map, std::array{_width, _height, (size_t)8});
+    ensure_array_ref_ready(_slope_vector2_map, std::array{_width, _height, (size_t)2});
 
-    ensure_map_ready(water_map, height_map_shape, true);
-    //
-    //
-    //
+    // ensure_array_ref_ready(_slope_magnitude_map, height_map_shape);
+    ensure_array_ref_ready(_water_velocity_map, height_map_shape);
+    rain_map.instantiate_if_null(); // ensures we have a nullptr
+
+    // ensure_array_ref_ready(sediment_layer_map, std::array{_width, _height, (size_t)2});
+
+    ensure_array_ref_ready(_exposed_layer_map, height_map_shape);
+    ensure_array_ref_ready(_sea_map, height_map_shape);
+
+    ensure_array_ref_ready(_wind_vector2_map, std::array{_width, _height, (size_t)2});
+#elif CODE_ROUTE == 1
+#endif
+#undef CODE_ROUTE
 
     stream.instantiate_if_null();
 
     dim3 block(16, 16);
     dim3 grid((_width + block.x - 1) / block.x, (_height + block.y - 1) / block.y);
 
-    int2 map_size = {_width, _height};
+    int2 map_size = {(int)_width, (int)_height};
 
-    // calculate the layer height for layer mode
-    if (_layer_mode) {
-        layer_calculations<<<grid, block, 0, stream->get()>>>(
-            _width, _height, _layer_count,
-            layer_map->dev_ptr(),         // in
-            height_map->dev_ptr(),        // out
-            _exposed_layer_map->dev_ptr() // out
-        );
+    ready_device();
+
+    // ================================================================
+    // [Kernels]
+    // ----------------------------------------------------------------
+
+    for (int i = 0; i < steps; i++) {
+
+        // calculate the layer height for layer mode
+        if (_layer_mode) {
+            layer_calculations<<<grid, block, 0, stream->get()>>>(
+                _width, _height, _layer_count,
+                layer_map->dev_ptr(),         // in
+                height_map->dev_ptr(),        // out
+                _exposed_layer_map->dev_ptr() // out
+            );
+        }
+
+        calculate_slope_vectors<<<grid, block, 0, stream->get()>>>(
+            map_size,
+            height_map->dev_ptr(),         // in
+            water_map->dev_ptr(),          // in
+            _slope_vector2_map->dev_ptr(), // out
+            slope_jitter,
+            _step,
+            true,
+            0,    // jitter mode
+            1.0f, // scale
+            0xE09669A5u);
+
+        calculate_outflow3<<<grid, block, 0, stream->get()>>>(
+            dev_parameters.dev_ptr(),
+            dev_array_pointers.dev_ptr(),
+            _step);
+
+        apply_flux3<<<grid, block, 0, stream->get()>>>(
+            dev_parameters.dev_ptr(),
+            dev_array_pointers.dev_ptr(),
+            _step);
+
+        _step++;
     }
-
-    calculate_slope_vectors<<<grid, block, 0, stream->get()>>>(
-        map_size,
-        height_map->dev_ptr(),         // in
-        water_map->dev_ptr(),          // in
-        _slope_vector2_map->dev_ptr(), // out
-        slope_jitter,
-        _step,
-        true,
-        0,    // jitter mode
-        1.0f, // scale
-        CONSTEXPR_LINE_SEED);
-
-    _step++;
 
     // output.instantiate_if_null();           // if no DeviceArray make one
     // *output.shared_ptr = *input.shared_ptr; // will copy the memory (on the gpu) from input to output (by dereferencing)

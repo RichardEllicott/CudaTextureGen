@@ -65,7 +65,7 @@ dynamic properties for easy binding using CRTP and constexpr
 // --------------------------------------------------------------------------------------------------------------------------------
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS2 \
+#define TEMPLATE_CLASS_ARRAYS \
     X(float, 2, input, "")     \
     X(float, 2, output, "")
 

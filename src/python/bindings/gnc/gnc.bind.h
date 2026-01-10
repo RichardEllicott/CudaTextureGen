@@ -8,6 +8,7 @@ binding for ALL the gnc modules
 #include "gnc/gnc_template.cuh"
 
 #include "gnc/gnc_erosion.cuh"
+#include "gnc/gnc_wind.cuh"
 #include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
 #include "nanobind_helper.h"
@@ -21,7 +22,8 @@ binding for ALL the gnc modules
     X(_template::GNC_Template, GNC_Template) \
     X(example::GNC_Example, GNC_Example)     \
     X(noise::GNC_Noise, GNC_Noise)           \
-    X(erosion::GNC_Erosion, GNC_Erosion)
+    X(erosion::GNC_Erosion, GNC_Erosion)\
+    X(wind::GNC_Wind, GNC_Wind)
 
 // ================================================================================================================================
 
@@ -40,57 +42,20 @@ template <typename T>
 struct has_properties<T, std::void_t<decltype(T::properties())>> : std::true_type {};
 // --------------------------------------------------------------------------------------------------------------------------------
 
-//
-// VERSION TARGETS A PROP RAW
-//
-// template <typename T>
-// nb::class_<T> bind_class(nb::module_ &m, const char *name) {
-//     auto cls = nb::class_<T>(m, name).def(nb::init<>());
 
-//     // dynamic properties
-//     if constexpr (has_properties<T>::value) {
-//         std::apply([&](auto... p) {
-//             (cls.def_rw(p.name, p.member), ...);
-//         },
-//                    T::properties());
-//     }
-
-//     // process function
-//     cls.def("process", [](T &self) { self.process(); });
-
-//     return cls;
-// }
-//
-//
-//
-//
-// VERSION TARGETS A PROP SETTER
 
 template <typename Class, typename MemberPtr>
 void bind_one_property(nb::class_<Class> &cls,
                        const char *name,
                        MemberPtr member) {
-    using Field =
-        std::remove_reference_t<decltype(std::declval<Class>().*member)>;
+    using Field = std::remove_reference_t<decltype(std::declval<Class>().*member)>;
 
-    // // WORKING
-    // cls.def_prop_rw(
-    //     name,
-    //     // getter
-    //     [member](Class &self) -> Field & {
-    //         return self.*member;
-    //     },
-    //     // setter
-    //     [member](Class &self, const Field &value) {
-    //         self.set_par(self.*member, value);
-    //     });
-
-    // with par name
     cls.def_prop_rw(
         name,
         // getter
         [member](Class &self) -> Field & {
             return self.*member; // return raw
+            // return self.get_par(self.*member); // can't seem to get this working???
         },
         // setter
         [member, name](Class &self, const Field &value) {

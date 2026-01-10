@@ -68,7 +68,14 @@ constexpr uint32_t random32(int index) {
 //   • Must be used at the call site (macro expands in place)
 //   • Deterministic across builds unless lines move
 // -----------------------------------------------------------------------------
-#define CONSTEXPR_LINE_SEED core::math::splitmix32(__LINE__ * 0x9E3779B9u ^ __COUNTER__)
+
+// #define CONSTEXPR_LINE_SEED core::math::splitmix32(uint32_t(__LINE__ * 0x9E3779B9u ^ __COUNTER__))
+
+
+// this suppresses the warning, i think as random32 takes a normal int
+#define CONSTEXPR_LINE_SEED math::random32(__LINE__ * 0x9E3779B9u ^ __COUNTER__)
+
+
 
 #pragma endregion
 

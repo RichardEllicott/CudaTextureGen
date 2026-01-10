@@ -30,10 +30,10 @@ static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must re
 // ArrayDevicePointers struct for uploading to GPU (UNUSED)
 // --------------------------------------------------------------------------------------------------------------------------------
 struct ArrayPointers {
-#ifdef TEMPLATE_CLASS_ARRAYS2
+#ifdef TEMPLATE_CLASS_ARRAYS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     TYPE *NAME;
-    TEMPLATE_CLASS_ARRAYS2
+    TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
 };
@@ -57,18 +57,18 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #endif
 
     // create arrays
-#ifdef TEMPLATE_CLASS_ARRAYS
+#ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
-    TEMPLATE_CLASS_ARRAYS
+    TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
 
     // create arrays2 (second pattern)
-#ifdef TEMPLATE_CLASS_ARRAYS2
+#ifdef TEMPLATE_CLASS_ARRAYS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     core::Ref<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
-    TEMPLATE_CLASS_ARRAYS2
+    TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
 
@@ -104,17 +104,17 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
 #endif
 
-#ifdef TEMPLATE_CLASS_ARRAYS // bind arrays
+#ifdef TEMPLATE_CLASS_PARAMETERS // bind arrays
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-                TEMPLATE_CLASS_ARRAYS
+                TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
 
-#ifdef TEMPLATE_CLASS_ARRAYS2 // bind arrays2 (second pattern)
+#ifdef TEMPLATE_CLASS_ARRAYS // bind arrays2 (second pattern)
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-                    TEMPLATE_CLASS_ARRAYS2
+                    TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
         };
@@ -160,11 +160,11 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #endif
 
         // copy all array pointers
-#ifdef TEMPLATE_CLASS_ARRAYS2 // bind arrays2 (second pattern)
+#ifdef TEMPLATE_CLASS_ARRAYS // bind arrays2 (second pattern)
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     array_pointers.NAME = nullptr;             \
     if (NAME.is_valid()) array_pointers.NAME = NAME->dev_ptr();
-        TEMPLATE_CLASS_ARRAYS2
+        TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
         // now upload the pars

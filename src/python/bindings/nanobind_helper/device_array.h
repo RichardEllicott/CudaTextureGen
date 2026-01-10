@@ -5,6 +5,8 @@ convert numpy arrays to and from DeviceArray's
 */
 #pragma once
 
+// #define DEVICE_ARRAY_INTERNAL_DIMENSIONS_SWAP // i don't think i need this
+
 #include "core/cuda/types_collection.cuh"
 #include "numpy.h" // numpy helper in same folder
 #include <cstring> // required for std::memcpy in linux (not windows)
@@ -25,11 +27,13 @@ inline nb::ndarray<nb::numpy, T> to_array(const core::cuda::DeviceArray<T, Dim> 
 
     auto shape = device_array.shape(); // getting the numpy shape to create (which needs to swap W and H)
 
+#ifdef DEVICE_ARRAY_INTERNAL_DIMENSIONS_SWAP
     // ⚠️ I AM NOT SURE THIS IS CORRECT ANYMORE!
     // Flip for NumPy if Dim >= 2
     if constexpr (Dim >= 2) {
         std::swap(shape[0], shape[1]);
     }
+#endif
 
     auto array = get_array<T, Dim>(shape);
     device_array.download(array.data());
@@ -47,12 +51,16 @@ inline void to_device_array(const nb::ndarray<T, nb::c_contig> &source, core::cu
     for (int i = 0; i < Dim; ++i)
         np_dims[i] = static_cast<size_t>(source.shape(i));
 
+    std::array<size_t, Dim> internal_dims = np_dims;
+
+#ifdef DEVICE_ARRAY_INTERNAL_DIMENSIONS_SWAP
     // ⚠️ I AM NOT SURE THIS IS CORRECT ANYMORE!
     // Flip back to internal order (width, height, depth)
-    std::array<size_t, Dim> internal_dims = np_dims;
+
     if constexpr (Dim >= 2) {
         std::swap(internal_dims[0], internal_dims[1]);
     }
+#endif
 
     destination.resize(internal_dims);
     destination.upload(source.data(), internal_dims);

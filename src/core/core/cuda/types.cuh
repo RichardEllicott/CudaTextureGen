@@ -38,6 +38,9 @@ using Int6 = std::array<int, 6>;
 using Int7 = std::array<int, 7>;
 using Int8 = std::array<int, 8>;
 
+// templates allow usage in macros (which hate commas)
+// usage:
+//     FloatArray<8>
 template <std::size_t N>
 using FloatArray = std::array<float, N>;
 
@@ -47,17 +50,17 @@ using IntArray = std::array<int, N>;
 // host side helpers to convert to cuda versions
 
 // Float2 => float2
-inline float2 to_float2(const Float2 &val) { return {val[0], val[1]}; }
+inline float2 to_float2(const std::array<float, 2> &val) { return {val[0], val[1]}; }
 // Float3 => float3
-inline float3 to_float3(const Float3 &val) { return {val[0], val[1], val[2]}; }
+inline float3 to_float3(const std::array<float, 3> &val) { return {val[0], val[1], val[2]}; }
 // Float4 => float4
-inline float4 to_float4(const Float4 &val) { return {val[0], val[1], val[2], val[3]}; }
+inline float4 to_float4(const std::array<float, 4> &val) { return {val[0], val[1], val[2], val[3]}; }
 
 // Int2 => int2
-inline int2 to_int2(const Int2 &val) { return {val[0], val[1]}; }
+inline int2 to_int2(const std::array<int, 2> &val) { return {val[0], val[1]}; }
 // Int3 => int3
-inline int3 to_int3(const Int3 &val) { return {val[0], val[1], val[2]}; }
+inline int3 to_int3(const std::array<int, 3> &val) { return {val[0], val[1], val[2]}; }
 // Int4 => int4
-inline int4 to_int4(const Int4 &val) { return {val[0], val[1], val[2], val[3]}; }
+inline int4 to_int4(const std::array<int, 4> &val) { return {val[0], val[1], val[2], val[3]}; }
 
 } // namespace core::cuda::types

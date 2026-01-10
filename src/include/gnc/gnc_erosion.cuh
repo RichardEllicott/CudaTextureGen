@@ -23,11 +23,12 @@ dynamic properties for easy binding using CRTP and constexpr
     X(bool, _debug, false, "track certain information for monitoring")                                              \
     X(bool, debug_print, false, "print out information to console")                                                 \
     X(int, debug_mod, 1, "frequency to print the debug output")                                                     \
-    X(int, _width, 512, "map width")                                                                                \
-    X(int, _height, 512, "map height")                                                                              \
+    X(size_t, _width, 512, "map width")                                                                                \
+    X(size_t, _height, 512, "map height")                                                                              \
     X(int, _layer_count, 0, "layers for layer mode")                                                                \
     X(bool, _layer_mode, false, "layer mode detected")                                                              \
     X(int, _step, 0, "current step")                                                                                \
+    X(int, steps, 1, "total steps to run, if 1 we can control more by python")                                                                                \
     X(bool, wrap, true, "wrap the errosion from one side to the other (making result tileable)")                    \
     X(float, scale, 1.0, "[<0.0]: real world size of pixel, will make slopes more gradual")                         \
     X(float, min_height, -1000000.0, "[-∞,∞]: minimum height the terrain can erode down to")                        \
@@ -67,20 +68,18 @@ dynamic properties for easy binding using CRTP and constexpr
     TEMPLATE_CLASS_PARAMETERS_STRUCT_2
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS2                                                                                  \
+#define TEMPLATE_CLASS_ARRAYS                                                                                   \
     X(float, 2, height_map, "current height, set this map to start the simulation")                             \
+    X(float, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB")            \
     X(float, 2, water_map, "current water, optionally set this map at start")                                   \
-    X(float, 2, _water_out, "current water, optionally set this map at start")                                  \
+    X(float, 2, _water_out_map, "current water, optionally set this map at start")                                  \
     X(float, 2, sediment_map, "current sediment,  optionally set this map at start")                            \
     X(float, 2, _sediment_out_map, "current sediment,  optionally set this map at start")                       \
     X(float, 3, _flux8_map, "8 water flow out to 8 neighbours")                                                 \
     X(float, 3, _sediment_flux8_map, "sediment flow out to 8 neighbours")                                       \
     X(float, 3, _slope_vector2_map, "gradient vectors give slope direction and strength")                       \
-    X(float, 2, _slope_magnitude_map, "calculation of strength based on gradient vector")                       \
     X(float, 2, _water_velocity_map, "🧪 scalar water velocity")                                                \
     X(float, 2, rain_map, "optional rain map, multiply by this")                                                \
-    X(float, 2, hardness_map, "optional hardness map")                                                          \
-    X(float, 3, layer_map, "layered version of height_map, should be filled with 3 layers from RGB")            \
     X(float, 3, sediment_layer_map, "optional storage of different sediment types")                             \
     X(float, 1, layer_erosiveness_array, "array of erosion rate of layer (higher is faster)")                   \
     X(float, 1, layer_yield_array, "array erosion rate of layer (higher is faster)")                            \
@@ -90,5 +89,9 @@ dynamic properties for easy binding using CRTP and constexpr
     X(int, 2, _exposed_layer_map, "getting exposed layer")                                                      \
     X(float, 2, _sea_map, "the time from 0-1 a tile spends under the tide")                                     \
     X(float, 3, _wind_vector2_map, "wind directions for dust blowing")
+
+// (TYPE, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_METHODS \
+    X(void, setup, "setup")
 
 #include "gnc_boilerplate.cuh"

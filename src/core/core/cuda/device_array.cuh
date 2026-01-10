@@ -260,6 +260,15 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
     }
 
     // resize overload
+    template <typename... Sizes>
+    void resize(Sizes... sizes) {
+        static_assert(sizeof...(Sizes) == Dim, "resize requires exactly Dim arguments");
+        resize(std::array<size_t, Dim>{static_cast<size_t>(sizes)...}); // Pack into std::array and forward to canonical resize
+    }
+
+
+
+    // resize overload
     void resize_helper(size_t width, size_t height = 1, size_t depth = 1) override {
         if constexpr (Dim == 1) {
             resize(std::array<size_t, 1>{width});
@@ -273,12 +282,6 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         }
     }
 
-    // resize overload
-    template <typename... Sizes>
-    void resize(Sizes... sizes) {
-        static_assert(sizeof...(Sizes) == Dim, "resize requires exactly Dim arguments");
-        resize(std::array<size_t, Dim>{static_cast<size_t>(sizes)...}); // Pack into std::array and forward to canonical resize
-    }
 
     // fill out device memory with zeros
     void zero_device() override {

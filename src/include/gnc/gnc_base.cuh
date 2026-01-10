@@ -76,7 +76,17 @@ struct NoParams {}; // default if we don't use the params
 template <typename Derived, typename Parameters = NoParams, typename ArrayPointers = NoParams>
 class GNC_Base {
     using Self = GNC_Base;
-
+    // ================================================================================================================================
+  protected:
+    // canonical CRTP
+    Derived &derived() {
+        return static_cast<Derived &>(*this);
+    }
+    // canonical CRTP
+    const Derived &derived() const {
+        return static_cast<const Derived &>(*this);
+    }
+    // ================================================================================================================================
   protected:
     Parameters parameters;
     ArrayPointers array_pointers;
@@ -86,33 +96,103 @@ class GNC_Base {
     bool _parameters_synced = false;
 
   public:
-    // template for setting a par, this will mark the device as requiring a new parameters upload
-    // this template must be called specially by the python bindings
+    core::Ref<core::cuda::Stream> stream; // gets a stream
+
+    // ================================================================================================================================
+    // [Set Par]
+    // also marking the sync as dirty
+    // --------------------------------------------------------------------------------------------------------------------------------
+    // template for setting a par, is bound to python, will mark the _parameters_synced
     template <typename T>
     void set_par(T &field, const T &value) {
         if (field != value) {
-            printf("value changed!\n");
+            // printf("value changed!\n");
             _parameters_synced = false;
             field = value;
         }
     }
+    // --------------------------------------------------------------------------------------------------------------------------------
+    // opposite for clarity
+    template <typename T>
+    const T &get_par(const T &field) const {
+        return field;
+    }
+    // ================================================================================================================================
+    // [Ensure Array Ref Ready]
+    // ensure the array ref is not empty, and if creating a new one set it up also marking sync as dirty
+    // (ensuring pointers are uploaded before kernel launch)
+    // --------------------------------------------------------------------------------------------------------------------------------
 
-    core::Ref<core::cuda::Stream> stream; // gets a stream
+#define CODE_ROUTE 1 // route 0 has restrictions but is failing linux?
+#if CODE_ROUTE == 0
+
+    template <typename T>
+    struct is_array_ref : std::false_type {};
+    template <>
+    struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 1>>> : std::true_type {};
+    template <>
+    struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 2>>> : std::true_type {};
+    template <>
+    struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 3>>> : std::true_type {};
+    template <>
+    struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 1>>> : std::true_type {};
+    template <>
+    struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 2>>> : std::true_type {};
+    template <>
+    struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 3>>> : std::true_type {};
+
+    // --------------------------------------------------------------------------------------------------------------------------------
+    template <typename MapT, typename ShapeT>
+    inline std::enable_if_t<is_array_ref<MapT>::value>
+    ensure_array_ref_ready(MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
+        map.instantiate_if_null();
+
+        if (map->shape() != desired_shape) {
+            _parameters_synced = false; // we will need a new pointer upload
+            map->resize(desired_shape);
+            if (zero_device)
+                map->zero_device();
+        }
+    }
+
+#elif CODE_ROUTE == 1
+
+    template <typename MapT, typename ShapeT>
+    void  ensure_array_ref_ready(MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
+        map.instantiate_if_null();
+
+        if (map->shape() != desired_shape) {
+            _parameters_synced = false; // we will need a new pointer upload
+            map->resize(desired_shape);
+            if (zero_device)
+                map->zero_device();
+        }
+    }
+
+#endif
+#undef CODE_ROUTE
+
+
+
+
+
+    // ================================================================================================================================
 
     // ready device ensuring par structs are uploaded
     void ready_device() {
 
         if (_parameters_synced) return; // skip if already synced
         stream.instantiate_if_null();   // ensure we have a stream
-        Derived::_ready_device();       // CRTP requirement
-        stream->sync();                 // wait on stream, to ensure copying completes
+
+        derived()._ready_device();
+
+        stream->sync(); // wait on stream, to ensure copying completes
         _parameters_synced = true;
     }
 
-    // int width = 128;
-    // int height = 128;
-    // dim3 block(16, 16); // ⚠️ breaks cuda
-
+    // ================================================================================================================================
+    // [constexpr Reflection]
+    // --------------------------------------------------------------------------------------------------------------------------------
     // return properties plus defaults
     static constexpr auto properties() {
         return std::tuple_cat(Derived::_properties(), // CRTP requirement
@@ -209,8 +289,8 @@ class GNC_Base {
 
     // main execution function, ensure device ready and run
     void compute() {
-        ready_device();      // ensure device ready
-        Derived::_compute(); // CRTP requirement
+        // ready_device();      // ensure device ready
+        derived()._compute();
     }
     //
 };

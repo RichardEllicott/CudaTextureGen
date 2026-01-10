@@ -421,84 +421,6 @@ DH_INLINE float2 calculate_slope_vector(
     return float2{xn_height - xp_height, yn_height - yp_height};
 }
 
-// float jitter = 1.0f;
-// int step = 0;
-// bool wrap = true;
-// int jitter_mode = 0;
-// float scale = 1.0f;
-// int jitter_seed = 1234;
-
-// float2 slope_vector2 = core::cuda::math::calculate_slope_vector(
-//     height_map, water_map, nullptr, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
-
-// // Overload: one map
-// DH_INLINE float2 calculate_slope_vector(
-//     const float *__restrict__ height_map1,
-//     const int2 map_size,
-//     const int2 pos,
-//     const bool wrap = true) {
-//     return calculate_slope_vector(height_map1, nullptr, nullptr, map_size, pos, wrap);
-// }
-
-// // Overload: two maps
-// DH_INLINE float2 calculate_slope_vector(
-//     const float *__restrict__ height_map1,
-//     const float *__restrict__ height_map2,
-//     const int2 map_size,
-//     const int2 pos,
-//     const bool wrap = true) {
-//     return calculate_slope_vector(height_map1, height_map2, nullptr, map_size, pos, wrap);
-// }
-
-// can't include here, would need cu file
-
-// // calculate slope vectors kernel
-// __global__ void calculate_slope_vectors_kernel(
-//     const float *__restrict__ height_map1, // heightmap (required)
-//     const float *__restrict__ height_map2, // or null
-//     const float *__restrict__ height_map3, // or null
-//     float2 *__restrict__ slope_vectors_out,
-//     const int2 map_size,
-//     const bool wrap = true,    // wrap coordinates
-//     const float jitter = 0.0f, // if > 0.0 apply jitter
-//     const int step = 0,        // used by jitter, needs to be a different value each step
-//     const int jitter_mode = 0, // 0 is economical and less accurate
-//     const float scale = 1.0f,  // larger scale will make slopes less steep
-//     const int jitter_seed = 1234) {
-//     // ================================================================
-//     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
-//     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
-//         return;
-//     int idx = pos_to_idx(pos, map_size.x);
-//     // ================================================================
-//     float2 slope_vector = calculate_slope_vector(height_map1, height_map2, height_map3, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
-//     slope_vectors_out[idx] = slope_vector;
-// }
-
-// calculate slope vectors kernel
-// __global__ void calculate_slope_vectors_kernel(
-//     const float *__restrict__ height_map1, // heightmap (required)
-//     const float *__restrict__ height_map2, // or null
-//     const float *__restrict__ height_map3, // or null
-//     float *__restrict__ slope_vectors_out, // must be double size of height_maps (interleaved the vectors)
-//     const int2 map_size,
-//     const bool wrap = true,    // wrap coordinates
-//     const float jitter = 0.0f, // if > 0.0 apply jitter
-//     const int step = 0,        // used by jitter, needs to be a different value each step
-//     const int jitter_mode = 0, // 0 is economical and less accurate
-//     const float scale = 1.0f,  // larger scale will make slopes less steep
-//     const int jitter_seed = 1234) {
-//     // ================================================================
-//     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
-//     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
-//         return;
-//     int idx = pos_to_idx(pos, map_size.x) * 2;
-//     // ================================================================
-//     float2 slope_vector = calculate_slope_vector(height_map1, height_map2, height_map3, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
-//     slope_vectors_out[idx] = slope_vector.x;
-//     slope_vectors_out[idx + 1] = slope_vector.y;
-// }
-
 #pragma endregion
 
 #pragma region SMOOTHSTEP
@@ -506,7 +428,7 @@ DH_INLINE float2 calculate_slope_vector(
 // quintic smoothstep
 // aka Perlin’s fade function
 // Creates an S-curve (sigmoid-like shape)
-__device__ __forceinline__ float quintic_smoothstep(float t) { return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f); }
+DH_INLINE float quintic_smoothstep(float t) { return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f); }
 
 #pragma endregion
 
