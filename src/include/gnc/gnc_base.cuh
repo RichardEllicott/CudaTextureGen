@@ -22,9 +22,35 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 // --------------------------------------------------------------------------------------------------------------------------------
 #define REFACTOR_GNC_STORAGE_IN_PARS 0 // 0 is normal, 1 i was trying to refactor to point props to a member structure (lowering copying)
 
+#define REFACTOR_GNC_TEMPLATE_VALIDATION
+
 namespace gnc {
 
 using namespace core::cuda::types; // include type aliases at top level
+
+// ================================================================================================================================
+// Template Validators
+// --------------------------------------------------------------------------------------------------------------------------------
+
+#ifdef REFACTOR_GNC_TEMPLATE_VALIDATION
+
+template <typename T>
+struct is_array_ref : std::false_type {};
+template <>
+struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 1>>> : std::true_type {};
+template <>
+struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 2>>> : std::true_type {};
+template <>
+struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 3>>> : std::true_type {};
+template <>
+struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 1>>> : std::true_type {};
+template <>
+struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 2>>> : std::true_type {};
+template <>
+struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 3>>> : std::true_type {};
+
+#endif
+// ================================================================================================================================
 
 // struct for properties
 template <typename T, typename Member>
@@ -123,42 +149,29 @@ class GNC_Base {
     // (ensuring pointers are uploaded before kernel launch)
     // --------------------------------------------------------------------------------------------------------------------------------
 
-#define CODE_ROUTE 1 // route 0 has restrictions but is failing linux?
-#if CODE_ROUTE == 0
+#ifdef REFACTOR_GNC_TEMPLATE_VALIDATION
 
-    template <typename T>
-    struct is_array_ref : std::false_type {};
-    template <>
-    struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 1>>> : std::true_type {};
-    template <>
-    struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 2>>> : std::true_type {};
-    template <>
-    struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 3>>> : std::true_type {};
-    template <>
-    struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 1>>> : std::true_type {};
-    template <>
-    struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 2>>> : std::true_type {};
-    template <>
-    struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 3>>> : std::true_type {};
-
-    // --------------------------------------------------------------------------------------------------------------------------------
-    template <typename MapT, typename ShapeT>
-    inline std::enable_if_t<is_array_ref<MapT>::value>
-    ensure_array_ref_ready(MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
+    template <
+        typename MapT,
+        typename ShapeT,
+        typename = std::enable_if_t<gnc::is_array_ref<MapT>::value>>
+    inline void ensure_array_ref_ready(MapT &map,
+                                       const ShapeT &desired_shape,
+                                       bool zero_device = false) {
         map.instantiate_if_null();
 
         if (map->shape() != desired_shape) {
-            _parameters_synced = false; // we will need a new pointer upload
+            _parameters_synced = false;
             map->resize(desired_shape);
             if (zero_device)
                 map->zero_device();
         }
     }
 
-#elif CODE_ROUTE == 1
+#else
 
     template <typename MapT, typename ShapeT>
-    void  ensure_array_ref_ready(MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
+    void ensure_array_ref_ready(MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
         map.instantiate_if_null();
 
         if (map->shape() != desired_shape) {
@@ -170,11 +183,6 @@ class GNC_Base {
     }
 
 #endif
-#undef CODE_ROUTE
-
-
-
-
 
     // ================================================================================================================================
 

@@ -375,7 +375,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     _width = height_map->width();
     _height = height_map->height();
 
-#define CODE_ROUTE 1 // route 0 has restrictions but is failing linux?
+#define CODE_ROUTE 0 // route 0 has restrictions but is failing linux?
 #if CODE_ROUTE == 0
     ensure_array_ref_ready(water_map, height_map_shape, true);
     ensure_array_ref_ready(sediment_map, height_map_shape, true);
