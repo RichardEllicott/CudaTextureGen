@@ -21,8 +21,12 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 // REFACTOR OPTIONS
 // --------------------------------------------------------------------------------------------------------------------------------
 #define REFACTOR_GNC_STORAGE_IN_PARS 0 // 0 is normal, 1 i was trying to refactor to point props to a member structure (lowering copying)
-
 #define REFACTOR_GNC_TEMPLATE_VALIDATION
+// #define ATTEMPT_GENERIC_REFLECTION // broken
+// ================================================================================================================================
+
+
+
 
 namespace gnc {
 
@@ -31,27 +35,61 @@ using namespace core::cuda::types; // include type aliases at top level
 // ================================================================================================================================
 // Template Validators
 // --------------------------------------------------------------------------------------------------------------------------------
-
 #ifdef REFACTOR_GNC_TEMPLATE_VALIDATION
 
+// template <typename T>
+// struct is_array_ref : std::false_type {};
+// template <>
+// struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 1>>> : std::true_type {};
+// template <>
+// struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 2>>> : std::true_type {};
+// template <>
+// struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 3>>> : std::true_type {};
+// template <>
+// struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 1>>> : std::true_type {};
+// template <>
+// struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 2>>> : std::true_type {};
+// template <>
+// struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 3>>> : std::true_type {};
+
+// alternate shorter, more generic??
 template <typename T>
 struct is_array_ref : std::false_type {};
-template <>
-struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 1>>> : std::true_type {};
-template <>
-struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 2>>> : std::true_type {};
-template <>
-struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 3>>> : std::true_type {};
-template <>
-struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 1>>> : std::true_type {};
-template <>
-struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 2>>> : std::true_type {};
-template <>
-struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 3>>> : std::true_type {};
+
+template <typename U, int D>
+struct is_array_ref<core::Ref<core::cuda::DeviceArray<U, D>>> : std::true_type {};
+
+//
+// extra is a ref?
+template <typename T>
+struct is_ref : std::false_type {};
+
+template <typename U>
+struct is_ref<core::Ref<U>> : std::true_type {};
 
 #endif
 // ================================================================================================================================
 
+#ifdef ATTEMPT_GENERIC_REFLECTION
+
+template <typename Tuple, typename F, std::size_t... I>
+constexpr void tuple_for_each_impl(Tuple &&t, F &&f, std::index_sequence<I...>) {
+    (f(std::get<I>(t)), ...);
+}
+
+template <typename Tuple, typename F>
+constexpr void tuple_for_each(Tuple &&t, F &&f) {
+    tuple_for_each_impl(
+        std::forward<Tuple>(t),
+        std::forward<F>(f),
+        std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>{});
+}
+#endif
+
+//
+//
+//
+//
 // struct for properties
 template <typename T, typename Member>
 struct _Property {
@@ -151,25 +189,26 @@ class GNC_Base {
 
 #ifdef REFACTOR_GNC_TEMPLATE_VALIDATION
 
+    // GCC freindly validation (GCC is more strict)
     template <
         typename MapT,
         typename ShapeT,
         typename = std::enable_if_t<gnc::is_array_ref<MapT>::value>>
-    inline void ensure_array_ref_ready(MapT &map,
-                                       const ShapeT &desired_shape,
-                                       bool zero_device = false) {
-        map.instantiate_if_null();
+    inline void ensure_array_ref_ready(
+        MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
 
-        if (map->shape() != desired_shape) {
-            _parameters_synced = false;
+        map.instantiate_if_null(); // ensure the Ref is not empty
+
+        if (map->shape() != desired_shape) { // if shape missmatch we will resize
+            _parameters_synced = false;      // and mark sync dirty (to trigger par upload)
             map->resize(desired_shape);
-            if (zero_device)
-                map->zero_device();
+            if (zero_device) map->zero_device();
         }
     }
 
 #else
 
+    // 100% duck typed, no validation
     template <typename MapT, typename ShapeT>
     void ensure_array_ref_ready(MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
         map.instantiate_if_null();
@@ -288,6 +327,28 @@ class GNC_Base {
 #undef X
 #endif
 #undef REF_DEVICE_ARRAY_TYPES
+    }
+
+    void instantiate_all_arrays2() {
+
+#ifdef ATTEMPT_GENERIC_REFLECTION // broken
+
+        auto props = Self::properties();
+
+        tuple_for_each(Self::properties(), [&](auto &prop) {
+            using PropT = decltype(prop);
+            using MemberT = typename PropT::member_type;
+
+            if constexpr (gnc::is_ref<MemberT>::value) {
+                auto &ref = this->*(PropT::member_ptr);
+                // handle Ref<T>
+            } else {
+                auto &value = this->*(PropT::member_ptr);
+                // handle normal property
+            }
+        });
+
+#endif
     }
 
     GNC_Base() {
