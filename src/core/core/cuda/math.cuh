@@ -690,5 +690,13 @@ DEFINE_VEC3_SCALAR_OPS(double3)
 
 #pragma endregion
 
+#pragma region UNARY_NEGATION_OPERATOR
+
+// __device__ inline float2 operator-(const float2 &v) {
+//     return make_float2(-v.x, -v.y);
+// }
+
+#pragma endregion
+
 // #undef D_INLINE
 // #undef DH_INLINE

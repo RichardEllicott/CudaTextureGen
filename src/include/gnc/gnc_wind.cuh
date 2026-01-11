@@ -13,17 +13,27 @@ wind simulation, should blow sediment around
 #define TEMPLATE_CLASS_NAME GNC_Wind
 #define TEMPLATE_NAMESPACE gnc::wind
 
-
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_PARAMETERS_STRUCT         \
-    X(int, _width, 256, "")                \
-    X(int, _height, 256, "")               \
+#define TEMPLATE_CLASS_PARAMETERS_STRUCT                                        \
+    X(int, _width, 256, "")                                                     \
+    X(int, _height, 256, "")                                                    \
+    X(int, _step, 0, "")                                                        \
+    X(float, random_wind, 1.0f, "")                                             \
+    X(float, damp_wind, 0.01, "")                                               \
+    X(float, wind_delta, 0.1f, "[0, 1] ratio to exhange each step, keep small") \
+    X(float, slope_influence, 0.1f, "[0, 1] influence of slopes")
+
+
+
+
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS \
-    X(float, 2, height_map, "terrain height")\
-    X(float, 2, dust_map, "dust")\
-    X(float, 3, wind_velocity2_map, "wind")\
+#define TEMPLATE_CLASS_ARRAYS                 \
+    X(float, 2, height_map, "terrain height") \
+    X(float, 2, dust_map, "dust")             \
+    X(float, 3, wind_vec2, "wind")            \
+    X(float, 3, wind_vec2_out, "wind")        \
+    X(float, 3, slope_vec2, "slope calculations")
 
 #include "gnc_boilerplate.cuh"
 

@@ -16,15 +16,14 @@ will have a common interface of "DeviceArrayBase"
 #include <cstddef>
 #include <cstring>        // memcpy
 #include <cuda_runtime.h> // cudaMalloc, cudaFree, cudaMemcpy, cudaMemset, cudaError_t
+#include <functional>     // for std::function
+#include <iostream>       // if you’re printing/logging inside the callback
 #include <memory>         // for std::unique_ptr
 #include <stdexcept>      // std::runtime_error
+#include <string>         // debug printing
+#include <thread>         // for std::thread
 #include <utility>        // std::swap (needed for your swap implementation)
-#include <functional> // for std::function
-#include <iostream>   // if you’re printing/logging inside the callback
-#include <thread> // for std::thread
-#include <vector> // if you use temporary host buffers
-#include <string>        // debug printing
-
+#include <vector>         // if you use temporary host buffers
 
 namespace core::cuda {
 
@@ -128,7 +127,6 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         }
     }
 
-    
 #pragma region DEBUG_MESSAGES
 
     // for debug
@@ -248,6 +246,10 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         return _dev_ptr;
     }
 
+    // ================================================================================================================================
+    // [Resize]
+    // --------------------------------------------------------------------------------------------------------------------------------
+
     // resize dimensions, free and allocate memory as required
     void resize(std::array<size_t, Dim> dimensions) {
         if (_shape == dimensions) {
@@ -259,29 +261,54 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         allocate_device();
     }
 
-    // resize overload
+    // allow accepting any collection of numbers with correct length
+    // convert to std::array<size_t, Dim>
+    template <typename Container>
+    void resize(const Container &c) {
+
+        static_assert(
+            std::is_arithmetic<typename Container::value_type>::value,
+            "resize(Container) requires arithmetic element type");
+
+        if (c.size() != Dim)
+            throw std::runtime_error("resize(Container) requires exactly Dim elements");
+
+        std::array<size_t, Dim> dims{};
+        for (size_t i = 0; i < Dim; ++i)
+            dims[i] = static_cast<size_t>(c[i]);
+
+        resize(dims); // forward to canonical version
+    }
+
+    // resize overload, allows resize(w, h), resize(w, h, d) ...
     template <typename... Sizes>
     void resize(Sizes... sizes) {
         static_assert(sizeof...(Sizes) == Dim, "resize requires exactly Dim arguments");
         resize(std::array<size_t, Dim>{static_cast<size_t>(sizes)...}); // Pack into std::array and forward to canonical resize
     }
 
-
-
-    // resize overload
+    // resize helper, allows resizing 1D, 2D and 3D arrays with the same function, designed for macros
     void resize_helper(size_t width, size_t height = 1, size_t depth = 1) override {
         if constexpr (Dim == 1) {
+            if (height != 1 || depth != 1)
+                throw std::runtime_error("1D array: height/depth must remain 1");
             resize(std::array<size_t, 1>{width});
+
         } else if constexpr (Dim == 2) {
+            if (depth != 1)
+                throw std::runtime_error("2D array: depth must remain 1");
             resize(std::array<size_t, 2>{width, height});
+
         } else if constexpr (Dim == 3) {
+            // all parameters valid
             resize(std::array<size_t, 3>{width, height, depth});
+
         } else {
-            // static_assert(Dim <= 3, "resize_helper overload only supports Dim = 1, 2, or 3");
-            throw std::runtime_error("resize_helper overload only supports Dim = 1, 2, or 3");
+            throw std::runtime_error("resize_helper only supports Dim = 1, 2, or 3");
         }
     }
 
+    // ================================================================================================================================
 
     // fill out device memory with zeros
     void zero_device() override {
@@ -451,7 +478,6 @@ class DeviceArray1D : public DeviceArray<T, 1> {
         resize(size);
         Base::upload(host_ptr, {size});
     }
-
 };
 
 // thin wrapper for 2D

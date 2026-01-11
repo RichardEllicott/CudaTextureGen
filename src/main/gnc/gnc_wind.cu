@@ -7,7 +7,206 @@ namespace TEMPLATE_NAMESPACE {
 namespace math = core::math;
 namespace cmath = core::cuda::math;
 
+// ================================================================================================================================
+
+__global__ void calculate_slope_vectors(
+    const int2 map_size,
+    const float *__restrict__ height_map1, // in
+    const float *__restrict__ height_map2, // in (optional)
+    const float *__restrict__ height_map3, // in (optional)
+    float *__restrict__ _slope_vector2,    // out
+    const bool wrap = true,
+    const float jitter = 0.0f,
+    const int step = 0,
+    const int jitter_mode = 0,
+    const float scale = 1.0f,
+    const int jitter_seed = 1234) {
+    // ================================================================
+    int2 pos = cmath::global_thread_pos2();
+    if (pos.x >= map_size.x || pos.y >= map_size.y) return;
+    int idx = cmath::pos_to_idx(pos, map_size);
+    int idx2 = idx * 2;
+    // ================================================================
+
+    float2 slope_vector2 = cmath::calculate_slope_vector(
+        height_map1, height_map2, height_map3,
+        map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
+
+    _slope_vector2[idx2] = slope_vector2.x;
+    _slope_vector2[idx2 + 1] = slope_vector2.y;
+}
+
+DH_INLINE float2 as_float2(const float *base, size_t idx) {
+    return *reinterpret_cast<const float2 *>(&base[idx]);
+}
+
+// ================================================================================================================================
+
+struct Flux9 {
+    float values[8];  // individual components
+    float total = {}; // aggregate
+};
+
+__device__ __constant__ int2 OFFSET_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
+// __device__ __constant__ int2 OFFSET_8_OPPOSITE[8] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1}, {-1, 1}, {1, -1}};
+__device__ __constant__ int OFFSET_8_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
+
+// designed for correct dot-product scale
+__device__ __constant__ float2 FLUX_DIRECTIONS_SCALED_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}};
+
+// translates a vector into flux values
+D_INLINE Flux9 dot_flux_calculation(float2 v, bool positive_only = true) {
+
+    Flux9 result;
+    // result.total = 0.0f;
+
+    for (int n = 0; n < 8; ++n) {
+        float2 unit_offset = FLUX_DIRECTIONS_SCALED_8[n]; // cell offset as a float vector, not normalized as this helps scale
+
+        float product = cmath::dot(unit_offset, v);             // dot product gets how strongly we push into this direction
+        product = positive_only ? max(product, 0.0f) : product; // positive only
+
+        result.values[n] = product;
+        result.total += product;
+    }
+    return result;
+}
+
+// ================================================================================================================================
+
+// simple wind model with slope influence
+__global__ void run_wind(
+    const Parameters *__restrict__ pars,
+    const ArrayPointers *__restrict__ arrays,
+
+    const float *__restrict__ wind_vec2_map, // in
+    float *__restrict__ wind_vec2_map_out,   // out
+
+    const int step) {
+    // ================================================================
+    int2 map_size = make_int2(pars->_width, pars->_height);
+    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
+        return;
+    int idx = cmath::pos_to_idx(pos, map_size);
+    int idx2 = idx * 2;
+
+    // ================================================================
+
+    auto random_wind = pars->random_wind;
+    auto wind_delta = pars->wind_delta;
+    auto slope_influence = pars->slope_influence;
+
+    // ================================================================
+    // auto _wind_vector2_map = arrays->wind_vec2;   // wind map
+    auto _slope_vector2_map = arrays->slope_vec2; // slope map
+    // ================================================================
+
+    float2 wind = as_float2(wind_vec2_map, idx2);
+
+    // ================================================================
+
+    wind += cmath::normal_vector2_fast(pos.x, pos.y, step, 0x3A8FB10Au) * random_wind; // random turbulence
+    // ================================================================
+
+    for (int n = 0; n < 8; n++) {
+        int2 new_pos = pos + OFFSET_8[n];
+        new_pos = cmath::posmod(new_pos, map_size);
+        int new_idx = cmath::pos_to_idx(new_pos, map_size);
+        int new_idx2 = new_idx * 2;
+
+        // int opposite
+        float2 new_wind = as_float2(wind_vec2_map, new_idx2);
+
+        float dot_wind = -cmath::dot(new_wind, FLUX_DIRECTIONS_SCALED_8[n]); // reversed
+
+        wind += new_wind * dot_wind * wind_delta;
+    }
+    // ================================================================
+
+    wind *= 0.999; // optional damp wind?
+
+    // ================================================================
+
+    float2 slope = as_float2(_slope_vector2_map, idx2);
+    float slope_gradient = cmath::length(slope); // gradient can range from 0 (flat) to ∞ (90°)
+
+    if (slope_gradient > 0.0001f) {
+        float2 downhill = cmath::normalize(slope);
+        float2 wall_normal = downhill * -1.0f;
+
+        float angle = atan(slope_gradient); // angle in radians, [0, ~pi/2)
+        const float HALF_PI = 1.57079632679f;
+        float slope_strength = angle / HALF_PI; // 0–1
+
+        // --- optional bias (uncomment to test) ---
+        // slope_strength = powf(slope_strength, pars->slope_bias);
+        // -----------------------------------------
+
+        float into_wall = cmath::dot(wind, wall_normal); // how strongly into the wall
+
+        if (into_wall > 0.0f) {
+            wind -= wall_normal * into_wall * slope_strength * slope_influence; // AI gave me this, i think it works
+        }
+    }
+
+    // ================================================================
+
+    wind_vec2_map_out[idx2] = wind.x;
+    wind_vec2_map_out[idx2 + 1] = wind.y;
+}
+
+// ================================================================================================================================
+// __global__ void flux_pass(
+//     const Parameters *__restrict__ pars,
+//     const ArrayPointers *__restrict__ arrays,
+//     const int step) {
+// }
+
+// __global__ void apply_pass(
+//     const Parameters *__restrict__ pars,
+//     const ArrayPointers *__restrict__ arrays,
+//     const int step) {
+// }
+// ================================================================================================================================
+
 void TEMPLATE_CLASS_NAME::_compute() {
+
+    if (height_map.is_null() || height_map->empty())
+        throw std::runtime_error("height_map is null or empty");
+
+    auto height_map_shape = height_map->shape();
+    _width = height_map->width();
+    _height = height_map->height();
+
+    ensure_array_ref_ready(slope_vec2, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2});
+    ensure_array_ref_ready(wind_vec2, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2}, true);
+    ensure_array_ref_ready(wind_vec2_out, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2});
+    ensure_array_ref_ready(dust_map, height_map_shape, true);
+
+    dim3 block(16, 16);
+    dim3 grid((_width + block.x - 1) / block.x, (_height + block.y - 1) / block.y);
+
+    int2 map_size = {(int)_width, (int)_height};
+
+    ready_device();
+
+    // precalculate slope vectors
+    calculate_slope_vectors<<<grid, block, 0, stream->get()>>>(
+        map_size,
+        height_map->dev_ptr(),
+        nullptr,
+        nullptr,
+        slope_vec2->dev_ptr());
+
+    run_wind<<<grid, block, 0, stream->get()>>>(
+        dev_parameters.dev_ptr(),
+        dev_array_pointers.dev_ptr(),
+
+        wind_vec2->dev_ptr(),
+        wind_vec2_out->dev_ptr(),
+
+        _step);
 }
 
 } // namespace TEMPLATE_NAMESPACE

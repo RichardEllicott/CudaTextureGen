@@ -25,9 +25,6 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 // #define ATTEMPT_GENERIC_REFLECTION // broken
 // ================================================================================================================================
 
-
-
-
 namespace gnc {
 
 using namespace core::cuda::types; // include type aliases at top level
@@ -35,29 +32,17 @@ using namespace core::cuda::types; // include type aliases at top level
 // ================================================================================================================================
 // Template Validators
 // --------------------------------------------------------------------------------------------------------------------------------
-#ifdef REFACTOR_GNC_TEMPLATE_VALIDATION
-
-// template <typename T>
-// struct is_array_ref : std::false_type {};
-// template <>
-// struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 1>>> : std::true_type {};
-// template <>
-// struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 2>>> : std::true_type {};
-// template <>
-// struct is_array_ref<core::Ref<core::cuda::DeviceArray<int, 3>>> : std::true_type {};
-// template <>
-// struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 1>>> : std::true_type {};
-// template <>
-// struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 2>>> : std::true_type {};
-// template <>
-// struct is_array_ref<core::Ref<core::cuda::DeviceArray<float, 3>>> : std::true_type {};
 
 // alternate shorter, more generic??
 template <typename T>
 struct is_array_ref : std::false_type {};
 
-template <typename U, int D>
-struct is_array_ref<core::Ref<core::cuda::DeviceArray<U, D>>> : std::true_type {};
+template <typename T, int N>
+struct is_array_ref<core::Ref<core::cuda::DeviceArray<T, N>>> : std::true_type {};
+
+// static_assert(is_array_ref<T>::value, "T must be an array ref");
+
+// --------------------------------------------------------------------------------------------------------------------------------
 
 //
 // extra is a ref?
@@ -67,7 +52,6 @@ struct is_ref : std::false_type {};
 template <typename U>
 struct is_ref<core::Ref<U>> : std::true_type {};
 
-#endif
 // ================================================================================================================================
 
 #ifdef ATTEMPT_GENERIC_REFLECTION
@@ -187,9 +171,32 @@ class GNC_Base {
     // (ensuring pointers are uploaded before kernel launch)
     // --------------------------------------------------------------------------------------------------------------------------------
 
-#ifdef REFACTOR_GNC_TEMPLATE_VALIDATION
+    // template <typename Container, size_t Dim>
+    // std::array<size_t, Dim> to_size_array(const Container &c) {
+    //     std::array<size_t, Dim> out{};
+    //     for (size_t i = 0; i < Dim; ++i)
+    //         out[i] = static_cast<size_t>(c[i]);
+    //     return out;
+    // }
 
-    // GCC freindly validation (GCC is more strict)
+    // template <
+    //     typename MapT,
+    //     typename ShapeT,
+    //     typename = std::enable_if_t<gnc::is_array_ref<MapT>::value>>
+    // inline void ensure_array_ref_ready(
+    //     MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
+
+    //     map.instantiate_if_null();
+
+    //     auto desired = to_size_array(desired_shape); // canonicalize here
+
+    //     if (map->shape() != desired) {
+    //         _parameters_synced = false;
+    //         map->resize(desired);
+    //         if (zero_device) map->zero_device();
+    //     }
+    // }
+
     template <
         typename MapT,
         typename ShapeT,
@@ -205,23 +212,6 @@ class GNC_Base {
             if (zero_device) map->zero_device();
         }
     }
-
-#else
-
-    // 100% duck typed, no validation
-    template <typename MapT, typename ShapeT>
-    void ensure_array_ref_ready(MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
-        map.instantiate_if_null();
-
-        if (map->shape() != desired_shape) {
-            _parameters_synced = false; // we will need a new pointer upload
-            map->resize(desired_shape);
-            if (zero_device)
-                map->zero_device();
-        }
-    }
-
-#endif
 
     // ================================================================================================================================
 
@@ -329,9 +319,9 @@ class GNC_Base {
 #undef REF_DEVICE_ARRAY_TYPES
     }
 
-    void instantiate_all_arrays2() {
+#ifdef ATTEMPT_GENERIC_REFLECTION // broken on linux
 
-#ifdef ATTEMPT_GENERIC_REFLECTION // broken
+    void instantiate_all_arrays2() {
 
         auto props = Self::properties();
 
@@ -347,9 +337,8 @@ class GNC_Base {
                 // handle normal property
             }
         });
-
-#endif
     }
+#endif
 
     GNC_Base() {
         // instantiate_all_arrays();
