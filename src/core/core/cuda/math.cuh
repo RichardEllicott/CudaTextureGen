@@ -189,21 +189,24 @@ DH_INLINE uint32_t mix(uint32_t x) {
 // auto r4 = hash_to_randf<4>(seed);
 // float x = r4[0];
 //
-template <int N>
-DH_INLINE std::array<float, N> hash_to_randf_array(uint32_t h) {
-    std::array<float, N> out;
 
-    uint32_t x = mix(h);
-    out[0] = hash_float(x) * 2.0f - 1.0f;
 
-#pragma unroll
-    for (int i = 1; i < N; ++i) {
-        x = mix(x);
-        out[i] = hash_float(x) * 2.0f - 1.0f;
-    }
+// // BREAKS LINUX!!!
+// template <int N>
+// DH_INLINE std::array<float, N> hash_to_randf_array(uint32_t h) {
+//     std::array<float, N> out;
 
-    return out;
-}
+//     uint32_t x = mix(h);
+//     out[0] = hash_float(x) * 2.0f - 1.0f;
+
+// #pragma unroll
+//     for (int i = 1; i < N; ++i) {
+//         x = mix(x);
+//         out[i] = hash_float(x) * 2.0f - 1.0f;
+//     }
+
+//     return out;
+// }
 
 // better pattern
 
