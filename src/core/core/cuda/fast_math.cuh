@@ -9,15 +9,20 @@ with CPU fallback
 #include <cstdint> // uint32_t
 #include <cuda_runtime.h>
 #include <math.h>
+// ========================================================================================================================
+// [Options]
+// ------------------------------------------------------------------------------------------------------------------------
+#define ENABLE_FAST_MATH // comment out to disable fast math
+// #pragma warning(disable:4068) // optional supress warnings
+// ========================================================================================================================
 
 #define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
-#define ENABLE_FAST_MATH // comment out to disable fast math
-
-// disable fast math on host side
 #if !defined(__CUDA_ARCH__)
-#undef ENABLE_FAST_MATH
+#undef ENABLE_FAST_MATH // disable fast math on host side
 #endif
+
+// ========================================================================================================================
 
 namespace core::cuda::math {
 

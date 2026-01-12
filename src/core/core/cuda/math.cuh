@@ -5,9 +5,9 @@ cuda math functions
 */
 #pragma once
 
+#include "fast_math.cuh"
 #include <cstdint> // uint32_t
 #include <cuda_runtime.h>
-#include "fast_math.cuh"
 
 #pragma region DEFINES
 
@@ -166,94 +166,6 @@ DH_INLINE uint32_t mix(uint32_t x) {
     return x;
 }
 
-// DH_INLINE float hash_float(uint32_t h) {
-//     return float(h) * 0x1p-32f;
-// }
-
-// DH_INLINE void hash_to_4randf(uint32_t h, float out[4]) {
-//     uint32_t x = mix(h);
-//     out[0] = hash_float(x) * 2.0f - 1.0f;
-
-//     x = mix(x);
-//     out[1] = hash_float(x) * 2.0f - 1.0f;
-
-//     x = mix(x);
-//     out[2] = hash_float(x) * 2.0f - 1.0f;
-
-//     x = mix(x);
-//     out[3] = hash_float(x) * 2.0f - 1.0f;
-// }
-
-//
-// take a hash input, generate multiple
-// auto r4 = hash_to_randf<4>(seed);
-// float x = r4[0];
-//
-
-
-// // BREAKS LINUX!!!
-// template <int N>
-// DH_INLINE std::array<float, N> hash_to_randf_array(uint32_t h) {
-//     std::array<float, N> out;
-
-//     uint32_t x = mix(h);
-//     out[0] = hash_float(x) * 2.0f - 1.0f;
-
-// #pragma unroll
-//     for (int i = 1; i < N; ++i) {
-//         x = mix(x);
-//         out[i] = hash_float(x) * 2.0f - 1.0f;
-//     }
-
-//     return out;
-// }
-
-// better pattern
-
-// intrinsic here, is faster to convert a int to a float
-// __int_as_float(int)
-// It’s the fastest way to turn a 32‑bit RNG state into a float
-
-// __float2int_rn(float)  ... this is opposite
-
-// MORE!!
-
-// __brev(x) // Bit‑reverse a 32‑bit integer.
-
-// __clz(x) // Count leading zeros.
-
-// approx versions
-
-// __sinf(x)
-// __cosf(x)
-// __expf(x)
-// __logf(x)
-// __frcp_rn(x) (fast reciprocal)
-// __fsqrt_rn(x) (fast sqrt)
-
-// __sincosf
-
-//
-//
-// idea for making macro more clear
-
-// #if defined(__CUDA_ARCH__)
-//     #define CTG_DEVICE 1
-// #else
-//     #define CTG_DEVICE 0
-// #endif
-
-// #if CTG_DEVICE
-//     #define CTG_FLOAT_AS_INT(x) __float_as_int(x)
-//     #define CTG_INT_AS_FLOAT(x) __int_as_float(x)
-// #else
-//     #define CTG_FLOAT_AS_INT(x) *reinterpret_cast<const int*>(&x)
-//     #define CTG_INT_AS_FLOAT(x) *reinterpret_cast<const float*>(&x)
-// #endif
-
-//
-//
-
 struct HashRng {
     uint32_t x;
 
@@ -263,7 +175,7 @@ struct HashRng {
 
 #if defined(__CUDA_ARCH__) // most correct CUDA pattern for inside a DH_INLINE
         // Compiling for device
-        return __int2float_rn(int32_t(x)) * 0x1p-31f;
+        return __int2float_rn(int32_t(x)) * INV_U31;
 #else
         // Compiling for host
         return int32_t(x) * INV_U31;
@@ -636,6 +548,7 @@ __device__ __forceinline__ float cubic_smoothstep(float t) { return t * t * (3 -
 #pragma endregion
 
 #pragma region CUDA_ONLY // these ones only compile correct from .cu files
+
 #ifdef __CUDACC__
 
 // get position in 1D kernel
