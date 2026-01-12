@@ -276,44 +276,84 @@ class GNB_Example:
 class GNC_Erosion:
     _debug: Incomplete
     _exposed_layer_map: Incomplete
+    _flux8_map: Incomplete
+    _height: Incomplete
     _layer_count: Incomplete
     _layer_mode: Incomplete
+    _sea_map: Incomplete
+    _sediment_flux8_map: Incomplete
+    _sediment_out_map: Incomplete
     _slope_vector2_map: Incomplete
     _step: Incomplete
+    _water_out_map: Incomplete
+    _water_velocity_map: Incomplete
+    _width: Incomplete
+    _wind_vector2_map: Incomplete
+    debug_mod: Incomplete
+    debug_print: Incomplete
+    deposition_mode: Incomplete
+    deposition_rate: Incomplete
+    deposition_threshold: Incomplete
+    drain_rate: Incomplete
+    erosion_mode: Incomplete
+    erosion_rate: Incomplete
+    evaporation_mode: Incomplete
+    evaporation_rate: Incomplete
+    flow_rate: Incomplete
     height_map: Incomplete
-    jitter: Incomplete
+    layer_erosion_threshold_array: Incomplete
+    layer_erosiveness_array: Incomplete
     layer_map: Incomplete
+    layer_permeability_array: Incomplete
+    layer_solubility_array: Incomplete
+    layer_yield_array: Incomplete
+    max_height: Incomplete
+    max_water_outflow: Incomplete
+    min_height: Incomplete
+    rain_map: Incomplete
+    rain_rate: Incomplete
+    scale: Incomplete
+    sea_level: Incomplete
+    sea_pass: Incomplete
+    sea_tidal_range: Incomplete
+    sediment_capacity: Incomplete
+    sediment_layer_map: Incomplete
+    sediment_layer_mode: Incomplete
     sediment_map: Incomplete
+    sediment_yield: Incomplete
+    simple_collapse: Incomplete
+    simple_collapse_amount: Incomplete
+    simple_collapse_jitter: Incomplete
+    simple_collapse_threshold: Incomplete
+    simple_collapse_yield: Incomplete
+    slope_jitter: Incomplete
+    slope_jitter_mode: Incomplete
+    steps: Incomplete
     stream: Incomplete
     water_map: Incomplete
-    width: Incomplete
+    wind_strength: Incomplete
+    wrap: Incomplete
     def __init__(self) -> None: ...
+    def compute(self) -> None: ...
     def process(self) -> None: ...
+    def setup(self) -> None: ...
 
 class GNC_Example:
     _debug: Incomplete
-    float8: Incomplete
-    input: Incomplete
-    int8: Incomplete
-    output: Incomplete
-    stream: Incomplete
-    tile_size: Incomplete
-    width: Incomplete
-    def __init__(self) -> None: ...
-    def process(self) -> None: ...
-
-class GNC_Example2:
-    _debug: Incomplete
+    _height: Incomplete
+    _width: Incomplete
+    extra_test: Incomplete
     input: Incomplete
     output: Incomplete
     stream: Incomplete
     tile_size: Incomplete
-    width: Incomplete
     def __init__(self) -> None: ...
+    def compute(self) -> None: ...
     def process(self) -> None: ...
 
 class GNC_Noise:
     _debug: Incomplete
+    height: Incomplete
     offset: Incomplete
     output: Incomplete
     period: Incomplete
@@ -321,6 +361,43 @@ class GNC_Noise:
     stream: Incomplete
     width: Incomplete
     def __init__(self) -> None: ...
+    def compute(self) -> None: ...
+    def process(self) -> None: ...
+
+class GNC_Template:
+    _debug: Incomplete
+    _height: Incomplete
+    _width: Incomplete
+    float8: Incomplete
+    input: Incomplete
+    input2: Incomplete
+    int8: Incomplete
+    output: Incomplete
+    output2: Incomplete
+    stream: Incomplete
+    tile_size: Incomplete
+    def __init__(self) -> None: ...
+    def compute(self) -> None: ...
+    def process(self) -> None: ...
+    def test(self) -> None: ...
+
+class GNC_Wind:
+    _map_size: Incomplete
+    _step: Incomplete
+    damp_wind: Incomplete
+    dust_map: Incomplete
+    height_map: Incomplete
+    random_wind: Incomplete
+    slope_influence: Incomplete
+    slope_vec2_map: Incomplete
+    stream: Incomplete
+    test_float2: Incomplete
+    wind_drag: Incomplete
+    wind_influence: Incomplete
+    wind_vec2_map: Incomplete
+    wind_vec2_map_out: Incomplete
+    def __init__(self) -> None: ...
+    def compute(self) -> None: ...
     def process(self) -> None: ...
 
 class GraphNode:

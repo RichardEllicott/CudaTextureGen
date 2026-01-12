@@ -116,31 +116,29 @@ def test_noise():
 
     gnc = cuda_texture_gen.GNC_Noise()
 
-    gnc.period = [5,5,5]
+    gnc.period = (13,5,5)
 
     gnc.process()
 
-    # result = gnc.output.array
-    # tools.arrays.normalize(result)
-    # tools.images.save(result, f"{script_path}.output.png")
+    result = gnc.output.array
+    tools.arrays.normalize(result)
+    tools.images.save(result, f"{script_path}.output.png")
 
 
-    # gnc.
+test_noise()
+
+
+# def test_new_erosion():
+#     print("test_new_erosion()...")
+
+#     erosion = cuda_texture_gen.GNC_Erosion()
+
+#     erosion.process()
+
+#     # result = gnc.output.array
+#     # tools.arrays.normalize(result)
+#     # tools.images.save(result, f"{script_path}.output.png")
 
 
 
-def test_new_erosion():
-    print("test_new_erosion()...")
 
-    erosion = cuda_texture_gen.GNC_Erosion()
-
-    erosion.process()
-
-    # result = gnc.output.array
-    # tools.arrays.normalize(result)
-    # tools.images.save(result, f"{script_path}.output.png")
-
-
-
-
-test_new_erosion()

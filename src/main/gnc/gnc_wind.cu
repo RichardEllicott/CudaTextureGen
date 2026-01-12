@@ -79,19 +79,18 @@ __global__ void run_wind(
     const Parameters *__restrict__ pars,
     // const ArrayPointers *__restrict__ arrays,
 
+    const int2 map_size,
+
     const float *__restrict__ wind_vec2_map,  // in
     const float *__restrict__ slope_vec2_map, // in
     float *__restrict__ wind_vec2_map_out,    // out
 
     const int step) {
     // ================================================================
-    int2 map_size = make_int2(pars->_width, pars->_height);
-    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
-    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
-        return;
+    int2 pos = cmath::global_thread_pos2();
+    if (pos.x >= map_size.x || pos.y >= map_size.y) return;
     int idx = cmath::pos_to_idx(pos, map_size);
     int idx2 = idx * 2;
-
     // ================================================================
     // [Pars]
     // ----------------------------------------------------------------
@@ -189,24 +188,27 @@ void TEMPLATE_CLASS_NAME::_compute() {
         throw std::runtime_error("height_map is null or empty");
 
     auto height_map_shape = height_map->shape();
-    _width = height_map->width();
-    _height = height_map->height();
 
-    ensure_array_ref_ready(slope_vec2_map, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2});
-    ensure_array_ref_ready(wind_vec2_map, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2}, true);
-    ensure_array_ref_ready(wind_vec2_map_out, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2});
+    size_t _width = height_map_shape[0];
+    size_t _height = height_map_shape[1];
+    _map_size = {(int)_width, (int)_height};
+
+    // _width = height_map->width();
+    // _height = height_map->height();
+
+    ensure_array_ref_ready(slope_vec2_map, std::array<size_t, 3>{_width, _height, 2});
+    ensure_array_ref_ready(wind_vec2_map, std::array<size_t, 3>{_width, _height, 2}, true);
+    ensure_array_ref_ready(wind_vec2_map_out, std::array<size_t, 3>{_width, _height, 2});
     ensure_array_ref_ready(dust_map, height_map_shape, true);
 
     dim3 block(16, 16);
     dim3 grid((_width + block.x - 1) / block.x, (_height + block.y - 1) / block.y);
 
-    int2 map_size = {(int)_width, (int)_height};
-
     ready_device();
 
     // precalculate slope vectors
     calculate_slope_vectors<<<grid, block, 0, stream->get()>>>(
-        map_size,
+        _map_size,
         height_map->dev_ptr(),
         nullptr,
         nullptr,
@@ -216,6 +218,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
         dev_parameters.dev_ptr(),
         // dev_array_pointers.dev_ptr(),
 
+        _map_size,
         wind_vec2_map->dev_ptr(),     // in
         slope_vec2_map->dev_ptr(),    // in
         wind_vec2_map_out->dev_ptr(), // out

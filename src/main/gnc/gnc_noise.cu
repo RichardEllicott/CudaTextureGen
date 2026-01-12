@@ -126,7 +126,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     stream.instantiate_if_null(); // ensure stream
     output->resize(width, height);
 
-    float3 scale = {period[0] / width, period[1] / height, 1.0f};
+    float3 scale = {period.x / width, period.y / height, 1.0f};
 
     dim3 block(16, 16);
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
@@ -135,8 +135,8 @@ void TEMPLATE_CLASS_NAME::_compute() {
         width, height,
         output->dev_ptr(),
         scale,
-        to_float3(period),
-        to_float3(offset),
+        period,
+        offset,
         seed);
 }
 
