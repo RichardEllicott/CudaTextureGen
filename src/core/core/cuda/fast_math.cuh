@@ -26,11 +26,6 @@ with CPU fallback
 
 namespace core::cuda::math {
 
-// ============================================================
-//  fast_logf
-//  - GPU: __logf (fast SFU intrinsic)
-//  - CPU: logf
-// ============================================================
 DH_INLINE float fast_logf(float x) {
 #ifdef ENABLE_FAST_MATH
     return __logf(x);
@@ -39,11 +34,8 @@ DH_INLINE float fast_logf(float x) {
 #endif
 }
 
-// ============================================================
-//  fast_sqrtf
-//  - GPU: __fsqrt_rn (fast SFU intrinsic)
-//  - CPU: sqrtf
-// ============================================================
+// ------------------------------------------------------------------------------------------------------------------------
+
 DH_INLINE float fast_sqrtf(float x) {
 #ifdef ENABLE_FAST_MATH
     return __fsqrt_rn(x);
@@ -51,12 +43,8 @@ DH_INLINE float fast_sqrtf(float x) {
     return sqrtf(x);
 #endif
 }
+// ------------------------------------------------------------------------------------------------------------------------
 
-// ============================================================
-//  fast_sincosf
-//  - GPU: __sincosf (fast SFU intrinsic)
-//  - CPU: fallback sinf/cosf (MSVC-safe)
-// ============================================================
 DH_INLINE void fast_sincosf(float x, float *s, float *c) {
 #ifdef ENABLE_FAST_MATH
     __sincosf(x, s, c);
@@ -66,28 +54,28 @@ DH_INLINE void fast_sincosf(float x, float *s, float *c) {
     *c = cosf(x);
 #endif
 }
+// ------------------------------------------------------------------------------------------------------------------------
 
-// ============================================================
-//  fast_exp2f
-//  - GPU: emulates 2^x using __expf(x * ln(2))
-//    (no __exp2f intrinsic on many architectures, including SM 5.x)
-//  - CPU: uses exp2f
-//  - Accuracy: ~1–3 ulp, fast and stable for simulation/noise
-// ============================================================
 DH_INLINE float fast_exp2f(float x) {
 #ifdef ENABLE_FAST_MATH
-    // Use fast exp intrinsic: 2^x = e^(x * ln(2))
-    return __expf(x * 0.6931471805599453094f); // ln(2)
+
+// If the architecture is new enough to support __exp2f, use it.
+// Pascal (SM 6.x) and newer support this intrinsic.
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 600)
+    return __exp2f(x);
+#else
+    // Fallback for older architectures: 2^x = e^(x * ln(2))
+    return __expf(x * 0.6931471805599453094f);
+#endif
+
 #else
     return exp2f(x);
 #endif
 }
 
-// ============================================================
-//  fast_rcp (fast reciprocal)
-//  - GPU: __frcp_rn
-//  - CPU: 1.0f / x
-// ============================================================
+// ------------------------------------------------------------------------------------------------------------------------
+
+// fast reciprocal
 DH_INLINE float fast_rcp(float x) {
 #ifdef ENABLE_FAST_MATH
     return __frcp_rn(x);
@@ -96,10 +84,9 @@ DH_INLINE float fast_rcp(float x) {
 #endif
 }
 
+// ------------------------------------------------------------------------------------------------------------------------
+
 // Fast tanh approximation
-// - GPU: uses __expf for a very fast rational tanh identity
-// - CPU: falls back to accurate tanhf
-// - Accuracy: ~1–3 ulp, smooth and monotonic, ideal for simulation/noise
 DH_INLINE float fast_tanhf(float x) {
 #ifdef ENABLE_FAST_MATH
     // Compute tanh(x) = (e^(2x) - 1) / (e^(2x) + 1)

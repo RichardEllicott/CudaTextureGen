@@ -449,7 +449,7 @@ DH_INLINE float3 cross(float3 a, float3 b) {
 // soft ceiling to avoid clipping artifacts where sharpness controls how sharp or gentle the saturation curve is.
 // uses hyperbolic tan which means we will never reach the ceiling
 // higher sharpness saturates quicker
-DH_INLINE float soft_saturate(float value, float ceiling, float sharpness = 1.0) {
+DH_INLINE float soft_saturate(float value, float ceiling, float sharpness = 1.0f) {
     return ceiling * fast_tanhf((value / ceiling) * sharpness);
 }
 
