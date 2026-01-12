@@ -22,33 +22,8 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 
 #pragma region TRYING_TO_SLOVE_FLOAT2_EXPORT
 
-// #include "core/cuda/math.cuh" // required as we have a != used on a float2
-
-//
-//
-
-
-// // Arithmetic operators (if needed)
-// __host__ __device__ inline float2 operator+(const float2& a, const float2& b) {
-//     return make_float2(a.x + b.x, a.y + b.y);
-// }
-
-// __host__ __device__ inline float2 operator-(const float2& a, const float2& b) {
-//     return make_float2(a.x - b.x, a.y - b.y);
-// }
-
-// __host__ __device__ inline float2 operator*(const float2& a, float s) {
-//     return make_float2(a.x * s, a.y * s);
-// }
-
-// __host__ __device__ inline float2 operator*(float s, const float2& a) {
-//     return make_float2(a.x * s, a.y * s);
-// }
-
-
-// #include "float2_operators.h"
-
-#include "core/cuda/math_operators.cuh"
+#include "core/cuda/math.cuh"
+#include "core/cuda/operators.cuh"
 
 
 

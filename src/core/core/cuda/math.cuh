@@ -4,75 +4,83 @@ cuda math functions
 
 */
 #pragma once
-// #include "math_constants.cuh"
-// #include "math_random.cuh"
+
 #include <cstdint> // uint32_t
 #include <cuda_runtime.h>
-// #include <math_functions.h>  // for fmaxf, fminf, etc.
 
+#define D_INLINE __device__ __forceinline__           // device only functions
+#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
-#include "math_operators.cuh" // support for + - * etc
-
-
-#define MATH_ARRAY_TYPES // adding new array types
-
-#define D_INLINE __device__ __forceinline__
-#define DH_INLINE __device__ __host__ __forceinline__
+// define DH_CONST different for host and device
+#ifdef __CUDACC__
+#define DH_CONST __device__ __constant__ const
+#else
+#define DH_CONST constexpr
+#endif
 
 namespace core::cuda::math {
 
-
-#ifdef MATH_ARRAY_TYPES
-
-// using Float2 = std::array<float, 2>;
-
-
-
+#pragma region COMPATABILITY // Host fallbacks for CUDA intrinsics
+#ifndef __CUDACC__
+inline float max(float a, float b) { return a > b ? a : b; }
+inline float min(float a, float b) { return a < b ? a : b; }
+inline int max(int a, int b) { return a > b ? a : b; }
+inline int min(int a, int b) { return a < b ? a : b; }
+inline void sincos(float x, float *s, float *c) {
+    *s = sinf(x);
+    *c = cosf(x);
+} // Host fallback for sincos (CUDA intrinsic not available)
 #endif
-
-
+#pragma endregion
 
 #pragma region CONSTANTS
+
+// ⚠️ adding inline to constexpr can suppress compiler warning
+// ⚠️ can't use "std::sqrt(2.0)" in constexpr due to CUDA (so using literals)
 
 constexpr double SQRT2 = 1.4142135623730950488;     // square root of 2
 constexpr double INV_SQRT2 = 0.7071067811865475244; // inverse square root of 2
 constexpr double PI = 3.14159265358979323846;       // π ratio
-constexpr double TAU = PI * 2.0;                    // 2π
 
+// magic numbers for hashing
 constexpr uint32_t GOLDEN_RATIO_CONST = 0x9E3779B9u; // 32‑bit golden ratio constant (Knuth / SplitMix / xxHash)
 constexpr uint32_t MURMUR3_C1 = 0x85EBCA6Bu;         // MurmurHash3 avalanche constant C1
 constexpr uint32_t MURMUR3_C2 = 0xC2B2AE35u;         // MurmurHash3 avalanche constant C2
+
+constexpr uint32_t XXH_PRIME32_3 = 1274126177u; // xxHash32 Seed mixing
+constexpr uint32_t XXH_PRIME32_4 = 668265263u;  // xxHash32 Secondary avalanche
+constexpr uint32_t XXH_PRIME32_5 = 374761393u;  // xxHash32 Mix low bits, small inputs
+
+// standard grid offset order (opposites in pairs, first 4 are cardinal, second 4 are diagonal)
+DH_CONST int2 GRID_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
+// opposite direction index
+DH_CONST int GRID_OFFSETS_8_OPP_INDEX[8] = {1, 0, 3, 2, 5, 4, 7, 6};
 
 #pragma endregion
 
 #pragma region HASH // MurmurHash3 hash
 
-// integer hash (based on MurmurHash3 finalizer)
+// // signed integer hash (based on MurmurHash3 finalizer)
 DH_INLINE int hash_int(int x, int y, int z, int seed) {
-    int n = x + y * 374761393 + z * 668265263 + seed * 1274126177;
+    int n = x + y * XXH_PRIME32_5 + z * XXH_PRIME32_4 + seed * XXH_PRIME32_3;
 
     n ^= n >> 16;
-    n *= 0x85ebca6b;
+    n *= MURMUR3_C1;
     n ^= n >> 13;
-    n *= 0xc2b2ae35;
+    n *= MURMUR3_C2;
     n ^= n >> 16;
 
-    return n; // can be negative
+    return n;
 }
-
-// Notes
-// 374761393u	0x165667B1	Prime5	xxHash32	Mix low bits, small inputs
-// 668265263u	0x27D4EB2F	Prime4	xxHash32	Secondary avalanche
-// 1274126177u	0x4CF5AD43	Prime3	xxHash32	Seed mixing
 
 // integer hash (based on MurmurHash3 finalizer)
 DH_INLINE uint32_t hash_uint(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) {
-    uint32_t n = x + y * 374761393u + z * 668265263u + seed * 1274126177u;
+    uint32_t n = x + y * XXH_PRIME32_5 + z * XXH_PRIME32_4 + seed * XXH_PRIME32_3;
 
     n ^= n >> 16;
-    n *= 0x85ebca6bu;
+    n *= MURMUR3_C1;
     n ^= n >> 13;
-    n *= 0xc2b2ae35u;
+    n *= MURMUR3_C2;
     n ^= n >> 16;
 
     return n; // full 32-bit unsigned result
@@ -119,7 +127,7 @@ DH_INLINE float2 normal_vector2(float r1, float r2) {
 
     r1 = max(r1, 1e-7f); // Guard against log(0)
     float r = sqrt(-2.0f * log(r1));
-    float theta = r2 * TAU;
+    float theta = r2 * PI * 2.0f;
 
     float s, c;
     sincos(theta, &s, &c); // faster than seperate sin and cos
@@ -200,38 +208,18 @@ DH_INLINE float4 lerp(float4 a, float4 b, float fade) {
 #pragma region IDX // pos to idx formulae
 
 // pos to idx shortcut
-D_INLINE int pos_to_idx(const int2 pos, const int map_width) {
+DH_INLINE int pos_to_idx(const int2 pos, const int map_width) {
     return pos.y * map_width + pos.x;
 }
 
 // pos to idx shortcut
-D_INLINE int pos_to_idx(const int2 pos, const int2 map_size) {
+DH_INLINE int pos_to_idx(const int2 pos, const int2 map_size) {
     return pos.y * map_size.x + pos.x;
 }
 
 // pos to idx formula
-D_INLINE int pos_to_idx(const int x, const int y, const int map_width) {
+DH_INLINE int pos_to_idx(const int x, const int y, const int map_width) {
     return y * map_width + x;
-}
-
-// get position 1D
-D_INLINE int global_thread_pos1() {
-    return int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x);
-}
-
-// get position 2D
-D_INLINE int2 global_thread_pos2() {
-    return make_int2(
-        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
-        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y));
-}
-
-// get position 3D
-D_INLINE int3 global_thread_pos3() {
-    return make_int3(
-        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
-        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y),
-        int(blockIdx.z) * int(blockDim.z) + int(threadIdx.z));
 }
 
 #pragma endregion
@@ -449,6 +437,30 @@ DH_INLINE float quintic_smoothstep(float t) { return t * t * t * (t * (t * 6.0f 
 
 #pragma endregion
 
+#pragma region CUDA_ONLY // these ones only compile correct from .cu files
+#ifdef __CUDACC__
+
+// get position 1D
+D_INLINE int global_thread_pos1() {
+    return int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x);
+}
+
+// get position 2D
+D_INLINE int2 global_thread_pos2() {
+    return make_int2(
+        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
+        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y));
+}
+
+// get position 3D
+D_INLINE int3 global_thread_pos3() {
+    return make_int3(
+        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
+        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y),
+        int(blockIdx.z) * int(blockDim.z) + int(threadIdx.z));
+}
+
+#endif
+#pragma endregion
+
 } // namespace core::cuda::math
-
-

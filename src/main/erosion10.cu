@@ -21,6 +21,7 @@ Bedrock: nearly immune, only erodes under extreme conditions.
 // #include "noise_util.cuh"
 #include "core.h" // timer
 #include "core/cuda/math.cuh"
+#include "core/cuda/operators.cuh"
 #include <stdexcept> // std::runtime_error
 #include <stdint.h>
 
