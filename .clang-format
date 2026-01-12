@@ -7,3 +7,5 @@ BraceWrapping:
   AfterControlStatement: Never   # don't force newline after 'if'
 AllowShortIfStatementsOnASingleLine: true
 AllowShortBlocksOnASingleLine: true
+
+# AllowShortFunctionsOnASingleLine: All # should stop splitting some of my one line functions

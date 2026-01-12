@@ -7,6 +7,9 @@ cuda math functions
 
 #include <cstdint> // uint32_t
 #include <cuda_runtime.h>
+#include "fast_math.cuh"
+
+#pragma region DEFINES
 
 #define D_INLINE __device__ __forceinline__           // device only functions
 #define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
@@ -18,29 +21,19 @@ cuda math functions
 #define DH_CONST constexpr
 #endif
 
-namespace core::cuda::math {
-
-#pragma region COMPATABILITY // Host fallbacks for CUDA intrinsics
-#ifndef __CUDACC__
-inline float max(float a, float b) { return a > b ? a : b; }
-inline float min(float a, float b) { return a < b ? a : b; }
-inline int max(int a, int b) { return a > b ? a : b; }
-inline int min(int a, int b) { return a < b ? a : b; }
-inline void sincos(float x, float *s, float *c) {
-    *s = sinf(x);
-    *c = cosf(x);
-} // Host fallback for sincos (CUDA intrinsic not available)
-#endif
 #pragma endregion
+
+namespace core::cuda::math {
 
 #pragma region CONSTANTS
 
 // ⚠️ adding inline to constexpr can suppress compiler warning
 // ⚠️ can't use "std::sqrt(2.0)" in constexpr due to CUDA (so using literals)
 
-constexpr double SQRT2 = 1.4142135623730950488;     // square root of 2
-constexpr double INV_SQRT2 = 0.7071067811865475244; // inverse square root of 2
-constexpr double PI = 3.14159265358979323846;       // π ratio
+constexpr float SQRT2 = 1.4142135623730950488;     // square root of 2
+constexpr float INV_SQRT2 = 0.7071067811865475244; // inverse square root of 2
+constexpr float PI = 3.14159265358979323846;       // π ratio
+constexpr float TAU = PI * 2.0f;
 
 #pragma region MAGIC_HASH_NUMBERS
 
@@ -52,24 +45,33 @@ constexpr uint32_t XXH_PRIME32_3 = 1274126177u; // xxHash32 Seed mixing
 constexpr uint32_t XXH_PRIME32_4 = 668265263u;  // xxHash32 Secondary avalanche
 constexpr uint32_t XXH_PRIME32_5 = 374761393u;  // xxHash32 Mix low bits, small inputs
 
+// numbers used to multiply a hash to floats
+constexpr float INV_U32 = 0x1p-32f; // exactly 2^-32
+constexpr float INV_U31 = 0x1p-31f; // exactly 2^-31
+
 #pragma endregion
 
 #pragma region GRID
 
-// standard grid offset order (opposites in pairs, first 4 are cardinal, second 4 are diagonal)
-DH_CONST int2 GRID_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
+// standard grid offsets in standard order (opposites in pairs, first 4 are cardinal, second 4 are diagonal)
+DH_CONST int2 GRID_OFFSETS_8[8] =
+    {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
 
-// opposite direction index
-DH_CONST int GRID_OFFSETS_8_OPPOSITE_INDEX[8] = {1, 0, 3, 2, 5, 4, 7, 6};
+// opposite direction indexes
+DH_CONST int GRID_OFFSETS_8_OPPOSITE_INDEX[8] =
+    {1, 0, 3, 2, 5, 4, 7, 6};
 
-// distances
-DH_CONST float GRID_OFFSETS_8_DISTANCES[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
+// distance to neighbours
+DH_CONST float GRID_OFFSETS_8_DISTANCES[8] =
+    {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
 
 // special vectors for creating a scaled dot product
-DH_CONST float2 GRID_OFFSETS_8_DOTS[8] = {{1.0f, 0.0f}, {-1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, -1.0f}, {0.5f, 0.5f}, {-0.5f, -0.5f}, {0.5f, -0.5f}, {-0.5f, 0.5f}};
+DH_CONST float2 GRID_OFFSETS_8_DOTS[8] =
+    {{1.0f, 0.0f}, {-1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, -1.0f}, {0.5f, 0.5f}, {-0.5f, -0.5f}, {0.5f, -0.5f}, {-0.5f, 0.5f}};
 
 // the directions normalized (magnitude of 1.0)
-DH_CONST float2 GRID_OFFSETS_8_NORMALIZED[8] = {{1.0f, 0.0f}, {-1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, -1.0f}, {INV_SQRT2, INV_SQRT2}, {-INV_SQRT2, -INV_SQRT2}, {INV_SQRT2, -INV_SQRT2}, {-INV_SQRT2, INV_SQRT2}};
+DH_CONST float2 GRID_OFFSETS_8_NORMALIZED[8] =
+    {{1.0f, 0.0f}, {-1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, -1.0f}, {INV_SQRT2, INV_SQRT2}, {-INV_SQRT2, -INV_SQRT2}, {INV_SQRT2, -INV_SQRT2}, {-INV_SQRT2, INV_SQRT2}};
 
 #pragma endregion
 
@@ -105,7 +107,7 @@ DH_INLINE uint32_t hash_uint(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) 
 
 // float from [0,1]
 DH_INLINE float hash_float(uint32_t hash) {
-    return static_cast<float>(hash) / pow(2.0f, 32.0f); // Scale to [0,1]
+    return static_cast<float>(hash) * INV_U32; // Scale to [0,1]
 }
 
 // float from [0,1]
@@ -115,7 +117,7 @@ DH_INLINE float hash_float(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) {
 
 // float from [-1,1]
 DH_INLINE float hash_float_signed(int hash) {
-    return static_cast<float>(hash) / pow(2.0f, 31.0f); // Scale to [-1,1).
+    return static_cast<float>(hash) * INV_U31; // Scale to [-1,1).
 }
 
 // float from [-1,1] range:
@@ -135,21 +137,198 @@ DH_INLINE float hash_to_4randf(uint32_t h, int byte_index) {
     return (float(byte) / 127.5f) - 1.0f; // // map [0,255] to [-1,1]
 }
 
+// ================================================================================================================================
+// Idea to use one hash for four floats with mixing
+// gives high quality random at cheaper cost
+// --------------------------------------------------------------------------------------------------------------------------------#
+
+// So four hashes = ~40–60 integer ops.
+
+// On CPU, that’s noticeable.
+// On GPU, that’s very noticeable because integer multiplies and shifts aren’t free.
+
+// ✔ ~30 integer ops
+// vs
+
+// ❌ ~50 integer ops for four independent hashes
+// That’s already a ~40% reduction.
+
+// 🚀 1.5× to 2× faster
+// for “expand one hash into four floats” vs “four independent hashes”.
+
+// high entrophy cheap hashing??
+DH_INLINE uint32_t mix(uint32_t x) {
+    x ^= x >> 16;
+    x *= 0x7feb352d;
+    x ^= x >> 15;
+    x *= 0x846ca68b;
+    x ^= x >> 16;
+    return x;
+}
+
+// DH_INLINE float hash_float(uint32_t h) {
+//     return float(h) * 0x1p-32f;
+// }
+
+// DH_INLINE void hash_to_4randf(uint32_t h, float out[4]) {
+//     uint32_t x = mix(h);
+//     out[0] = hash_float(x) * 2.0f - 1.0f;
+
+//     x = mix(x);
+//     out[1] = hash_float(x) * 2.0f - 1.0f;
+
+//     x = mix(x);
+//     out[2] = hash_float(x) * 2.0f - 1.0f;
+
+//     x = mix(x);
+//     out[3] = hash_float(x) * 2.0f - 1.0f;
+// }
+
+//
+// take a hash input, generate multiple
+// auto r4 = hash_to_randf<4>(seed);
+// float x = r4[0];
+//
+template <int N>
+DH_INLINE std::array<float, N> hash_to_randf_array(uint32_t h) {
+    std::array<float, N> out;
+
+    uint32_t x = mix(h);
+    out[0] = hash_float(x) * 2.0f - 1.0f;
+
+#pragma unroll
+    for (int i = 1; i < N; ++i) {
+        x = mix(x);
+        out[i] = hash_float(x) * 2.0f - 1.0f;
+    }
+
+    return out;
+}
+
+// better pattern
+
+// intrinsic here, is faster to convert a int to a float
+// __int_as_float(int)
+// It’s the fastest way to turn a 32‑bit RNG state into a float
+
+// __float2int_rn(float)  ... this is opposite
+
+// MORE!!
+
+// __brev(x) // Bit‑reverse a 32‑bit integer.
+
+// __clz(x) // Count leading zeros.
+
+// approx versions
+
+// __sinf(x)
+// __cosf(x)
+// __expf(x)
+// __logf(x)
+// __frcp_rn(x) (fast reciprocal)
+// __fsqrt_rn(x) (fast sqrt)
+
+// __sincosf
+
+//
+//
+// idea for making macro more clear
+
+// #if defined(__CUDA_ARCH__)
+//     #define CTG_DEVICE 1
+// #else
+//     #define CTG_DEVICE 0
+// #endif
+
+// #if CTG_DEVICE
+//     #define CTG_FLOAT_AS_INT(x) __float_as_int(x)
+//     #define CTG_INT_AS_FLOAT(x) __int_as_float(x)
+// #else
+//     #define CTG_FLOAT_AS_INT(x) *reinterpret_cast<const int*>(&x)
+//     #define CTG_INT_AS_FLOAT(x) *reinterpret_cast<const float*>(&x)
+// #endif
+
+//
+//
+
+struct HashRng {
+    uint32_t x;
+
+    // output float [-1, 1]
+    DH_INLINE float next_signed() {
+        x = mix(x);
+
+#if defined(__CUDA_ARCH__) // most correct CUDA pattern for inside a DH_INLINE
+        // Compiling for device
+        return __int2float_rn(int32_t(x)) * 0x1p-31f;
+#else
+        // Compiling for host
+        return int32_t(x) * INV_U31;
+#endif
+    }
+
+    DH_INLINE float next_unsigned() {
+        x = mix(x);
+        return hash_float(x); // [0,1)
+    }
+};
+
+// HashRng rng{mix(seed_base ^ thread_id)};
+// float a = rng.next_signed();
+// float b = rng.next_signed();
+// float c = rng.next_unsigned();
+
+// ================================================================================================================================
+
 #pragma endregion
 
 #pragma region NORMAL_DISTRIBUTION
 
+// __sincosf	Fastest	Low	Best for your kernels
+// __sinf / __cosf	Very fast	Low	Good if you only need one
+// sincosf	Medium	High	What you use now
+// sin / cos	Slow	Double	Avoid
+
 // Box–Muller from two random floats [0,1]
+// ⚠️ we have found faster sincos functions!!
 DH_INLINE float2 normal_vector2(float r1, float r2) {
 
-    r1 = max(r1, 1e-7f); // Guard against log(0)
-    float r = sqrt(-2.0f * log(r1));
-    float theta = r2 * PI * 2.0f;
+    r1 = fmaxf(r1, 1e-7f); // Guard against log(0)
+    float r = fast_sqrtf(-2.0f * fast_logf(r1));
+
+    float theta = r2 * TAU;
 
     float s, c;
-    sincos(theta, &s, &c); // faster than seperate sin and cos
+    // sincosf(theta, &s, &c); // faster than seperate sin and cos
+    fast_sincosf(theta, &s, &c);
+
     return make_float2(r * c, r * s);
 }
+
+// // Marsaglia polar could be faster?
+// // two random floats [0,1]
+// DH_INLINE float2 marsaglia_normal_vector2(float r1, float r2) {
+//     // Transform to [-1, 1]
+//     float x = 2.0f * r1 - 1.0f;
+//     float y = 2.0f * r2 - 1.0f;
+
+//     float s = x * x + y * y; // pythagoras
+
+//     // Rejection: extremely rare, but must be handled
+//     // (You can push this to the caller if you want branch-free kernels)
+//     if (s >= 1.0f || s <= 1e-12f) {
+//         // Degenerate case: fall back to Box–Muller style
+//         r1 = max(r1, 1e-7f);
+//         float r = sqrtf(-2.0f * logf(r1));
+//         float theta = r2 * PI * 2.0f;
+//         float s2, c2;
+//         sincosf(theta, &s2, &c2);
+//         return make_float2(r * c2, r * s2);
+//     }
+
+//     float factor = sqrtf(-2.0f * logf(s) / s);
+//     return make_float2(x * factor, y * factor);
+// }
 
 // // Box–Muller 2D normal (two internal hashes)
 DH_INLINE float2 normal_vector2(int x, int y, int z, int seed) {
@@ -164,7 +343,7 @@ DH_INLINE float2 normal_vector2(int x, int y, int z, int seed) {
         MURMUR3_C2               // Murmur3 C2
     );
 
-    constexpr float INV_U32 = 1.0f / 4294967296.0f; // 1/(2^32)
+    // constexpr float INV_U32 = 1.0f / 4294967296.0f; // 1/(2^32)
 
     float r1 = h1 * INV_U32;
     float r2 = h2 * INV_U32;
@@ -190,10 +369,14 @@ DH_INLINE float2 normal_vector2_fast(int x, int y, int z, int seed) {
 
 #pragma region LERP
 
-// Generic scalar lerp
-template <typename T>
-DH_INLINE T lerp(T a, T b, T fade) {
-    return a * (T(1) - fade) + b * fade;
+// // Generic scalar lerp
+// template <typename T>
+// DH_INLINE T lerp(T a, T b, T fade) {
+//     return a * (T(1) - fade) + b * fade;
+// }
+
+DH_INLINE float lerp(float a, float b, float fade) {
+    return a * (1.0f - fade) + b * fade;
 }
 
 // Overload for float2
@@ -225,17 +408,17 @@ DH_INLINE float4 lerp(float4 a, float4 b, float fade) {
 #pragma region IDX // pos to idx formulae
 
 // pos to idx shortcut
-DH_INLINE int pos_to_idx(const int2 pos, const int map_width) {
+DH_INLINE int pos_to_idx(int2 pos, int map_width) {
     return pos.y * map_width + pos.x;
 }
 
 // pos to idx shortcut
-DH_INLINE int pos_to_idx(const int2 pos, const int2 map_size) {
+DH_INLINE int pos_to_idx(int2 pos, int2 map_size) {
     return pos.y * map_size.x + pos.x;
 }
 
 // pos to idx formula
-DH_INLINE int pos_to_idx(const int x, const int y, const int map_width) {
+DH_INLINE int pos_to_idx(int x, int y, int map_width) {
     return y * map_width + x;
 }
 
@@ -304,50 +487,40 @@ DH_INLINE int2 wrap_or_clamp_index(int2 pos, int2 range, bool wrap) {
 
 #pragma region VECTOR_OPS // length, dot, cross, normalize
 
-// float2
-
 // length of float2 vector
-DH_INLINE float length(const float2 &vector) {
-    return sqrt(vector.x * vector.x + vector.y * vector.y);
+DH_INLINE float length(float2 vector) {
+    return fast_sqrtf(vector.x * vector.x + vector.y * vector.y);
+}
+
+// length of float3 vector
+DH_INLINE float length(float3 vector) {
+    return fast_sqrtf(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
 }
 
 // normalize float2 vector to length of 1.0
-DH_INLINE float2 normalize(const float2 &v) {
-    float len = sqrtf(v.x * v.x + v.y * v.y);
-    return (len > 1e-6f) ? make_float2(v.x / len, v.y / len) : make_float2(0.0f, 0.0f);
-}
-
-// dot product of two float2's
-DH_INLINE float dot(const float2 &a, const float2 &b) {
-    return a.x * b.x + a.y * b.y;
-}
-
-// 2D cross product (returns scalar z-component)
-DH_INLINE float cross(const float2 &a, const float2 &b) {
-    return a.x * b.y - a.y * b.x;
-}
-
-// float3
-
-// length of float3 vector
-DH_INLINE float length(const float3 &v) {
-    return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+DH_INLINE float2 normalize(float2 vector) {
+    float len = fast_sqrtf(vector.x * vector.x + vector.y * vector.y);
+    return (len > 1e-6f) ? make_float2(vector.x / len, vector.y / len) : make_float2(0.0f, 0.0f);
 }
 
 // normalize float3 vector to length of 1.0
-DH_INLINE float3 normalize(const float3 &v) {
-    float len = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-    return (len > 1e-6f) ? make_float3(v.x / len, v.y / len, v.z / len)
+DH_INLINE float3 normalize(float3 vector) {
+    float len = fast_sqrtf(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+    return (len > 1e-6f) ? make_float3(vector.x / len, vector.y / len, vector.z / len)
                          : make_float3(0.0f, 0.0f, 0.0f);
 }
 
+// dot product of two float2's
+DH_INLINE float dot(float2 a, float2 b) { return a.x * b.x + a.y * b.y; }
+
 // dot product of two float3's
-DH_INLINE float dot(const float3 &a, const float3 &b) {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
+DH_INLINE float dot(float3 a, float3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+
+// 2D cross product (returns scalar z-component)
+DH_INLINE float cross(float2 a, float2 b) { return a.x * b.y - a.y * b.x; }
 
 // cross product of two float3's (returns a float3)
-DH_INLINE float3 cross(const float3 &a, const float3 &b) {
+DH_INLINE float3 cross(float3 a, float3 b) {
     return make_float3(
         a.y * b.z - a.z * b.y,
         a.z * b.x - a.x * b.z,
@@ -359,8 +532,10 @@ DH_INLINE float3 cross(const float3 &a, const float3 &b) {
 #pragma region SMOOTHING_AND_SATURATION // soft saturate
 
 // soft ceiling to avoid clipping artifacts where sharpness controls how sharp or gentle the saturation curve is.
+// uses hyperbolic tan which means we will never reach the ceiling
+// higher sharpness saturates quicker
 DH_INLINE float soft_saturate(float value, float ceiling, float sharpness = 1.0) {
-    return ceiling * tanh((value / ceiling) * sharpness);
+    return ceiling * fast_tanhf((value / ceiling) * sharpness);
 }
 
 #pragma endregion
@@ -453,29 +628,26 @@ DH_INLINE float2 calculate_slope_vector(
 DH_INLINE float quintic_smoothstep(float t) { return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f); }
 
 // cheaper than quintic, but less accurate
-__device__ __forceinline__ float cubic_smoothstep(const float t) { return t * t * (3 - 2 * t); }
-
-
-
+__device__ __forceinline__ float cubic_smoothstep(float t) { return t * t * (3 - 2 * t); }
 
 #pragma endregion
 
 #pragma region CUDA_ONLY // these ones only compile correct from .cu files
 #ifdef __CUDACC__
 
-// get position 1D
+// get position in 1D kernel
 D_INLINE int global_thread_pos1() {
     return int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x);
 }
 
-// get position 2D
+// get position in 2D kernel
 D_INLINE int2 global_thread_pos2() {
     return make_int2(
         int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
         int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y));
 }
 
-// get position 3D
+// get position in 3D kernel
 D_INLINE int3 global_thread_pos3() {
     return make_int3(
         int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
