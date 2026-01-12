@@ -8,9 +8,10 @@ binding for ALL the gnc modules
 #include "gnc/gnc_template.cuh"
 
 #include "gnc/gnc_erosion.cuh"
-#include "gnc/gnc_wind.cuh"
 #include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
+#include "gnc/gnc_resample.cuh"
+#include "gnc/gnc_wind.cuh"
 #include "nanobind_helper.h"
 
 // ================================================================================================================================
@@ -22,8 +23,9 @@ binding for ALL the gnc modules
     X(_template::GNC_Template, GNC_Template) \
     X(example::GNC_Example, GNC_Example)     \
     X(noise::GNC_Noise, GNC_Noise)           \
-    X(erosion::GNC_Erosion, GNC_Erosion)\
-    X(wind::GNC_Wind, GNC_Wind)
+    X(erosion::GNC_Erosion, GNC_Erosion)     \
+    X(wind::GNC_Wind, GNC_Wind)              \
+    X(resample::GNC_Resample, GNC_Resample)
 
 // ================================================================================================================================
 
@@ -41,8 +43,6 @@ struct has_properties : std::false_type {};
 template <typename T>
 struct has_properties<T, std::void_t<decltype(T::properties())>> : std::true_type {};
 // --------------------------------------------------------------------------------------------------------------------------------
-
-
 
 template <typename Class, typename MemberPtr>
 void bind_one_property(nb::class_<Class> &cls,

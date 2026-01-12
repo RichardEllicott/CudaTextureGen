@@ -155,12 +155,12 @@ class GNC_Base {
     }
     // ================================================================================================================================
   protected:
-    Parameters parameters;
+    Parameters pars;
     ArrayPointers array_pointers;
 
-    core::cuda::DeviceStruct<Parameters> dev_parameters;        // uploads parameters struct to device
+    core::cuda::DeviceStruct<Parameters> dev_pars;        // uploads parameters struct to device
     core::cuda::DeviceStruct<ArrayPointers> dev_array_pointers; // uploads array_pointers struct to device
-    bool _parameters_synced = false;
+    bool _pars_synced = false;
 
   public:
     core::Ref<core::cuda::Stream> stream; // gets a stream
@@ -169,12 +169,12 @@ class GNC_Base {
     // [Set Par]
     // also marking the sync as dirty
     // --------------------------------------------------------------------------------------------------------------------------------
-    // template for setting a par, is bound to python, will mark the _parameters_synced
+    // template for setting a par, is bound to python, will mark the _pars_synced
     template <typename T>
     void set_par(T &field, const T &value) {
         if (field != value) {
             // printf("value changed!\n");
-            _parameters_synced = false;
+            _pars_synced = false;
             field = value;
         }
     }
@@ -210,7 +210,7 @@ class GNC_Base {
     //     auto desired = to_size_array(desired_shape); // canonicalize here
 
     //     if (map->shape() != desired) {
-    //         _parameters_synced = false;
+    //         _pars_synced = false;
     //         map->resize(desired);
     //         if (zero_device) map->zero_device();
     //     }
@@ -226,7 +226,7 @@ class GNC_Base {
         map.instantiate_if_null(); // ensure the Ref is not empty
 
         if (map->shape() != desired_shape) { // if shape missmatch we will resize
-            _parameters_synced = false;      // and mark sync dirty (to trigger par upload)
+            _pars_synced = false;      // and mark sync dirty (to trigger par upload)
             map->resize(desired_shape);
             if (zero_device) map->zero_device();
         }
@@ -237,13 +237,13 @@ class GNC_Base {
     // ready device ensuring par structs are uploaded
     void ready_device() {
 
-        if (_parameters_synced) return; // skip if already synced
+        if (_pars_synced) return; // skip if already synced
         stream.instantiate_if_null();   // ensure we have a stream
 
         derived()._ready_device();
 
         stream->sync(); // wait on stream, to ensure copying completes
-        _parameters_synced = true;
+        _pars_synced = true;
     }
 
     // ================================================================================================================================

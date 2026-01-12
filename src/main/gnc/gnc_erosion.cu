@@ -439,12 +439,12 @@ void TEMPLATE_CLASS_NAME::_compute() {
             0xE09669A5u);
 
         calculate_outflow3<<<grid, block, 0, stream->get()>>>(
-            dev_parameters.dev_ptr(),
+            dev_pars.dev_ptr(),
             dev_array_pointers.dev_ptr(),
             _step);
 
         apply_flux3<<<grid, block, 0, stream->get()>>>(
-            dev_parameters.dev_ptr(),
+            dev_pars.dev_ptr(),
             dev_array_pointers.dev_ptr(),
             _step);
 

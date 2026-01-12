@@ -198,7 +198,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         // copy all pars to struct
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    parameters.NAME = NAME;
+    pars.NAME = NAME;
         TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 #endif
@@ -212,7 +212,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
         // now upload the pars
-        dev_parameters.upload(parameters);
+        dev_pars.upload(pars);
         dev_array_pointers.upload(array_pointers);
     }
 // --------------------------------------------------------------------------------------------------------------------------------
