@@ -36,9 +36,18 @@ __global__ void calculate_slope_vectors(
     _slope_vector2[idx2 + 1] = slope_vector2.y;
 }
 
+// ================================================================================================================================
+
 DH_INLINE float2 as_float2(const float *base, size_t idx) {
     return *reinterpret_cast<const float2 *>(&base[idx]);
 }
+
+DH_INLINE float3 as_float3(const float *base, size_t idx) {
+    const float *ptr = &base[idx];
+    return make_float3(ptr[0], ptr[1], ptr[2]);
+}
+
+DH_INLINE float4 as_float4(const float *base, size_t idx) { return *reinterpret_cast<const float4 *>(&base[idx]); }
 
 // ================================================================================================================================
 
@@ -47,13 +56,6 @@ struct Flux9 {
     float total = {}; // aggregate
 };
 
-__device__ __constant__ int2 OFFSET_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
-// __device__ __constant__ int2 OFFSET_8_OPPOSITE[8] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1}, {-1, 1}, {1, -1}};
-__device__ __constant__ int OFFSET_8_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
-
-// designed for correct dot-product scale
-__device__ __constant__ float2 FLUX_DIRECTIONS_SCALED_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}};
-
 // translates a vector into flux values
 D_INLINE Flux9 dot_flux_calculation(float2 v, bool positive_only = true) {
 
@@ -61,7 +63,8 @@ D_INLINE Flux9 dot_flux_calculation(float2 v, bool positive_only = true) {
     // result.total = 0.0f;
 
     for (int n = 0; n < 8; ++n) {
-        float2 unit_offset = FLUX_DIRECTIONS_SCALED_8[n]; // cell offset as a float vector, not normalized as this helps scale
+
+        float2 unit_offset = cmath::GRID_OFFSETS_8_DOTS[n]; // cell offset as a float vector, not normalized as this helps scale
 
         float product = cmath::dot(unit_offset, v);             // dot product gets how strongly we push into this direction
         product = positive_only ? max(product, 0.0f) : product; // positive only
@@ -110,16 +113,13 @@ __global__ void run_wind(
     // ================================================================
 
     for (int n = 0; n < 8; n++) {
-        int2 new_pos = pos + OFFSET_8[n];
+        int2 new_pos = pos + cmath::GRID_OFFSETS_8[n];
         new_pos = cmath::posmod(new_pos, map_size);
         int new_idx = cmath::pos_to_idx(new_pos, map_size);
         int new_idx2 = new_idx * 2;
-
-        // int opposite
-        float2 new_wind = as_float2(wind_vec2_map, new_idx2);
-
-        float dot_wind = -cmath::dot(new_wind, FLUX_DIRECTIONS_SCALED_8[n]); // reversed
-
+        // ----------------------------------------------------------------
+        float2 new_wind = as_float2(wind_vec2_map, new_idx2);                  // wind in neighbour tile
+        float dot_wind = -cmath::dot(new_wind, cmath::GRID_OFFSETS_8_DOTS[n]); // give a wind dot product scaled so diagonals are penalized
         wind += new_wind * dot_wind * wind_influence;
     }
     // ================================================================

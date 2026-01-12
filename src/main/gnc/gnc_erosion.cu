@@ -9,20 +9,6 @@ namespace TEMPLATE_NAMESPACE {
 namespace math = core::math;
 namespace cmath = core::cuda::math;
 
-#pragma region CONSTANTS
-
-constexpr float SQRT2 = 1.4142135623730950488f;      // root of 2
-constexpr float INV_SQRT2 = 0.70710678118654752440f; // inverse root of 2
-// constexpr float PI = 3.14159265358979323846f;
-// constexpr float GOLDEN_RATIO = 1.6180339887498948482f;
-
-__device__ __constant__ int2 OFFSETS[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
-__device__ __constant__ float OFFSET_DISTANCES[8] = {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
-__device__ __constant__ int OFFSET_OPPOSITE_REFS[8] = {1, 0, 3, 2, 5, 4, 7, 6};
-__device__ __constant__ float2 UNIT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {INV_SQRT2, INV_SQRT2}, {-INV_SQRT2, -INV_SQRT2}, {INV_SQRT2, -INV_SQRT2}, {-INV_SQRT2, INV_SQRT2}};
-
-#pragma endregion
-
 #pragma region HELPERS
 
 struct LayerInfo {
@@ -232,10 +218,11 @@ __global__ void apply_flux3(
     float water_in = 0.0f;                                   // to calculate from neighbours
 
     for (int n = 0; n < 8; ++n) {
-        int2 new_pos = cmath::wrap_or_clamp_index(pos + OFFSETS[n], map_size, pars->wrap);
+        int2 new_pos = cmath::wrap_or_clamp_index(pos + cmath::GRID_OFFSETS_8[n], map_size, pars->wrap);
         int new_idx = cmath::pos_to_idx(new_pos, map_size.x);
         int new_idx8 = new_idx * 8;
-        int opposite_ref = OFFSET_OPPOSITE_REFS[n];
+
+        int opposite_ref = cmath::GRID_OFFSETS_8_OPPOSITE_INDEX[n];
 
         water_in += arrays->_flux8_map[new_idx8 + opposite_ref]; //  inflow from neighbouring tiles
         sediment_change += arrays->_sediment_flux8_map[new_idx8 + opposite_ref];
@@ -397,6 +384,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     ensure_array_ref_ready(_sea_map, height_map_shape);
 
     ensure_array_ref_ready(_wind_vector2_map, std::array{_width, _height, (size_t)2});
+
 #elif CODE_ROUTE == 1
 #endif
 #undef CODE_ROUTE

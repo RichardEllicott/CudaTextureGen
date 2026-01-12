@@ -159,7 +159,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
 
     ready_device();
 
-    dim3 block(pars._block, pars._block);
+    dim3 block(16, 16);
     dim3 grid((pars._width + block.x - 1) / block.x,
               (pars._height + block.y - 1) / block.y);
 

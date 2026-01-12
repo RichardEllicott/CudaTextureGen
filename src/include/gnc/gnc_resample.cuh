@@ -15,7 +15,6 @@
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT                                                                            \
     X(size_t, _width, 1024, "map width")                                                                            \
     X(size_t, _height, 1024, "map height")                                                                          \
-    X(size_t, _block, 16, "block size (best to leave at 16)")                                                       \
     X(int, mode, 0, "0 = use the maps, 1 = rotate and offset (experimental)")                                       \
     X(bool, relative_offset, true, "relative offset warps relative, otherwise map would need absolute coordinates") \
     X(bool, scale_by_output_size, true, "scale works so input of 0.5 would be offset by half size of image ")       \

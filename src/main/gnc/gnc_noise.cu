@@ -5,16 +5,8 @@ namespace TEMPLATE_NAMESPACE {
 
 using namespace core::cuda::math;
 
-// quintic smoothstep
-// aka Perlin’s fade function
-// Creates an S-curve (sigmoid-like shape)
-__device__ __forceinline__ float quintic_smoothstep(float t) { return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f); }
-
-// 🧪  this could be cheaper than quintic_smoothstep, but less perfect
-__device__ __forceinline__ float smoothstep3(float t) { return t * t * (3 - 2 * t); }
-
 // 3D gradient for gradient noise (looks like simplex)
-__device__ __forceinline__ float3 gradient3(int x, int y, int z, int seed) {
+__device__ __forceinline__ float3 gradient3(const int x, const int y, const int z, const int seed) {
     // Hash to get a pseudo-random angle and elevation
     float h1 = hash_int(x, y, z, seed) / 1073741824.0f; // range ~[0, 2]
     float h2 = hash_int(z, x, y, seed + 1337) / 1073741824.0f;
@@ -28,9 +20,9 @@ __device__ __forceinline__ float3 gradient3(int x, int y, int z, int seed) {
 }
 
 // 3D Gradient Noise
-__device__ float gradient_noise3(float x, float y, float z,
-                                 int period_x, int period_y, int period_z,
-                                 int seed) {
+__device__ float gradient_noise3(const float x, const float y, const float z,
+                                 const int period_x, const int period_y, const int period_z,
+                                 const int seed) {
     int xi = (int)floorf(x);
     int yi = (int)floorf(y);
     int zi = (int)floorf(z);
@@ -93,17 +85,17 @@ __device__ float gradient_noise3(float x, float y, float z,
 }
 
 __global__ void generate_gradient_noise3(
-    const int width, const int height,
+    const int2 size,
     float *out,
-    float3 scale,
-    float3 period,
-    float3 offset,
-    int seed) {
+    const float3 scale,
+    const float3 period,
+    const float3 offset,
+    const int seed) {
     // ================================================================
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= width || y >= height) return;
-    const int idx = y * width + x;
+    if (x >= size.x || y >= size.y) return;
+    const int idx = y * size.x + x;
     // ================================================================
 
     // Key fix: scale determines the noise frequency
@@ -124,22 +116,20 @@ void TEMPLATE_CLASS_NAME::_compute() {
 
     output.instantiate_if_null(); // ensure output
     stream.instantiate_if_null(); // ensure stream
-    output->resize(width, height);
+    output->resize(size.x, size.y);
 
-    float3 scale = {period.x / width, period.y / height, 1.0f};
+    float3 scale = {period.x / size.x, period.y / size.y, 1.0f};
 
     dim3 block(16, 16);
-    dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
+    dim3 grid((size.x + block.x - 1) / block.x, (size.y + block.y - 1) / block.y);
 
     generate_gradient_noise3<<<grid, block, 0, stream->get()>>>(
-        width, height,
+        size,
         output->dev_ptr(),
         scale,
         period,
         offset,
         seed);
 }
-
-
 
 } // namespace TEMPLATE_NAMESPACE
