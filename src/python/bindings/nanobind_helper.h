@@ -13,10 +13,12 @@ functions to covert numpy arrays back and forth to std::vector and core::Array2D
 #include "nanobind_helper/vector.h" // ❓ numpy to vector conversion needs abstracting to ND, a bit old
 #include "nanobind_helper/bind_dynamic_properties.h" // binding python property setting to a has/get/set functions
 
-
 #include "nanobind_helper/nb_object_to_any.h" // conversion of nanobind objects to and from std::any with fixed types
 
-#include "nanobind_helper/ref.h" // type caster for core::Ref (my shared_ptr wrapper that allows easy instantiate)
+
+
+#include "nanobind_helper/ref_typecaster.h" // type caster for core::Ref (my shared_ptr wrapper that allows easy instantiate)
+#include "nanobind_helper/float2_typecaster.h" // type caster for core::Ref (my shared_ptr wrapper that allows easy instantiate)
 
 
 

@@ -77,10 +77,11 @@ D_INLINE Flux9 dot_flux_calculation(float2 v, bool positive_only = true) {
 // simple wind model with slope influence
 __global__ void run_wind(
     const Parameters *__restrict__ pars,
-    const ArrayPointers *__restrict__ arrays,
+    // const ArrayPointers *__restrict__ arrays,
 
-    const float *__restrict__ wind_vec2_map, // in
-    float *__restrict__ wind_vec2_map_out,   // out
+    const float *__restrict__ wind_vec2_map,  // in
+    const float *__restrict__ slope_vec2_map, // in
+    float *__restrict__ wind_vec2_map_out,    // out
 
     const int step) {
     // ================================================================
@@ -92,18 +93,18 @@ __global__ void run_wind(
     int idx2 = idx * 2;
 
     // ================================================================
-
+    // [Pars]
+    // ----------------------------------------------------------------
     auto random_wind = pars->random_wind;
-    auto wind_delta = pars->wind_delta;
+    auto wind_influence = pars->wind_influence;
     auto slope_influence = pars->slope_influence;
-
+    auto wind_drag = pars->wind_drag;
+    float delta_time = 1.0f;
     // ================================================================
     // auto _wind_vector2_map = arrays->wind_vec2;   // wind map
-    auto _slope_vector2_map = arrays->slope_vec2; // slope map
-    // ================================================================
-
+    // auto slope_vec2_map = arrays->slope_vec2_map; // slope map
+    float2 slope = as_float2(slope_vec2_map, idx2);
     float2 wind = as_float2(wind_vec2_map, idx2);
-
     // ================================================================
 
     wind += cmath::normal_vector2_fast(pos.x, pos.y, step, 0x3A8FB10Au) * random_wind; // random turbulence
@@ -120,15 +121,19 @@ __global__ void run_wind(
 
         float dot_wind = -cmath::dot(new_wind, FLUX_DIRECTIONS_SCALED_8[n]); // reversed
 
-        wind += new_wind * dot_wind * wind_delta;
+        wind += new_wind * dot_wind * wind_influence;
     }
     // ================================================================
+    // [Wind Drag]
+    // ----------------------------------------------------------------
 
-    wind *= 0.999; // optional damp wind?
+    // wind *= 0.999; // optional damp wind?
+    wind *= exp(-wind_drag * delta_time);
 
     // ================================================================
+    // [Slope affect]
+    // ----------------------------------------------------------------
 
-    float2 slope = as_float2(_slope_vector2_map, idx2);
     float slope_gradient = cmath::length(slope); // gradient can range from 0 (flat) to ∞ (90°)
 
     if (slope_gradient > 0.0001f) {
@@ -170,6 +175,14 @@ __global__ void run_wind(
 // }
 // ================================================================================================================================
 
+// navier stokes vs manning
+//
+//
+// https://copilot.microsoft.com/chats/UzviJqCo12CACrgzFqkVt
+//
+//
+//
+
 void TEMPLATE_CLASS_NAME::_compute() {
 
     if (height_map.is_null() || height_map->empty())
@@ -179,9 +192,9 @@ void TEMPLATE_CLASS_NAME::_compute() {
     _width = height_map->width();
     _height = height_map->height();
 
-    ensure_array_ref_ready(slope_vec2, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2});
-    ensure_array_ref_ready(wind_vec2, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2}, true);
-    ensure_array_ref_ready(wind_vec2_out, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2});
+    ensure_array_ref_ready(slope_vec2_map, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2});
+    ensure_array_ref_ready(wind_vec2_map, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2}, true);
+    ensure_array_ref_ready(wind_vec2_map_out, std::array<size_t, 3>{(size_t)_width, (size_t)_height, 2});
     ensure_array_ref_ready(dust_map, height_map_shape, true);
 
     dim3 block(16, 16);
@@ -197,16 +210,20 @@ void TEMPLATE_CLASS_NAME::_compute() {
         height_map->dev_ptr(),
         nullptr,
         nullptr,
-        slope_vec2->dev_ptr());
+        slope_vec2_map->dev_ptr());
 
     run_wind<<<grid, block, 0, stream->get()>>>(
         dev_parameters.dev_ptr(),
-        dev_array_pointers.dev_ptr(),
+        // dev_array_pointers.dev_ptr(),
 
-        wind_vec2->dev_ptr(),
-        wind_vec2_out->dev_ptr(),
+        wind_vec2_map->dev_ptr(),     // in
+        slope_vec2_map->dev_ptr(),    // in
+        wind_vec2_map_out->dev_ptr(), // out
 
         _step);
+
+    // std::swap(wind_vec2_map.get(), wind_vec2_map_out.get()); // could use the swap built into my arrays
+    std::swap(wind_vec2_map, wind_vec2_map_out); // but using the Ref
 }
 
 } // namespace TEMPLATE_NAMESPACE
