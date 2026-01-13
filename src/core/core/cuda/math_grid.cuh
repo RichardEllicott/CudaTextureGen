@@ -11,7 +11,7 @@ global kernel code in .cu file due to one-definition-rule
 
 #include "math.cuh"
 
-namespace core::cuda::math {
+namespace core::cuda::math::grid {
 
 #pragma region SLOPES
 

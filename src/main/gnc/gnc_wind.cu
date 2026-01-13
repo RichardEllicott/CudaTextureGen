@@ -174,7 +174,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     ready_device();
 
     // precalculate slope vectors
-    cmath::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
+    cmath::grid::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
         _map_size,
 
         height_map->dev_ptr(), // in

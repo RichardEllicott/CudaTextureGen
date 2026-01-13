@@ -1,6 +1,6 @@
 #include "math_grid.cuh"
 
-namespace core::cuda::math {
+namespace core::cuda::math::grid {
 
 #pragma region SLOPES
 
