@@ -4,6 +4,8 @@ faster maths for cuda using intrinsics
 
 with CPU fallback
 
+used by the math library
+
 */
 #pragma once
 #include <cstdint> // uint32_t
@@ -26,36 +28,76 @@ with CPU fallback
 
 namespace core::cuda::math {
 
+// fast ln(x)
 DH_INLINE float fast_logf(float x) {
 #ifdef ENABLE_FAST_MATH
-    return __logf(x);
+    return __logf(x); // fast ln(x)
 #else
-    return logf(x);
+    return logf(x); // precise host fallback
 #endif
 }
 
 // ------------------------------------------------------------------------------------------------------------------------
 
-DH_INLINE float fast_sqrtf(float x) {
+// fast e^x
+DH_INLINE float fast_expf(float x) {
 #ifdef ENABLE_FAST_MATH
-    return __fsqrt_rn(x);
+    return __expf(x); // fast e^x
 #else
-    return sqrtf(x);
+    return expf(x); // precise host fallback
 #endif
 }
+
 // ------------------------------------------------------------------------------------------------------------------------
 
-DH_INLINE void fast_sincosf(float x, float *s, float *c) {
+// no point in square root, it's not on older gpu's
+
+// // fast sqrt(x)
+// DH_INLINE float fast_sqrtf(float x) {
+// #ifdef ENABLE_FAST_MATH
+//     return __fsqrt_rn(x); // fast accurate (RN (IEEE))
+//     // return __sqrtf(x); // faster, approx
+
+// #else
+//     return sqrtf(x);
+// #endif
+// }
+
+// DH_INLINE float fast_sqrtf(float x) {
+// #ifdef ENABLE_FAST_MATH
+//     return sqrtf(x);        // let the compiler pick the best available
+// #else
+//     return sqrtf(x);
+// #endif
+// }
+
+// ------------------------------------------------------------------------------------------------------------------------
+
+// fast 1/sqrt(x)
+DH_INLINE float fast_rsqrtf(float x) {
 #ifdef ENABLE_FAST_MATH
-    __sincosf(x, s, c);
+    // return __frsqrt_rn(x); // accurate 1/sqrt(x)
+    return rsqrtf(x); // fastest approximate 1/sqrt(x)
 #else
-    // MSVC does not provide sincosf
-    *s = sinf(x);
-    *c = cosf(x);
+    return 1.0f / sqrtf(x); // precise fallback
 #endif
 }
+
 // ------------------------------------------------------------------------------------------------------------------------
 
+// fast sine and cos
+DH_INLINE void fast_sincosf(float x, float *sin, float *cos) {
+#ifdef ENABLE_FAST_MATH
+    __sincosf(x, sin, cos); // fast SFU sin/cos pair
+#else
+    *sin = sinf(x);
+    *cos = cosf(x);
+#endif
+}
+
+// ------------------------------------------------------------------------------------------------------------------------
+
+// fast 2^x
 DH_INLINE float fast_exp2f(float x) {
 #ifdef ENABLE_FAST_MATH
 
@@ -75,10 +117,10 @@ DH_INLINE float fast_exp2f(float x) {
 
 // ------------------------------------------------------------------------------------------------------------------------
 
-// fast reciprocal
-DH_INLINE float fast_rcp(float x) {
+// fast 1/x (reciprocal)
+DH_INLINE float fast_rcpf(float x) {
 #ifdef ENABLE_FAST_MATH
-    return __frcp_rn(x);
+    return __frcp_rn(x); // fast 1/x
 #else
     return 1.0f / x;
 #endif
@@ -86,13 +128,13 @@ DH_INLINE float fast_rcp(float x) {
 
 // ------------------------------------------------------------------------------------------------------------------------
 
-// Fast tanh approximation
+// fast tanh
 DH_INLINE float fast_tanhf(float x) {
 #ifdef ENABLE_FAST_MATH
     // Compute tanh(x) = (e^(2x) - 1) / (e^(2x) + 1)
     // __expf is SFU-accelerated and much faster than tanhf on device
-    float e = __expf(2.0f * x);
-    return (e - 1.0f) / (e + 1.0f);
+    float exp2x = __expf(2.0f * x);
+    return (exp2x - 1.0f) / (exp2x + 1.0f);
 #else
     // Host fallback: use standard library tanhf
     return tanhf(x);

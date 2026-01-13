@@ -1,6 +1,4 @@
 {
-    //
-    //
     // this would make VS.Code put the project files in the correct build folder
     "cmake.buildDirectory": "${workspaceFolder}/build/windows",
     "clangd.arguments": [
@@ -9,12 +7,19 @@
     "cmake.configureOnEdit": false, // but i disable it anyway here
     "cmake.configureOnOpen": false, // but i disable it anyway here
     //
+    "workbench.editor.enablePreview": false, // making double click open 
+    "workbench.editor.enablePreviewFromQuickOpen": false,
+    //
+    "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",
+    "window.autoDetectColorScheme": false, // stop windows vs.code using windows line endings
+    //
     //
     //
     //
     "workbench.colorTheme": "Default Dark Modern",
     "C_Cpp.intelliSenseEngine": "default",
-    "files.eol": "\n",
+    "files.eol": "\n", // use \n not \r\n
+    //
     "files.associations": {
         "vector": "cpp",
         "filesystem": "cpp",
@@ -424,6 +429,4 @@
             "badge": "👑"
         }
     ],
-    "godotTools.editorPath.godot4": "c:\\Program Files\\Godot\\Godot_v4.5.1-stable_win64\\Godot_v4.5.1-stable_win64.exe",
-    "window.autoDetectColorScheme": false, // stop windows vs.code using windows line endings
 }

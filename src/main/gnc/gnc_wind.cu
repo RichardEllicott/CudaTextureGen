@@ -1,4 +1,6 @@
 #include "core/cuda/math.cuh"
+#include "core/cuda/math_array.cuh"
+#include "core/cuda/math_grid.cuh"
 #include "core/math.h"
 #include "gnc/gnc_wind.cuh"
 
@@ -6,48 +8,6 @@ namespace TEMPLATE_NAMESPACE {
 
 namespace math = core::math;
 namespace cmath = core::cuda::math;
-
-// ================================================================================================================================
-
-__global__ void calculate_slope_vectors(
-    const int2 map_size,
-    const float *__restrict__ height_map1, // in
-    const float *__restrict__ height_map2, // in (optional)
-    const float *__restrict__ height_map3, // in (optional)
-    float *__restrict__ _slope_vector2,    // out
-    const bool wrap = true,
-    const float jitter = 0.0f,
-    const int step = 0,
-    const int jitter_mode = 0,
-    const float scale = 1.0f,
-    const int jitter_seed = 1234) {
-    // ================================================================
-    int2 pos = cmath::global_thread_pos2();
-    if (pos.x >= map_size.x || pos.y >= map_size.y) return;
-    int idx = cmath::pos_to_idx(pos, map_size);
-    int idx2 = idx * 2;
-    // ================================================================
-
-    float2 slope_vector2 = cmath::calculate_slope_vector(
-        height_map1, height_map2, height_map3,
-        map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
-
-    _slope_vector2[idx2] = slope_vector2.x;
-    _slope_vector2[idx2 + 1] = slope_vector2.y;
-}
-
-// ================================================================================================================================
-
-DH_INLINE float2 as_float2(const float *base, size_t idx) {
-    return *reinterpret_cast<const float2 *>(&base[idx]);
-}
-
-DH_INLINE float3 as_float3(const float *base, size_t idx) {
-    const float *ptr = &base[idx];
-    return make_float3(ptr[0], ptr[1], ptr[2]);
-}
-
-DH_INLINE float4 as_float4(const float *base, size_t idx) { return *reinterpret_cast<const float4 *>(&base[idx]); }
 
 // ================================================================================================================================
 
@@ -77,6 +37,14 @@ D_INLINE Flux9 dot_flux_calculation(float2 v, bool positive_only = true) {
 
 // ================================================================================================================================
 
+DH_INLINE float2 load_float2(const float *base, size_t idx) {
+    return cmath::array::load_float2(base, idx);
+}
+
+DH_INLINE void store_float2(float *base, size_t idx, float2 v) {
+    cmath::array::store_float2(base, idx, v);
+}
+
 // simple wind model with slope influence
 __global__ void run_wind(
     const Parameters *__restrict__ pars,
@@ -105,8 +73,8 @@ __global__ void run_wind(
     // ================================================================
     // auto _wind_vector2_map = arrays->wind_vec2;   // wind map
     // auto slope_vec2_map = arrays->slope_vec2_map; // slope map
-    float2 slope = as_float2(slope_vec2_map, idx2);
-    float2 wind = as_float2(wind_vec2_map, idx2);
+    float2 slope = load_float2(slope_vec2_map, idx2);
+    float2 wind = load_float2(wind_vec2_map, idx2);
     // ================================================================
 
     wind += cmath::normal_vector2_fast(pos.x, pos.y, step, 0x3A8FB10Au) * random_wind; // random turbulence
@@ -118,7 +86,7 @@ __global__ void run_wind(
         int new_idx = cmath::pos_to_idx(new_pos, map_size);
         int new_idx2 = new_idx * 2;
         // ----------------------------------------------------------------
-        float2 new_wind = as_float2(wind_vec2_map, new_idx2);                  // wind in neighbour tile
+        float2 new_wind = load_float2(wind_vec2_map, new_idx2);                // wind in neighbour tile
         float dot_wind = -cmath::dot(new_wind, cmath::GRID_OFFSETS_8_DOTS[n]); // give a wind dot product scaled so diagonals are penalized
         wind += new_wind * dot_wind * wind_influence;
     }
@@ -156,8 +124,7 @@ __global__ void run_wind(
 
     // ================================================================
 
-    wind_vec2_map_out[idx2] = wind.x;
-    wind_vec2_map_out[idx2 + 1] = wind.y;
+    store_float2(wind_vec2_map_out, idx2, wind);
 }
 
 // ================================================================================================================================
@@ -207,13 +174,17 @@ void TEMPLATE_CLASS_NAME::_compute() {
     ready_device();
 
     // precalculate slope vectors
-    calculate_slope_vectors<<<grid, block, 0, stream->get()>>>(
+    cmath::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
         _map_size,
-        height_map->dev_ptr(),
-        nullptr,
-        nullptr,
-        slope_vec2_map->dev_ptr());
 
+        height_map->dev_ptr(), // in
+        nullptr,
+        nullptr,
+        slope_vec2_map->dev_ptr(), // out
+
+        pars.wrap);
+
+    // wind update
     run_wind<<<grid, block, 0, stream->get()>>>(
         dev_pars.dev_ptr(),
         // dev_array_pointers.dev_ptr(),

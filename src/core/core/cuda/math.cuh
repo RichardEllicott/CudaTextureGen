@@ -1,12 +1,12 @@
 /*
 
-cuda math functions
+cuda math functions, main library
 
 */
 #pragma once
 
-#include "fast_math.cuh"
-#include <cstdint> // uint32_t
+#include "math_fast.cuh" // fast math intrinsics
+#include <cstdint>       // uint32_t
 #include <cuda_runtime.h>
 
 #pragma region DEFINES
@@ -77,6 +77,33 @@ DH_CONST float2 GRID_OFFSETS_8_NORMALIZED[8] =
 
 #pragma endregion
 
+#pragma region CUDA_ONLY // these ones only compile correct from .cu files
+
+#ifdef __CUDACC__
+
+// get position in 1D kernel
+D_INLINE int global_thread_pos1() {
+    return int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x);
+}
+
+// get position in 2D kernel
+D_INLINE int2 global_thread_pos2() {
+    return make_int2(
+        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
+        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y));
+}
+
+// get position in 3D kernel
+D_INLINE int3 global_thread_pos3() {
+    return make_int3(
+        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
+        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y),
+        int(blockIdx.z) * int(blockDim.z) + int(threadIdx.z));
+}
+
+#endif
+#pragma endregion
+
 #pragma region HASH // MurmurHash3 hash
 
 // // signed integer hash (based on MurmurHash3 finalizer)
@@ -140,7 +167,7 @@ DH_INLINE float hash_to_4randf(uint32_t h, int byte_index) {
 // ================================================================================================================================
 // Idea to use one hash for four floats with mixing
 // gives high quality random at cheaper cost
-// --------------------------------------------------------------------------------------------------------------------------------#
+// --------------------------------------------------------------------------------------------------------------------------------
 
 // So four hashes = ~40–60 integer ops.
 
@@ -157,7 +184,7 @@ DH_INLINE float hash_to_4randf(uint32_t h, int byte_index) {
 // for “expand one hash into four floats” vs “four independent hashes”.
 
 // high entrophy cheap hashing??
-DH_INLINE uint32_t mix(uint32_t x) {
+DH_INLINE uint32_t hash_mix(uint32_t x) {
     x ^= x >> 16;
     x *= 0x7feb352d;
     x ^= x >> 15;
@@ -171,7 +198,7 @@ struct HashRng {
 
     // output float [-1, 1]
     DH_INLINE float next_signed() {
-        x = mix(x);
+        x = hash_mix(x);
 
 #if defined(__CUDA_ARCH__) // most correct CUDA pattern for inside a DH_INLINE
         // Compiling for device
@@ -183,7 +210,7 @@ struct HashRng {
     }
 
     DH_INLINE float next_unsigned() {
-        x = mix(x);
+        x = hash_mix(x);
         return hash_float(x); // [0,1)
     }
 };
@@ -209,7 +236,7 @@ struct HashRng {
 DH_INLINE float2 normal_vector2(float r1, float r2) {
 
     r1 = fmaxf(r1, 1e-7f); // Guard against log(0)
-    float r = fast_sqrtf(-2.0f * fast_logf(r1));
+    float r = sqrtf(-2.0f * fast_logf(r1));
 
     float theta = r2 * TAU;
 
@@ -404,25 +431,47 @@ DH_INLINE int2 wrap_or_clamp_index(int2 pos, int2 range, bool wrap) {
 
 // length of float2 vector
 DH_INLINE float length(float2 vector) {
-    return fast_sqrtf(vector.x * vector.x + vector.y * vector.y);
+    return sqrtf(vector.x * vector.x + vector.y * vector.y);
 }
 
 // length of float3 vector
 DH_INLINE float length(float3 vector) {
-    return fast_sqrtf(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+    return sqrtf(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
 }
 
-// normalize float2 vector to length of 1.0
-DH_INLINE float2 normalize(float2 vector) {
-    float len = fast_sqrtf(vector.x * vector.x + vector.y * vector.y);
-    return (len > 1e-6f) ? make_float2(vector.x / len, vector.y / len) : make_float2(0.0f, 0.0f);
+// // normalize float2 vector to length of 1.0
+// DH_INLINE float2 normalize(float2 vector) {
+//     float len = fast_sqrtf(vector.x * vector.x + vector.y * vector.y);
+//     return (len > 1e-6f) ? make_float2(vector.x / len, vector.y / len) : make_float2(0.0f, 0.0f);
+// }
+
+// // normalize float2 vector to length of 1.0 (with fast reciprocal root)
+DH_INLINE float2 normalize(float2 v) {
+    float len2 = v.x * v.x + v.y * v.y;
+    if (len2 > 1e-12f) {
+        float inv = fast_rsqrtf(len2); // 1/sqrt(len2)
+        return make_float2(v.x * inv, v.y * inv);
+    }
+    return make_float2(0.0f, 0.0f);
 }
 
-// normalize float3 vector to length of 1.0
-DH_INLINE float3 normalize(float3 vector) {
-    float len = fast_sqrtf(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
-    return (len > 1e-6f) ? make_float3(vector.x / len, vector.y / len, vector.z / len)
-                         : make_float3(0.0f, 0.0f, 0.0f);
+// // normalize float3 vector to length of 1.0
+// DH_INLINE float3 normalize(float3 vector) {
+//     float len = fast_sqrtf(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+//     return (len > 1e-6f) ? make_float3(vector.x / len, vector.y / len, vector.z / len)
+//                          : make_float3(0.0f, 0.0f, 0.0f);
+// }
+
+// normalize float3 vector to length of 1.0 (with fast reciprocal root)
+DH_INLINE float3 normalize(float3 v) {
+    float len2 = v.x * v.x + v.y * v.y + v.z * v.z;
+    if (len2 > 1e-12f) {               // squared epsilon
+        float inv = fast_rsqrtf(len2); // 1/sqrt(len2)
+        return make_float3(v.x * inv,
+                           v.y * inv,
+                           v.z * inv);
+    }
+    return make_float3(0.0f, 0.0f, 0.0f);
 }
 
 // dot product of two float2's
@@ -458,14 +507,14 @@ DH_INLINE float soft_saturate(float value, float ceiling, float sharpness = 1.0f
 #pragma region SLOPES // calculate slope vectors, however in practise we hardcode this as we need jitter
 
 // Master implementation: takes up to 3 maps, any nullptr is ignored
-DH_INLINE float2 calculate_slope_vector(
+DH_INLINE float2 compute_slope_vector_OLD(
     const float *__restrict__ height_map1,
     const float *__restrict__ height_map2,
     const float *__restrict__ height_map3,
     const int2 map_size,
     const int2 pos,
     const bool wrap = true,
-    const float jitter = 0.0,
+    const float jitter = 0.0f,
     const int step = 0,        // used by jitter, needs to be a different value each step
     const int jitter_mode = 0, // 0 is economical and less accurate
     const float scale = 1.0f,  // larger scale will make slopes less steep
@@ -501,7 +550,7 @@ DH_INLINE float2 calculate_slope_vector(
         yn_height += height_map3[yn_idx];
     }
 
-    // scale
+    // // scale
     xp_height /= scale;
     yp_height /= scale;
     xn_height /= scale;
@@ -545,33 +594,6 @@ DH_INLINE float quintic_smoothstep(float t) { return t * t * t * (t * (t * 6.0f 
 // cheaper than quintic, but less accurate
 __device__ __forceinline__ float cubic_smoothstep(float t) { return t * t * (3 - 2 * t); }
 
-#pragma endregion
-
-#pragma region CUDA_ONLY // these ones only compile correct from .cu files
-
-#ifdef __CUDACC__
-
-// get position in 1D kernel
-D_INLINE int global_thread_pos1() {
-    return int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x);
-}
-
-// get position in 2D kernel
-D_INLINE int2 global_thread_pos2() {
-    return make_int2(
-        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
-        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y));
-}
-
-// get position in 3D kernel
-D_INLINE int3 global_thread_pos3() {
-    return make_int3(
-        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
-        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y),
-        int(blockIdx.z) * int(blockDim.z) + int(threadIdx.z));
-}
-
-#endif
 #pragma endregion
 
 } // namespace core::cuda::math

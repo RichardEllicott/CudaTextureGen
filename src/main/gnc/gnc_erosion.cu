@@ -1,4 +1,5 @@
 #include "core/cuda/math.cuh"
+#include "core/cuda/math_grid.cuh"
 #include "core/math.h"
 #include "gnc/gnc_erosion.cuh"
 
@@ -91,9 +92,18 @@ __global__ void calculate_slope_vectors(
     int idx2 = idx * 2;
     // ================================================================
 
-    float2 slope_vector2 = cmath::calculate_slope_vector(
-        height_map, water_map, nullptr,
-        map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
+    float2 slope_vector2 = cmath::compute_slope_vector_OLD(
+        height_map,
+        water_map,
+        nullptr,
+        map_size,
+        pos,
+        wrap,
+        jitter,
+        step,
+        jitter_mode,
+        jitter_seed);
+
     _slope_vector2[idx2] = slope_vector2.x;
     _slope_vector2[idx2 + 1] = slope_vector2.y;
 }
@@ -414,17 +424,36 @@ void TEMPLATE_CLASS_NAME::_compute() {
             );
         }
 
-        calculate_slope_vectors<<<grid, block, 0, stream->get()>>>(
+        // calculate_slope_vectors<<<grid, block, 0, stream->get()>>>(
+        //     map_size,
+        //     height_map->dev_ptr(),         // in
+        //     water_map->dev_ptr(),          // in
+        //     _slope_vector2_map->dev_ptr(), // out
+        //     slope_jitter,
+        //     _step,
+        //     true,
+        //     0,    // jitter mode
+        //     1.0f, // scale
+        //     0xE09669A5u);
+
+        cmath::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
             map_size,
-            height_map->dev_ptr(),         // in
-            water_map->dev_ptr(),          // in
+
+            height_map->dev_ptr(), // in
+            water_map->dev_ptr(),  // in
+            nullptr,
             _slope_vector2_map->dev_ptr(), // out
+
+            pars.wrap,
+
+            0, // jitter mode
             slope_jitter,
             _step,
-            true,
-            0,    // jitter mode
-            1.0f, // scale
-            0xE09669A5u);
+            0x865C34F3u,
+
+            1.0f
+
+        );
 
         calculate_outflow3<<<grid, block, 0, stream->get()>>>(
             dev_pars.dev_ptr(),

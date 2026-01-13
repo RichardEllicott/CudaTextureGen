@@ -702,7 +702,7 @@ __global__ void calculate_slope_vectors_kernel(
         return;
     int idx = math::pos_to_idx(pos, map_size.x) * 2;
     // ================================================================
-    float2 slope_vector = math::calculate_slope_vector(height_map1, height_map2, height_map3, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
+    float2 slope_vector = math::compute_slope_vector_OLD(height_map1, height_map2, height_map3, map_size, pos, wrap, jitter, step, jitter_mode, scale, jitter_seed);
     slope_vectors_out[idx] = slope_vector.x;
     slope_vectors_out[idx + 1] = slope_vector.y;
 }
