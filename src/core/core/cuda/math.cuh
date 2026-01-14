@@ -8,6 +8,7 @@ cuda math functions, main library
 #include "math_fast.cuh" // fast math intrinsics
 #include <cstdint>       // uint32_t
 #include <cuda_runtime.h>
+#include "operators.cuh"
 
 #pragma region DEFINES
 
@@ -24,6 +25,31 @@ cuda math functions, main library
 #pragma endregion
 
 namespace core::cuda::math {
+
+#pragma region FLOOR
+
+DH_INLINE float2 floor(float2 v) {
+    return make_float2(
+        floorf(v.x),
+        floorf(v.y));
+}
+
+DH_INLINE float3 floor(float3 v) {
+    return make_float3(
+        floorf(v.x),
+        floorf(v.y),
+        floorf(v.z));
+}
+
+DH_INLINE float4 floor(float4 v) {
+    return make_float4(
+        floorf(v.x),
+        floorf(v.y),
+        floorf(v.z),
+        floorf(v.w));
+}
+
+#pragma endregion
 
 #pragma region CONSTANTS
 
@@ -645,13 +671,144 @@ DH_INLINE float2 compute_slope_vector_OLD(
 
 #pragma region SMOOTHSTEP
 
-// quintic smoothstep
-// aka Perlin’s fade function
-// Creates an S-curve (sigmoid-like shape)
-DH_INLINE float quintic_smoothstep(float t) { return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f); }
+namespace smooth {
 
-// cheaper than quintic, but less accurate
-__device__ __forceinline__ float cubic_smoothstep(float t) { return t * t * (3 - 2 * t); }
+// Cubic smoothstep (C¹ continuous)
+DH_INLINE float cubic(float t) {
+    return t * t * (3.0f - 2.0f * t);
+}
+
+// Quintic smoothstep (Perlin fade, C² continuous)
+DH_INLINE float quintic(float t) {
+    return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
+}
+
+// Cosine interpolation — soft, wavy, analog feel
+DH_INLINE float cosine(float t) {
+    return 0.5f - 0.5f * cosf(t * 3.14159265358979323846f);
+}
+
+// Power-law smoothing — adjustable sharpness
+// k > 1 sharpens, k < 1 softens
+DH_INLINE float power(float t, float k) {
+    return powf(t, k);
+}
+
+// Hard sharpstep (binary)
+DH_INLINE float sharp(float t) {
+    return (t > 0.5f) ? 1.0f : 0.0f;
+}
+
+// Soft sharp (sharpened smoothstep)
+DH_INLINE float ssharp(float t) {
+    t = t * t; // exaggerate low end
+    return t * (3.0f - 2.0f * t);
+}
+
+DH_INLINE float apply_smoothing(float t, int mode) {
+    switch (mode) {
+    case 1: // cubic
+        return cubic(t);
+
+    case 2: // quintic
+        return quintic(t);
+
+    case 3: // cosine
+        return cosine(t);
+
+    case 4: // sharp
+        return sharp(t);
+
+    case 5: // sharp
+        return ssharp(t);
+
+    case 10: // power
+        return power(t, 2);
+
+    default:
+        return t; // no smoothing
+    }
+}
+
+} // namespace smooth
+
+#pragma endregion
+
+#pragma region BASIS_MATRIX
+
+DH_INLINE float radians(float deg) {
+    return deg * (PI / 180.0f);
+}
+
+DH_INLINE float degrees(float rad) {
+    return rad * (180.0f / PI);
+}
+
+// basis matrix for easy rotation
+struct basis3 {
+    float3 x; // first axis
+    float3 y; // second axis
+    float3 z; // third axis
+
+    // Identity basis by default
+    DH_INLINE basis3()
+        : x(make_float3(1, 0, 0)),
+          y(make_float3(0, 1, 0)),
+          z(make_float3(0, 0, 1)) {}
+
+    DH_INLINE basis3(float3 x_, float3 y_, float3 z_)
+        : x(x_), y(y_), z(z_) {}
+
+    // Construct from Euler angles (XYZ rotation order)
+    DH_INLINE basis3(float3 angles) {
+        float cx = cosf(angles.x), sx = sinf(angles.x);
+        float cy = cosf(angles.y), sy = sinf(angles.y);
+        float cz = cosf(angles.z), sz = sinf(angles.z);
+
+        // Rotation matrix rows (basis axes)
+        x = make_float3(cy * cz, cy * sz, -sy);
+        y = make_float3(sx * sy * cz - cx * sz, sx * sy * sz + cx * cz, sx * cy);
+        z = make_float3(cx * sy * cz + sx * sz, cx * sy * sz - sx * cz, cx * cy);
+    }
+
+    // Multiply two bases (compose rotations)
+    DH_INLINE basis3 operator*(const basis3 &B) const {
+        return basis3(
+            make_float3(dot(x, B.x), dot(x, B.y), dot(x, B.z)),
+            make_float3(dot(y, B.x), dot(y, B.y), dot(y, B.z)),
+            make_float3(dot(z, B.x), dot(z, B.y), dot(z, B.z)));
+    }
+
+    // ???? extra bit
+    DH_INLINE float3 operator*(const float3 &v) const {
+        return make_float3(
+            dot(x, v),
+            dot(y, v),
+            dot(z, v));
+    }
+
+    // equality
+    DH_INLINE bool operator==(const basis3 &other) const {
+        return x == other.x && y == other.y && z == other.z;
+    }
+    // inequality
+    DH_INLINE bool operator!=(const basis3 &other) const {
+        return !(*this == other);
+    }
+
+    // gives a inverse matrix, so would undo the existing matrix, transpose swaps rows and columns
+    DH_INLINE basis3 transpose() const {
+        return basis3(
+            make_float3(x.x, y.x, z.x),
+            make_float3(x.y, y.y, z.y),
+            make_float3(x.z, y.z, z.z));
+    }
+
+    // alias
+    DH_INLINE basis3 inverse() const {
+        return transpose(); // orthonormal basis
+    }
+};
 
 #pragma endregion
 

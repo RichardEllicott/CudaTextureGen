@@ -353,11 +353,14 @@ class GNC_Example:
 
 class GNC_Noise:
     _debug: Incomplete
+    basis3: Incomplete
     offset: Incomplete
     output: Incomplete
     period: Incomplete
+    rotation: Incomplete
     seed: Incomplete
     size: Incomplete
+    smoothing_mode: Incomplete
     stream: Incomplete
     wrap: Incomplete
     def __init__(self) -> None: ...

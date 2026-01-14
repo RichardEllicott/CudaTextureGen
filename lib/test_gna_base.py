@@ -16,7 +16,6 @@ import cuda_texture_gen
 from pathlib import Path
 
 
-
 script_path = Path(__file__)
 
 # these five this actual script
@@ -27,11 +26,8 @@ script_filename = Path(__file__).name
 scrip_stem = Path(__file__).stem  # minus the extension
 
 
-
-
-def get_test_gradient(width = 128, height = 128):
+def get_test_gradient(width=128, height=128):
     return np.linspace(0.0, 1.0, height*width, dtype=np.float32).reshape((height, width))  # Create a 2D float32 array gradient in range [0, 1]
-
 
 
 def test_gna():
@@ -39,8 +35,6 @@ def test_gna():
 
     test_gradient = get_test_gradient()
     tools.images.save(test_gradient, f"{script_path}.png")
-
-
 
     gna_base = cuda_texture_gen.GNA_Example()
 
@@ -58,7 +52,6 @@ def test_gna():
 
     device_array_2d.array = test_gradient
 
-
     print(f"device_array_2d = {device_array_2d}")
     gna_base.input = device_array_2d
     print(f"gna_base.input = {gna_base.input}")
@@ -67,65 +60,61 @@ def test_gna():
 
     tools.images.save(gna_base.input.array, f"{script_path}.input.png")
     tools.images.save(gna_base.output.array, f"{script_path}.output.png")
-
-
-
-    
-
-
 
 
 def test_gnb():
-    print("test()...")
+    # print("test()...")
 
-    test_gradient = get_test_gradient()
-    tools.images.save(test_gradient, f"{script_path}.png")
+    # test_gradient = get_test_gradient()
+    # tools.images.save(test_gradient, f"{script_path}.png")
 
+    # gna_base = cuda_texture_gen.GNB_Example()
 
-    gna_base = cuda_texture_gen.GNB_Example()
+    # # test class property
+    # gna_base.test = 1234
+    # print(f"gna_base.test = {gna_base.test}")
 
-    # test class property
-    gna_base.test = 1234
-    print(f"gna_base.test = {gna_base.test}")
+    # gna_base.tile_size = 8
 
-    gna_base.tile_size = 8
+    # # test class array
+    # print(f"input = {gna_base.input}")
 
-    # test class array
-    print(f"input = {gna_base.input}")
+    # device_array_2d = cuda_texture_gen.DeviceArrayFloat2D()
+    # # device_array_2d.resize([32, 32])
 
-    device_array_2d = cuda_texture_gen.DeviceArrayFloat2D()
-    # device_array_2d.resize([32, 32])
+    # device_array_2d.array = test_gradient
 
-    device_array_2d.array = test_gradient
+    # print(f"device_array_2d = {device_array_2d}")
+    # gna_base.input = device_array_2d
+    # print(f"gna_base.input = {gna_base.input}")
 
+    # gna_base.process()
 
-    print(f"device_array_2d = {device_array_2d}")
-    gna_base.input = device_array_2d
-    print(f"gna_base.input = {gna_base.input}")
-
-    gna_base.process()
-
-    tools.images.save(gna_base.input.array, f"{script_path}.input.png")
-    tools.images.save(gna_base.output.array, f"{script_path}.output.png")
-
+    # tools.images.save(gna_base.input.array, f"{script_path}.input.png")
+    # tools.images.save(gna_base.output.array, f"{script_path}.output.png")
+    pass
 
 # test_gnb()
+
+
+import math
 
 def test_noise():
     print("test()...")
 
     gnc = cuda_texture_gen.GNC_Noise()
 
-    gnc.period = (13,13,5)
-    gnc.size = (512, 512)
+    gnc.period = (13, 13, 5)
+    # gnc.size = (512, 512)
 
-
+    # gnc.smoothing_mode = 0
+    # gnc.smoothing_mode = 4
 
     gnc.process()
 
+    # gnc.rotation = (math.radians(45), math.radians(45), math.radians(45))
 
     result = gnc.output.array
-
 
     tools.arrays.offset(result)
 
@@ -146,7 +135,3 @@ test_noise()
 #     # result = gnc.output.array
 #     # tools.arrays.normalize(result)
 #     # tools.images.save(result, f"{script_path}.output.png")
-
-
-
-

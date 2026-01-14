@@ -15,6 +15,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include "core/cuda/device_struct.cuh"
 #include "core/cuda/stream.cuh"
 #include "core/cuda/types.cuh"
+#include "core/cuda/cast.cuh"
 #include "macros.h"
 
 
@@ -47,6 +48,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 namespace gnc {
 
 using namespace core::cuda::types; // include type aliases at top level
+using namespace core::cuda::cast; // include type aliases at top level
 
 // ================================================================================================================================
 // Template Validators

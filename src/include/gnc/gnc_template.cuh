@@ -13,8 +13,6 @@ NOTES:
 #include "_gnc_undef.h"
 #include "template_macro_undef.h"
 
-
-
 // ================================================================================================================================
 // [Single Source of Truth]
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -28,14 +26,14 @@ NOTES:
     X(int, _width, 0, "")                            \
     X(int, _height, 0, "")                           \
     X(int, tile_size, false, "for chequer_test")     \
-    X(core::cuda::types::FloatArray<8>, float8, {}, "float array test") \
-    X(core::cuda::types::IntArray<8>, int8, {}, "int array test")
+    X(FloatArray<8>, float8, {}, "float array test") \
+    X(IntArray<8>, int8, {}, "int array test")
 
 // properties will not be added to the struct, eg Ref<> types work
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS           \
-    X(core::cuda::types::RefDeviceArrayFloat2D, input, {}, "") \
-    X(core::cuda::types::RefDeviceArrayFloat2D, output, {}, "")
+    X(RefDeviceArrayFloat2D, input, {}, "") \
+    X(RefDeviceArrayFloat2D, output, {}, "")
 
 // different pattern for arrays, allows better introspection
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
