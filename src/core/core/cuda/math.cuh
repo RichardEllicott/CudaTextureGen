@@ -48,6 +48,7 @@ constexpr uint32_t XXH_PRIME32_5 = 374761393u;  // xxHash32 Mix low bits, small 
 // numbers used to multiply a hash to floats
 constexpr float INV_U32 = 0x1p-32f; // exactly 2^-32
 constexpr float INV_U31 = 0x1p-31f; // exactly 2^-31
+// constexpr float INV_U30 = 0x1p-30f; // exactly 2^-30
 
 #pragma endregion
 
@@ -190,6 +191,18 @@ DH_INLINE uint32_t hash_mix(uint32_t x) {
     x ^= x >> 15;
     x *= 0x846ca68b;
     x ^= x >> 16;
+    return x;
+}
+
+// Wang hash finalizer?? prob more expensive... won't use
+DH_INLINE uint32_t _hash_mix2(uint32_t x) {
+    x ^= x >> 17;
+    x *= 0xed5ad4bb;
+    x ^= x >> 11;
+    x *= 0xac4c1b51;
+    x ^= x >> 15;
+    x *= 0x31848bab;
+    x ^= x >> 14;
     return x;
 }
 
@@ -368,17 +381,63 @@ DH_INLINE int pos_to_idx(int x, int y, int map_width) {
 
 #pragma region POSMOD // wrapping coordinates
 
+#define INT_POSMOD_VERSION 2
+#if INT_POSMOD_VERSION == 0 // orginal, has potential branch
+
 // positive modulo for wrapping map coordinates
+// NOTE: 'mod' must be strictly positive. Negative moduli are undefined here.
 DH_INLINE int posmod(int i, int mod) {
     int result = i % mod;
     return result < 0 ? result + mod : result;
 }
+#elif INT_POSMOD_VERSION == 1 // eliminates branch
 
-// float version, haven't checked yet
+// positive modulo for wrapping map coordinates
+// NOTE: 'mod' must be strictly positive. Negative moduli are undefined here.
+DH_INLINE int posmod(int i, int mod) {
+    int r = i % mod;
+    int neg = (r < 0);    // 1 if r is negative, 0 otherwise
+    return r + neg * mod; // add mod only when needed
+}
+#elif INT_POSMOD_VERSION == 2 // eliminates branch, even quicker
+
+// positive modulo for wrapping map coordinates
+// NOTE: 'mod' must be strictly positive. Negative moduli are undefined here.
+DH_INLINE int posmod(int i, int mod) {
+    int r = i % mod;
+    return r + ((r >> 31) & mod);
+}
+
+#elif INT_POSMOD_VERSION == 3 // same as above broken into lines
+
+// positive modulo for wrapping map coordinates
+// NOTE: 'mod' must be strictly positive. Negative moduli are undefined here.
+DH_INLINE int posmod(int i, int mod) {
+    int r = i % mod;   // remainder (may be negative)
+    int s = r >> 31;   // arithmetic shift: 0 if r>=0, -1 if r<0
+    int fix = s & mod; // 0 if r>=0, mod if r<0
+    return r + fix;    // add correction to make result positive
+}
+
+#endif
+#undef POSMOD_VERSION
+
+#define FLOAT_POSMOD_VERSION 0
+#if FLOAT_POSMOD_VERSION == 0 // orginal, has potential branch but should compile down
+// positive modulo for float
 DH_INLINE float posmod(float x, float mod) {
     float result = fmodf(x, mod); // remainder in (-mod, mod)
     return result < 0.0f ? result + mod : result;
 }
+#elif FLOAT_POSMOD_VERSION == 1 // branchless, but in this case is unlikely to provide any performance gain for float
+// positive modulo for float
+DH_INLINE float posmod(float x, float mod) {
+    float r = fmodf(x, mod);
+    float mask = r < 0.0f; // 1.0f if negative, 0.0f otherwise
+    return r + mask * mod;
+}
+#endif
+#undef FLOAT_POSMOD_VERSION
 
 // positive modulo on int2
 DH_INLINE int2 posmod(int2 pos, int2 mod) {

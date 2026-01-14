@@ -9,6 +9,11 @@ custom Cuda objects, designed to automaticly allocate and free memory, download 
 #include "core/cuda/device_array.cuh"
 #include "core/ref.h"
 #include <array>
+// #include "cast.cuh" // converting types
+
+
+#define D_INLINE __device__ __forceinline__           // device only functions
+#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
 namespace core::cuda::types {
 
@@ -21,22 +26,46 @@ using RefDeviceArrayInt1D = core::Ref<core::cuda::DeviceArray<int, 1>>;
 using RefDeviceArrayInt2D = core::Ref<core::cuda::DeviceArray<int, 2>>;
 using RefDeviceArrayInt3D = core::Ref<core::cuda::DeviceArray<int, 3>>;
 
-// std::array aliases
-using Float2 = std::array<float, 2>;
-using Float3 = std::array<float, 3>;
-using Float4 = std::array<float, 4>;
-using Float5 = std::array<float, 5>;
-using Float6 = std::array<float, 6>;
-using Float7 = std::array<float, 7>;
-using Float8 = std::array<float, 8>;
+// // std::array aliases
+// // using Float2 = std::array<float, 2>;
+// // using Float3 = std::array<float, 3>;
+// // using Float4 = std::array<float, 4>;
+// // using Float5 = std::array<float, 5>;
+// // using Float6 = std::array<float, 6>;
+// // using Float7 = std::array<float, 7>;
+// // using Float8 = std::array<float, 8>;
 
-using Int2 = std::array<int, 2>;
-using Int3 = std::array<int, 3>;
-using Int4 = std::array<int, 4>;
-using Int5 = std::array<int, 5>;
-using Int6 = std::array<int, 6>;
-using Int7 = std::array<int, 7>;
-using Int8 = std::array<int, 8>;
+// using Int2 = std::array<int, 2>;
+// using Int3 = std::array<int, 3>;
+// using Int4 = std::array<int, 4>;
+// using Int5 = std::array<int, 5>;
+// using Int6 = std::array<int, 6>;
+// using Int7 = std::array<int, 7>;
+// using Int8 = std::array<int, 8>;
+
+// //
+
+// xmacro works but intelisense chokes, maybe use Template
+
+// // (DIMENSIONS)
+// #define ARRAY_TYPE_NUMBERS \
+//     X(2)             \
+//     X(3)             \
+//     X(4)             \
+//     X(5)             \
+//     X(6)             \
+//     X(7)             \
+//     X(8)
+
+// #define X(DIMENSIONS) \
+//     using Float##DIMENSIONS = std::array<float, DIMENSIONS>;
+// ARRAY_TYPE_NUMBERS
+// #undef X
+
+// #undef TYPE_NUMBERS
+
+//
+//
 
 // templates allow usage in macros (which hate commas)
 // usage:
@@ -47,20 +76,11 @@ using FloatArray = std::array<float, N>;
 template <std::size_t N>
 using IntArray = std::array<int, N>;
 
-// host side helpers to convert to cuda versions
+template <std::size_t N>
+using BoolArray = std::array<bool, N>;
 
-// Float2 => float2
-inline float2 to_float2(const std::array<float, 2> &val) { return {val[0], val[1]}; }
-// Float3 => float3
-inline float3 to_float3(const std::array<float, 3> &val) { return {val[0], val[1], val[2]}; }
-// Float4 => float4
-inline float4 to_float4(const std::array<float, 4> &val) { return {val[0], val[1], val[2], val[3]}; }
 
-// Int2 => int2
-inline int2 to_int2(const std::array<int, 2> &val) { return {val[0], val[1]}; }
-// Int3 => int3
-inline int3 to_int3(const std::array<int, 3> &val) { return {val[0], val[1], val[2]}; }
-// Int4 => int4
-inline int4 to_int4(const std::array<int, 4> &val) { return {val[0], val[1], val[2], val[3]}; }
+
+// --------------------------------------------------------------------------------------------------------------------------------
 
 } // namespace core::cuda::types

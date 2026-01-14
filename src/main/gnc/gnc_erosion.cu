@@ -10,54 +10,6 @@ namespace TEMPLATE_NAMESPACE {
 namespace math = core::math;
 namespace cmath = core::cuda::math;
 
-#pragma region HELPERS
-
-struct LayerInfo {
-    float total_height;
-    int exposed_layer; // -1 is none
-};
-
-// find the layer total height and exposed layer
-D_INLINE LayerInfo compute_layer_info(
-    int layer_count,
-    const float *__restrict__ layer_map // pointer to position in layer map
-) {
-    // ================================================================
-    LayerInfo layer_info = {0.0f, -1};
-
-    for (int n = layer_count - 1; n >= 0; --n) {
-        float value = layer_map[n];
-        layer_info.total_height += value;
-
-        if (layer_info.exposed_layer == -1 && value > 0.0f) layer_info.exposed_layer = n; // found exposed layer
-    }
-    // ================================================================
-    return layer_info;
-}
-
-#pragma endregion
-
-// __global__ void layer_calculations(
-//     const int width, const int height, const int layer_count,
-//     const float *__restrict__ layer_map, // in
-//     float *__restrict__ height_map,      // out
-//     int *__restrict__ _exposed_layer     // out
-
-// ) {
-//     // ================================================================
-//     int x = blockIdx.x * blockDim.x + threadIdx.x;
-//     int y = blockIdx.y * blockDim.y + threadIdx.y;
-//     if (x >= width || y >= height) return;
-//     int idx = y * width + x;
-//     int layer_idx = idx * layer_count;
-//     // ================================================================
-//     const float *pixel_layers = layer_map + layer_idx; // pointer to layer itself
-//     LayerInfo info = compute_layer_info(layer_count, pixel_layers);
-//     // ================================================================
-//     height_map[idx] = info.total_height;
-//     _exposed_layer[idx] = info.exposed_layer;
-// }
-
 __global__ void add_rain(
     const int width, const int height,
     float *__restrict__ water_map,
@@ -73,40 +25,6 @@ __global__ void add_rain(
     if (rain_map) rain *= rain_map[idx];
     water_map[idx] += rain;
 }
-
-// __global__ void calculate_slope_vectors(
-//     const int2 map_size,
-//     const float *__restrict__ height_map, // in
-//     const float *__restrict__ water_map,  // in
-//     float *__restrict__ _slope_vector2,   // out
-//     const float jitter,
-//     const int step,
-//     const bool wrap,
-//     const int jitter_mode,
-//     const float scale,
-//     const int jitter_seed) {
-//     // ================================================================
-//     int2 pos = cmath::global_thread_pos2();
-//     if (pos.x >= map_size.x || pos.y >= map_size.y) return;
-//     int idx = cmath::pos_to_idx(pos, map_size);
-//     int idx2 = idx * 2;
-//     // ================================================================
-
-//     float2 slope_vector2 = cmath::compute_slope_vector_OLD(
-//         height_map,
-//         water_map,
-//         nullptr,
-//         map_size,
-//         pos,
-//         wrap,
-//         jitter,
-//         step,
-//         jitter_mode,
-//         jitter_seed);
-
-//     _slope_vector2[idx2] = slope_vector2.x;
-//     _slope_vector2[idx2 + 1] = slope_vector2.y;
-// }
 
 __global__ void calculate_outflow3(
     const Parameters *__restrict__ pars,
@@ -412,8 +330,6 @@ void TEMPLATE_CLASS_NAME::_compute() {
     // [Kernels]
     // ----------------------------------------------------------------
 
-    
-
     for (int i = 0; i < steps; i++) {
 
         // calculate the layer height for layer mode
@@ -425,18 +341,6 @@ void TEMPLATE_CLASS_NAME::_compute() {
                 _exposed_layer_map->dev_ptr() // out
             );
         }
-
-        // calculate_slope_vectors<<<grid, block, 0, stream->get()>>>(
-        //     map_size,
-        //     height_map->dev_ptr(),         // in
-        //     water_map->dev_ptr(),          // in
-        //     _slope_vector2_map->dev_ptr(), // out
-        //     slope_jitter,
-        //     _step,
-        //     true,
-        //     0,    // jitter mode
-        //     1.0f, // scale
-        //     0xE09669A5u);
 
         cmath::grid::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
             map_size,

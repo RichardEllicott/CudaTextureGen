@@ -13,6 +13,8 @@ NOTES:
 #include "_gnc_undef.h"
 #include "template_macro_undef.h"
 
+
+
 // ================================================================================================================================
 // [Single Source of Truth]
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -21,24 +23,24 @@ NOTES:
 
 // must be trivially_copyable
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_PARAMETERS_STRUCT                    \
+#define TEMPLATE_CLASS_PARAMETERS_STRUCT             \
     X(bool, _debug, false, "")                       \
     X(int, _width, 0, "")                            \
     X(int, _height, 0, "")                           \
     X(int, tile_size, false, "for chequer_test")     \
-    X(FloatArray<8>, float8, {}, "float array test") \
-    X(IntArray<8>, int8, {}, "int array test")
+    X(core::cuda::types::FloatArray<8>, float8, {}, "float array test") \
+    X(core::cuda::types::IntArray<8>, int8, {}, "int array test")
 
 // properties will not be added to the struct, eg Ref<> types work
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_PARAMETERS               \
-    X(RefDeviceArrayFloat2D, input, {}, "") \
-    X(RefDeviceArrayFloat2D, output, {}, "")
+#define TEMPLATE_CLASS_PARAMETERS           \
+    X(core::cuda::types::RefDeviceArrayFloat2D, input, {}, "") \
+    X(core::cuda::types::RefDeviceArrayFloat2D, output, {}, "")
 
 // different pattern for arrays, allows better introspection
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_ARRAYS \
-    X(float, 2, input2, "")    \
+    X(float, 2, input2, "")   \
     X(float, 2, output2, "")
 
 // optional class methods extra
@@ -64,10 +66,12 @@ namespace TEMPLATE_NAMESPACE {
 // Parameters struct for uploading to GPU (UNUSED)
 // --------------------------------------------------------------------------------------------------------------------------------
 struct Parameters {
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
     TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
+#endif
 };
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
 // ================================================================================================================================

@@ -116,11 +116,19 @@ def test_noise():
 
     gnc = cuda_texture_gen.GNC_Noise()
 
-    gnc.period = (13,5,5)
+    gnc.period = (13,13,5)
+    gnc.size = (512, 512)
+
+
 
     gnc.process()
 
+
     result = gnc.output.array
+
+
+    tools.arrays.offset(result)
+
     tools.arrays.normalize(result)
     tools.images.save(result, f"{script_path}.output.png")
 

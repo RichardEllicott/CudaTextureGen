@@ -20,10 +20,12 @@ namespace TEMPLATE_NAMESPACE {
 // Parameters struct for uploading to GPU (UNUSED)
 // --------------------------------------------------------------------------------------------------------------------------------
 struct Parameters {
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
     TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
+#endif
 };
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
 // ================================================================================================================================

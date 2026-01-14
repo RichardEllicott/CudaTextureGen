@@ -353,13 +353,34 @@ class GNC_Example:
 
 class GNC_Noise:
     _debug: Incomplete
-    height: Incomplete
     offset: Incomplete
     output: Incomplete
     period: Incomplete
     seed: Incomplete
+    size: Incomplete
     stream: Incomplete
-    width: Incomplete
+    wrap: Incomplete
+    def __init__(self) -> None: ...
+    def compute(self) -> None: ...
+    def process(self) -> None: ...
+
+class GNC_Resample:
+    _height: Incomplete
+    _width: Incomplete
+    angle: Incomplete
+    input: Incomplete
+    map_x: Incomplete
+    map_y: Incomplete
+    mode: Incomplete
+    offset_x: Incomplete
+    offset_y: Incomplete
+    output: Incomplete
+    relative_offset: Incomplete
+    sample_mode: Incomplete
+    scale_by_output_size: Incomplete
+    stream: Incomplete
+    warp_x_strength: Incomplete
+    warp_y_strength: Incomplete
     def __init__(self) -> None: ...
     def compute(self) -> None: ...
     def process(self) -> None: ...
@@ -396,6 +417,7 @@ class GNC_Wind:
     wind_influence: Incomplete
     wind_vec2_map: Incomplete
     wind_vec2_map_out: Incomplete
+    wrap: Incomplete
     def __init__(self) -> None: ...
     def compute(self) -> None: ...
     def process(self) -> None: ...
