@@ -12,11 +12,14 @@ casting various arrays and types to cuda types like int3 etc
 #define D_INLINE __device__ __forceinline__           // device only functions
 #define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
-#define CASTING_CODE_ROUTE 0 // 0 is overloads, 1 is template (broken on linux)
+#define CASTING_CODE_ROUTE 0
 
 namespace core::cuda::cast {
 
-#pragma region CAST_MANUAL
+
+
+
+
 
 #if CASTING_CODE_ROUTE == 0
 
@@ -24,42 +27,72 @@ namespace core::cuda::cast {
 // [Casting]
 // --------------------------------------------------------------------------------------------------------------------------------
 // std::array<float, 2> => float2
-inline float2 to_float2(const std::array<float, 2> &val) {
-    return {val[0], val[1]};
+inline float2 to_float2(const std::array<float, 2> &arr) {
+    return make_float2(
+        arr[0],
+        arr[1]);
 }
 // std::array<float, 3> => float3
-inline float3 to_float3(const std::array<float, 3> &val) {
-    return {val[0], val[1], val[2]};
+inline float3 to_float3(const std::array<float, 3> &arr) {
+    return make_float3(
+        arr[0],
+        arr[1],
+        arr[2]);
 }
 // std::array<float, 4> => float4
-inline float4 to_float4(const std::array<float, 4> &val) {
-    return {val[0], val[1], val[2], val[3]};
+inline float4 to_float4(const std::array<float, 4> &arr) {
+    return make_float4(
+        arr[0],
+        arr[1],
+        arr[2],
+        arr[3]);
 }
 // --------------------------------------------------------------------------------------------------------------------------------
 // std::array<int, 2> => int2
-inline int2 to_int2(const std::array<int, 2> &val) {
-    return {val[0], val[1]};
+inline int2 to_int2(const std::array<size_t, 2> &arr) {
+    return make_int2(
+        arr[0],
+        arr[1]);
 }
 // std::array<int, 3> => int3
-inline int3 to_int3(const std::array<int, 3> &val) {
-    return {val[0], val[1], val[2]};
+inline int3 to_int3(const std::array<size_t, 3> &arr) {
+    return make_int3(
+        arr[0],
+        arr[1],
+        arr[2]);
 }
 // std::array<int, 4> => int4
-inline int4 to_int4(const std::array<int, 4> &val) {
-    return {val[0], val[1], val[2], val[3]};
+inline int4 to_int4(const std::array<size_t, 4> &arr) {
+    return make_int4(
+        arr[0],
+        arr[1],
+        arr[2],
+        arr[3]);
 }
 // --------------------------------------------------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
 // float2 => int2
-DH_INLINE int2 to_int2(const float2 &f) {
-    return {(int)f.x, (int)f.y};
+DH_INLINE int2 to_int2(const float2 &v) {
+    return make_int2(
+        v.x,
+        v.y);
 }
 // float3 => int3
-DH_INLINE int3 to_int3(const float3 &f) {
-    return {(int)f.x, (int)f.y, (int)f.z};
+DH_INLINE int3 to_int3(const float3 &v) {
+    return make_int3(
+        v.x,
+        v.y,
+        v.z);
 }
 // float4 => int4
-DH_INLINE int4 to_int4(const float4 &f) {
-    return {(int)f.x, (int)f.y, (int)f.z, (int)f.w};
+DH_INLINE int4 to_int4(const float4 &v) {
+    return make_int4(
+        v.x,
+        v.y,
+        v.z,
+        v.w);
 }
 // --------------------------------------------------------------------------------------------------------------------------------
 // std::array<bool, 2> => int2
@@ -88,34 +121,165 @@ inline int4 to_int4(const std::array<bool, 4> &a) {
 // int2 => float2
 DH_INLINE float2 to_float2(int2 v) {
     return make_float2(
-        static_cast<float>(v.x),
-        static_cast<float>(v.y));
+        v.x,
+        v.y);
 }
 
 // int3 => float3
 DH_INLINE float3 to_float3(int3 v) {
     return make_float3(
-        static_cast<float>(v.x),
-        static_cast<float>(v.y),
-        static_cast<float>(v.z));
+        v.x,
+        v.y,
+        v.z);
 }
 
 // int4 => float4
 DH_INLINE float4 to_float4(int4 v) {
     return make_float4(
-        static_cast<float>(v.x),
-        static_cast<float>(v.y),
-        static_cast<float>(v.z),
-        static_cast<float>(v.w));
+        v.x,
+        v.y,
+        v.z,
+        v.w);
 }
 
 #endif
 
-#pragma endregion
+#if CASTING_CODE_ROUTE == 1 // too... macro version?
 
-#pragma region TEMPLATE
 
-#if CASTING_CODE_ROUTE == 1
+
+
+#endif
+
+
+
+
+#if CASTING_CODE_ROUTE == 2 // still flaky
+
+// ================================================================================================================================
+// [Simple Templates]
+// --------------------------------------------------------------------------------------------------------------------------------
+
+// cast to int2
+template <typename T>
+DH_INLINE int2 to_int2(const T &v) {
+    return make_int2(
+        (int)v.x,
+        (int)v.y);
+}
+
+// cast to int3
+template <typename T>
+DH_INLINE int3 to_int3(const T &v) {
+    return make_int3(
+        (int)v.x,
+        (int)v.y,
+        (int)v.z);
+}
+
+// cast to int4
+template <typename T>
+DH_INLINE int4 to_int4(const T &v) {
+    return make_int4(
+        (int)v.x,
+        (int)v.y,
+        (int)v.z,
+        (int)v.w);
+}
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
+// std::array<T,2> → int2
+template <typename T>
+DH_INLINE int2 to_int2(const std::array<T, 2> &arr) {
+    return make_int2(
+        (int)arr[0],
+        (int)arr[1]);
+}
+
+// std::array<T,3> → int3
+template <typename T>
+DH_INLINE int3 to_int3(const std::array<T, 3> &arr) {
+    return make_int3(
+        (int)arr[0],
+        (int)arr[1],
+        (int)arr[2]);
+}
+
+// std::array<T,4> → int4
+template <typename T>
+DH_INLINE int4 to_int4(const std::array<T, 4> &arr) {
+    return make_int4(
+        (int)arr[0],
+        (int)arr[1],
+        (int)arr[2],
+        (int)arr[3]);
+}
+
+// ================================================================================================================================
+
+// cast to float2
+template <typename T>
+DH_INLINE float2 to_float2(const T &v) {
+    return make_float2(
+        (float)v.x,
+        (float)v.y);
+}
+
+// cast to float3
+template <typename T>
+DH_INLINE float3 to_float3(const T &v) {
+    return make_float3(
+        (float)v.x,
+        (float)v.y,
+        (float)v.z);
+}
+
+// cast to float4
+template <typename T>
+DH_INLINE float4 to_float4(const T &v) {
+    return make_float4(
+        (float)v.x,
+        (float)v.y,
+        (float)v.z,
+        (float)v.w);
+}
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
+// std::array<T,2> → float2
+template <typename T>
+DH_INLINE float2 to_float2(const std::array<T, 2> &arr) {
+    return make_float2(
+        (float)arr[0],
+        (float)arr[1]);
+}
+
+// std::array<T,3> → float3
+template <typename T>
+DH_INLINE float3 to_float3(const std::array<T, 3> &arr) {
+    return make_float3(
+        (float)arr[0],
+        (float)arr[1],
+        (float)arr[2]);
+}
+
+// std::array<T,4> → float4
+template <typename T>
+DH_INLINE float4 to_float4(const std::array<T, 4> &arr) {
+    return make_float4(
+        (float)arr[0],
+        (float)arr[1],
+        (float)arr[2],
+        (float)arr[3]);
+}
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
+#endif
+
+
+#if CASTING_CODE_ROUTE == 3 // this template turned out too compliated for GCC
 
 // -----------------------------------------------------------------------------
 // Helpers: build CUDA intN vectors
@@ -214,7 +378,6 @@ inline int4 to_int4(const float4 &v) {
 
 #endif
 
-#pragma endregion
 
 } // namespace core::cuda::cast
 

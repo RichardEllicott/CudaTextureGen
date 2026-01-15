@@ -1,5 +1,6 @@
 /*
 
+reample an image, distortion by a map
 
 */
 #pragma once

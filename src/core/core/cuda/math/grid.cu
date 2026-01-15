@@ -97,6 +97,8 @@ static void example_slope_vector() {
 
 __global__ void layer_info_kernel(
     const int width, const int height, const int layer_count,
+
+    
     const float *__restrict__ layer_map, // in
     float *__restrict__ height_map,      // out
     int *__restrict__ _exposed_layer     // out

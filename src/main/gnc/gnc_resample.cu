@@ -3,9 +3,7 @@
 
 namespace TEMPLATE_NAMESPACE {
 
-constexpr float PI = 3.14159265358979323846f;
-constexpr float DEG_TO_RAD = PI / 180.0f;
-constexpr float RAD_TO_DEG = 180.0f / PI;
+namespace cmath = core::cuda::math;
 
 __device__ __forceinline__ int wrap_coord(float v, float max) {
     float m = fmodf(v, max);
@@ -98,9 +96,10 @@ __global__ void resample_kernel(Parameters *pars,
         output[idx] = sample_bilinear(input, in_w, in_h, src_x, src_y, true);
 
     } else if (pars->mode == 1) {
+
         // --- plain rotation around center ---
-        // angle is stored in degrees
-        float angle = pars->angle * DEG_TO_RAD;
+        float angle = pars->angle; // note radians
+
         float cosA = cosf(angle);
         float sinA = sinf(angle);
 

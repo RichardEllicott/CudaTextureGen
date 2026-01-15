@@ -12,8 +12,8 @@ custom Cuda objects, designed to automaticly allocate and free memory, download 
 // #include "cast.cuh" // converting types
 
 
-#define D_INLINE __device__ __forceinline__           // device only functions
-#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
+// #define D_INLINE __device__ __forceinline__           // device only functions
+// #define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
 namespace core::cuda::types {
 

@@ -261,6 +261,8 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         allocate_device();
     }
 
+
+    // ⚠️ MAY HAVE OVERCOMPLICATED THIS
     // allow accepting any collection of numbers with correct length
     // convert to std::array<size_t, Dim>
     template <typename Container>
@@ -280,6 +282,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         resize(dims); // forward to canonical version
     }
 
+    // KEEP
     // resize overload, allows resize(w, h), resize(w, h, d) ...
     template <typename... Sizes>
     void resize(Sizes... sizes) {
@@ -287,6 +290,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         resize(std::array<size_t, Dim>{static_cast<size_t>(sizes)...}); // Pack into std::array and forward to canonical resize
     }
 
+    //KEEP?
     // resize helper, allows resizing 1D, 2D and 3D arrays with the same function, designed for macros
     void resize_helper(size_t width, size_t height = 1, size_t depth = 1) override {
         if constexpr (Dim == 1) {

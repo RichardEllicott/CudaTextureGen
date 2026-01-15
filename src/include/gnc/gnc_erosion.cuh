@@ -23,8 +23,7 @@ dynamic properties for easy binding using CRTP and constexpr
     X(bool, _debug, false, "track certain information for monitoring")                                              \
     X(bool, debug_print, false, "print out information to console")                                                 \
     X(int, debug_mod, 1, "frequency to print the debug output")                                                     \
-    X(size_t, _width, 512, "map width")                                                                                \
-    X(size_t, _height, 512, "map height")                                                                              \
+    X(int2, _size, {}, "map size")                                                                                \
     X(int, _layer_count, 0, "layers for layer mode")                                                                \
     X(bool, _layer_mode, false, "layer mode detected")                                                              \
     X(int, _step, 0, "current step")                                                                                \

@@ -5,6 +5,8 @@ maths constants
 */
 #pragma once
 
+#include <cstdint> // uint32_t (required for gcc)
+
 // define DH_CONST different for host and device
 #ifdef __CUDACC__
 #define DH_CONST __device__ __constant__ const
@@ -21,6 +23,9 @@ constexpr float SQRT2 = 1.4142135623730950488;     // square root of 2
 constexpr float INV_SQRT2 = 0.7071067811865475244; // inverse square root of 2
 constexpr float PI = 3.14159265358979323846;       // π ratio
 constexpr float TAU = PI * 2.0f;
+
+constexpr float DEG_TO_RAD = PI / 180.0f; // multiply to convert degrees to radians
+constexpr float RAD_TO_DEG = 180.0f / PI; // multiply to convert radians to degrees
 
 #pragma region HASH
 

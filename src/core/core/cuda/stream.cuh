@@ -17,13 +17,10 @@ stream.sync(); // optional: wait for completion
 
 */
 #pragma once
-// #include "types.h"
-#include <stdexcept>
 
 // SmartStream
 #include <cuda_runtime.h> // For cudaStream_t, cudaStreamCreateWithFlags, cudaStreamDestroy, etc.
 #include <memory>         // For std::shared_ptr
-#include <stdexcept>      // For std::runtime_error
 
 // pointer experiments
 #include <cuda_runtime.h> // for CUDA functions
@@ -32,7 +29,6 @@ stream.sync(); // optional: wait for completion
 #include <type_traits>    // for std::remove_pointer_t
 
 // Stream pool
-#include <stdexcept>
 #include <unordered_map>
 
 namespace core::cuda {
@@ -160,8 +156,5 @@ inline void share_with_weak_ptr_example() {
 }
 
 #pragma endregion
-
-
-
 
 } // namespace core::cuda

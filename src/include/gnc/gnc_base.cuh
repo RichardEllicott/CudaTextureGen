@@ -8,21 +8,17 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 
 #include <array> // std::array (if you use arrays instead of tuples)
 #include <optional>
+#include <stdexcept>   // exceptions
 #include <tuple>       // std::tuple, std::make_tuple
 #include <type_traits> // optional but often useful for traits
 #include <utility>     // std::forward, std::index_sequence, etc.  std::swap
 
-#include "core/cuda/cast.cuh"
+#include "core/cuda/cast.cuh" // top level for this object
 #include "core/cuda/device_struct.cuh"
-#include "core/cuda/stream.cuh"
-#include "core/cuda/types.cuh"
-#include "macros.h"
-
-#pragma region TRYING_TO_SLOVE_FLOAT2_EXPORT
-
 #include "core/cuda/math.cuh"
-
-#pragma endregion
+#include "core/cuda/stream.cuh"
+#include "core/cuda/types.cuh"  // top level for this object
+#include "macros.h"
 
 //
 //

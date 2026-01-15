@@ -9,7 +9,7 @@ cuda math functions, main library
 #include "math/intrinsics.cuh"
 #include "math/operators.cuh"
 
-#include <cstdint> // uint32_t (required for linux compile)
+#include <cstdint> // uint32_t (required for gcc)
 #include <cuda_runtime.h>
 
 #define D_INLINE __device__ __forceinline__           // device only functions
@@ -20,11 +20,11 @@ namespace core::cuda::math {
 #pragma region RADIANS
 
 DH_INLINE float radians(float deg) {
-    return deg * (PI / 180.0f);
+    return deg * DEG_TO_RAD;
 }
 
 DH_INLINE float degrees(float rad) {
-    return rad * (180.0f / PI);
+    return rad * RAD_TO_DEG;
 }
 
 #pragma endregion

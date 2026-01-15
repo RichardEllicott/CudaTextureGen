@@ -32,8 +32,7 @@ __global__ void calculate_outflow3(
     // DebugOutputs *__restrict__ debug,
     const int step) {
     // ================================================================
-
-    int2 map_size = make_int2(pars->_width, pars->_height);
+    int2 map_size = pars->_size;
     int2 pos = cmath::global_thread_pos2();
     if (pos.x >= map_size.x || pos.y >= map_size.y) return;
     int idx = cmath::pos_to_idx(pos, map_size);
@@ -107,7 +106,7 @@ __global__ void apply_flux3(
     // DebugOutputs *__restrict__ debug,
     const int step) {
     // ================================================================
-    int2 map_size = make_int2(pars->_width, pars->_height);
+    int2 map_size = pars->_size;
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
@@ -287,8 +286,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     }
 
     auto height_map_shape = height_map->shape();
-    _width = height_map->width();
-    _height = height_map->height();
+    _size = to_int2(height_map_shape);
 
 #define CODE_ROUTE 0 // route 0 has restrictions but is failing linux?
 #if CODE_ROUTE == 0
@@ -298,9 +296,9 @@ void TEMPLATE_CLASS_NAME::_compute() {
     ensure_array_ref_ready(_water_out_map, height_map_shape);
     ensure_array_ref_ready(_sediment_out_map, height_map_shape);
 
-    ensure_array_ref_ready(_flux8_map, std::array{_width, _height, (size_t)8});
-    ensure_array_ref_ready(_sediment_flux8_map, std::array{_width, _height, (size_t)8});
-    ensure_array_ref_ready(_slope_vector2_map, std::array{_width, _height, (size_t)2});
+    ensure_array_ref_ready(_flux8_map, std::array<size_t, 3>{(size_t)_size.x, (size_t)_size.y, (size_t)8});
+    ensure_array_ref_ready(_sediment_flux8_map, std::array<size_t, 3>{(size_t)_size.x, (size_t)_size.y, (size_t)8});
+    ensure_array_ref_ready(_slope_vector2_map, std::array<size_t, 3>{(size_t)_size.x, (size_t)_size.y, (size_t)2});
 
     // ensure_array_ref_ready(_slope_magnitude_map, height_map_shape);
     ensure_array_ref_ready(_water_velocity_map, height_map_shape);
@@ -311,7 +309,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     ensure_array_ref_ready(_exposed_layer_map, height_map_shape);
     ensure_array_ref_ready(_sea_map, height_map_shape);
 
-    ensure_array_ref_ready(_wind_vector2_map, std::array{_width, _height, (size_t)2});
+    ensure_array_ref_ready(_wind_vector2_map, std::array<size_t, 3>{(size_t)_size.x, (size_t)_size.y, (size_t)2});
 
 #elif CODE_ROUTE == 1
 #endif
@@ -320,9 +318,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     stream.instantiate_if_null();
 
     dim3 block(16, 16);
-    dim3 grid((_width + block.x - 1) / block.x, (_height + block.y - 1) / block.y);
-
-    int2 map_size = {(int)_width, (int)_height};
+    dim3 grid((_size.x + block.x - 1) / block.x, (_size.y + block.y - 1) / block.y);
 
     ready_device();
 
@@ -335,7 +331,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
         // calculate the layer height for layer mode
         if (_layer_mode) {
             cmath::grid::layer_info_kernel<<<grid, block, 0, stream->get()>>>(
-                _width, _height, _layer_count,
+                _size.x, _size.y, _layer_count,
                 layer_map->dev_ptr(),         // in
                 height_map->dev_ptr(),        // out
                 _exposed_layer_map->dev_ptr() // out
@@ -343,7 +339,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
         }
 
         cmath::grid::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
-            map_size,
+            _size,
 
             height_map->dev_ptr(), // in
             water_map->dev_ptr(),  // in

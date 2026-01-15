@@ -1,8 +1,6 @@
 /*
 
-🦑 GNC boilerplate 20260106 v1
-
-dynamic properties for easy binding using CRTP and constexpr
+3d noise with rotation
 
 */
 #pragma once

@@ -5,17 +5,21 @@ binding for ALL the gnc modules
 */
 #pragma once
 
-#include "gnc/gnc_template.cuh"
+#include "nanobind_helper.h"
 
+#include "gnc/gnc_template.cuh" // master template, contains master boilerplate
+
+// modules
 #include "gnc/gnc_erosion.cuh"
+#include "gnc/gnc_slope_erosion.cuh"
 #include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
 #include "gnc/gnc_resample.cuh"
 #include "gnc/gnc_wind.cuh"
-#include "nanobind_helper.h"
+
 
 // ================================================================================================================================
-// [Class List]
+// [Module List]
 // --------------------------------------------------------------------------------------------------------------------------------
 
 // (NAME, PYTHON_NAME)
@@ -25,7 +29,8 @@ binding for ALL the gnc modules
     X(noise::GNC_Noise, GNC_Noise)           \
     X(erosion::GNC_Erosion, GNC_Erosion)     \
     X(wind::GNC_Wind, GNC_Wind)              \
-    X(resample::GNC_Resample, GNC_Resample)
+    X(resample::GNC_Resample, GNC_Resample)\
+    X(slope_erosion::GNC_SlopeErosion, GNC_SlopeErosion)     \
 
 // ================================================================================================================================
 
