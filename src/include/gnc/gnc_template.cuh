@@ -1,12 +1,8 @@
 /*
 
-🦑 GNC boilerplate 20260106 v1
+🧙‍♂️ gnc_template 20260115
 
-dynamic properties for easy binding using CRTP and constexpr
-
-NOTES:
-
-- region BOILERPLATE (is a the main boilerplate, it is also in gnc_boilerplate.cuh)
+contains master bolerplate that is copied via python script to gnc_boilerplate
 
 */
 #pragma once

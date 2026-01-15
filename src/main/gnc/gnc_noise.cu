@@ -204,7 +204,11 @@ __global__ void generate_gradient_noise3(
 
     const int seed,
     const int smoothing_mode,
-    const cmath::Basis3 basis = cmath::Basis3()) {
+    const cmath::Basis3 basis = cmath::Basis3()
+
+
+
+) {
     // ================================================================
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -243,6 +247,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     dim3 grid((size.x + block.x - 1) / block.x, (size.y + block.y - 1) / block.y);
 
     printf("rotation = (%f, %f, %f)\n", rotation.x, rotation.y, rotation.z);
+    printf("⚠️ rotation still in experimental!\n");
 
     auto basis = cmath::Basis3(rotation);
 

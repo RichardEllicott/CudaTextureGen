@@ -31,12 +31,12 @@ class FrameProfile:
     clip: list[int | float | None] = [None, None, None]  # if a number, clip at that number
     normalize: list[bool] = [True, True, True]
 
-    class Type(Enum):
-        default = 0
-        normal_map = 1
-        ao_map = 2
-        layer_map = 3
-    type: Type = Type.default
+    # class Type(Enum):
+    #     default = 0
+    #     normal_map = 1
+    #     ao_map = 2
+    #     layer_map = 3
+    # type: Type = Type.default
 
     # generate as ao map
     ao_map: bool = False
@@ -427,6 +427,15 @@ class ErosionRunner:
             for name in image_profile.channels:
                 self.image_profile_maps_names.add(name)
 
+
+
+    def _compute(self):
+        """
+        hook to override
+        """
+        self.erosion.process()
+
+
     def process(self) -> None:
         """
 
@@ -464,7 +473,7 @@ class ErosionRunner:
 
         for i in range(self.frame_count):
 
-            self.erosion.process()
+            self._compute()
 
             self.clear_downloaded_maps()  # ensures new maps are downloaded
             self.download_movie_profile_maps()

@@ -633,6 +633,8 @@ DH_INLINE float apply_smoothing(float t, int mode) {
         return ssharp(t);
     case 5: // power (for style)
         return power(t, 2);
+    default:
+        return t; // pass
     }
 }
 

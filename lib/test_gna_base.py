@@ -5,6 +5,7 @@ Erosion7 is the same as Erosion5 but has a new device array pattern
 this makes it easier and quicker to upload and download data to the gpu and to therefore make animations
 
 """
+import math
 from matplotlib.colors import to_rgb
 import tools
 import cuda_texture_gen
@@ -97,28 +98,27 @@ def test_gnb():
 # test_gnb()
 
 
-import math
-
 def test_noise():
     print("test()...")
 
     gnc = cuda_texture_gen.GNC_Noise()
 
-    gnc.period = (13, 13, 5)
-    # gnc.size = (512, 512)
+    gnc.period = (3, 3, 3)
 
-    # gnc.smoothing_mode = 0
-    # gnc.smoothing_mode = 4
 
-    gnc.process()
+    # gnc.wrap = (False, False, False)
+
+    # gnc.smoothing_mode = -1
 
     # gnc.rotation = (math.radians(45), math.radians(45), math.radians(45))
-    gnc.rotation = (math.radians(45), math.radians(0), math.radians(0))
+    gnc.rotation = (math.radians(0), math.radians(0), math.radians(10))
+
+    ################################################################
+    gnc.process()
+    ################################################################
 
     result = gnc.output.array
-
     tools.arrays.offset(result)
-
     tools.arrays.normalize(result)
     tools.images.save(result, f"{script_path}.output.png")
 

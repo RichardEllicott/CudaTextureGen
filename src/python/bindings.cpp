@@ -7,10 +7,10 @@ central file for the python bindings
 // ================================================================
 // [Tests]
 // ----------------------------------------------------------------
-#include "template_class_4.bind.h" //
-#include "template_d_test.bind.h"  //  multi part template test 🚧🚧🚧🚧🚧 i broke it!
+// #include "template_class_4.bind.h" //
+// #include "template_d_test.bind.h"  //  multi part template test 🚧🚧🚧🚧🚧 i broke it!
 // #include "template_e_test.bind.h"   //  multi part template test 🚧🚧🚧🚧🚧 i broke it!
-#include "template_darray_1.bind.h" //
+// #include "template_darray_1.bind.h" //
 #include "tests.bind.h"             // ✔️ simple hello from gpu
 // #include "x_template_test.bind.h" //  auto generating template test // BROKEN!
 
@@ -37,10 +37,10 @@ central file for the python bindings
 // ================================================================
 // [Experiments]
 // ----------------------------------------------------------------
-#include "fluid_simulation.bind.h" // 🚧
-#include "tectonics.bind.h"        // 🚧 testing the idea of propegating preassure waves to maybe create mountains or craters, also fluid sim here
+// #include "fluid_simulation.bind.h" // 🚧
+// #include "tectonics.bind.h"        // 🚧 testing the idea of propegating preassure waves to maybe create mountains or craters, also fluid sim here
 
-#include "misc.bind.h" //
+// #include "misc.bind.h" //
 
 // #ifdef _WIN32
 // #include <windows.h> // windows only
@@ -59,10 +59,12 @@ central file for the python bindings
 // [Graph Nodes]
 // ----------------------------------------------------------------
 #include "core/cuda/device_array.bind.h"
-#include "gna_graph_node.bind.h"
 
-#include "gna/gna_example.bind.h"
-#include "gnb/gnb_example.bind.h"
+
+#include "gna_graph_node.bind.h" // has some interesting code not yet used
+
+// #include "gna/gna_example.bind.h"
+// #include "gnb/gnb_example.bind.h"
 
 #include "gnc/gnc.bind.h"
 
@@ -91,10 +93,10 @@ NB_MODULE(cuda_texture_gen, m) {
     core::logging::init_console(); // ensure windows console supports unicode
 
     tests::bind(m);
-    template_class_4::bind(m);
-    template_d_test::bind(m);
+    // template_class_4::bind(m);
+    // template_d_test::bind(m);
     // template_e_test::bind(m);
-    template_darray_1::bind(m);
+    // template_darray_1::bind(m);
 
     // x_template_test::bind(m); // BROKEN!
 
@@ -111,16 +113,19 @@ NB_MODULE(cuda_texture_gen, m) {
     erosion9::bind(m);
     erosion10::bind(m);
 
-    fluid_simulation::bind(m);
-    tectonics::bind(m);
-    misc::bind(m);
+    // fluid_simulation::bind(m);
+    // tectonics::bind(m);
+    // misc::bind(m);
 
     // GNA
     device_array::bind(m);
-    gna_graph_node::bind(m);
-    gna_example::bind(m);
-    gnb_example::bind(m);
-    gnc::bind(m);
+    gna_graph_node::bind(m); // had some code ideas for connecting nodes
+    // gna_example::bind(m);
+    // gnb_example::bind(m);
+
+
+
+    gnc::bind(m); // ❗new master
 
 
 
