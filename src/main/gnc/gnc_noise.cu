@@ -242,9 +242,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     dim3 block(16, 16);
     dim3 grid((size.x + block.x - 1) / block.x, (size.y + block.y - 1) / block.y);
 
-    // printf("rotation = (%f, %f, %f)\n", rotation.x, rotation.y, rotation.z);
-
-    // rotation = make_float3(cmath::radians(45), 0, 0);
+    printf("rotation = (%f, %f, %f)\n", rotation.x, rotation.y, rotation.z);
 
     auto basis = cmath::Basis3(rotation);
 

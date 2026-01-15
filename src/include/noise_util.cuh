@@ -1,5 +1,7 @@
 /*
 
+❌❌❌❌
+
 functions for the noise generators, hash functions, dot products, gradients
 
 */
@@ -36,6 +38,8 @@ __device__ __forceinline__ float dot(float3 a, float3 b) {
 
 #pragma region HASH_FUNCTIONS
 
+
+// ❌ SLOW!
 __device__ __forceinline__ float trig_hash(float x, float y, float z, int seed) {
     float dot = x * 12.9898f + y * 78.233f + z * 37.719f + seed * 0.123f;
     return (sinf(dot) * 43758.5453f - floorf(sinf(dot) * 43758.5453f)) * 2.0f - 1.0f;

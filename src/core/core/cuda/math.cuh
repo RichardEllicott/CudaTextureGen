@@ -5,79 +5,17 @@ cuda math functions, main library
 */
 #pragma once
 
+#include "math/constants.cuh"
 #include "math/intrinsics.cuh"
 #include "math/operators.cuh"
+
 #include <cstdint> // uint32_t (required for linux compile)
 #include <cuda_runtime.h>
-
-#pragma region DEFINES
 
 #define D_INLINE __device__ __forceinline__           // device only functions
 #define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
-// define DH_CONST different for host and device
-#ifdef __CUDACC__
-#define DH_CONST __device__ __constant__ const
-#else
-#define DH_CONST constexpr
-#endif
-
-#pragma endregion
-
 namespace core::cuda::math {
-
-#pragma region CONSTANTS
-
-// ⚠️ adding inline to constexpr can suppress compiler warning
-// ⚠️ can't use "std::sqrt(2.0)" in constexpr due to CUDA (so using literals)
-
-constexpr float SQRT2 = 1.4142135623730950488;     // square root of 2
-constexpr float INV_SQRT2 = 0.7071067811865475244; // inverse square root of 2
-constexpr float PI = 3.14159265358979323846;       // π ratio
-constexpr float TAU = PI * 2.0f;
-
-#pragma region MAGIC_HASH_NUMBERS
-
-constexpr uint32_t GOLDEN_RATIO_CONST = 0x9E3779B9u; // 32‑bit golden ratio constant (Knuth / SplitMix / xxHash)
-constexpr uint32_t MURMUR3_C1 = 0x85EBCA6Bu;         // MurmurHash3 avalanche constant C1
-constexpr uint32_t MURMUR3_C2 = 0xC2B2AE35u;         // MurmurHash3 avalanche constant C2
-
-constexpr uint32_t XXH_PRIME32_3 = 1274126177u; // xxHash32 Seed mixing
-constexpr uint32_t XXH_PRIME32_4 = 668265263u;  // xxHash32 Secondary avalanche
-constexpr uint32_t XXH_PRIME32_5 = 374761393u;  // xxHash32 Mix low bits, small inputs
-
-// numbers used to multiply a hash to floats
-constexpr float INV_U32 = 0x1p-32f; // exactly 2^-32
-constexpr float INV_U31 = 0x1p-31f; // exactly 2^-31
-// constexpr float INV_U30 = 0x1p-30f; // exactly 2^-30
-
-#pragma endregion
-
-#pragma region GRID
-
-// standard grid offsets in standard order (opposites in pairs, first 4 are cardinal, second 4 are diagonal)
-DH_CONST int2 GRID_OFFSETS_8[8] =
-    {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
-
-// opposite direction indexes
-DH_CONST int GRID_OFFSETS_8_OPPOSITE_INDEX[8] =
-    {1, 0, 3, 2, 5, 4, 7, 6};
-
-// distance to neighbours
-DH_CONST float GRID_OFFSETS_8_DISTANCES[8] =
-    {1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2};
-
-// special vectors for creating a scaled dot product
-DH_CONST float2 GRID_OFFSETS_8_DOTS[8] =
-    {{1.0f, 0.0f}, {-1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, -1.0f}, {0.5f, 0.5f}, {-0.5f, -0.5f}, {0.5f, -0.5f}, {-0.5f, 0.5f}};
-
-// the directions normalized (magnitude of 1.0)
-DH_CONST float2 GRID_OFFSETS_8_NORMALIZED[8] =
-    {{1.0f, 0.0f}, {-1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, -1.0f}, {INV_SQRT2, INV_SQRT2}, {-INV_SQRT2, -INV_SQRT2}, {INV_SQRT2, -INV_SQRT2}, {-INV_SQRT2, INV_SQRT2}};
-
-#pragma endregion
-
-#pragma endregion
 
 #pragma region RADIANS
 
@@ -116,9 +54,60 @@ DH_INLINE float4 floor(float4 v) {
 
 #pragma endregion
 
-#pragma region GLOBAL_THREAD_POS // these ones only compile correct from .cu files
+#pragma region ABS
 
-#ifdef __CUDACC__
+// correct abs for cuda
+DH_INLINE float abs(float v) {
+    return fabsf(v);
+}
+
+// absolute value for 32‑bit signed integers (branchless)
+DH_INLINE int abs(int v) {
+    int mask = v >> 31;
+    return (v + mask) ^ mask;
+}
+
+#pragma endregion
+
+#pragma region LERP
+
+// // Generic scalar lerp
+// template <typename T>
+// DH_INLINE T lerp(T a, T b, T fade) {
+//     return a * (T(1) - fade) + b * fade;
+// }
+
+DH_INLINE float lerp(float a, float b, float fade) {
+    return a * (1.0f - fade) + b * fade;
+}
+
+// Overload for float2
+DH_INLINE float2 lerp(float2 a, float2 b, float fade) {
+    return make_float2(
+        a.x * (1.0f - fade) + b.x * fade,
+        a.y * (1.0f - fade) + b.y * fade);
+}
+
+// Overload for float3
+DH_INLINE float3 lerp(float3 a, float3 b, float fade) {
+    return make_float3(
+        a.x * (1.0f - fade) + b.x * fade,
+        a.y * (1.0f - fade) + b.y * fade,
+        a.z * (1.0f - fade) + b.z * fade);
+}
+
+// Overload for float4
+DH_INLINE float4 lerp(float4 a, float4 b, float fade) {
+    return make_float4(
+        a.x * (1.0f - fade) + b.x * fade,
+        a.y * (1.0f - fade) + b.y * fade,
+        a.z * (1.0f - fade) + b.z * fade,
+        a.w * (1.0f - fade) + b.w * fade);
+}
+
+#pragma region GLOBAL_THREAD_POS
+
+#ifdef __CUDACC__ // only use when compiling with NVCC
 
 // get position in 1D kernel
 D_INLINE int global_thread_pos1() {
@@ -326,61 +315,6 @@ DH_INLINE float2 normal_vector2_fast(int x, int y, int z, int seed) {
 
 #pragma endregion
 
-#pragma region LERP
-
-// // Generic scalar lerp
-// template <typename T>
-// DH_INLINE T lerp(T a, T b, T fade) {
-//     return a * (T(1) - fade) + b * fade;
-// }
-
-DH_INLINE float lerp(float a, float b, float fade) {
-    return a * (1.0f - fade) + b * fade;
-}
-
-// Overload for float2
-DH_INLINE float2 lerp(float2 a, float2 b, float fade) {
-    return make_float2(
-        a.x * (1.0f - fade) + b.x * fade,
-        a.y * (1.0f - fade) + b.y * fade);
-}
-
-// Overload for float3
-DH_INLINE float3 lerp(float3 a, float3 b, float fade) {
-    return make_float3(
-        a.x * (1.0f - fade) + b.x * fade,
-        a.y * (1.0f - fade) + b.y * fade,
-        a.z * (1.0f - fade) + b.z * fade);
-}
-
-// Overload for float4
-DH_INLINE float4 lerp(float4 a, float4 b, float fade) {
-    return make_float4(
-        a.x * (1.0f - fade) + b.x * fade,
-        a.y * (1.0f - fade) + b.y * fade,
-        a.z * (1.0f - fade) + b.z * fade,
-        a.w * (1.0f - fade) + b.w * fade);
-}
-
-#pragma endregion
-
-#pragma region IDX // pos to idx formulae
-
-// pos to idx shortcut
-DH_INLINE int pos_to_idx(int2 pos, int map_width) {
-    return pos.y * map_width + pos.x;
-}
-
-// pos to idx shortcut
-DH_INLINE int pos_to_idx(int2 pos, int2 map_size) {
-    return pos.y * map_size.x + pos.x;
-}
-
-// pos to idx formula
-DH_INLINE int pos_to_idx(int x, int y, int map_width) {
-    return y * map_width + x;
-}
-
 #pragma endregion
 
 #pragma region POSMOD // wrapping coordinates
@@ -423,6 +357,25 @@ DH_INLINE float3 posmod(float3 pos, float3 mod) {
 
 #pragma endregion
 
+#pragma region IDX // pos to idx formulae
+
+// pos to idx shortcut
+DH_INLINE int pos_to_idx(int2 pos, int map_width) {
+    return pos.y * map_width + pos.x;
+}
+
+// pos to idx shortcut
+DH_INLINE int pos_to_idx(int2 pos, int2 map_size) {
+    return pos.y * map_size.x + pos.x;
+}
+
+// pos to idx formula
+DH_INLINE int pos_to_idx(int x, int y, int map_width) {
+    return y * map_width + x;
+}
+
+#pragma endregion
+
 #pragma region CLAMP // clamp templates
 
 // float clamp
@@ -443,12 +396,14 @@ DH_INLINE int clamp_index(int i, int range) {
 
 // clamp int2 to an index, ie range 8 => [0, 7]
 DH_INLINE int2 clamp_index(int2 pos, int2 range) {
-    return make_int2(clamp_index(pos.x, range.x), clamp_index(pos.y, range.y));
+    return make_int2(
+        clamp_index(pos.x, range.x),
+        clamp_index(pos.y, range.y));
 }
 
 #pragma endregion
 
-#pragma region WRAP_OR_CLAMP // sampling image coordinates with wrap or clamp
+#pragma region WRAP_OR_CLAMP // shortcuts for image coordinates
 
 // // wrap or clamp an index, used for accesing map in range
 // template <typename T>
@@ -630,6 +585,7 @@ DH_INLINE float2 compute_slope_vector_OLD(
 namespace smooth {
 
 // Cubic smoothstep (C¹ continuous)
+// top choice for Simplex Noise
 DH_INLINE float cubic(float t) {
     return t * t * (3.0f - 2.0f * t);
 }
@@ -641,7 +597,7 @@ DH_INLINE float quintic(float t) {
 
 // Cosine interpolation — soft, wavy, analog feel
 DH_INLINE float cosine(float t) {
-    return 0.5f - 0.5f * cosf(t * 3.14159265358979323846f);
+    return 0.5f - 0.5f * cosf(t * PI);
 }
 
 // Power-law smoothing — adjustable sharpness
@@ -663,45 +619,24 @@ DH_INLINE float ssharp(float t) {
 
 DH_INLINE float apply_smoothing(float t, int mode) {
     switch (mode) {
-    case 1: // cubic
+    case -1:
+        return t; // pass
+    case 0:       // cubic (this is likely best, lower quality than quintic but not visible)
         return cubic(t);
-
-    case 2: // quintic
+    case 1: // quintic
         return quintic(t);
-
-    case 3: // cosine
+    case 2: // cosine (not really appropiate, trying for style)
         return cosine(t);
-
-    case 4: // sharp
+    case 3: // sharp (for style)
         return sharp(t);
-
-    case 5: // sharp
+    case 4: // sharp (for style)
         return ssharp(t);
-
-    case 10: // power
+    case 5: // power (for style)
         return power(t, 2);
-
-    default:
-        return t; // no smoothing
     }
 }
 
 } // namespace smooth
-
-#pragma endregion
-
-#pragma region ABS
-
-// correct abs for cuda
-DH_INLINE float abs(float v) {
-    return fabsf(v);
-}
-
-// absolute value for 32‑bit signed integers (branchless)
-DH_INLINE int abs(int v) {
-    int mask = v >> 31;
-    return (v + mask) ^ mask;
-}
 
 #pragma endregion
 

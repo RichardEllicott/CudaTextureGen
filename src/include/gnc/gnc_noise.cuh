@@ -20,15 +20,15 @@ dynamic properties for easy binding using CRTP and constexpr
 #define DEFAULT_WRAP {true, true, true}
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_PARAMETERS_STRUCT                              \
-    X(bool, _debug, false, "")                                        \
-    X(int2, size, DEFAULT_SIZE, "")                                   \
-    X(int, seed, 0, "")                                               \
-    X(int, smoothing_mode, 2, "")                                     \
-    X(float3, period, DEFAULT_PERIOD, "")                             \
-    X(FloatArray<9>, basis3, {}, "basis for rotation and/or scaling") \
-    X(float3, rotation, {}, "rotation in angles x,y,z (radians)")     \
-    X(float3, offset, {}, "")                                         \
+#define TEMPLATE_CLASS_PARAMETERS_STRUCT                                \
+    X(bool, _debug, false, "")                                          \
+    X(int2, size, DEFAULT_SIZE, "")                                     \
+    X(int, seed, 0, "")                                                 \
+    X(int, smoothing_mode, 0, "0 is cubic, best -1 disable, 1+ others") \
+    X(float3, period, DEFAULT_PERIOD, "")                               \
+    X(FloatArray<9>, basis3, {}, "basis for rotation and/or scaling")   \
+    X(float3, rotation, {}, "rotation in angles x,y,z (radians)")       \
+    X(float3, offset, {}, "")                                           \
     X(BoolArray<3>, wrap, DEFAULT_WRAP, "")
 
 // #undef DEFAULT_PERIOD
