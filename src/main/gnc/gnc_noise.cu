@@ -1,4 +1,5 @@
 #include "core/cuda/math.cuh"
+#include "core/cuda/math/transform.cuh"
 #include "gnc/gnc_noise.cuh"
 
 namespace TEMPLATE_NAMESPACE {
@@ -8,15 +9,11 @@ namespace cmath = core::cuda::math;
 // Generates a deterministic pseudo‑random unit vector in 3D using hashed spherical coordinates.
 DH_INLINE float3 gradient3(int x, int y, int z, int seed) {
 
-    // //  ⚠️ could concider using one hash and my mixing function
-    // float u = cmath::hash_float(x, y, z, seed);               // ∈ [0,1) or (0 <= u < 1)
-    // float v = cmath::hash_float_signed(z, x, y, seed + 1337); // ∈ [-1,1)
-
-    // remixing the orginal hash instead
+    // generate two random floats with hash then a hash mix
     uint32_t hash = cmath::hash_uint(x, y, z, seed);
-    float u = hash * cmath::INV_U32;
+    float u = cmath::hash_float(hash); //  ∈ [0,1)]
     hash = cmath::hash_mix(hash);
-    float v = ((int)hash) * cmath::INV_U31;
+    float v = cmath::hash_float_signed(hash); // ∈ [-1,1)]
 
     // Spherical coordinates:
     float theta = u * cmath::TAU; // theta ∈ [0, 2π)
@@ -122,7 +119,7 @@ DH_INLINE float gradient_noise3(
     const int3 wrap, // 0 = false, 1 = true
     const int seed,
     int smoothing_mode,
-    const cmath::basis3 &basis // NEW: rotation basis (identity by default)
+    const cmath::Basis3 &basis // NEW: rotation basis (identity by default)
 ) {
     // ================================================================
     // Grid + fractional position (domain NOT rotated)
@@ -207,7 +204,7 @@ __global__ void generate_gradient_noise3(
 
     const int seed,
     const int smoothing_mode,
-    const cmath::basis3 basis = cmath::basis3()) {
+    const cmath::Basis3 basis = cmath::Basis3()) {
     // ================================================================
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -249,7 +246,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
 
     // rotation = make_float3(cmath::radians(45), 0, 0);
 
-    auto basis = cmath::basis3(rotation);
+    auto basis = cmath::Basis3(rotation);
 
     generate_gradient_noise3<<<grid, block, 0, stream->get()>>>(
         size,

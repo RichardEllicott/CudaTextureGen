@@ -2,7 +2,7 @@
 
 custom Cuda objects, designed to automaticly allocate and free memory, download etc
 
-⚠️ depreciate this pattern
+⚠️ depreciate this pattern... kept just for old objects, now importing specific things not all at once
 
 */
 

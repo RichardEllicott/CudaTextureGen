@@ -113,6 +113,7 @@ def test_noise():
     gnc.process()
 
     # gnc.rotation = (math.radians(45), math.radians(45), math.radians(45))
+    gnc.rotation = (math.radians(45), math.radians(0), math.radians(0))
 
     result = gnc.output.array
 

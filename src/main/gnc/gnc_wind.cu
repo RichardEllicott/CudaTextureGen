@@ -1,6 +1,6 @@
 #include "core/cuda/math.cuh"
-#include "core/cuda/math_array.cuh"
-#include "core/cuda/math_grid.cuh"
+#include "core/cuda/math/array.cuh"
+#include "core/cuda/math/grid.cuh"
 #include "core/math.h"
 #include "gnc/gnc_wind.cuh"
 

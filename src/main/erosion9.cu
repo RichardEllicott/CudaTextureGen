@@ -5,7 +5,6 @@
 #include "core.h" // timer
 // #include "cuda_math.cuh"
 #include "core/cuda/math.cuh"
-#include "core/cuda/operators.cuh"
 #include <stdexcept> // std::runtime_error
 
 // #define EROSION_OUTFLOW_PRECALCULATION

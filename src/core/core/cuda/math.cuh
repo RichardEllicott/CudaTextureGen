@@ -5,10 +5,10 @@ cuda math functions, main library
 */
 #pragma once
 
-#include "math_fast.cuh" // fast math intrinsics
-#include <cstdint>       // uint32_t
+#include "math/intrinsics.cuh"
+#include "math/operators.cuh"
+#include <cstdint> // uint32_t (required for linux compile)
 #include <cuda_runtime.h>
-#include "operators.cuh"
 
 #pragma region DEFINES
 
@@ -25,31 +25,6 @@ cuda math functions, main library
 #pragma endregion
 
 namespace core::cuda::math {
-
-#pragma region FLOOR
-
-DH_INLINE float2 floor(float2 v) {
-    return make_float2(
-        floorf(v.x),
-        floorf(v.y));
-}
-
-DH_INLINE float3 floor(float3 v) {
-    return make_float3(
-        floorf(v.x),
-        floorf(v.y),
-        floorf(v.z));
-}
-
-DH_INLINE float4 floor(float4 v) {
-    return make_float4(
-        floorf(v.x),
-        floorf(v.y),
-        floorf(v.z),
-        floorf(v.w));
-}
-
-#pragma endregion
 
 #pragma region CONSTANTS
 
@@ -104,7 +79,44 @@ DH_CONST float2 GRID_OFFSETS_8_NORMALIZED[8] =
 
 #pragma endregion
 
-#pragma region CUDA_ONLY // these ones only compile correct from .cu files
+#pragma region RADIANS
+
+DH_INLINE float radians(float deg) {
+    return deg * (PI / 180.0f);
+}
+
+DH_INLINE float degrees(float rad) {
+    return rad * (180.0f / PI);
+}
+
+#pragma endregion
+
+#pragma region FLOOR
+
+DH_INLINE float2 floor(float2 v) {
+    return make_float2(
+        floorf(v.x),
+        floorf(v.y));
+}
+
+DH_INLINE float3 floor(float3 v) {
+    return make_float3(
+        floorf(v.x),
+        floorf(v.y),
+        floorf(v.z));
+}
+
+DH_INLINE float4 floor(float4 v) {
+    return make_float4(
+        floorf(v.x),
+        floorf(v.y),
+        floorf(v.z),
+        floorf(v.w));
+}
+
+#pragma endregion
+
+#pragma region GLOBAL_THREAD_POS // these ones only compile correct from .cu files
 
 #ifdef __CUDACC__
 
@@ -129,6 +141,7 @@ D_INLINE int3 global_thread_pos3() {
 }
 
 #endif
+
 #pragma endregion
 
 #pragma region HASH // MurmurHash3 hash
@@ -161,7 +174,8 @@ DH_INLINE uint32_t hash_uint(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) 
 
 // float from [0,1]
 DH_INLINE float hash_float(uint32_t hash) {
-    return static_cast<float>(hash) * INV_U32; // Scale to [0,1]
+    // return static_cast<float>(hash) * INV_U32; // Scale to [0,1]
+    return fast_int2float(hash) * INV_U32; // Scale to [0,1]
 }
 
 // float from [0,1]
@@ -171,7 +185,8 @@ DH_INLINE float hash_float(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) {
 
 // float from [-1,1]
 DH_INLINE float hash_float_signed(int hash) {
-    return static_cast<float>(hash) * INV_U31; // Scale to [-1,1).
+    // return static_cast<float>(hash) * INV_U31; // Scale to [-1,1).
+    return fast_int2float(hash) * INV_U31; // Scale to [0,1]
 }
 
 // float from [-1,1] range:
@@ -180,37 +195,19 @@ DH_INLINE float hash_float_signed(int x, int y, int z, int seed) {
 }
 
 // take in a hash, extract a bool (set index from 0 to 31)
-DH_INLINE bool hash_to_bool(int hash, int index = 0) {
+DH_INLINE bool hash_bool(int hash, int index = 0) {
     return (hash >> index) & 1u;
 }
 
 // get 4 random float's from one 32 bit hash, they are not so random though with about 255 possible values
 // set byte_index from 0-3
+// used only for very low quality random like jitter over frames
 DH_INLINE float hash_to_4randf(uint32_t h, int byte_index) {
     uint32_t byte = (h >> (8 * byte_index)) & 0xFFu;
     return (float(byte) / 127.5f) - 1.0f; // // map [0,255] to [-1,1]
 }
 
-// ================================================================================================================================
-// Idea to use one hash for four floats with mixing
-// gives high quality random at cheaper cost
-// --------------------------------------------------------------------------------------------------------------------------------
-
-// So four hashes = ~40–60 integer ops.
-
-// On CPU, that’s noticeable.
-// On GPU, that’s very noticeable because integer multiplies and shifts aren’t free.
-
-// ✔ ~30 integer ops
-// vs
-
-// ❌ ~50 integer ops for four independent hashes
-// That’s already a ~40% reduction.
-
-// 🚀 1.5× to 2× faster
-// for “expand one hash into four floats” vs “four independent hashes”.
-
-// high entrophy cheap hashing??
+// function can mix an existing hash to create more random numbers at less cost
 DH_INLINE uint32_t hash_mix(uint32_t x) {
     x ^= x >> 16;
     x *= 0x7feb352d;
@@ -220,32 +217,13 @@ DH_INLINE uint32_t hash_mix(uint32_t x) {
     return x;
 }
 
-// Wang hash finalizer?? prob more expensive... won't use
-DH_INLINE uint32_t _hash_mix2(uint32_t x) {
-    x ^= x >> 17;
-    x *= 0xed5ad4bb;
-    x ^= x >> 11;
-    x *= 0xac4c1b51;
-    x ^= x >> 15;
-    x *= 0x31848bab;
-    x ^= x >> 14;
-    return x;
-}
-
 struct HashRng {
     uint32_t x;
 
     // output float [-1, 1]
     DH_INLINE float next_signed() {
         x = hash_mix(x);
-
-#if defined(__CUDA_ARCH__) // most correct CUDA pattern for inside a DH_INLINE
-        // Compiling for device
-        return __int2float_rn(int32_t(x)) * INV_U31;
-#else
-        // Compiling for host
-        return int32_t(x) * INV_U31;
-#endif
+        return hash_float_signed(x); // [-1,1)
     }
 
     DH_INLINE float next_unsigned() {
@@ -407,77 +385,55 @@ DH_INLINE int pos_to_idx(int x, int y, int map_width) {
 
 #pragma region POSMOD // wrapping coordinates
 
-#define INT_POSMOD_VERSION 2
-#if INT_POSMOD_VERSION == 0 // orginal, has potential branch
-
-// positive modulo for wrapping map coordinates
-// NOTE: 'mod' must be strictly positive. Negative moduli are undefined here.
-DH_INLINE int posmod(int i, int mod) {
-    int result = i % mod;
-    return result < 0 ? result + mod : result;
-}
-#elif INT_POSMOD_VERSION == 1 // eliminates branch
-
-// positive modulo for wrapping map coordinates
-// NOTE: 'mod' must be strictly positive. Negative moduli are undefined here.
-DH_INLINE int posmod(int i, int mod) {
-    int r = i % mod;
-    int neg = (r < 0);    // 1 if r is negative, 0 otherwise
-    return r + neg * mod; // add mod only when needed
-}
-#elif INT_POSMOD_VERSION == 2 // eliminates branch, even quicker
-
-// positive modulo for wrapping map coordinates
+// positive modulo for wrapping map coordinates (branchless)
 // NOTE: 'mod' must be strictly positive. Negative moduli are undefined here.
 DH_INLINE int posmod(int i, int mod) {
     int r = i % mod;
     return r + ((r >> 31) & mod);
 }
 
-#elif INT_POSMOD_VERSION == 3 // same as above broken into lines
-
-// positive modulo for wrapping map coordinates
-// NOTE: 'mod' must be strictly positive. Negative moduli are undefined here.
-DH_INLINE int posmod(int i, int mod) {
-    int r = i % mod;   // remainder (may be negative)
-    int s = r >> 31;   // arithmetic shift: 0 if r>=0, -1 if r<0
-    int fix = s & mod; // 0 if r>=0, mod if r<0
-    return r + fix;    // add correction to make result positive
-}
-
-#endif
-#undef POSMOD_VERSION
-
-#define FLOAT_POSMOD_VERSION 0
-#if FLOAT_POSMOD_VERSION == 0 // orginal, has potential branch but should compile down
 // positive modulo for float
+// NOTE: branchless version not determined to give any benefit compared to the fmodf cost
 DH_INLINE float posmod(float x, float mod) {
     float result = fmodf(x, mod); // remainder in (-mod, mod)
     return result < 0.0f ? result + mod : result;
 }
-#elif FLOAT_POSMOD_VERSION == 1 // branchless, but in this case is unlikely to provide any performance gain for float
-// positive modulo for float
-DH_INLINE float posmod(float x, float mod) {
-    float r = fmodf(x, mod);
-    float mask = r < 0.0f; // 1.0f if negative, 0.0f otherwise
-    return r + mask * mod;
-}
-#endif
-#undef FLOAT_POSMOD_VERSION
+
+// --------------------------------------------------------------------------------------------------------------------------------
 
 // positive modulo on int2
 DH_INLINE int2 posmod(int2 pos, int2 mod) {
     return make_int2(posmod(pos.x, mod.x), posmod(pos.y, mod.y));
 }
 
+// positive modulo on int3
+DH_INLINE int3 posmod(int3 pos, int3 mod) {
+    return make_int3(posmod(pos.x, mod.x), posmod(pos.y, mod.y), posmod(pos.y, mod.y));
+}
+
+// positive modulo on float2
+DH_INLINE float2 posmod(float2 pos, float2 mod) {
+    return make_float2(posmod(pos.x, mod.x), posmod(pos.y, mod.y));
+}
+
+// positive modulo on float3
+DH_INLINE float3 posmod(float3 pos, float3 mod) {
+    return make_float3(posmod(pos.x, mod.x), posmod(pos.y, mod.y), posmod(pos.y, mod.y));
+}
+
 #pragma endregion
 
 #pragma region CLAMP // clamp templates
 
-// general clamp
+// float clamp
+DH_INLINE float clamp(float v, float lo, float hi) {
+    return fminf(fmaxf(v, lo), hi);
+}
+
+// general clamp (likely would have been just as fast for float)
 template <typename T>
-DH_INLINE T clamp(T value, T minimum, T maximum) {
-    return value < minimum ? minimum : (value > maximum ? maximum : value);
+DH_INLINE T clamp(T v, T min, T max) {
+    return v < min ? min : (v > max ? max : v);
 }
 
 // clamp integer to an index, ie range 8 => [0, 7]
@@ -734,81 +690,18 @@ DH_INLINE float apply_smoothing(float t, int mode) {
 
 #pragma endregion
 
-#pragma region BASIS_MATRIX
+#pragma region ABS
 
-DH_INLINE float radians(float deg) {
-    return deg * (PI / 180.0f);
+// correct abs for cuda
+DH_INLINE float abs(float v) {
+    return fabsf(v);
 }
 
-DH_INLINE float degrees(float rad) {
-    return rad * (180.0f / PI);
+// absolute value for 32‑bit signed integers (branchless)
+DH_INLINE int abs(int v) {
+    int mask = v >> 31;
+    return (v + mask) ^ mask;
 }
-
-// basis matrix for easy rotation
-struct basis3 {
-    float3 x; // first axis
-    float3 y; // second axis
-    float3 z; // third axis
-
-    // Identity basis by default
-    DH_INLINE basis3()
-        : x(make_float3(1, 0, 0)),
-          y(make_float3(0, 1, 0)),
-          z(make_float3(0, 0, 1)) {}
-
-    DH_INLINE basis3(float3 x_, float3 y_, float3 z_)
-        : x(x_), y(y_), z(z_) {}
-
-    // Construct from Euler angles (XYZ rotation order)
-    DH_INLINE basis3(float3 angles) {
-        float cx = cosf(angles.x), sx = sinf(angles.x);
-        float cy = cosf(angles.y), sy = sinf(angles.y);
-        float cz = cosf(angles.z), sz = sinf(angles.z);
-
-        // Rotation matrix rows (basis axes)
-        x = make_float3(cy * cz, cy * sz, -sy);
-        y = make_float3(sx * sy * cz - cx * sz, sx * sy * sz + cx * cz, sx * cy);
-        z = make_float3(cx * sy * cz + sx * sz, cx * sy * sz - sx * cz, cx * cy);
-    }
-
-    // Multiply two bases (compose rotations)
-    DH_INLINE basis3 operator*(const basis3 &B) const {
-        return basis3(
-            make_float3(dot(x, B.x), dot(x, B.y), dot(x, B.z)),
-            make_float3(dot(y, B.x), dot(y, B.y), dot(y, B.z)),
-            make_float3(dot(z, B.x), dot(z, B.y), dot(z, B.z)));
-    }
-
-    // ???? extra bit
-    DH_INLINE float3 operator*(const float3 &v) const {
-        return make_float3(
-            dot(x, v),
-            dot(y, v),
-            dot(z, v));
-    }
-
-    // equality
-    DH_INLINE bool operator==(const basis3 &other) const {
-        return x == other.x && y == other.y && z == other.z;
-    }
-    // inequality
-    DH_INLINE bool operator!=(const basis3 &other) const {
-        return !(*this == other);
-    }
-
-    // gives a inverse matrix, so would undo the existing matrix, transpose swaps rows and columns
-    DH_INLINE basis3 transpose() const {
-        return basis3(
-            make_float3(x.x, y.x, z.x),
-            make_float3(x.y, y.y, z.y),
-            make_float3(x.z, y.z, z.z));
-    }
-
-    // alias
-    DH_INLINE basis3 inverse() const {
-        return transpose(); // orthonormal basis
-    }
-};
 
 #pragma endregion
 

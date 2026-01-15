@@ -12,30 +12,20 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include <type_traits> // optional but often useful for traits
 #include <utility>     // std::forward, std::index_sequence, etc.  std::swap
 
+#include "core/cuda/cast.cuh"
 #include "core/cuda/device_struct.cuh"
 #include "core/cuda/stream.cuh"
 #include "core/cuda/types.cuh"
-#include "core/cuda/cast.cuh"
 #include "macros.h"
-
-
-
 
 #pragma region TRYING_TO_SLOVE_FLOAT2_EXPORT
 
 #include "core/cuda/math.cuh"
-#include "core/cuda/operators.cuh"
-
-
 
 #pragma endregion
 
 //
 //
-
-
-
-
 
 // ================================================================================================================================
 // REFACTOR OPTIONS
@@ -48,7 +38,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 namespace gnc {
 
 using namespace core::cuda::types; // include type aliases at top level
-using namespace core::cuda::cast; // include type aliases at top level
+using namespace core::cuda::cast;  // include type aliases at top level
 
 // ================================================================================================================================
 // Template Validators
@@ -160,7 +150,7 @@ class GNC_Base {
     Parameters pars;
     ArrayPointers array_pointers;
 
-    core::cuda::DeviceStruct<Parameters> dev_pars;        // uploads parameters struct to device
+    core::cuda::DeviceStruct<Parameters> dev_pars;              // uploads parameters struct to device
     core::cuda::DeviceStruct<ArrayPointers> dev_array_pointers; // uploads array_pointers struct to device
     bool _pars_synced = false;
 
@@ -228,7 +218,7 @@ class GNC_Base {
         map.instantiate_if_null(); // ensure the Ref is not empty
 
         if (map->shape() != desired_shape) { // if shape missmatch we will resize
-            _pars_synced = false;      // and mark sync dirty (to trigger par upload)
+            _pars_synced = false;            // and mark sync dirty (to trigger par upload)
             map->resize(desired_shape);
             if (zero_device) map->zero_device();
         }
@@ -239,8 +229,8 @@ class GNC_Base {
     // ready device ensuring par structs are uploaded
     void ready_device() {
 
-        if (_pars_synced) return; // skip if already synced
-        stream.instantiate_if_null();   // ensure we have a stream
+        if (_pars_synced) return;     // skip if already synced
+        stream.instantiate_if_null(); // ensure we have a stream
 
         derived()._ready_device();
 
