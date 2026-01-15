@@ -35,6 +35,11 @@ namespace gnc {
 
 using namespace core::cuda::types; // include type aliases at top level
 using namespace core::cuda::cast;  // include type aliases at top level
+namespace cmath = core::cuda::math; // include the cuda math lib as cmath
+
+
+
+
 
 // ================================================================================================================================
 // Template Validators

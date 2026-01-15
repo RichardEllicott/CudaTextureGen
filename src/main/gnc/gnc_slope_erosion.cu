@@ -6,9 +6,11 @@ namespace TEMPLATE_NAMESPACE {
 // tested with ping pong but makes no difference!!
 __global__ void simple_erode(
     Parameters *pars,
-    const int width, const int height,
-    const float *heightmap, const float *sediment,
-    float *heightmap_out, float *sediment_out // seems to make no difference using ping pong
+    const int width, const int height, const int step,
+    const float *heightmap,
+    const float *sediment,
+    float *heightmap_out,
+    float *sediment_out // seems to make no difference using ping pong
 
 ) {
 
@@ -48,10 +50,10 @@ __global__ void simple_erode(
         float nh = heightmap[nIdx];
         float slope = h - nh; // amount higher than this neighbour
 
-        // if (rand_states && pars->jitter && pars->jitter > 0.0f) {
-        //     float rand = curand_uniform(&rand_states[idx]); // [0,1)
-        //     slope += rand * pars->jitter;
-        // }
+        if (pars->jitter > 0.0f) {
+            uint32_t hash = cmath::hash_uint(x, y, step, 0x54130ED9u);
+            slope += cmath::hash_float_signed(hash) * pars->jitter;
+        }
 
         if (slope > pars->slope_threshold) {
             slopes[i] = slope;
@@ -99,11 +101,17 @@ void TEMPLATE_CLASS_NAME::_compute() {
     dim3 block(16, 16);
     dim3 grid((_size.x + block.x - 1) / block.x, (_size.y + block.y - 1) / block.y);
 
+    ready_device();
+
     for (int i = 0; i < steps; i++) {
 
-
-
-
+        simple_erode<<<grid, block, 0, stream->get()>>>(
+            dev_pars.dev_ptr(),
+            _size.x, _size.y, _step,
+            height_map->dev_ptr(),
+            sediment_map->dev_ptr(),
+            height_map->dev_ptr(),
+            sediment_map->dev_ptr());
 
         _step++;
     }
