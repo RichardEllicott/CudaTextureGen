@@ -5,19 +5,19 @@ namespace TEMPLATE_NAMESPACE {
 
 namespace cmath = core::cuda::math;
 
-__device__ __forceinline__ int wrap_coord(float v, float max) {
+DH_INLINE int wrap_coord(float v, float max) {
     float m = fmodf(v, max);
     return (m < 0.0f) ? m + max : m;
 }
 
-__device__ __forceinline__ int clamp_coord(float v, float max) {
+DH_INLINE int clamp_coord(float v, float max) {
     return fminf(fmaxf(v, 0.0f), (max - 1));
 }
 
-__device__ float sample_bilinear(const float *img,
-                                 int width, int height,
-                                 float x, float y,
-                                 bool wrap) {
+DH_INLINE float sample_bilinear(const float *img,
+                                int width, int height,
+                                float x, float y,
+                                bool wrap) {
 
     // Apply addressing mode
     if (wrap) {
@@ -148,8 +148,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
 
     auto input_shape = input->shape();
 
-    set_par(pars._width, input_shape[0]);
-    set_par(pars._height, input_shape[1]);
+    _size = to_int2(input_shape);
 
     ensure_array_ref_ready(output, input_shape);
 
@@ -159,15 +158,15 @@ void TEMPLATE_CLASS_NAME::_compute() {
     ready_device();
 
     dim3 block(16, 16);
-    dim3 grid((pars._width + block.x - 1) / block.x,
-              (pars._height + block.y - 1) / block.y);
+    dim3 grid((_size.x + block.x - 1) / block.x,
+              (_size.y + block.y - 1) / block.y);
 
     // // launch the kernel
     resample_kernel<<<grid, block, 0, stream->get()>>>(
         dev_pars.dev_ptr(),
         input->dev_ptr(), output->dev_ptr(),
-        pars._width, pars._height,
-        pars._width, pars._height, // assuming same size output (unused feature here)
+        _size.x, _size.y,
+        _size.x, _size.y, // assuming same size output (unused feature here)
         map_x->dev_ptr(), map_y->dev_ptr());
 
     // // optional error check

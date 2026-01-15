@@ -6,7 +6,7 @@ cuda math functions, main library
 #pragma once
 
 #include "math/constants.cuh"
-#include "math/intrinsics.cuh"
+#include "math/fast.cuh" // intrinsics
 #include "math/operators.cuh"
 
 #include <cstdint> // uint32_t (required for gcc)
@@ -27,29 +27,75 @@ DH_INLINE float degrees(float rad) {
     return rad * RAD_TO_DEG;
 }
 
+DH_INLINE float2 radians(float2 deg) {
+    return make_float2(
+        radians(deg.x),
+        radians(deg.y));
+}
+
+DH_INLINE float3 radians(float3 deg) {
+    return make_float3(
+        radians(deg.x),
+        radians(deg.y),
+        radians(deg.z));
+}
+
+DH_INLINE float4 radians(float4 deg) {
+    return make_float4(
+        radians(deg.x),
+        radians(deg.y),
+        radians(deg.z),
+        radians(deg.w));
+}
+// --------------------------------------------------------------------------------------------------------------------------------
+DH_INLINE float2 degrees(float2 rad) {
+    return make_float2(
+        degrees(rad.x),
+        degrees(rad.y));
+}
+
+DH_INLINE float3 degrees(float3 rad) {
+    return make_float3(
+        degrees(rad.x),
+        degrees(rad.y),
+        degrees(rad.z));
+}
+
+DH_INLINE float4 degrees(float4 rad) {
+    return make_float4(
+        degrees(rad.x),
+        degrees(rad.y),
+        degrees(rad.z),
+        degrees(rad.w));
+}
+// --------------------------------------------------------------------------------------------------------------------------------
 #pragma endregion
 
 #pragma region FLOOR
 
+DH_INLINE float floor(float v) {
+    return floorf(v);
+}
+
 DH_INLINE float2 floor(float2 v) {
     return make_float2(
-        floorf(v.x),
-        floorf(v.y));
+        floor(v.x),
+        floor(v.y));
 }
 
 DH_INLINE float3 floor(float3 v) {
     return make_float3(
-        floorf(v.x),
-        floorf(v.y),
-        floorf(v.z));
+        floor(v.x),
+        floor(v.y),
+        floor(v.z));
 }
 
 DH_INLINE float4 floor(float4 v) {
     return make_float4(
-        floorf(v.x),
-        floorf(v.y),
-        floorf(v.z),
-        floorf(v.w));
+        floor(v.x),
+        floor(v.y),
+        floor(v.z),
+        floor(v.w));
 }
 
 #pragma endregion
@@ -164,7 +210,7 @@ DH_INLINE uint32_t hash_uint(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) 
 // float from [0,1]
 DH_INLINE float hash_float(uint32_t hash) {
     // return static_cast<float>(hash) * INV_U32; // Scale to [0,1]
-    return fast_int2float(hash) * INV_U32; // Scale to [0,1]
+    return fast::int2float(hash) * INV_U32; // Scale to [0,1]
 }
 
 // float from [0,1]
@@ -175,7 +221,7 @@ DH_INLINE float hash_float(uint32_t x, uint32_t y, uint32_t z, uint32_t seed) {
 // float from [-1,1]
 DH_INLINE float hash_float_signed(int hash) {
     // return static_cast<float>(hash) * INV_U31; // Scale to [-1,1).
-    return fast_int2float(hash) * INV_U31; // Scale to [0,1]
+    return fast::int2float(hash) * INV_U31; // Scale to [0,1]
 }
 
 // float from [-1,1] range:
@@ -232,69 +278,28 @@ struct HashRng {
 
 #pragma region NORMAL_DISTRIBUTION
 
-// __sincosf	Fastest	Low	Best for your kernels
-// __sinf / __cosf	Very fast	Low	Good if you only need one
-// sincosf	Medium	High	What you use now
-// sin / cos	Slow	Double	Avoid
-
 // Box–Muller from two random floats [0,1]
 // ⚠️ we have found faster sincos functions!!
 DH_INLINE float2 normal_vector2(float r1, float r2) {
 
     r1 = fmaxf(r1, 1e-7f); // Guard against log(0)
-    float r = sqrtf(-2.0f * fast_logf(r1));
+    float r = sqrtf(-2.0f * fast::logf(r1));
 
     float theta = r2 * TAU;
 
     float s, c;
-    // sincosf(theta, &s, &c); // faster than seperate sin and cos
-    fast_sincosf(theta, &s, &c);
+    fast::sincosf(theta, &s, &c);
 
     return make_float2(r * c, r * s);
 }
 
-// // Marsaglia polar could be faster?
-// // two random floats [0,1]
-// DH_INLINE float2 marsaglia_normal_vector2(float r1, float r2) {
-//     // Transform to [-1, 1]
-//     float x = 2.0f * r1 - 1.0f;
-//     float y = 2.0f * r2 - 1.0f;
-
-//     float s = x * x + y * y; // pythagoras
-
-//     // Rejection: extremely rare, but must be handled
-//     // (You can push this to the caller if you want branch-free kernels)
-//     if (s >= 1.0f || s <= 1e-12f) {
-//         // Degenerate case: fall back to Box–Muller style
-//         r1 = max(r1, 1e-7f);
-//         float r = sqrtf(-2.0f * logf(r1));
-//         float theta = r2 * PI * 2.0f;
-//         float s2, c2;
-//         sincosf(theta, &s2, &c2);
-//         return make_float2(r * c2, r * s2);
-//     }
-
-//     float factor = sqrtf(-2.0f * logf(s) / s);
-//     return make_float2(x * factor, y * factor);
-// }
-
 // // Box–Muller 2D normal (two internal hashes)
 DH_INLINE float2 normal_vector2(int x, int y, int z, int seed) {
 
-    uint32_t h1 = hash_uint(x, y, z, seed);
-
-    // reduce correlation for second hash with avalanche constants
-    uint32_t h2 = hash_uint(
-        h1,
-        h1 ^ GOLDEN_RATIO_CONST, // golden ratio constant
-        seed ^ MURMUR3_C1,       // Murmur3 C1
-        MURMUR3_C2               // Murmur3 C2
-    );
-
-    // constexpr float INV_U32 = 1.0f / 4294967296.0f; // 1/(2^32)
-
-    float r1 = h1 * INV_U32;
-    float r2 = h2 * INV_U32;
+    uint32_t hash = hash_uint(x, y, z, seed); // get hash
+    float r1 = hash_float(hash);              // get ∈[0,1]
+    hash = hash_mix(hash);                    // mix hash
+    float r2 = hash_float(hash);              // get ∈[0,1]
 
     return normal_vector2(r1, r2); // your Box–Muller version
 }
@@ -303,8 +308,8 @@ DH_INLINE float2 normal_vector2(int x, int y, int z, int seed) {
 DH_INLINE float2 normal_vector2_fast(uint32_t h) {
     uint16_t lo = static_cast<uint16_t>(h);       // lower 16 bits
     uint16_t hi = static_cast<uint16_t>(h >> 16); // upper 16 bits
-    float r1 = lo / 65536.0f;                     // => [0,1]
-    float r2 = hi / 65536.0f;                     //=> [0,1]
+    float r1 = lo / 65536.0f;                     // => ∈[0,1]
+    float r2 = hi / 65536.0f;                     //=> ∈[0,1]
     return normal_vector2(r1, r2);
 }
 
@@ -445,7 +450,7 @@ DH_INLINE float length(float3 vector) {
 DH_INLINE float2 normalize(float2 v) {
     float len2 = v.x * v.x + v.y * v.y;
     if (len2 > 1e-12f) {
-        float inv = fast_rsqrtf(len2); // 1/sqrt(len2)
+        float inv = fast::rsqrtf(len2); // 1/sqrt(len2)
         return make_float2(v.x * inv, v.y * inv);
     }
     return make_float2(0.0f, 0.0f);
@@ -461,8 +466,8 @@ DH_INLINE float2 normalize(float2 v) {
 // normalize float3 vector to length of 1.0 (with fast reciprocal root)
 DH_INLINE float3 normalize(float3 v) {
     float len2 = v.x * v.x + v.y * v.y + v.z * v.z;
-    if (len2 > 1e-12f) {               // squared epsilon
-        float inv = fast_rsqrtf(len2); // 1/sqrt(len2)
+    if (len2 > 1e-12f) {                // squared epsilon
+        float inv = fast::rsqrtf(len2); // 1/sqrt(len2)
         return make_float3(v.x * inv,
                            v.y * inv,
                            v.z * inv);
@@ -471,7 +476,10 @@ DH_INLINE float3 normalize(float3 v) {
 }
 
 // dot product of two float2's
-DH_INLINE float dot(float2 a, float2 b) { return a.x * b.x + a.y * b.y; }
+DH_INLINE float dot(float2 a, float2 b) {
+    // return a.x * b.x + a.y * b.y;
+    return fast::fmaf(a.y, b.y, a.x * b.x);
+}
 
 // dot product of two float3's
 DH_INLINE float dot(float3 a, float3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
@@ -495,7 +503,7 @@ DH_INLINE float3 cross(float3 a, float3 b) {
 // uses hyperbolic tan which means we will never reach the ceiling
 // higher sharpness saturates quicker
 DH_INLINE float soft_saturate(float value, float ceiling, float sharpness = 1.0f) {
-    return ceiling * fast_tanhf((value / ceiling) * sharpness);
+    return ceiling * fast::tanhf((value / ceiling) * sharpness);
 }
 
 #pragma endregion
@@ -597,7 +605,7 @@ DH_INLINE float quintic(float t) {
 
 // Cosine interpolation — soft, wavy, analog feel
 DH_INLINE float cosine(float t) {
-    return 0.5f - 0.5f * cosf(t * PI);
+    return 0.5f - 0.5f * fast::cosf(t * PI);
 }
 
 // Power-law smoothing — adjustable sharpness
