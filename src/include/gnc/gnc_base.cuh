@@ -148,11 +148,11 @@ class GNC_Base {
     }
     // ================================================================================================================================
   protected:
-    Parameters pars;
-    ArrayPointers array_pointers;
+    Parameters _pars;
+    ArrayPointers _arrays;
 
-    core::cuda::DeviceStruct<Parameters> dev_pars;              // uploads parameters struct to device
-    core::cuda::DeviceStruct<ArrayPointers> dev_array_pointers; // uploads array_pointers struct to device
+    core::cuda::DeviceStruct<Parameters> _dev_pars;              // uploads parameters struct to device
+    core::cuda::DeviceStruct<ArrayPointers> _dev_arrays; // uploads array_pointers struct to device
     bool _pars_synced = false;
 
   public:
@@ -232,6 +232,10 @@ class GNC_Base {
 
         if (_pars_synced) return;     // skip if already synced
         stream.instantiate_if_null(); // ensure we have a stream
+
+        _dev_pars.set_stream(stream->get());
+        _dev_arrays.set_stream(stream->get());
+
 
         derived()._ready_device();
 

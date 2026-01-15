@@ -182,11 +182,11 @@ void TEMPLATE_CLASS_NAME::_compute() {
         nullptr,
         slope_vec2_map->dev_ptr(), // out
 
-        pars.wrap);
+        wrap);
 
     // wind update
     run_wind<<<grid, block, 0, stream->get()>>>(
-        dev_pars.dev_ptr(),
+        _dev_pars.dev_ptr(),
         // dev_array_pointers.dev_ptr(),
 
         _map_size,

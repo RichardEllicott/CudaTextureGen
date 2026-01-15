@@ -156,7 +156,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         // copy all pars to struct
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    pars.NAME = NAME;
+    _pars.NAME = NAME;
         TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 #endif
@@ -164,14 +164,16 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         // copy all array pointers
 #ifdef TEMPLATE_CLASS_ARRAYS // bind arrays2 (second pattern)
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    array_pointers.NAME = nullptr;             \
-    if (NAME.is_valid()) array_pointers.NAME = NAME->dev_ptr();
+    _arrays.NAME = nullptr;                    \
+    if (NAME.is_valid()) {                     \
+        _arrays.NAME = NAME->dev_ptr();        \
+    }
         TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
         // now upload the pars
-        dev_pars.upload(pars);
-        dev_array_pointers.upload(array_pointers);
+        _dev_pars.upload(_pars);
+        _dev_arrays.upload(_arrays);
     }
 // --------------------------------------------------------------------------------------------------------------------------------
 // bind extra methods

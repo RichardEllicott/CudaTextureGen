@@ -10,34 +10,63 @@ from typing import Any
 # region ObjectReflection
 
 
+# def from_object(obj: object, wanted_types=(int, float), round_float=6) -> dict:
+#     """
+#     Extract selected attributes from an object into a dictionary.
+
+#     Parameters
+#     ----------
+#     obj : object
+#         The object whose attributes will be inspected.
+#     wanted_types : tuple of types, optional
+#         A tuple of types to include (default: (int, float)).
+
+#     Returns
+#     -------
+#     dict
+#         A dictionary mapping attribute names to their values,
+#         only including attributes of the specified types.
+#     """
+#     result = {}
+#     for attr in dir(obj):
+#         if attr.startswith("_"):
+#             continue
+#         value = getattr(obj, attr)
+#         if isinstance(value, wanted_types):
+
+#             if round_float and isinstance(value, float):  # round floats
+#                 value = round(value, round_float)
+
+#             result[attr] = value
+#     return result
+
+
 def from_object(obj: object, wanted_types=(int, float), round_float=6) -> dict:
     """
     Extract selected attributes from an object into a dictionary.
-
-    Parameters
-    ----------
-    obj : object
-        The object whose attributes will be inspected.
-    wanted_types : tuple of types, optional
-        A tuple of types to include (default: (int, float)).
-
-    Returns
-    -------
-    dict
-        A dictionary mapping attribute names to their values,
-        only including attributes of the specified types.
     """
+
     result = {}
+
     for attr in dir(obj):
         if attr.startswith("_"):
             continue
-        value = getattr(obj, attr)
+
+        # Skip methods, functions, and other callables
+        try:
+            value = getattr(obj, attr)
+        except Exception:
+            continue
+
+        if callable(value):
+            continue
+
+        # Only keep values of the desired types
         if isinstance(value, wanted_types):
-
-            if round_float and isinstance(value, float):  # round floats
+            if round_float and isinstance(value, float):
                 value = round(value, round_float)
-
             result[attr] = value
+
     return result
 
 

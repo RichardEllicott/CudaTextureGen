@@ -89,7 +89,7 @@ class FrameProfile:
                 f"FrameProfile albedo_map_0 must be 1 channel, got {len(self.channels)}: {self.channels}"
             )
 
-    def __init__(self, runner: "ErosionRunner") -> None:
+    def __init__(self, runner: "Runner") -> None:
         self.runner = runner
 
     def get_frame(self) -> NDArray:
@@ -115,7 +115,6 @@ class FrameProfile:
                 clip = self.clip[i]
                 if clip:
                     map = map.clip(0, clip)
-
 
                 # tools.arrays.print_array_information(map) # DEBUGING
 
@@ -150,7 +149,7 @@ class MovieProfile(FrameProfile):
 
     fps: int = 30
 
-    def __init__(self, runner: "ErosionRunner") -> None:
+    def __init__(self, runner: "Runner") -> None:
         super().__init__(runner)
 
         # self.move_writer = imageio.get_writer(filename, fps=fps)
@@ -158,9 +157,10 @@ class MovieProfile(FrameProfile):
         # self.writer = imageio.get_writer(self.buf, codec="libx264", fps=30)
 
 
-class ErosionRunner:
+class Runner:
 
-    erosion: cuda_texture_gen.Erosion10  # the main erosion object
+    # erosion: cuda_texture_gen.Erosion10  # the main erosion object
+
     _erosion_default_pars: dict[str, Any]  # filled with the starting pars of erosion
 
     folder: str = "E:/"  # output folder for movies and images
@@ -195,6 +195,8 @@ class ErosionRunner:
         self._erosion_default_pars = tools.dicts.from_object(self.erosion)
 
         self.OUTPUT_PRESET_01()  # defaults
+
+        pass
 
     def OUTPUT_PRESET_01(self):
 
@@ -427,14 +429,13 @@ class ErosionRunner:
             for name in image_profile.channels:
                 self.image_profile_maps_names.add(name)
 
-
-
     def _compute(self):
         """
         hook to override
         """
         self.erosion.process()
 
+        pass
 
     def process(self) -> None:
         """
@@ -525,6 +526,39 @@ class ErosionRunner:
                         print(f"{attr}: {value:.4f}")
 
         self.save_meta_data()
+
+
+
+class ErosionRunner(Runner):
+    """
+    Default runner still working
+    """
+
+
+    pass
+
+
+
+
+class ErosionRunnerGNC(Runner):
+
+    def __init__(self) -> None:
+
+        # self.erosion = cuda_texture_gen.Erosion10()
+
+        self.erosion = cuda_texture_gen.GNC_Erosion()
+
+        self._erosion_default_pars = tools.dicts.from_object(self.erosion)
+
+        self.OUTPUT_PRESET_01()  # defaults
+
+    def _compute(self):
+        """
+        hook to override
+        """
+        self.erosion.compute()
+
+        pass
 
 
 def main():

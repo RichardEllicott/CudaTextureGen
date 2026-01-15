@@ -9,7 +9,6 @@ cuda_hello: nanobind.nb_func
 generate_ao_map: nanobind.nb_func
 generate_normal_map: nanobind.nb_func
 print_debug_info: nanobind.nb_func
-test123: nanobind.nb_func
 
 class DeviceArrayFloat1D:
     array: Incomplete
@@ -238,56 +237,20 @@ class Erosion9:
     def debug_update(self) -> None: ...
     def process(self) -> None: ...
 
-class FluidSimulation:
-    _block: Incomplete
-    cell_size: Incomplete
-    damping: Incomplete
-    dt: Incomplete
-    gravity: Incomplete
-    height: Incomplete
-    height_map: Incomplete
-    mode: Incomplete
-    steps: Incomplete
-    water_map: Incomplete
-    water_map_next: Incomplete
-    water_map_previous: Incomplete
-    wave_speed: Incomplete
-    width: Incomplete
-    wrap: Incomplete
-    def __init__(self) -> None: ...
-    def process(self) -> None: ...
-
-class GNA_Example:
-    input: Incomplete
-    output: Incomplete
-    def __init__(self) -> None: ...
-    def process(self) -> None: ...
-    def __getattr__(self, arg: str) -> object: ...
-    def __setattr__(self, arg0: str, arg1: object) -> None: ...
-
-class GNB_Example:
-    input: Incomplete
-    output: Incomplete
-    stream: Incomplete
-    test_var: Incomplete
-    def __init__(self) -> None: ...
-    def process(self) -> None: ...
-
 class GNC_Erosion:
     _debug: Incomplete
     _exposed_layer_map: Incomplete
     _flux8_map: Incomplete
-    _height: Incomplete
     _layer_count: Incomplete
     _layer_mode: Incomplete
     _sea_map: Incomplete
     _sediment_flux8_map: Incomplete
     _sediment_out_map: Incomplete
+    _size: Incomplete
     _slope_vector2_map: Incomplete
     _step: Incomplete
     _water_out_map: Incomplete
     _water_velocity_map: Incomplete
-    _width: Incomplete
     _wind_vector2_map: Incomplete
     debug_mod: Incomplete
     debug_print: Incomplete
@@ -368,30 +331,38 @@ class GNC_Noise:
     def process(self) -> None: ...
 
 class GNC_Resample:
-    _height: Incomplete
-    _width: Incomplete
-    angle: Incomplete
+    _size: Incomplete
     input: Incomplete
     map_x: Incomplete
     map_y: Incomplete
-    mode: Incomplete
-    offset_x: Incomplete
-    offset_y: Incomplete
     output: Incomplete
     relative_offset: Incomplete
     sample_mode: Incomplete
     scale_by_output_size: Incomplete
     stream: Incomplete
-    warp_x_strength: Incomplete
-    warp_y_strength: Incomplete
+    def __init__(self) -> None: ...
+    def compute(self) -> None: ...
+    def process(self) -> None: ...
+
+class GNC_SlopeErosion:
+    _size: Incomplete
+    _step: Incomplete
+    deposition_rate: Incomplete
+    erosion_rate: Incomplete
+    height_map: Incomplete
+    jitter: Incomplete
+    sediment_map: Incomplete
+    slope_threshold: Incomplete
+    steps: Incomplete
+    stream: Incomplete
+    wrap: Incomplete
     def __init__(self) -> None: ...
     def compute(self) -> None: ...
     def process(self) -> None: ...
 
 class GNC_Template:
     _debug: Incomplete
-    _height: Incomplete
-    _width: Incomplete
+    _size: Incomplete
     float8: Incomplete
     input: Incomplete
     input2: Incomplete
@@ -519,78 +490,5 @@ class Resample:
     scale_by_output_size: bool
     warp_x_strength: float
     warp_y_strength: float
-    def __init__(self) -> None: ...
-    def process(self) -> None: ...
-
-class Tectonics:
-    _block: Incomplete
-    height: Incomplete
-    height_map: Incomplete
-    test: Incomplete
-    width: Incomplete
-    def __init__(self) -> None: ...
-    def process(self, *args, **kwargs): ...
-
-class TemplateClass4:
-    class Type(enum.Enum):
-        __new__: ClassVar[Callable] = ...
-        APPLE: ClassVar[TemplateClass4.Type] = ...
-        ORANGE: ClassVar[TemplateClass4.Type] = ...
-        POTATO: ClassVar[TemplateClass4.Type] = ...
-        _generate_next_value_: ClassVar[Callable] = ...
-        _hashable_values_: ClassVar[list] = ...
-        _member_map_: ClassVar[dict] = ...
-        _member_names_: ClassVar[list] = ...
-        _member_type_: ClassVar[type[object]] = ...
-        _unhashable_values_: ClassVar[list] = ...
-        _unhashable_values_map_: ClassVar[dict] = ...
-        _use_args_: ClassVar[bool] = ...
-        _value2member_map_: ClassVar[dict] = ...
-        _value_repr_: ClassVar[None] = ...
-        __nb_enum__: ClassVar[PyCapsule] = ...
-        @classmethod
-        def _new_member_(cls, *args, **kwargs): ...
-    APPLE: ClassVar[TemplateClass4.Type] = ...
-    ORANGE: ClassVar[TemplateClass4.Type] = ...
-    POTATO: ClassVar[TemplateClass4.Type] = ...
-    _block: Incomplete
-    _height: Incomplete
-    _width: Incomplete
-    device_array_2d_test: Incomplete
-    height_map: Incomplete
-    image: Incomplete
-    test_bool: Incomplete
-    test_float: Incomplete
-    test_int: Incomplete
-    def __init__(self) -> None: ...
-    def process(self, *args, **kwargs): ...
-
-class TemplateDArray1:
-    _block: int
-    _height: int
-    _width: int
-    device_array_3d: Incomplete
-    device_array_n2d_test: Incomplete
-    device_array_n3d_test: Incomplete
-    height_map_out: Incomplete
-    image: Incomplete
-    test_bool: bool
-    test_float: float
-    test_int: int
-    def __init__(self) -> None: ...
-    def process(self) -> None: ...
-    def test_process(self) -> None: ...
-    def test_process2(self) -> None: ...
-
-class TemplateDTest:
-    _block: int
-    _height: int
-    _width: int
-    device_array_n2d_test: Incomplete
-    device_array_n3d_test: Incomplete
-    image: Incomplete
-    test_bool: bool
-    test_float: float
-    test_int: int
     def __init__(self) -> None: ...
     def process(self) -> None: ...

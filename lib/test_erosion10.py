@@ -24,7 +24,6 @@ def test_mode_2():
     layers test
     """
 
-
     LAYER_MODE = False
     ISLAND_MODE = False
     # LAYER_MODE = True
@@ -48,7 +47,6 @@ def test_mode_2():
 
     # runner.image_profiles = {}  # disable images
     # runner.movie_profiles = {}  # disable movies
-
 
     map_size = 1024 // 2
 
@@ -154,9 +152,8 @@ def test_mode_2():
     else:
         erosion.height_map = layers[0] * height_scale
 
-    
-def test_mode_2_mod():
 
+def test_mode_2_mod():
 
     # erosion pars
     erosion.rain_rate = 0.0007  # increasing rain rate barely making difference!
@@ -181,7 +178,6 @@ def test_mode_2_mod():
     runner.frame_count = 128
     runner.steps_per_frame = 16
 
-
     erosion.erosion_mode = 4
 
 
@@ -190,7 +186,4 @@ test_mode_2()
 test_mode_2_mod()
 
 
-
 runner.process()
-
-

@@ -106,7 +106,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     for (int i = 0; i < steps; i++) {
 
         simple_erode<<<grid, block, 0, stream->get()>>>(
-            dev_pars.dev_ptr(),
+            _dev_pars.dev_ptr(),
             _size.x, _size.y, _step,
             height_map->dev_ptr(),
             sediment_map->dev_ptr(),

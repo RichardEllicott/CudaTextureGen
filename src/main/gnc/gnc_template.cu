@@ -27,15 +27,17 @@ void TEMPLATE_CLASS_NAME::_compute() {
     output.instantiate_if_null();           // if no DeviceArray make one
     *output.shared_ptr = *input.shared_ptr; // will copy the memory (on the gpu) from input to output (by dereferencing)
 
-    _width = input->width();
-    _height = input->height();
-    dim3 block(16, 16);
-    dim3 grid((_width + block.x - 1) / block.x, (_height + block.y - 1) / block.y);
+    // _width = input->width();
+    // _height = input->height();
+    _size = to_int2(input->shape());
 
-    stream.instantiate_if_null();
+    dim3 block(16, 16);
+    dim3 grid((_size.x + block.x - 1) / block.x, (_size.y + block.y - 1) / block.y);
+
+    ready_device();
 
     chequer_test<<<grid, block, 0, stream->get()>>>(
-        _width, _height,
+        _size.x, _size.y,
         output->dev_ptr(),
         tile_size);
 

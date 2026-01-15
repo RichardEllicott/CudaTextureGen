@@ -346,7 +346,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
             nullptr,
             _slope_vector2_map->dev_ptr(), // out
 
-            pars.wrap,
+            wrap,
 
             0, // jitter mode
             slope_jitter,
@@ -358,13 +358,13 @@ void TEMPLATE_CLASS_NAME::_compute() {
         );
 
         calculate_outflow3<<<grid, block, 0, stream->get()>>>(
-            dev_pars.dev_ptr(),
-            dev_array_pointers.dev_ptr(),
+            _dev_pars.dev_ptr(),
+            _dev_arrays.dev_ptr(),
             _step);
 
         apply_flux3<<<grid, block, 0, stream->get()>>>(
-            dev_pars.dev_ptr(),
-            dev_array_pointers.dev_ptr(),
+            _dev_pars.dev_ptr(),
+            _dev_arrays.dev_ptr(),
             _step);
 
         _step++;
