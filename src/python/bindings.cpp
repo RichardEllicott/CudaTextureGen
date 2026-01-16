@@ -11,7 +11,7 @@ central file for the python bindings
 // #include "template_d_test.bind.h"  //  multi part template test 🚧🚧🚧🚧🚧 i broke it!
 // #include "template_e_test.bind.h"   //  multi part template test 🚧🚧🚧🚧🚧 i broke it!
 // #include "template_darray_1.bind.h" //
-#include "tests.bind.h"             // ✔️ simple hello from gpu
+#include "tests.bind.h" // ✔️ simple hello from gpu
 // #include "x_template_test.bind.h" //  auto generating template test // BROKEN!
 
 // ================================================================
@@ -59,7 +59,7 @@ central file for the python bindings
 // [Graph Nodes]
 // ----------------------------------------------------------------
 #include "core/cuda/device_array.bind.h"
-
+#include "core/cuda/stream.bind.h"
 
 #include "gna_graph_node.bind.h" // has some interesting code not yet used
 
@@ -117,16 +117,13 @@ NB_MODULE(cuda_texture_gen, m) {
     // tectonics::bind(m);
     // misc::bind(m);
 
-    // GNA
+    // binding objects
     device_array::bind(m);
+    stream::bind(m);
+
     gna_graph_node::bind(m); // had some code ideas for connecting nodes
     // gna_example::bind(m);
     // gnb_example::bind(m);
 
-
-
     gnc::bind(m); // ❗new master
-
-
-
 }

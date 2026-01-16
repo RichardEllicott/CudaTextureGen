@@ -96,9 +96,9 @@ static void example_slope_vector() {
 #pragma region LAYERS
 
 __global__ void layer_info_kernel(
-    const int width, const int height, const int layer_count,
+    const int2 size,
+    const int layer_count,
 
-    
     const float *__restrict__ layer_map, // in
     float *__restrict__ height_map,      // out
     int *__restrict__ _exposed_layer     // out
@@ -107,8 +107,8 @@ __global__ void layer_info_kernel(
     // ================================================================
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= width || y >= height) return;
-    int idx = y * width + x;
+    if (x >= size.x || y >= size.y) return;
+    int idx = y * size.x + x;
     int layer_idx = idx * layer_count;
     // ================================================================
     const float *pixel_layers = layer_map + layer_idx; // pointer to layer itself
@@ -120,4 +120,4 @@ __global__ void layer_info_kernel(
 
 #pragma endregion
 
-} // namespace core::cuda::math
+} // namespace core::cuda::math::grid

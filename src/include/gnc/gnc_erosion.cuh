@@ -20,7 +20,7 @@ dynamic properties for easy binding using CRTP and constexpr
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT_1                                                                          \
-    X(bool, _debug, false, "track certain information for monitoring")                                              \
+    X(bool, _debug, true, "track certain information for monitoring")                                              \
     X(bool, debug_print, false, "print out information to console")                                                 \
     X(int, debug_mod, 1, "frequency to print the debug output")                                                     \
     X(int2, _size, {}, "map size")                                                                                \

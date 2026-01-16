@@ -10,6 +10,24 @@ namespace TEMPLATE_NAMESPACE {
 namespace math = core::math;
 namespace cmath = core::cuda::math;
 
+// return exposed layer id, or if all layers empty return invalid ref == to total layers
+DH_INLINE int get_exposed_layer(
+    const float *__restrict__ layer_map,
+    const int layer_count,
+    const int layer_idx // 2D idx * the layer count
+) {
+    int exposed_layer;
+    for (int n = 0; n < layer_count; ++n) {
+        float value = layer_map[layer_idx + n];
+        if (value <= 0.0f) {
+            exposed_layer = n + 1; // first exposed layer is next layer (possibly)
+        } else {
+            break; // layer is empty
+        }
+    }
+    return exposed_layer;
+}
+
 __global__ void add_rain(
     const int width, const int height,
     float *__restrict__ water_map,
@@ -331,11 +349,23 @@ void TEMPLATE_CLASS_NAME::_compute() {
         // calculate the layer height for layer mode
         if (_layer_mode) {
             cmath::grid::layer_info_kernel<<<grid, block, 0, stream->get()>>>(
-                _size.x, _size.y, _layer_count,
+                _size,
+                _layer_count,
+
                 layer_map->dev_ptr(),         // in
                 height_map->dev_ptr(),        // out
                 _exposed_layer_map->dev_ptr() // out
             );
+
+            ////////////////
+            // 💥 DEBUG
+            if (_debug) {
+                printf("debug point 1\n");
+                auto err = cudaGetLastError();
+                if (err != cudaSuccess) { throw std::runtime_error(cudaGetErrorString(err)); }
+                stream->sync();
+            }
+            ////////////////
         }
 
         cmath::grid::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
@@ -357,15 +387,46 @@ void TEMPLATE_CLASS_NAME::_compute() {
 
         );
 
+        ////////////////
+        // 💥 DEBUG
+        if (_debug) {
+            printf("debug point 2\n");
+            auto err = cudaGetLastError();
+            if (err != cudaSuccess) { throw std::runtime_error(cudaGetErrorString(err)); }
+            stream->sync();
+        }
+        ////////////////
+
         calculate_outflow3<<<grid, block, 0, stream->get()>>>(
             _dev_pars.dev_ptr(),
             _dev_arrays.dev_ptr(),
             _step);
 
+        ////////////////
+        // 💥 DEBUG
+        if (_debug) {
+            printf("debug point 3\n");
+            auto err = cudaGetLastError();
+            if (err != cudaSuccess) { throw std::runtime_error(cudaGetErrorString(err)); }
+            stream->sync();
+        }
+        ////////////////
+
+        // apply flux going mad!
         apply_flux3<<<grid, block, 0, stream->get()>>>(
             _dev_pars.dev_ptr(),
             _dev_arrays.dev_ptr(),
             _step);
+
+        ////////////////
+        // 💥 DEBUG
+        if (_debug) {
+            printf("debug point 4\n");
+            auto err = cudaGetLastError();
+            if (err != cudaSuccess) { throw std::runtime_error(cudaGetErrorString(err)); }
+            stream->sync();
+        }
+        ////////////////
 
         _step++;
     }

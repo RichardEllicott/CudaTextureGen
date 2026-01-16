@@ -11,6 +11,7 @@ binding for ALL the gnc modules
 
 // modules
 #include "gnc/gnc_erosion.cuh"
+#include "gnc/gnc_erosion2.cuh"
 #include "gnc/gnc_slope_erosion.cuh"
 #include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
@@ -28,6 +29,7 @@ binding for ALL the gnc modules
     X(example::GNC_Example, GNC_Example)     \
     X(noise::GNC_Noise, GNC_Noise)           \
     X(erosion::GNC_Erosion, GNC_Erosion)     \
+    X(erosion2::GNC_Erosion2, GNC_Erosion2)     \
     X(wind::GNC_Wind, GNC_Wind)              \
     X(resample::GNC_Resample, GNC_Resample)\
     X(slope_erosion::GNC_SlopeErosion, GNC_SlopeErosion)     \

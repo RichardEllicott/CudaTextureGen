@@ -83,9 +83,9 @@ DH_INLINE float2 compute_slope_vector(
             yn_height += hash_to_4randf(h, 3) * jitter;
             break;
         }
-        case 1: { // uses one hash and 3 mixes (better random)
+        case 1: {                                                       // uses one hash and 3 mixes (better random)
             uint32_t hash = hash_uint(pos.x, pos.y, step, jitter_seed); // gen hash
-            xp_height += hash_float_signed(hash) * jitter; // += [-1,1] * jitter
+            xp_height += hash_float_signed(hash) * jitter;              // += [-1,1] * jitter
             hash = hash_mix(hash);
             yp_height += hash_float_signed(hash) * jitter; // += [-1,1] * jitter
             hash = hash_mix(hash);
@@ -157,7 +157,9 @@ D_INLINE LayerInfo compute_layer_info(
 
 // found in cu file
 __global__ void layer_info_kernel(
-    const int width, const int height, const int layer_count,
+    const int2 size,
+    const int layer_count,
+
     const float *__restrict__ layer_map, // in
     float *__restrict__ height_map,      // out
     int *__restrict__ _exposed_layer     // out

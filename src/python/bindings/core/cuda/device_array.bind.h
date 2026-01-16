@@ -6,6 +6,8 @@ python bindings for DeviceArray
 #include "macros.h"
 #include "nanobind_helper.h"
 
+#include "core/cuda/device_array.cuh"
+
 namespace device_array {
 
 namespace nb = nanobind;
@@ -15,31 +17,31 @@ void bind_device_array(nb::module_ &m, const char *name) {
     using DeviceArray = core::cuda::DeviceArray<T, Dim>;
 
     // create class
-    auto ngd = nb::class_<DeviceArray>(m, name).def(nb::init<>());
+    auto cls = nb::class_<DeviceArray>(m, name).def(nb::init<>());
 
     // upload numpy array via python property
     auto get_array = [](DeviceArray &self) { return nb::helper::numpy::to_array(self); };
     auto set_array = [](DeviceArray &self, nb::ndarray<T, nb::c_contig> array) { nb::helper::numpy::to_device_array(array, self); };
-    ngd.def_prop_rw("array", get_array, set_array, "DESCRIPTION");
+    cls.def_prop_rw("array", get_array, set_array, "DESCRIPTION");
 
     auto get_shape = [](DeviceArray &self) { return self.shape(); };
-    ngd.def_prop_ro("shape", get_shape, "Array shape"); // shape()
+    cls.def_prop_ro("shape", get_shape, "Array shape"); // shape()
 
-    ngd.def("size", &DeviceArray::size); // size() => int
+    cls.def("size", &DeviceArray::size); // size() => int
 
-    // ngd.def("resize", (void (DeviceArray::*)(std::array<size_t, Dim>))&DeviceArray::resize); // brittle if we add overloads
-    ngd.def("resize", [](DeviceArray &self, std::array<size_t, Dim> dims) { self.resize(dims); }); // lambda avoids overload issues
+    // cls.def("resize", (void (DeviceArray::*)(std::array<size_t, Dim>))&DeviceArray::resize); // brittle if we add overloads
+    cls.def("resize", [](DeviceArray &self, std::array<size_t, Dim> dims) { self.resize(dims); }); // lambda avoids overload issues
 
     // dev_ptr() => int
     auto get_dev_ptr = [](DeviceArray &self) { return (uintptr_t)self.dev_ptr(); };
-    ngd.def("dev_ptr", get_dev_ptr); // dev_ptr() => int
+    cls.def("dev_ptr", get_dev_ptr); // dev_ptr() => int
 
     // copy
-    ngd.def("__copy__", [](const DeviceArray &self) {
+    cls.def("__copy__", [](const DeviceArray &self) {
         return DeviceArray(self); // uses your copy constructor
     });
 
-    ngd.def("__deepcopy__", [](const DeviceArray &self, nb::dict) {
+    cls.def("__deepcopy__", [](const DeviceArray &self, nb::dict) {
         return DeviceArray(self); // deep copy
     });
 }
