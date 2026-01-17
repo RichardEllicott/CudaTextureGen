@@ -27,85 +27,89 @@ __global__ void calculate_outflow3(
     const Parameters *__restrict__ pars,
     const ArrayPointers *__restrict__ arrays,
     const int step) {
-    // ================================================================
+    // ================================================================================================================================
     int2 map_size = pars->_size;
     int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
     if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
         return;
     int idx = cmath::pos_to_idx(pos, map_size.x);
-    // ================================================================
+    int idx2 = idx * 2;
+    // ================================================================================================================================
     float *height_map = arrays->height_map;
     float *water_map = arrays->water_map;
     float *sediment_map = arrays->sediment_map;
-    // ================================================================
+    // ================================================================================================================================
     // float height = height_map[idx];
     float water = water_map[idx];
     float sediment = sediment_map[idx];
     // float surface = height + water;
-    // ================================================================
+
+    float2 slope_vector = cmath::array::load_float2(arrays->_slope_vector2_map, idx2);
+
+    // ================================================================================================================================
     // Calculate Slope Vector
-    // ----------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------------------------------------------
 
-    int xp = cmath::wrap_or_clamp_index(pos.x + 1, map_size.x, pars->wrap); // x + 1
-    int xn = cmath::wrap_or_clamp_index(pos.x - 1, map_size.x, pars->wrap); // x - 1
-    int yp = cmath::wrap_or_clamp_index(pos.y + 1, map_size.y, pars->wrap); // y + 1
-    int yn = cmath::wrap_or_clamp_index(pos.y - 1, map_size.y, pars->wrap); // y - 1
+    // int xp = cmath::wrap_or_clamp_index(pos.x + 1, map_size.x, pars->wrap); // x + 1
+    // int xn = cmath::wrap_or_clamp_index(pos.x - 1, map_size.x, pars->wrap); // x - 1
+    // int yp = cmath::wrap_or_clamp_index(pos.y + 1, map_size.y, pars->wrap); // y + 1
+    // int yn = cmath::wrap_or_clamp_index(pos.y - 1, map_size.y, pars->wrap); // y - 1
 
-    int xp_idx = pos.y * map_size.x + xp; // {+1,0}
-    int xn_idx = pos.y * map_size.x + xn; // {-1,0}
-    int yp_idx = yp * map_size.x + pos.x; // {0,+1}
-    int yn_idx = yn * map_size.x + pos.x; // {0,-1}
+    // int xp_idx = pos.y * map_size.x + xp; // {+1,0}
+    // int xn_idx = pos.y * map_size.x + xn; // {-1,0}
+    // int yp_idx = yp * map_size.x + pos.x; // {0,+1}
+    // int yn_idx = yn * map_size.x + pos.x; // {0,-1}
 
-    // positive offsets data
-    float xp_height = height_map[xp_idx];
-    float yp_height = height_map[yp_idx];
-    float xp_water = water_map[xp_idx];
-    float yp_water = water_map[yp_idx];
-    float xp_surface = xp_height + xp_water;
-    float yp_surface = yp_height + yp_water;
+    // // positive offsets data
+    // float xp_height = height_map[xp_idx];
+    // float yp_height = height_map[yp_idx];
+    // float xp_water = water_map[xp_idx];
+    // float yp_water = water_map[yp_idx];
+    // float xp_surface = xp_height + xp_water;
+    // float yp_surface = yp_height + yp_water;
 
-    // negative offsets data
-    float xn_height = height_map[xn_idx];
-    float yn_height = height_map[yn_idx];
-    float xn_water = water_map[xn_idx];
-    float yn_water = water_map[yn_idx];
-    float xn_surface = xn_height + xn_water;
-    float yn_surface = yn_height + yn_water;
-    // ----------------------------------------------------------------
-    // optional jitter
-    if (pars->slope_jitter) {
-        switch (pars->slope_jitter_mode) {
-        case 0: { // cheaper, reuses one hash, lower quality random shouldn't be a problem over frames
-            uint32_t h = cmath::hash_uint(pos.x, pos.y, step, 0);
-            xp_surface += cmath::hash_to_4randf(h, 0) * pars->slope_jitter;
-            yp_surface += cmath::hash_to_4randf(h, 1) * pars->slope_jitter;
-            xn_surface += cmath::hash_to_4randf(h, 2) * pars->slope_jitter;
-            yn_surface += cmath::hash_to_4randf(h, 3) * pars->slope_jitter;
-            break;
-        }
-        case 1: { // uses 4 hashes, technically better random
-            xp_surface += cmath::hash_float_signed(pos.x, pos.y, step, 0) * pars->slope_jitter;
-            yp_surface += cmath::hash_float_signed(pos.x, pos.y, step, 1) * pars->slope_jitter;
-            xn_surface += cmath::hash_float_signed(pos.x, pos.y, step, 2) * pars->slope_jitter;
-            yn_surface += cmath::hash_float_signed(pos.x, pos.y, step, 3) * pars->slope_jitter;
-            break;
-        }
-        }
-    }
-    // ----------------------------------------------------------------
-    float2 slope_vector = float2{xn_surface - xp_surface, yn_surface - yp_surface}; // note slope may be double actual (use scale to compensate)
-    slope_vector /= pars->scale;                                                    // scale such that double world size would mean half gradients
-    // ----------------------------------------------------------------
+    // // negative offsets data
+    // float xn_height = height_map[xn_idx];
+    // float yn_height = height_map[yn_idx];
+    // float xn_water = water_map[xn_idx];
+    // float yn_water = water_map[yn_idx];
+    // float xn_surface = xn_height + xn_water;
+    // float yn_surface = yn_height + yn_water;
+    // // --------------------------------------------------------------------------------------------------------------------------------
+    // // optional jitter
+    // if (pars->slope_jitter) {
+    //     switch (pars->slope_jitter_mode) {
+    //     case 0: { // cheaper, reuses one hash, lower quality random shouldn't be a problem over frames
+    //         uint32_t h = cmath::hash_uint(pos.x, pos.y, step, 0);
+    //         xp_surface += cmath::hash_to_4randf(h, 0) * pars->slope_jitter;
+    //         yp_surface += cmath::hash_to_4randf(h, 1) * pars->slope_jitter;
+    //         xn_surface += cmath::hash_to_4randf(h, 2) * pars->slope_jitter;
+    //         yn_surface += cmath::hash_to_4randf(h, 3) * pars->slope_jitter;
+    //         break;
+    //     }
+    //     case 1: { // uses 4 hashes, technically better random
+    //         xp_surface += cmath::hash_float_signed(pos.x, pos.y, step, 0) * pars->slope_jitter;
+    //         yp_surface += cmath::hash_float_signed(pos.x, pos.y, step, 1) * pars->slope_jitter;
+    //         xn_surface += cmath::hash_float_signed(pos.x, pos.y, step, 2) * pars->slope_jitter;
+    //         yn_surface += cmath::hash_float_signed(pos.x, pos.y, step, 3) * pars->slope_jitter;
+    //         break;
+    //     }
+    //     }
+    // }
+    // // --------------------------------------------------------------------------------------------------------------------------------
+    // float2 slope_vector = float2{xn_surface - xp_surface, yn_surface - yp_surface}; // note slope may be double actual (use scale to compensate)
+    // slope_vector /= pars->scale;                                                    // scale such that double world size would mean half gradients
+    // ================================================================================================================================
+    
 
-    int idx2 = idx * 2;
     arrays->_slope_vector2_map[idx2] = slope_vector.x; // save to a vector map for later use
     arrays->_slope_vector2_map[idx2 + 1] = slope_vector.y;
 
     float slope_magnitude = cmath::length(slope_vector); // 🧪 save magnitude (OPTIONAL)
-    arrays->_slope_magnitude[idx] = slope_magnitude;
+    // arrays->_slope_magnitude[idx] = slope_magnitude; // 🧪 🧪 🧪 🧪  ? save here? fast to compute
 
     float water_velocity = pow(water, 2.0f / 3.0f) * sqrt(slope_magnitude); // 🧪 manning based velocity??
-    arrays->_water_velocity[idx] = water_velocity;
+    arrays->_water_velocity_map[idx] = water_velocity;
 
     // ================================================================
     // Calculate Fluxes
@@ -229,16 +233,16 @@ __global__ void apply_flux3(
         erosion = water_out * pars->erosion_rate;
         break;
     case 1:
-        erosion = water_out * pars->erosion_rate * arrays->_slope_magnitude[idx]; // with slope_magnitude ⚠️ BROKE?
+        erosion = water_out * pars->erosion_rate * arrays->_slope_magnitude_map[idx]; // with slope_magnitude ⚠️ BROKE?
         break;
     case 2:
-        erosion = water * pars->erosion_rate * arrays->_slope_magnitude[idx]; // maybe based on total water?
+        erosion = water * pars->erosion_rate * arrays->_slope_magnitude_map[idx]; // maybe based on total water?
         break;
     case 3:
-        erosion = water * pars->erosion_rate * arrays->_water_velocity[idx]; // total water and the water velocity (manning)
+        erosion = water * pars->erosion_rate * arrays->_water_velocity_map[idx]; // total water and the water velocity (manning)
         break;
     case 4: // soft saturation scheme (limits the max erosion)
-        erosion = cmath::soft_saturate(arrays->_water_velocity[idx], pars->erosion_rate, 1.0);
+        erosion = cmath::soft_saturate(arrays->_water_velocity_map[idx], pars->erosion_rate, 1.0);
         break;
     }
 
@@ -248,8 +252,6 @@ __global__ void apply_flux3(
         float layer_erosiveness = 1.0f; // ⚠️
         erosion *= layer_erosiveness;
     }
-
-
 
     erosion = cmath::clamp(erosion, 0.0f, available_erosion); // ensure not negative and not more than available_erosion
 
@@ -356,6 +358,7 @@ void TEMPLATE_CLASS_NAME::setup() {
 
     // auto shape2 = std::array<size_t, 3>{(size_t)_size.x, (size_t)_size.y, (size_t)2};
 
+    ensure_array_ref_ready(_slope_magnitude_map, shape);
     ensure_array_ref_ready(_slope_vector2_map, shape2);
     ensure_array_ref_ready(_flux8_map, shape8);
 
@@ -399,8 +402,8 @@ void TEMPLATE_CLASS_NAME::_compute() {
             _step,
             0x865C34F3u,
 
-            1.0f
-
+            1.0f,
+            _slope_magnitude_map->dev_ptr()
         );
     }
 }

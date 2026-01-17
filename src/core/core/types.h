@@ -15,15 +15,15 @@ also special Array2D
 
 namespace core::types {
 
-// allows array in xmacros
-template <std::size_t N>
-using FloatArray = std::array<float, N>;
+// // allows array in xmacros
+// template <std::size_t N>
+// using FloatArray = std::array<float, N>;
 
-template <std::size_t N>
-using IntArray = std::array<int, N>;
+// template <std::size_t N>
+// using IntArray = std::array<int, N>;
 
-template <std::size_t N>
-using BoolArray = std::array<bool, N>;
+// template <std::size_t N>
+// using BoolArray = std::array<bool, N>;
 
 //
 //

@@ -49,6 +49,8 @@ CURRENT PORTING MODEL
     X(float, erosion_rate, 0.0, "rate at which height becomes sediment based on water outflow")
 
 // layer arrays
+
+// ⚠️ THESE ARRAYS ARE NOT ACCESIBLE IN CUDA!!!
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT_4                                        \
     X(FloatArray<8>, layer_erosiveness_array, EROSION_DEFAULT_LAYER_SETTINGS, "") \
     X(FloatArray<8>, layer_yield_array, EROSION_DEFAULT_LAYER_SETTINGS, "")
@@ -79,8 +81,8 @@ CURRENT PORTING MODEL
     X(float, 3, _sediment_flux8_map, "")
 
 #define TEMPLATE_CLASS_ARRAYS_3                                                       \
-    X(float, 2, _slope_magnitude, "calculation of strength based on gradient vector") \
-    X(float, 2, _water_velocity, "🧪 scalar water velocity")
+    X(float, 2, _slope_magnitude_map, "calculation of strength based on gradient vector") \
+    X(float, 2, _water_velocity_map, "🧪 scalar water velocity")
 
 #define TEMPLATE_CLASS_ARRAYS \
     TEMPLATE_CLASS_ARRAYS_1   \

@@ -20,7 +20,10 @@ __global__ void slope_vector_kernel(
     const int step,
     const int jitter_seed,
 
-    const float scale) {
+    const float scale,
+
+    float *__restrict__ slope_magnitude  // optional slope magnitude map
+) {
     // ================================================================
     int2 pos = global_thread_pos2();
     if (pos.x >= map_size.x || pos.y >= map_size.y) return;
@@ -48,6 +51,11 @@ __global__ void slope_vector_kernel(
     // slope_vector2_map[idx2] = slope_vector2.x;
     // slope_vector2_map[idx2 + 1] = slope_vector2.y;
     store_float2(slope_vector2_map, idx2, slope_vector2);
+
+    if (slope_magnitude){
+        slope_magnitude[idx] = length(slope_vector2);
+    }
+
 }
 
 // syntax example only, will crash with null maps

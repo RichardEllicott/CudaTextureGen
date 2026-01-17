@@ -9,13 +9,15 @@ custom Cuda objects, designed to automaticly allocate and free memory, download 
 #include "core/cuda/device_array.cuh"
 #include "core/ref.h"
 #include <array>
-// #include "cast.cuh" // converting types
 
+#include <cstddef> // size_t
 
-// #define D_INLINE __device__ __forceinline__           // device only functions
-// #define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
+#define D_INLINE __device__ __forceinline__           // device only functions
+#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
 namespace core::cuda::types {
+
+// ================================================================================================================================
 
 // standard DeviceArray Refs
 using RefDeviceArrayFloat1D = core::Ref<core::cuda::DeviceArray<float, 1>>;
@@ -67,23 +69,104 @@ using RefDeviceArrayInt3D = core::Ref<core::cuda::DeviceArray<int, 3>>;
 //
 //
 
+// --------------------------------------------------------------------------------------------------------------------------------
+
+// ⚠️ not CUDA compatible
 // templates allow usage in macros (which hate commas)
 // usage:
 //     FloatArray<8>
-template <std::size_t N>
-using FloatArray = std::array<float, N>;
 
-template <std::size_t N>
-using IntArray = std::array<int, N>;
+// template <std::size_t N>
+// using FloatArray = std::array<float, N>;
 
-template <std::size_t N>
-using BoolArray = std::array<bool, N>;
+// template <std::size_t N>
+// using IntArray = std::array<int, N>;
+
+// template <std::size_t N>
+// using BoolArray = std::array<bool, N>;
+
+// ================================================================================================================================
+// [Custom CUDA compatible array]
 // --------------------------------------------------------------------------------------------------------------------------------
 
+template <typename T, size_t N>
+struct Array {
+    T data[N];
 
+    // element access
+    DH_INLINE T &operator[](size_t i) {
+        return data[i];
+    }
 
+    DH_INLINE const T &operator[](std::size_t i) const {
+        return data[i];
+    }
 
+    // equality
+    DH_INLINE bool operator==(const Array &other) const {
+        for (size_t i = 0; i < N; ++i)
+            if (data[i] != other.data[i])
+                return false;
+        return true;
+    }
 
+    // inequality
+    DH_INLINE bool operator!=(const Array &other) const {
+        return !(*this == other);
+    }
+
+    // front/back (optional, but std::array-like)
+    DH_INLINE T &front() { return data[0]; }
+    DH_INLINE const T &front() const { return data[0]; }
+
+    DH_INLINE T &back() { return data[N - 1]; }
+    DH_INLINE const T &back() const { return data[N - 1]; }
+
+    // data pointer
+    DH_INLINE T *data_ptr() { return data; }
+    DH_INLINE const T *data_ptr() const { return data; }
+
+    // size (constexpr, host-only is fine here)
+    static constexpr std::size_t size() { return N; }
+};
+
+template <std::size_t N>
+using FloatArray = Array<float, N>;
+
+template <std::size_t N>
+using IntArray = Array<int, N>;
+
+// custom bool version array, will be seen as bools either side
+// (internally is byte so wastes some memory)
+
+template <size_t N>
+struct BoolArray {
+    unsigned char data[N];
+
+    DH_INLINE bool operator[](size_t i) const { return data[i] != 0; }
+    DH_INLINE void set(size_t i, bool v) { data[i] = v ? 1 : 0; }
+
+    // match CudaArray API
+    DH_INLINE bool front() const { return data[0] != 0; }
+    DH_INLINE bool back() const { return data[N - 1] != 0; }
+
+    DH_INLINE unsigned char *data_ptr() { return data; }
+    DH_INLINE const unsigned char *data_ptr() const { return data; }
+
+    static constexpr size_t size() { return N; }
+
+    // equality
+    DH_INLINE bool operator==(const BoolArray &other) const {
+        for (size_t i = 0; i < N; ++i)
+            if (data[i] != other.data[i])
+                return false;
+        return true;
+    }
+
+    DH_INLINE bool operator!=(const BoolArray &other) const {
+        return !(*this == other);
+    }
+};
 
 // --------------------------------------------------------------------------------------------------------------------------------
 

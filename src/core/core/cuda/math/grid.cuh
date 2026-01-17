@@ -124,7 +124,11 @@ __global__ void slope_vector_kernel(
     const int step = 0,
     const int jitter_seed = 0xCCA39754u,
 
-    const float scale = 1.0f);
+    const float scale = 1.0f,
+
+    float *__restrict__ slope_magnitude = nullptr // optional slope magnitude map
+
+);
 
 // #endif
 
