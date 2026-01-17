@@ -25,7 +25,7 @@ CURRENT PORTING MODEL
     X(bool, _layer_mode_enabled, false, "")
 
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT_2                                                                        \
-    X(int, steps, 512, "")                                                                                        \
+    X(int, steps, 1, "")                                                                                          \
     X(bool, wrap, true, "wrap the map (tileable)")                                                                \
     X(float, slope_jitter, 0.0, "[<0]")                                                                           \
     X(int, slope_jitter_mode, 0, "[0] 32 bit hash for 4 values (fast); [1]: 4 x 32 bit hash")                     \
@@ -41,7 +41,8 @@ CURRENT PORTING MODEL
     X(float, deposition_rate, 0.0, "rate sediment becomes height or rock again, deposition_mode 0")               \
     X(float, drain_rate, 0.0, "rate of water drain when reaching minimum height")                                 \
     X(int, evaporation_mode, 0, "0: basic; 1: shallow water quicker")                                             \
-    X(float, evaporation_rate, 0.0, "speed at which water disappears")
+    X(float, evaporation_rate, 0.0, "speed at which water disappears")                                            \
+    X(float, rain_rate, 0.0, "[<0.0]: add water uniform or multiplied by rain map")
 
 // erosion
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT_3  \
@@ -80,7 +81,7 @@ CURRENT PORTING MODEL
     X(float, 3, _flux8_map, "")         \
     X(float, 3, _sediment_flux8_map, "")
 
-#define TEMPLATE_CLASS_ARRAYS_3                                                       \
+#define TEMPLATE_CLASS_ARRAYS_3                                                           \
     X(float, 2, _slope_magnitude_map, "calculation of strength based on gradient vector") \
     X(float, 2, _water_velocity_map, "🧪 scalar water velocity")
 

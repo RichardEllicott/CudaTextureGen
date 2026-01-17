@@ -542,7 +542,7 @@ class ErosionRunnerGNC(Runner):
 
         # self.erosion = cuda_texture_gen.Erosion10()
 
-        self.erosion = cuda_texture_gen.GNC_Erosion2()
+        self.erosion = cuda_texture_gen.GNC_Erosion()
         # self.erosion = cuda_texture_gen.GNC_Noise()
 
         self._erosion_default_pars = tools.dicts.from_object(self.erosion)

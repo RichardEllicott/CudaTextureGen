@@ -238,23 +238,18 @@ class Erosion9:
     def process(self) -> None: ...
 
 class GNC_Erosion:
-    _debug: Incomplete
     _exposed_layer_map: Incomplete
     _flux8_map: Incomplete
     _layer_count: Incomplete
-    _layer_mode: Incomplete
-    _sea_map: Incomplete
+    _layer_mode_enabled: Incomplete
     _sediment_flux8_map: Incomplete
     _sediment_out_map: Incomplete
     _size: Incomplete
+    _slope_magnitude_map: Incomplete
     _slope_vector2_map: Incomplete
     _step: Incomplete
     _water_out_map: Incomplete
     _water_velocity_map: Incomplete
-    _wind_vector2_map: Incomplete
-    debug_mod: Incomplete
-    debug_print: Incomplete
-    deposition_mode: Incomplete
     deposition_rate: Incomplete
     deposition_threshold: Incomplete
     drain_rate: Incomplete
@@ -264,11 +259,8 @@ class GNC_Erosion:
     evaporation_rate: Incomplete
     flow_rate: Incomplete
     height_map: Incomplete
-    layer_erosion_threshold_array: Incomplete
     layer_erosiveness_array: Incomplete
     layer_map: Incomplete
-    layer_permeability_array: Incomplete
-    layer_solubility_array: Incomplete
     layer_yield_array: Incomplete
     max_height: Incomplete
     max_water_outflow: Incomplete
@@ -276,43 +268,12 @@ class GNC_Erosion:
     rain_map: Incomplete
     rain_rate: Incomplete
     scale: Incomplete
-    sea_level: Incomplete
-    sea_pass: Incomplete
-    sea_tidal_range: Incomplete
     sediment_capacity: Incomplete
-    sediment_layer_map: Incomplete
     sediment_layer_mode: Incomplete
     sediment_map: Incomplete
     sediment_yield: Incomplete
-    simple_collapse: Incomplete
-    simple_collapse_amount: Incomplete
-    simple_collapse_jitter: Incomplete
-    simple_collapse_threshold: Incomplete
-    simple_collapse_yield: Incomplete
     slope_jitter: Incomplete
     slope_jitter_mode: Incomplete
-    steps: Incomplete
-    stream: Incomplete
-    water_map: Incomplete
-    wind_strength: Incomplete
-    wrap: Incomplete
-    def __init__(self) -> None: ...
-    def compute(self) -> None: ...
-    def process(self) -> None: ...
-    def setup(self) -> None: ...
-
-class GNC_Erosion2:
-    _exposed_layer_map: Incomplete
-    _layer_count: Incomplete
-    _layer_mode: Incomplete
-    _size: Incomplete
-    _slope_vector2_map: Incomplete
-    _step: Incomplete
-    height_map: Incomplete
-    layer_map: Incomplete
-    rain_map: Incomplete
-    sediment_map: Incomplete
-    slope_jitter: Incomplete
     steps: Incomplete
     stream: Incomplete
     water_map: Incomplete

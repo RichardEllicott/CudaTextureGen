@@ -11,6 +11,26 @@ namespace TEMPLATE_NAMESPACE {
 
 #pragma region KERNELS
 
+__global__ void add_rain3(
+    const Parameters *__restrict__ pars,
+    const ArrayPointers *__restrict__ arrays,
+    int step) {
+    // ================================================================
+    int2 map_size = pars->_size;
+    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
+    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
+        return;
+    int idx = cmath::pos_to_idx(pos, map_size.x);
+    // ================================================================
+    // [Rain]
+    // ----------------------------------------------------------------
+    float rain = pars->rain_rate;
+    if (arrays->rain_map) {
+        rain *= arrays->rain_map[idx]; // multiply by rain_map if != nullptr
+    }
+    arrays->water_map[idx] += rain;
+}
+
 // calculate water and sediment flux (or total outflow)
 // requires:
 // height_map
@@ -23,7 +43,7 @@ namespace TEMPLATE_NAMESPACE {
 // _sediment_flux8
 // _water_out ❗ avoids recalculating
 // _sediment_out ❗ avoids recalculating
-__global__ void calculate_outflow3(
+__global__ void calculate_flux3(
     const Parameters *__restrict__ pars,
     const ArrayPointers *__restrict__ arrays,
     const int step) {
@@ -100,7 +120,6 @@ __global__ void calculate_outflow3(
     // float2 slope_vector = float2{xn_surface - xp_surface, yn_surface - yp_surface}; // note slope may be double actual (use scale to compensate)
     // slope_vector /= pars->scale;                                                    // scale such that double world size would mean half gradients
     // ================================================================================================================================
-    
 
     arrays->_slope_vector2_map[idx2] = slope_vector.x; // save to a vector map for later use
     arrays->_slope_vector2_map[idx2 + 1] = slope_vector.y;
@@ -358,11 +377,41 @@ void TEMPLATE_CLASS_NAME::setup() {
 
     // auto shape2 = std::array<size_t, 3>{(size_t)_size.x, (size_t)_size.y, (size_t)2};
 
-    ensure_array_ref_ready(_slope_magnitude_map, shape);
-    ensure_array_ref_ready(_slope_vector2_map, shape2);
-    ensure_array_ref_ready(_flux8_map, shape8);
+    ensure_array_ref_ready(_slope_magnitude_map, shape); // 1
+
+    ensure_array_ref_ready(_slope_vector2_map, shape2); // 2
+
+    ensure_array_ref_ready(_flux8_map, shape8);          // 8
+    ensure_array_ref_ready(_sediment_flux8_map, shape8); // 8
 
     rain_map.instantiate_if_null(); // ensures we have a nullptr at least
+
+    //
+    //
+    //
+    ensure_array_ref_ready(_water_out_map, shape);
+    ensure_array_ref_ready(_sediment_out_map, shape);
+    ensure_array_ref_ready(_water_velocity_map, shape);
+
+    // // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
+    // #define TEMPLATE_CLASS_ARRAYS_1   \f
+    //     X(float, 2, height_map, "")   \
+    //     X(float, 2, water_map, "")    \
+    //     X(float, 2, sediment_map, "") \
+    //     X(float, 2, rain_map, "")     \
+    //     X(float, 3, layer_map, "")
+
+    // #define TEMPLATE_CLASS_ARRAYS_2         \
+    //     X(float, 2, _water_out_map, "")     \
+    //     X(float, 2, _sediment_out_map, "")  \
+    //     X(int, 2, _exposed_layer_map, "")   \
+    //     X(float, 3, _slope_vector2_map, "") \
+    //     X(float, 3, _flux8_map, "")         \
+    //     X(float, 3, _sediment_flux8_map, "")
+
+    // #define TEMPLATE_CLASS_ARRAYS_3                                                           \
+    //     X(float, 2, _slope_magnitude_map, "calculation of strength based on gradient vector") \
+    //     X(float, 2, _water_velocity_map, "🧪 scalar water velocity")
 
     ready_device();
 }
@@ -403,8 +452,26 @@ void TEMPLATE_CLASS_NAME::_compute() {
             0x865C34F3u,
 
             1.0f,
-            _slope_magnitude_map->dev_ptr()
-        );
+            _slope_magnitude_map->dev_ptr());
+
+        if (_pars.rain_rate > 0.0f) {
+            add_rain3<<<grid, block, 0, stream->get()>>>(
+                _dev_pars.dev_ptr(),
+                _dev_arrays.dev_ptr(),
+                _step);
+        }
+
+        calculate_flux3<<<grid, block, 0, stream->get()>>>(
+            _dev_pars.dev_ptr(),
+            _dev_arrays.dev_ptr(),
+            _step);
+
+        apply_flux3<<<grid, block, 0, stream->get()>>>(
+            _dev_pars.dev_ptr(),
+            _dev_arrays.dev_ptr(),
+            _step);
+
+        _step++;
     }
 }
 
