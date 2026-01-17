@@ -5,6 +5,8 @@ some generic macros
 */
 #pragma once
 
+// ================================================================================================================================
+
 // calling cuda functions checking for errors (will report the line)
 // quick and dirty
 #define CUDA_CHECK(call)                                                                               \
@@ -16,6 +18,38 @@ some generic macros
         }                                                                                              \
     } while (0)
 
-// standard pattern to expan a define to a "string" (with the quote marks)
+// ================================================================================================================================
+
+// standard pattern to expand a define to a "string" (with the quote marks)
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
+
+// ================================================================================================================================
+// ⚠️ EXPANSION TRICK BROKEN (trying to expand macros early)
+// --------------------------------------------------------------------------------------------------------------------------------
+// #define EXPAND(...) __VA_ARGS__
+// #define EVAL(x) EXPAND(x)
+// --------------------------------------------------------------------------------------------------------------------------------
+
+// this trick allows merging defines, then undefing them
+// if not use we will end up expanding the arrays later instead
+// EXAMPLE:
+/*
+// (TYPE, DIMENSIONS, NAME, DESCRIPTION)
+#define TEMPLATE_CLASS_ARRAYS_1   \
+    X(float, 2, height_map, "")   \
+    X(float, 2, water_map, "")
+
+#define TEMPLATE_CLASS_ARRAYS_2         \
+    X(float, 2, _water_out_map, "")     \
+    X(float, 2, _sediment_out_map, "")
+
+#define TEMPLATE_CLASS_ARRAYS     \
+    EVAL(TEMPLATE_CLASS_ARRAYS_1) \
+    EVAL(TEMPLATE_CLASS_ARRAYS_2)
+
+#undef TEMPLATE_CLASS_ARRAYS_1
+#undef TEMPLATE_CLASS_ARRAYS_2
+*/
+
+// ================================================================================================================================
