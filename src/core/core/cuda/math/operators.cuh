@@ -221,16 +221,16 @@ DEFINE_VEC4_EQ_OPS(float4)
 // DEFINE_VEC3_EQ_OPS(double3)
 // DEFINE_VEC4_EQ_OPS(double4)
 
-// DEFINE_VEC2_EQ_OPS(uint2)
-// DEFINE_VEC3_EQ_OPS(uint3)
-// DEFINE_VEC4_EQ_OPS(uint4)
+DEFINE_VEC2_EQ_OPS(uint2)
+DEFINE_VEC3_EQ_OPS(uint3)
+DEFINE_VEC4_EQ_OPS(uint4)
 
 #undef DEFINE_VEC2_EQ_OPS
 #undef DEFINE_VEC3_EQ_OPS
 #undef DEFINE_VEC4_EQ_OPS
 
 // ================================================================================================================================
-// [Addition and Sbtraction]
+// [Addition and Subtraction]
 // --------------------------------------------------------------------------------------------------------------------------------
 
 DEFINE_VEC2_ADD_SUB_OPS(int2)
@@ -284,6 +284,10 @@ DEFINE_VEC4_UNARY_OPS(int4)
 DEFINE_VEC2_UNARY_OPS(float2)
 DEFINE_VEC3_UNARY_OPS(float3)
 DEFINE_VEC4_UNARY_OPS(float4)
+
+DEFINE_VEC2_UNARY_OPS(uint2)
+DEFINE_VEC2_UNARY_OPS(uint3)
+DEFINE_VEC2_UNARY_OPS(uint4)
 
 #undef DEFINE_VEC2_UNARY_OPS
 #undef DEFINE_VEC3_UNARY_OPS
