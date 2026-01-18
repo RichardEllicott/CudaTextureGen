@@ -1,0 +1,56 @@
+
+
+
+// ================================================================================================================================
+// [X Macro Pattern]
+// --------------------------------------------------------------------------------------------------------------------------------
+
+// // (TYPE)
+// #define OPERATOR_VEC2_TYPES \
+//     X(int2)                 \
+//     X(float2)               \
+//     X(uint2)
+
+// #define OPERATOR_VEC3_TYPES \
+//     X(int3)                 \
+//     X(float3)               \
+//     X(uint3)
+
+// #define OPERATOR_VEC4_TYPES \
+//     X(int4)                 \
+//     X(float4)               \
+//     X(uint4)
+
+// // --------------------------------------------------------------------------------------------------------------------------------
+
+// // #define X(TYPE)                 \
+// //     DEFINE_VEC2_UNARY_OPS(TYPE) \
+// //     OPERATOR_VEC2_TYPES
+// // #undef X
+
+// // #define X(TYPE)                 \
+// //     DEFINE_VEC3_UNARY_OPS(TYPE) \
+// //     OPERATOR_VEC3_TYPES
+// // #undef X
+
+// // #define X(TYPE)                 \
+// //     DEFINE_VEC4_UNARY_OPS(TYPE) \
+// //     OPERATOR_VEC4_TYPES
+// // #undef X
+
+// // --------------------------------------------------------------------------------------------------------------------------------
+
+// #define X(TYPE)                 \
+//     DEFINE_VEC2_UNARY_OPS(TYPE) \
+//     DEFINE_VEC2_EQ_OPS
+// #undef X
+
+// #define X(TYPE)                 \
+//     DEFINE_VEC3_UNARY_OPS(TYPE) \
+//     DEFINE_VEC3_EQ_OPS
+// #undef X
+
+// #define X(TYPE)                 \
+//     DEFINE_VEC4_UNARY_OPS(TYPE) \
+//     DEFINE_VEC4_EQ_OPS
+// #undef X
