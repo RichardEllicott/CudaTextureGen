@@ -4,8 +4,15 @@ some generic macros
 
 */
 #pragma once
+// ================================================================================================================================
+// [Device Only and Device/Host Convention]
+// --------------------------------------------------------------------------------------------------------------------------------
+#define D_INLINE __device__ __forceinline__           // device only functions
+#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
 // ================================================================================================================================
+// [Dirty Error Check Call]
+// --------------------------------------------------------------------------------------------------------------------------------
 
 // calling cuda functions checking for errors (will report the line)
 // quick and dirty
@@ -19,8 +26,8 @@ some generic macros
     } while (0)
 
 // ================================================================================================================================
-
-// standard pattern to expand a define to a "string" (with the quote marks)
+// [Macro Expand to Quoted String]
+// --------------------------------------------------------------------------------------------------------------------------------
 #define STRINGIFY(x) #x
 #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
 

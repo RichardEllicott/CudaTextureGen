@@ -9,28 +9,28 @@ binding for ALL the gnc modules
 
 #include "gnc/gnc_template.cuh" // master template, contains master boilerplate
 
-// modules
+// ================================================================================================================================
+// [Modules]
+// --------------------------------------------------------------------------------------------------------------------------------
+
 #include "gnc/gnc_erosion.cuh"
-#include "gnc/gnc_slope_erosion.cuh"
 #include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
 #include "gnc/gnc_resample.cuh"
+#include "gnc/gnc_sea_erosion.cuh"
+#include "gnc/gnc_slope_erosion.cuh"
 #include "gnc/gnc_wind.cuh"
 
-
-// ================================================================================================================================
-// [Module List]
-// --------------------------------------------------------------------------------------------------------------------------------
-
 // (NAME, PYTHON_NAME)
-#define CLASS_NAMES                          \
-    X(_template::GNC_Template, GNC_Template) \
-    X(example::GNC_Example, GNC_Example)     \
-    X(noise::GNC_Noise, GNC_Noise)           \
-    X(erosion::GNC_Erosion, GNC_Erosion)     \
-    X(wind::GNC_Wind, GNC_Wind)              \
-    X(resample::GNC_Resample, GNC_Resample)\
-    X(slope_erosion::GNC_SlopeErosion, GNC_SlopeErosion)     \
+#define CLASS_NAMES                                      \
+    X(_template::GNC_Template, GNC_Template)             \
+    X(example::GNC_Example, GNC_Example)                 \
+    X(noise::GNC_Noise, GNC_Noise)                       \
+    X(erosion::GNC_Erosion, GNC_Erosion)                 \
+    X(wind::GNC_Wind, GNC_Wind)                          \
+    X(resample::GNC_Resample, GNC_Resample)              \
+    X(slope_erosion::GNC_SlopeErosion, GNC_SlopeErosion) \
+    X(sea_erosion::GNC_SeaErosion, GNC_SeaErosion)
 
 // ================================================================================================================================
 

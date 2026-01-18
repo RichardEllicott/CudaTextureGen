@@ -194,7 +194,6 @@ using namespace core::cuda::hash;
 #pragma region NORMAL_DISTRIBUTION
 
 // Box–Muller from two random floats [0,1]
-// ⚠️ we have found faster sincos functions!!
 DH_INLINE float2 normal_vector2(float r1, float r2) {
 
     r1 = fmaxf(r1, 1e-7f); // Guard against log(0)
@@ -425,81 +424,6 @@ DH_INLINE float soft_saturate(float value, float ceiling, float sharpness = 1.0f
 
 #pragma region SLOPES // calculate slope vectors, however in practise we hardcode this as we need jitter
 
-// Master implementation: takes up to 3 maps, any nullptr is ignored
-DH_INLINE float2 compute_slope_vector_OLD(
-    const float *__restrict__ height_map1,
-    const float *__restrict__ height_map2,
-    const float *__restrict__ height_map3,
-    const int2 map_size,
-    const int2 pos,
-    const bool wrap = true,
-    const float jitter = 0.0f,
-    const int step = 0,        // used by jitter, needs to be a different value each step
-    const int jitter_mode = 0, // 0 is economical and less accurate
-    const float scale = 1.0f,  // larger scale will make slopes less steep
-    const int jitter_seed = 1234
-
-) {
-
-    int xp = wrap_or_clamp_index(pos.x + 1, map_size.x, wrap); // x + 1
-    int xn = wrap_or_clamp_index(pos.x - 1, map_size.x, wrap); // x - 1
-    int yp = wrap_or_clamp_index(pos.y + 1, map_size.y, wrap); // y + 1
-    int yn = wrap_or_clamp_index(pos.y - 1, map_size.y, wrap); // y - 1
-
-    int xp_idx = pos.y * map_size.x + xp; // {+1,0}
-    int xn_idx = pos.y * map_size.x + xn; // {-1,0}
-    int yp_idx = yp * map_size.x + pos.x; // {0,+1}
-    int yn_idx = yn * map_size.x + pos.x; // {0,-1}
-
-    float xp_height = height_map1[xp_idx]; // x+ height
-    float yp_height = height_map1[yp_idx]; // y+ height
-    float xn_height = height_map1[xn_idx]; // x- height
-    float yn_height = height_map1[yn_idx]; // y- height
-
-    if (height_map2) {
-        xp_height += height_map2[xp_idx];
-        yp_height += height_map2[yp_idx];
-        xn_height += height_map2[xn_idx];
-        yn_height += height_map2[yn_idx];
-    }
-    if (height_map3) {
-        xp_height += height_map3[xp_idx];
-        yp_height += height_map3[yp_idx];
-        xn_height += height_map3[xn_idx];
-        yn_height += height_map3[yn_idx];
-    }
-
-    // // scale
-    xp_height /= scale;
-    yp_height /= scale;
-    xn_height /= scale;
-    yn_height /= scale;
-
-    // ================================================================
-    // [Jitter]
-    // ----------------------------------------------------------------
-    if (jitter > 0.0f) {
-        switch (jitter_mode) {
-        case 0: { // cheaper, reuses one hash, lower quality random shouldn't be a problem over frames
-            uint32_t h = hash_uint(pos.x, pos.y, step, jitter_seed);
-            xp_height += hash_to_4randf(h, 0) * jitter;
-            yp_height += hash_to_4randf(h, 1) * jitter;
-            xn_height += hash_to_4randf(h, 2) * jitter;
-            yn_height += hash_to_4randf(h, 3) * jitter;
-            break;
-        }
-        case 1: { // uses 4 hashes, technically better random
-            xp_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 0) * jitter;
-            yp_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 1) * jitter;
-            xn_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 2) * jitter;
-            yn_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 3) * jitter;
-            break;
-        }
-        }
-    }
-
-    return float2{xn_height - xp_height, yn_height - yp_height};
-}
 
 #pragma endregion
 

@@ -7,6 +7,10 @@
 #define D_INLINE __device__ __forceinline__           // device only functions
 #define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
+// #include <cstdio> // print
+#include <cstdint> // uint32_t (required for gcc)
+#include <cuda_runtime.h>
+
 // #include "math/constants.cuh"
 #include "math/fast.cuh" // intrinsics
 
@@ -29,6 +33,29 @@ constexpr float INV_U31 = 0x1p-31f; // exactly 2^-31
 // constexpr float INV_U30 = 0x1p-30f; // exactly 2^-30
 
 #pragma endregion
+
+#pragma region COMPILE_TIME_RANDOM
+
+// compile time splitmix32
+constexpr uint32_t constexpr_splitmix32(uint32_t x) {
+    x += GOLDEN_RATIO_CONST;
+    x = (x ^ (x >> 16)) * MURMUR3_C1;
+    x = (x ^ (x >> 13)) * MURMUR3_C2;
+    x ^= (x >> 16);
+    return x;
+}
+
+// 0xA5A5A5A5 has excellent alternating‑bit structure, which is ideal for testing avalanche behavior.
+
+constexpr uint32_t constexpr_random32(int index) {
+    return constexpr_splitmix32(0xA5A5A5A5u + index * GOLDEN_RATIO_CONST);
+}
+
+#define CONSTEXPR_LINE_SEED core::cuda::hash::constexpr_random32(__LINE__ * 0x9E3779B9u ^ __COUNTER__) // random seeds based on line number
+
+#pragma endregion
+
+#pragma region MAIN
 
 // // signed integer hash (based on MurmurHash3 finalizer)
 DH_INLINE int hash_int(int x, int y, int z, int seed) {
@@ -142,8 +169,35 @@ DH_INLINE uint32_t hash_mix(uint32_t x, HashMixType type = HashMixType::Murmur) 
         return hash_mix_jenkins(x);
     }
 
-    std::abort(); // unreachable
+    return 1;
+    // std::abort(); // unreachable
 }
+
+// ⚠️ broken atm, was just a test example to check compile
+// void example_hash_pattern() {
+
+// // First hash → first float
+// uint32_t hash1 = hash_uint(3, 4, 6, CONSTEXPR_LINE_SEED);
+// float r1 = hash_float_signed(hash1);
+
+// // Second hash → second float
+// uint32_t hash2 = hash_mix_jenkins(hash1 ^ CONSTEXPR_LINE_SEED);
+// float r2 = hash_float_signed(hash2);
+
+// // Third hash → third float
+// uint32_t hash3 = hash_mix_jenkins(hash2 + 0x9E3779B9u);
+// float r3 = hash_float_signed(hash3);
+
+// // Fourth hash → fourth float
+// uint32_t hash4 = hash_mix_jenkins(hash3 ^ (CONSTEXPR_LINE_SEED * 3u));
+// float r4 = hash_float_signed(hash4);
+
+// printf("example_hash_pattern():\n");
+// printf("  r1 = %f  (from hash1 = %u)\n", r1, hash1);
+// printf("  r2 = %f  (from hash2 = %u)\n", r2, hash2);
+// printf("  r3 = %f  (from hash3 = %u)\n", r3, hash3);
+// printf("  r4 = %f  (from hash4 = %u)\n", r4, hash4);
+// }
 
 struct HashRng {
     uint32_t x;
@@ -160,9 +214,6 @@ struct HashRng {
     }
 };
 
-// HashRng rng{mix(seed_base ^ thread_id)};
-// float a = rng.next_signed();
-// float b = rng.next_signed();
-// float c = rng.next_unsigned();
+#pragma endregion
 
 } // namespace core::cuda::hash

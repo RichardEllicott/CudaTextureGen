@@ -1,6 +1,6 @@
 /*
 
-CURRENT PORTING MODEL
+the big erosion model with flux and apply passes
 
 */
 #pragma once
@@ -12,7 +12,6 @@ CURRENT PORTING MODEL
 // --------------------------------------------------------------------------------------------------------------------------------
 #define TEMPLATE_CLASS_NAME GNC_Erosion
 #define TEMPLATE_NAMESPACE gnc::erosion
-
 
 // --------------------------------------------------------------------------------------------------------------------------------
 
@@ -47,7 +46,6 @@ CURRENT PORTING MODEL
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT_3  \
     X(int, erosion_mode, 0, "erosion mode") \
     X(float, erosion_rate, 0.0, "rate at which height becomes sediment based on water outflow")
-
 
 // layer arrays
 #define EROSION_DEFAULT_LAYER_SETTINGS {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}
@@ -111,10 +109,7 @@ CURRENT PORTING MODEL
 #undef TEMPLATE_CLASS_ARRAYS_3
 #undef EROSION_DEFAULT_LAYER_SETTINGS
 
-
 #undef TEMPLATE_CLASS_PARAMETERS_STRUCT_1
 #undef TEMPLATE_CLASS_PARAMETERS_STRUCT_2
 #undef TEMPLATE_CLASS_PARAMETERS_STRUCT_3
 #undef TEMPLATE_CLASS_PARAMETERS_STRUCT_4
-
-

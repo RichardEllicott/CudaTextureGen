@@ -12,29 +12,28 @@ global kernel code in .cu file due to one-definition-rule
 #define D_INLINE __device__ __forceinline__           // device only functions
 #define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
+#include "core/cuda/hash.cuh"
 #include "core/cuda/math.cuh"
 
 namespace core::cuda::math::grid {
 
-#pragma region SLOPES
+#pragma region REFACTORING_AWAY
 
-// compute slope vectors, with up to 3 maps, optional jitter
-DH_INLINE float2 compute_slope_vector(
-    const float *__restrict__ height_map1, // in
-    const float *__restrict__ height_map2, // in (optional, set as nullptr if not required)
-    const float *__restrict__ height_map3, // in (optional, set as nullptr if not required)
-
+// Master implementation: takes up to 3 maps, any nullptr is ignored
+DH_INLINE float2 compute_slope_vector_OLD(
+    const float *__restrict__ height_map1,
+    const float *__restrict__ height_map2,
+    const float *__restrict__ height_map3,
     const int2 map_size,
     const int2 pos,
-
     const bool wrap = true,
-
-    const int jitter_mode = 0,
     const float jitter = 0.0f,
-    const int step = 0,
-    const int jitter_seed = 0x549C952Bu,
+    const int step = 0,        // used by jitter, needs to be a different value each step
+    const int jitter_mode = 0, // 0 is economical and less accurate
+    const float scale = 1.0f,  // larger scale will make slopes less steep
+    const int jitter_seed = 1234
 
-    const float scale = 1.0f) {
+) {
 
     int xp = wrap_or_clamp_index(pos.x + 1, map_size.x, wrap); // x + 1
     int xn = wrap_or_clamp_index(pos.x - 1, map_size.x, wrap); // x - 1
@@ -83,7 +82,98 @@ DH_INLINE float2 compute_slope_vector(
             yn_height += hash_to_4randf(h, 3) * jitter;
             break;
         }
-        case 1: {                                                       // uses one hash and 3 mixes (better random)
+        case 1: { // uses 4 hashes, technically better random
+            xp_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 0) * jitter;
+            yp_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 1) * jitter;
+            xn_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 2) * jitter;
+            yn_height += hash_float_signed(pos.x, pos.y, step, jitter_seed + 3) * jitter;
+            break;
+        }
+        }
+    }
+
+    return float2{xn_height - xp_height, yn_height - yp_height};
+}
+
+#pragma endregion
+
+#pragma region SLOPES
+
+constexpr uint32_t SEED_1 = CONSTEXPR_LINE_SEED;
+constexpr uint32_t SEED_2 = CONSTEXPR_LINE_SEED;
+constexpr uint32_t SEED_3 = CONSTEXPR_LINE_SEED;
+constexpr uint32_t SEED_4 = CONSTEXPR_LINE_SEED;
+
+// compute slope vectors, with up to 3 maps, optional jitter
+DH_INLINE float2 compute_slope_vector(
+    const float *__restrict__ height_map1, // in
+    const float *__restrict__ height_map2, // in (optional, set as nullptr if not required)
+    const float *__restrict__ height_map3, // in (optional, set as nullptr if not required)
+
+    const int2 map_size,
+    const int2 pos,
+
+    const bool wrap = true,
+
+    const int jitter_mode = 0,
+    const float jitter = 0.0f,
+    const int step = 0,
+    const int jitter_seed = 0x549C952Bu,
+
+    const float scale = 1.0f) {
+
+    namespace chash = core::cuda::hash; // include the cuda math lib as cmath
+
+    int xp = wrap_or_clamp_index(pos.x + 1, map_size.x, wrap); // x + 1
+    int xn = wrap_or_clamp_index(pos.x - 1, map_size.x, wrap); // x - 1
+    int yp = wrap_or_clamp_index(pos.y + 1, map_size.y, wrap); // y + 1
+    int yn = wrap_or_clamp_index(pos.y - 1, map_size.y, wrap); // y - 1
+
+    int xp_idx = pos.y * map_size.x + xp; // {+1,0}
+    int xn_idx = pos.y * map_size.x + xn; // {-1,0}
+    int yp_idx = yp * map_size.x + pos.x; // {0,+1}
+    int yn_idx = yn * map_size.x + pos.x; // {0,-1}
+
+    float xp_height = height_map1[xp_idx]; // x+ height
+    float yp_height = height_map1[yp_idx]; // y+ height
+    float xn_height = height_map1[xn_idx]; // x- height
+    float yn_height = height_map1[yn_idx]; // y- height
+
+    if (height_map2) {
+        xp_height += height_map2[xp_idx];
+        yp_height += height_map2[yp_idx];
+        xn_height += height_map2[xn_idx];
+        yn_height += height_map2[yn_idx];
+    }
+    if (height_map3) {
+        xp_height += height_map3[xp_idx];
+        yp_height += height_map3[yp_idx];
+        xn_height += height_map3[xn_idx];
+        yn_height += height_map3[yn_idx];
+    }
+
+    // // scale
+    xp_height /= scale;
+    yp_height /= scale;
+    xn_height /= scale;
+    yn_height /= scale;
+
+    // ================================================================
+    // [Jitter]
+    // ----------------------------------------------------------------
+    if (jitter > 0.0f) {
+        switch (jitter_mode) {
+        case 0: { // super cheap, reuse same hash for very low quality random (256 values)
+
+            uint32_t h = hash_uint(pos.x, pos.y, step, jitter_seed);
+            xp_height += hash_to_4randf(h, 0) * jitter;
+            yp_height += hash_to_4randf(h, 1) * jitter;
+            xn_height += hash_to_4randf(h, 2) * jitter;
+            yn_height += hash_to_4randf(h, 3) * jitter;
+            break;
+        }
+        case 1: { // uses one hash and 3 mixes (better random)
+
             uint32_t hash = hash_uint(pos.x, pos.y, step, jitter_seed); // gen hash
             xp_height += hash_float_signed(hash) * jitter;              // += [-1,1] * jitter
             hash = hash_mix(hash);
@@ -95,11 +185,29 @@ DH_INLINE float2 compute_slope_vector(
             break;
         }
 
-        // case 2: {
-        // }
+        case 2: { // cheap jenkins mix
+
+            // uint32_t hash1 = chash::hash_mix_jenkins(jitter_seed ^ 0x7B5AEF9Au); // hash with xor to random number
+            // yp_height += hash_float_signed(hash1) * jitter;
+            // uint32_t hash2 = chash::hash_mix_jenkins(jitter_seed ^ 0x3F4060D3u);
+            // yp_height += hash_float_signed(hash2) * jitter;
+            // uint32_t hash3 = chash::hash_mix_jenkins(jitter_seed ^ 0x07017E6Du);
+            // yp_height += hash_float_signed(hash3) * jitter;
+            // uint32_t hash4 = chash::hash_mix_jenkins(jitter_seed ^ 0x6617CCEEu);
+            // yp_height += hash_float_signed(hash4) * jitter;
+
+            uint32_t hash1 = chash::hash_mix_jenkins(jitter_seed ^ SEED_1); // hash with xor to random number
+            yp_height += hash_float_signed(hash1) * jitter;
+            uint32_t hash2 = chash::hash_mix_jenkins(jitter_seed ^ SEED_2);
+            yp_height += hash_float_signed(hash2) * jitter;
+            uint32_t hash3 = chash::hash_mix_jenkins(jitter_seed ^ SEED_3);
+            yp_height += hash_float_signed(hash3) * jitter;
+            uint32_t hash4 = chash::hash_mix_jenkins(jitter_seed ^ SEED_4);
+            yp_height += hash_float_signed(hash4) * jitter;
+        }
 
         default: {
-            std::abort(); // causes crash
+            // std::abort(); // causes crash
         }
         }
     }

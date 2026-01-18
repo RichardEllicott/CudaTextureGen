@@ -1,18 +1,6 @@
 """
 
-
-
-constexpr std::array<uint32_t, 8> kSeeds = {
-    0x6D66C9D9u,
-    0xA3F19C42u,
-    0x91B7E5F0u,
-    0x4C8A2D13u,
-    0xF0D3A77Bu,
-    0x2B9E4C01u,
-    0x7E44D9C5u,
-    0xC1A2F8E9u
-};
-
+generate some random numbers
 
 """
 
