@@ -1,10 +1,12 @@
-#include "core/cuda/math.cuh"
+// #include "core/cuda/math.cuh"
 #include "core/cuda/math/transform.cuh"
 #include "gnc/gnc_noise.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 
 namespace cmath = core::cuda::math;
+
+#pragma region HELPERS
 
 // Generates a deterministic pseudo‑random unit vector in 3D using hashed spherical coordinates.
 DH_INLINE float3 gradient3(int x, int y, int z, int seed) {
@@ -109,10 +111,6 @@ DH_INLINE float gradient_noise3(
     return cmath::lerp(y0, y1, fract.z);
 }
 
-//
-//
-//
-
 DH_INLINE float gradient_noise3(
     const float3 position,
     const int3 period,
@@ -189,9 +187,24 @@ DH_INLINE float gradient_noise3(
     return cmath::lerp(y0, y1, fract.z);
 }
 
-//
-//
-//
+#pragma endregion
+
+#pragma region KERNELS
+
+__global__ void generate_fbm_noise3(
+    const int2 size,
+    float *__restrict__ out,
+    const float3 scale,
+    const float3 period,
+    const float3 offset,
+    const int3 wrap,
+    const int seed) {
+    // ================================================================
+    int2 pos = cmath::global_thread_pos2();
+    if (pos.x >= size.x || pos.y >= size.y) return;
+    int idx = cmath::pos_to_idx(pos, size);
+    // ================================================================
+}
 
 __global__ void generate_gradient_noise3(
     const int2 size,
@@ -204,22 +217,17 @@ __global__ void generate_gradient_noise3(
 
     const int seed,
     const int smoothing_mode,
-    const cmath::Basis3 basis = cmath::Basis3()
-
-
-
-) {
+    const cmath::Basis3 basis = cmath::Basis3()) {
     // ================================================================
-    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= size.x || y >= size.y) return;
-    const int idx = y * size.x + x;
+    int2 pos = cmath::global_thread_pos2();
+    if (pos.x >= size.x || pos.y >= size.y) return;
+    int idx = cmath::pos_to_idx(pos, size);
     // ================================================================
 
     // Key fix: scale determines the noise frequency
     // The period should match the scaled coordinate space
-    float fx = x * scale.x; // fx should now be x in "noise space"
-    float fy = y * scale.y;
+    float fx = pos.x * scale.x; // fx should now be x in "noise space"
+    float fy = pos.y * scale.y;
 
     fx += offset.x * period.x; // in theory this will make 0.5 shift the noise by half of image
     fy += offset.y * period.y;
@@ -234,6 +242,10 @@ __global__ void generate_gradient_noise3(
         smoothing_mode,
         basis);
 }
+
+#pragma endregion
+
+#pragma region MAIN
 
 void TEMPLATE_CLASS_NAME::_compute() {
 
@@ -273,5 +285,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     //     smoothing_mode,
     //     cmath::basis3(rotation));
 }
+
+#pragma endregion
 
 } // namespace TEMPLATE_NAMESPACE

@@ -13,6 +13,11 @@ this file being seperate allows import into cuh headers... where the math.cuh ca
 #define D_INLINE __device__ __forceinline__
 #define DH_INLINE __device__ __host__ __forceinline__
 
+
+
+
+
+
 #pragma region EQUALITY_OPERATORS // equality for vector 2D and 3D vector types
 
 // 2-component
@@ -270,6 +275,34 @@ DEFINE_VEC3_SCALAR_OPS(double3)
 #pragma endregion
 
 #pragma region UNARY_NEGATION_OPERATOR
+
+#define DEFINE_VEC2_UNARY_OPS(TYPE)           \
+    DH_INLINE TYPE operator-(const TYPE &a) { \
+        return {-a.x, -a.y};                  \
+    }                                         \
+    DH_INLINE TYPE operator+(const TYPE &a) { \
+        return a;                             \
+    }
+
+#define DEFINE_VEC3_UNARY_OPS(TYPE)           \
+    DH_INLINE TYPE operator-(const TYPE &a) { \
+        return {-a.x, -a.y, -a.z};            \
+    }                                         \
+    DH_INLINE TYPE operator+(const TYPE &a) { \
+        return a;                             \
+    }
+
+#define DEFINE_VEC4_UNARY_OPS(TYPE)           \
+    DH_INLINE TYPE operator-(const TYPE &a) { \
+        return {-a.x, -a.y, -a.z, -a.w};      \
+    }                                         \
+    DH_INLINE TYPE operator+(const TYPE &a) { \
+        return a;                             \
+    }
+
+DEFINE_VEC2_UNARY_OPS(float2)
+DEFINE_VEC3_UNARY_OPS(float3)
+DEFINE_VEC4_UNARY_OPS(float4)
 
 // __device__ inline float2 operator-(const float2 &v) {
 //     return make_float2(-v.x, -v.y);

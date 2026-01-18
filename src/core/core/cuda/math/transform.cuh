@@ -103,45 +103,166 @@ struct Basis3 {
         return nearly_equal(identity());
     }
 
-    // DH_INLINE explicit operator bool() const {
-    //     return !is_identity();
-    // }
-
     // corrects the Basis, they can drift
     DH_INLINE void orthonormalize() {
 
-        // normalise x
-        x = normalize(x);
+        x = normalize(x); // normalise x
 
-        // make y perpendicular to x
-        y = y - x * dot(x, y);
+        y = y - x * dot(x, y); // make y perpendicular to x
         y = normalize(y);
 
-        // compute z as cross product
-        z = cross(x, y);
+        z = cross(x, y); // compute z as cross product
 
-        // 4. normalise z (optional but recommended)
-        z = normalize(z);
+        z = normalize(z); // normalise z (optional but recommended)
     }
 };
 
 struct Transform {
-    Basis3 basis;    // orientation/scale
-    float3 position; // translation
+    Basis3 basis;
+    float3 position;
 
-    DH_INLINE Transform() = default;
+    DH_INLINE Transform()
+        : Transform(identity()) {}
 
     DH_INLINE Transform(const Basis3 &b, const float3 &p)
         : basis(b), position(p) {}
 
+    DH_INLINE static Transform identity() {
+        return Transform(Basis3::identity(), make_float3(0.0f, 0.0f, 0.0f));
+    }
+
     // apply transform to a vector (direction only)
     DH_INLINE float3 apply_vector(const float3 &v) const {
-        return basis * v; // assuming you have basis3::operator*(float3)
+        return basis * v;
     }
 
     // apply transform to a point (direction + translation)
     DH_INLINE float3 apply_point(const float3 &p) const {
         return basis * p + position;
+    }
+
+    // equality
+    DH_INLINE bool operator==(const Transform &other) const {
+        return basis == other.basis && position == other.position;
+    }
+
+    DH_INLINE bool operator!=(const Transform &other) const {
+        return !(*this == other);
+    }
+
+    // nearly equal
+    DH_INLINE bool nearly_equal(const Transform &other, float eps = 1e-6f) const {
+        return basis.nearly_equal(other.basis, eps) &&
+               fabs(position.x - other.position.x) < eps &&
+               fabs(position.y - other.position.y) < eps &&
+               fabs(position.z - other.position.z) < eps;
+    }
+
+    // identity check
+    DH_INLINE bool is_identity(float eps = 1e-6f) const {
+        return basis.nearly_equal(Basis3::identity(), eps) &&
+               fabs(position.x) < eps &&
+               fabs(position.y) < eps &&
+               fabs(position.z) < eps;
+    }
+
+    // composition
+    DH_INLINE Transform operator*(const Transform &B) const {
+        return Transform(
+            basis * B.basis,
+            basis * B.position + position);
+    }
+
+    // inverse
+    DH_INLINE Transform inverse() const {
+        Basis3 invB = basis.inverse();
+        float3 invP = invB * (position * -1.0f);
+        return Transform(invB, invP);
+    }
+
+    // orthonormalize basis
+    DH_INLINE void orthonormalize() {
+        basis.orthonormalize();
+    }
+};
+
+// ⚠️ TESTING
+// // possible Vector3 type?
+// struct Vector3 {
+//     float x, y, z;
+
+//     DH_INLINE Vector3() : x(0.0f), y(0.0f), z(0.0f) {}
+//     DH_INLINE Vector3(float x_, float y_, float z_) : x(x_), y(y_), z(z_) {}
+//     DH_INLINE Vector3(const float3 &v) : x(v.x), y(v.y), z(v.z) {}
+
+//     // implicit conversion to float3
+//     DH_INLINE operator float3() const {
+//         return make_float3(x, y, z);
+//     }
+// };
+
+// ⚠️ TESTING
+// or perhaps with auto conversion to/from tuple/list
+struct Vector3 {
+    float x, y, z;
+
+    // Constructors
+    DH_INLINE Vector3() : x(0), y(0), z(0) {}
+    DH_INLINE Vector3(float x_, float y_, float z_) : x(x_), y(y_), z(z_) {}
+
+    // Indexing (Python will use this automatically)
+    DH_INLINE float &operator[](size_t i) {
+        return i == 0 ? x : (i == 1 ? y : z);
+    }
+
+    DH_INLINE const float &operator[](size_t i) const {
+        return i == 0 ? x : (i == 1 ? y : z);
+    }
+
+    // Optional: equality
+    DH_INLINE bool operator==(const Vector3 &o) const {
+        return x == o.x && y == o.y && z == o.z;
+    }
+
+    DH_INLINE bool operator!=(const Vector3 &o) const {
+        return !(*this == o);
+    }
+
+    // ================================================================
+    // [cuda float3]
+    // ----------------------------------------------------------------
+
+    // Construct from float3
+    DH_INLINE Vector3(const float3 &v) : x(v.x), y(v.y), z(v.z) {}
+
+    // Implicit conversion to float3
+    DH_INLINE operator float3() const {
+        return make_float3(x, y, z);
+    }
+
+    // ----------------------------------------------------------------
+
+    // multiply by scalar to right (vector * scalar)
+    DH_INLINE Vector3 operator*(float s) const {
+        return Vector3(x * s, y * s, z * s);
+    }
+
+    // multiply by scalar to left (scalar * vector)
+    DH_INLINE friend Vector3 operator*(float s, const Vector3 &v) {
+        return Vector3(v.x * s, v.y * s, v.z * s);
+    }
+
+    // Dot product
+    DH_INLINE float dot(const Vector3 &o) const {
+        return x * o.x + y * o.y + z * o.z;
+    }
+
+    // Cross product
+    DH_INLINE Vector3 cross(const Vector3 &o) const {
+        return Vector3(
+            y * o.z - z * o.y,
+            z * o.x - x * o.z,
+            x * o.y - y * o.x);
     }
 };
 
