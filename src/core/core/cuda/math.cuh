@@ -181,6 +181,8 @@ D_INLINE int3 global_thread_pos3() {
 
 #pragma region HASH // MurmurHash3 hash
 
+// ================================================================================================================================
+
 // // signed integer hash (based on MurmurHash3 finalizer)
 DH_INLINE int hash_int(int x, int y, int z, int seed) {
     int n = x + y * XXH_PRIME32_5 + z * XXH_PRIME32_4 + seed * XXH_PRIME32_3;
@@ -242,14 +244,58 @@ DH_INLINE float hash_to_4randf(uint32_t h, int byte_index) {
     return (float(byte) / 127.5f) - 1.0f; // // map [0,255] to [-1,1]
 }
 
-// function can mix an existing hash to create more random numbers at less cost
-DH_INLINE uint32_t hash_mix(uint32_t x) {
-    x ^= x >> 16;
-    x *= 0x7feb352d;
-    x ^= x >> 15;
-    x *= 0x846ca68b;
-    x ^= x >> 16;
-    return x;
+// --------------------------------------------------------------------------------------------------------------------------------
+
+// SplitMix32 / MurmurHash3 finalizer (high quality)
+DH_INLINE uint32_t hash_mix_murmur(uint32_t x) {
+
+    x ^= x >> 16;    // 1) initial avalanche: fold high bits into low bits
+    x *= 0x7feb352d; // 2) mix with constant #1 (large odd 32‑bit prime-like)
+    x ^= x >> 15;    // 3) second avalanche: spread entropy further
+    x *= 0x846ca68b; // 4) mix with constant #2 (another high‑quality mixer)
+    x ^= x >> 16;    // 5) final avalanche: ensure full bit diffusion
+    return x;        // output: high‑quality 32‑bit mixed value
+}
+
+// wang (less quality, cheaper)
+// Wang is intentionally minimal: only two multiplies, a few shifts, and XORs
+DH_INLINE uint32_t hash_mix_wang(uint32_t x) {
+    x = (x ^ 61u) ^ (x >> 16); // 1) initial scramble: inject a fixed odd constant + fold high bits down
+    x *= 9u;                   // 2) cheap multiply: small odd constant to spread bits
+    x ^= x >> 4;               // 3) secondary avalanche: mix high nibble into low bits
+    x *= 0x27d4eb2du;          // 4) main mixing multiply: strong 32‑bit diffusion constant
+    x ^= x >> 15;              // 5) final avalanche: destroy remaining linearity
+    return x;                  // output: fast, reasonably uniform 32‑bit mix
+}
+
+// jenkins (least quality, most cheap)
+// No multiplications → extremely fast on GPU
+DH_INLINE uint32_t hash_mix_jenkins(uint32_t x) {
+    x += (x << 10); // 1) add + shift: quick nonlinear expansion of low bits
+    x ^= (x >> 6);  // 2) fold high bits down to increase diffusion
+    x += (x << 3);  // 3) second expansion: cheap additive mixing
+    x ^= (x >> 11); // 4) another avalanche step to break patterns
+    x += (x << 15); // 5) final expansion: push entropy across full 32 bits
+    return x;       // output: very cheap, decent-quality mix
+}
+
+enum class HashMixType : int {
+    Murmur = 0,
+    Wang = 1,
+    Jenkins = 2
+};
+
+DH_INLINE uint32_t hash_mix(uint32_t x, HashMixType type = HashMixType::Murmur) {
+    switch (type) {
+    case HashMixType::Murmur:
+        return hash_mix_murmur(x);
+    case HashMixType::Wang:
+        return hash_mix_wang(x);
+    case HashMixType::Jenkins:
+        return hash_mix_jenkins(x);
+    }
+
+    std::abort(); // unreachable
 }
 
 struct HashRng {

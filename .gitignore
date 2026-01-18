@@ -34,3 +34,4 @@ compile_flags.txt
 godot/cuda_texture_gen/**/*.png
 
 
+lib/cuda_texture_gen/cuda_texture_gen.cp313-win_amd64.pyd

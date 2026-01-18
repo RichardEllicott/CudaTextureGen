@@ -94,6 +94,13 @@ DH_INLINE float2 compute_slope_vector(
             yn_height += hash_float_signed(hash) * jitter; // += [-1,1] * jitter
             break;
         }
+
+        // case 2: {
+        // }
+
+        default: {
+            std::abort(); // causes crash
+        }
         }
     }
 

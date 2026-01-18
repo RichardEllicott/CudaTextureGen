@@ -9,40 +9,38 @@
 
 namespace TEMPLATE_NAMESPACE {
 
+// ================================================================================================================================
+#pragma region HELPERS
+
+#pragma endregion
+// ================================================================================================================================
 #pragma region KERNELS
 
 __global__ void add_rain3(
-    const Parameters *__restrict__ pars,
-    const ArrayPointers *__restrict__ arrays,
-    int step) {
+    const int2 map_size,
+    float *__restrict__ water_map, // out
+    const float rain_rate,
+
+    const float *__restrict__ rain_map, // in (optional)
+
+    float rain_probability = 1.0f, // [0, 1] leave 1 to disable
+    int step = 0) {
     // ================================================================
-    int2 map_size = pars->_size;
-    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
-    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
-        return;
-    int idx = cmath::pos_to_idx(pos, map_size.x);
+    int2 pos = cmath::global_thread_pos2();
+    if (pos.x >= map_size.x || pos.y >= map_size.y) return;
+    int idx = cmath::pos_to_idx(pos, map_size);
     // ================================================================
     // [Rain]
     // ----------------------------------------------------------------
-    float rain = pars->rain_rate;
-    if (arrays->rain_map) {
-        rain *= arrays->rain_map[idx]; // multiply by rain_map if != nullptr
+    float rain = rain_rate;
+    if (rain_map) {
+        rain *= rain_map[idx]; // multiply by rain_map if != nullptr
     }
-    arrays->water_map[idx] += rain;
+    water_map[idx] += rain;
 }
 
-// calculate water and sediment flux (or total outflow)
-// requires:
-// height_map
-// water_map
-// sediment_map
-// _slope_vector2 ❓ UNUSED so far
-// _slope_magnitude ❓ USED FOR SOME EROSION MODES
-// _water_velocity ❓USED FOR SOME EROSION MODES
-// _flux8
-// _sediment_flux8
-// _water_out ❗ avoids recalculating
-// _sediment_out ❗ avoids recalculating
+// --------------------------------------------------------------------------------------------------------------------------------
+
 __global__ void calculate_flux3(
     const Parameters *__restrict__ pars,
     const ArrayPointers *__restrict__ arrays,
@@ -175,24 +173,16 @@ __global__ void calculate_flux3(
     arrays->_sediment_out_map[idx] = sediment_outflow;
 }
 
-// apply flows and erosion etc
-// requires:
-// height_map
-// water_map
-// sediment_map
-// layer_map ❓ optional for layer mode
-// _exposed_layer_map
-// _slope_magnitude
-// _water_velocity
+// --------------------------------------------------------------------------------------------------------------------------------
+
 __global__ void apply_flux3(
     const Parameters *__restrict__ pars,
     const ArrayPointers *__restrict__ arrays,
     const int step) {
     // ================================================================
+    int2 pos = cmath::global_thread_pos2();
     int2 map_size = pars->_size;
-    int2 pos = make_int2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y);
-    if (pos.x >= map_size.x || pos.y >= map_size.y) // bounds check
-        return;
+    if (pos.x >= map_size.x || pos.y >= map_size.y) return;
     int idx = cmath::pos_to_idx(pos, map_size.x);
     // int idx8 = idx * 8;
     // ================================================================
@@ -343,19 +333,21 @@ __global__ void apply_flux3(
 }
 
 #pragma endregion
-
+// ================================================================================================================================
 #pragma region MAIN
 
 void TEMPLATE_CLASS_NAME::setup() {
 
     if (layer_map.is_valid() && !layer_map->empty()) { // layer mode
         _layer_mode_enabled = true;
-        height_map.instantiate_if_null();
-        auto shape = layer_map->shape();
-        height_map->resize(shape[0], shape[1]);
-        _layer_count = shape[2];
+
+        auto layer_map_shape = layer_map->shape();
+        _layer_count = layer_map_shape[2];
 
         if (_layer_count > 8) throw std::runtime_error("_layer_count > 8");
+
+        height_map.instantiate_if_null();
+        height_map->resize(layer_map_shape[0], layer_map_shape[1]);
 
     } else if (height_map.is_valid() && !height_map->empty()) { // heightmap only
         _layer_mode_enabled = false;
@@ -369,53 +361,28 @@ void TEMPLATE_CLASS_NAME::setup() {
     auto shape2 = std::array{shape[0], shape[1], (size_t)2};
     auto shape8 = std::array{shape[0], shape[1], (size_t)8};
 
-    // _size = to_int2(height_map_shape);
+    if (_layer_mode_enabled) ensure_array_ref_ready(_exposed_layer_map, shape); // need layer map if layer mode enabled
+
     set_par(_size, to_int2(shape));
 
     ensure_array_ref_ready(water_map, shape, true);
     ensure_array_ref_ready(sediment_map, shape, true);
 
-    // auto shape2 = std::array<size_t, 3>{(size_t)_size.x, (size_t)_size.y, (size_t)2};
-
-    ensure_array_ref_ready(_slope_magnitude_map, shape); // 1
-
-    ensure_array_ref_ready(_slope_vector2_map, shape2); // 2
-
-    ensure_array_ref_ready(_flux8_map, shape8);          // 8
-    ensure_array_ref_ready(_sediment_flux8_map, shape8); // 8
-
-    rain_map.instantiate_if_null(); // ensures we have a nullptr at least
-
-    //
-    //
-    //
     ensure_array_ref_ready(_water_out_map, shape);
     ensure_array_ref_ready(_sediment_out_map, shape);
     ensure_array_ref_ready(_water_velocity_map, shape);
+    ensure_array_ref_ready(_slope_magnitude_map, shape);
 
-    // // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-    // #define TEMPLATE_CLASS_ARRAYS_1   \f
-    //     X(float, 2, height_map, "")   \
-    //     X(float, 2, water_map, "")    \
-    //     X(float, 2, sediment_map, "") \
-    //     X(float, 2, rain_map, "")     \
-    //     X(float, 3, layer_map, "")
+    ensure_array_ref_ready(_slope_vector2_map, shape2);
 
-    // #define TEMPLATE_CLASS_ARRAYS_2         \
-    //     X(float, 2, _water_out_map, "")     \
-    //     X(float, 2, _sediment_out_map, "")  \
-    //     X(int, 2, _exposed_layer_map, "")   \
-    //     X(float, 3, _slope_vector2_map, "") \
-    //     X(float, 3, _flux8_map, "")         \
-    //     X(float, 3, _sediment_flux8_map, "")
+    ensure_array_ref_ready(_flux8_map, shape8);
+    ensure_array_ref_ready(_sediment_flux8_map, shape8);
 
-    // #define TEMPLATE_CLASS_ARRAYS_3                                                           \
-    //     X(float, 2, _slope_magnitude_map, "calculation of strength based on gradient vector") \
-    //     X(float, 2, _water_velocity_map, "🧪 scalar water velocity")
+    rain_map.instantiate_if_null(); // ensures we have a nullptr at least
 
     ready_device();
 }
-
+// --------------------------------------------------------------------------------------------------------------------------------
 void TEMPLATE_CLASS_NAME::_compute() {
 
     setup();
@@ -424,7 +391,9 @@ void TEMPLATE_CLASS_NAME::_compute() {
     dim3 grid((_size.x + block.x - 1) / block.x, (_size.y + block.y - 1) / block.y);
 
     for (int i = 0; i < steps; i++) {
-
+        // ================================================================
+        // [Kernels]
+        // ----------------------------------------------------------------
         if (_layer_mode_enabled) {
             cmath::grid::layer_info_kernel<<<grid, block, 0, stream->get()>>>(
                 _size,
@@ -435,7 +404,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
                 _exposed_layer_map->dev_ptr() // out
             );
         }
-
+        // ----------------------------------------------------------------
         cmath::grid::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
             _size,
 
@@ -453,28 +422,31 @@ void TEMPLATE_CLASS_NAME::_compute() {
 
             1.0f,
             _slope_magnitude_map->dev_ptr());
-
+        // ----------------------------------------------------------------
         if (_pars.rain_rate > 0.0f) {
             add_rain3<<<grid, block, 0, stream->get()>>>(
-                _dev_pars.dev_ptr(),
-                _dev_arrays.dev_ptr(),
-                _step);
+                _size,
+                water_map->dev_ptr(),
+                rain_rate,
+                rain_map->dev_ptr());
         }
-
+        // ----------------------------------------------------------------
         calculate_flux3<<<grid, block, 0, stream->get()>>>(
             _dev_pars.dev_ptr(),
             _dev_arrays.dev_ptr(),
             _step);
-
+        // ----------------------------------------------------------------
         apply_flux3<<<grid, block, 0, stream->get()>>>(
             _dev_pars.dev_ptr(),
             _dev_arrays.dev_ptr(),
             _step);
+        // ================================================================
 
         _step++;
     }
 }
 
 #pragma endregion
+// ================================================================================================================================
 
 } // namespace TEMPLATE_NAMESPACE
