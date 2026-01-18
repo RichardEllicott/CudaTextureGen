@@ -422,7 +422,8 @@
         },
         {
             "folderPath": "cuda_texture_gen\\src\\main\\gnc\\",
-            "badge": "🧙‍♂️"
+            "badge": "🧙‍♂️",
+            "color": "foldercolorizer.color_ff0033"
         },
         {
             "folderPath": "cuda_texture_gen\\src\\main\\gnc\\gnc_template.cu\\",

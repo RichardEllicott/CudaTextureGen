@@ -57,6 +57,10 @@ constexpr uint32_t constexpr_random32(int index) {
 
 #pragma region MAIN
 
+// ================================================================================================================================
+// [Main Hashing]
+// --------------------------------------------------------------------------------------------------------------------------------
+
 // // signed integer hash (based on MurmurHash3 finalizer)
 DH_INLINE int hash_int(int x, int y, int z, int seed) {
     int n = x + y * XXH_PRIME32_5 + z * XXH_PRIME32_4 + seed * XXH_PRIME32_3;
@@ -110,6 +114,10 @@ DH_INLINE bool hash_bool(int hash, int index = 0) {
     return (hash >> index) & 1u;
 }
 
+// ================================================================================================================================
+// [Low Quality Tricks]
+// --------------------------------------------------------------------------------------------------------------------------------
+
 // get 4 random float's from one 32 bit hash, they are not so random though with about 255 possible values
 // set byte_index from 0-3
 // used only for very low quality random like jitter over frames
@@ -118,6 +126,8 @@ DH_INLINE float hash_to_4randf(uint32_t h, int byte_index) {
     return (float(byte) / 127.5f) - 1.0f; // // map [0,255] to [-1,1]
 }
 
+// ================================================================================================================================
+// [Hash Mixing]
 // --------------------------------------------------------------------------------------------------------------------------------
 
 // SplitMix32 / MurmurHash3 finalizer (high quality)
@@ -159,6 +169,7 @@ enum class HashMixType : int {
     Jenkins = 2
 };
 
+// default hash mix
 DH_INLINE uint32_t hash_mix(uint32_t x, HashMixType type = HashMixType::Murmur) {
     switch (type) {
     case HashMixType::Murmur:
@@ -172,6 +183,8 @@ DH_INLINE uint32_t hash_mix(uint32_t x, HashMixType type = HashMixType::Murmur) 
     return 1;
     // std::abort(); // unreachable
 }
+
+// --------------------------------------------------------------------------------------------------------------------------------
 
 // ⚠️ broken atm, was just a test example to check compile
 // void example_hash_pattern() {
@@ -199,20 +212,22 @@ DH_INLINE uint32_t hash_mix(uint32_t x, HashMixType type = HashMixType::Murmur) 
 // printf("  r4 = %f  (from hash4 = %u)\n", r4, hash4);
 // }
 
-struct HashRng {
-    uint32_t x;
+//--------------------------------------------------------------------------------------------------------------------------------
+/// not using this as i prefer mixing with a xor of seed (with cheap jenkins or something)
+// struct HashRng {
+//     uint32_t x;
 
-    // output float [-1, 1]
-    DH_INLINE float next_signed() {
-        x = hash_mix(x);
-        return hash_float_signed(x); // [-1,1)
-    }
+//     // output float [-1, 1]
+//     DH_INLINE float next_signed() {
+//         x = hash_mix(x);
+//         return hash_float_signed(x); // [-1,1)
+//     }
 
-    DH_INLINE float next_unsigned() {
-        x = hash_mix(x);
-        return hash_float(x); // [0,1)
-    }
-};
+//     DH_INLINE float next_unsigned() {
+//         x = hash_mix(x);
+//         return hash_float(x); // [0,1)
+//     }
+// };
 
 #pragma endregion
 

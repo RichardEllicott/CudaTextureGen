@@ -12,8 +12,6 @@ import numpy as np
 import cuda_texture_gen as ct
 
 
-
-
 from ErosionRunner import ErosionRunnerGNC
 from IslandGenerator import IslandGenerator
 
@@ -44,13 +42,10 @@ def test():
     # ================================================================
 
     # DEBUG
-    
-
 
     device_array = ct.DeviceArrayFloat2D()
     device_array.array = noise
 
-    
     erosion.steps = 512
     erosion.rain_rate = 0.0007
     erosion.erosion_rate = 0.001
@@ -63,19 +58,14 @@ def test():
     # runner.process() # running process now messes up the next part
     erosion.compute()
 
-    
     # erosion
 
-    erosion.stream.sync() # ⚠️
+    erosion.stream.sync()  # ⚠️
 
     output = erosion.height_map.array
     tools.arrays.normalize(output)
 
     tools.images.save(output, f"{script_path}.erode.png")
-
-
-
-
 
 
 test()
