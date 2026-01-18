@@ -29,19 +29,19 @@ constexpr float RAD_TO_DEG = 180.0f / PI; // multiply to convert radians to degr
 
 #pragma region HASH
 
-// magic numbers
-constexpr uint32_t GOLDEN_RATIO_CONST = 0x9E3779B9u; // 32‑bit golden ratio constant (Knuth / SplitMix / xxHash)
-constexpr uint32_t MURMUR3_C1 = 0x85EBCA6Bu;         // MurmurHash3 avalanche constant C1
-constexpr uint32_t MURMUR3_C2 = 0xC2B2AE35u;         // MurmurHash3 avalanche constant C2
+// // magic numbers
+// constexpr uint32_t GOLDEN_RATIO_CONST = 0x9E3779B9u; // 32‑bit golden ratio constant (Knuth / SplitMix / xxHash)
+// constexpr uint32_t MURMUR3_C1 = 0x85EBCA6Bu;         // MurmurHash3 avalanche constant C1
+// constexpr uint32_t MURMUR3_C2 = 0xC2B2AE35u;         // MurmurHash3 avalanche constant C2
 
-constexpr uint32_t XXH_PRIME32_3 = 1274126177u; // xxHash32 Seed mixing
-constexpr uint32_t XXH_PRIME32_4 = 668265263u;  // xxHash32 Secondary avalanche
-constexpr uint32_t XXH_PRIME32_5 = 374761393u;  // xxHash32 Mix low bits, small inputs
+// constexpr uint32_t XXH_PRIME32_3 = 1274126177u; // xxHash32 Seed mixing
+// constexpr uint32_t XXH_PRIME32_4 = 668265263u;  // xxHash32 Secondary avalanche
+// constexpr uint32_t XXH_PRIME32_5 = 374761393u;  // xxHash32 Mix low bits, small inputs
 
-// numbers used to multiply a hash to floats
-constexpr float INV_U32 = 0x1p-32f; // exactly 2^-32
-constexpr float INV_U31 = 0x1p-31f; // exactly 2^-31
-// constexpr float INV_U30 = 0x1p-30f; // exactly 2^-30
+// // numbers used to multiply a hash to floats
+// constexpr float INV_U32 = 0x1p-32f; // exactly 2^-32
+// constexpr float INV_U31 = 0x1p-31f; // exactly 2^-31
+// // constexpr float INV_U30 = 0x1p-30f; // exactly 2^-30
 
 #pragma endregion
 

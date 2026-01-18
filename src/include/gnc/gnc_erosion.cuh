@@ -13,7 +13,6 @@ CURRENT PORTING MODEL
 #define TEMPLATE_CLASS_NAME GNC_Erosion
 #define TEMPLATE_NAMESPACE gnc::erosion
 
-#define EROSION_DEFAULT_LAYER_SETTINGS {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}
 
 // --------------------------------------------------------------------------------------------------------------------------------
 
@@ -49,9 +48,10 @@ CURRENT PORTING MODEL
     X(int, erosion_mode, 0, "erosion mode") \
     X(float, erosion_rate, 0.0, "rate at which height becomes sediment based on water outflow")
 
-// layer arrays
 
-// ⚠️ THESE ARRAYS ARE NOT ACCESIBLE IN CUDA!!!
+// layer arrays
+#define EROSION_DEFAULT_LAYER_SETTINGS {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}
+
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT_4                                        \
     X(FloatArray<8>, layer_erosiveness_array, EROSION_DEFAULT_LAYER_SETTINGS, "") \
     X(FloatArray<8>, layer_yield_array, EROSION_DEFAULT_LAYER_SETTINGS, "")
@@ -100,10 +100,21 @@ CURRENT PORTING MODEL
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_METHODS \
     X(void, setup, "setup stuff")
+// --------------------------------------------------------------------------------------------------------------------------------
 
 #include "gnc_boilerplate.cuh"
+// --------------------------------------------------------------------------------------------------------------------------------
 
 // cleanup loose defines
 #undef TEMPLATE_CLASS_ARRAYS_1
 #undef TEMPLATE_CLASS_ARRAYS_2
 #undef TEMPLATE_CLASS_ARRAYS_3
+#undef EROSION_DEFAULT_LAYER_SETTINGS
+
+
+#undef TEMPLATE_CLASS_PARAMETERS_STRUCT_1
+#undef TEMPLATE_CLASS_PARAMETERS_STRUCT_2
+#undef TEMPLATE_CLASS_PARAMETERS_STRUCT_3
+#undef TEMPLATE_CLASS_PARAMETERS_STRUCT_4
+
+
