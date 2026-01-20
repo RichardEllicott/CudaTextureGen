@@ -22,6 +22,7 @@
     X(bool, _debug, false, "")                                          \
     X(int2, size, DEFAULT_SIZE, "")                                     \
     X(int, seed, 0, "")                                                 \
+    X(int, mode, 0, "")                                                 \
     X(int, smoothing_mode, 0, "0 is cubic, best -1 disable, 1+ others") \
     X(float3, period, DEFAULT_PERIOD, "")                               \
     X(FloatArray<9>, basis3, {}, "basis for rotation and/or scaling")   \

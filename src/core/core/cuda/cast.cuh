@@ -12,12 +12,16 @@ casting various arrays and types to cuda types like int3 etc
 // #include "core/cuda/types.cuh"
 #include "types.cuh"
 
+#include "core/cuda/math/fast.cuh"
+
 #define D_INLINE __device__ __forceinline__           // device only functions
 #define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
 #define CASTING_CODE_ROUTE 0
 
 namespace core::cuda::cast {
+
+// using core::cuda::math::fast::int2float;
 
 #if CASTING_CODE_ROUTE == 0
 
@@ -33,12 +37,22 @@ inline float3 to_float3(const std::array<float, 3> &arr) { return make_float3(ar
 // std::array<float, 4> => float4
 inline float4 to_float4(const std::array<float, 4> &arr) { return make_float4(arr[0], arr[1], arr[2], arr[3]); }
 // --------------------------------------------------------------------------------------------------------------------------------
+// // int2 => float2
+// DH_INLINE float2 to_float2(int2 v) { return make_float2(v.x, v.y); }
+// // int3 => float3
+// DH_INLINE float3 to_float3(int3 v) { return make_float3(v.x, v.y, v.z); }
+// // int4 => float4
+// DH_INLINE float4 to_float4(int4 v) { return make_float4(v.x, v.y, v.z, v.w); }
+
+// int => float
+DH_INLINE float to_float(int v) { return core::cuda::math::fast::int2float(v); }
 // int2 => float2
-DH_INLINE float2 to_float2(int2 v) { return make_float2(v.x, v.y); }
+DH_INLINE float2 to_float2(int2 v) { return make_float2(to_float(v.x), to_float(v.y)); }
 // int3 => float3
-DH_INLINE float3 to_float3(int3 v) { return make_float3(v.x, v.y, v.z); }
+DH_INLINE float3 to_float3(int3 v) { return make_float3(to_float(v.x), to_float(v.y), to_float(v.z)); }
 // int4 => float4
-DH_INLINE float4 to_float4(int4 v) { return make_float4(v.x, v.y, v.z, v.w); }
+DH_INLINE float4 to_float4(int4 v) { return make_float4(to_float(v.x), to_float(v.y), to_float(v.z), to_float(v.w)); }
+
 // --------------------------------------------------------------------------------------------------------------------------------
 // [int]
 // --------------------------------------------------------------------------------------------------------------------------------

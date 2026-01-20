@@ -16,6 +16,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include "core/cuda/cast.cuh" // top level for this object
 #include "core/cuda/device_struct.cuh"
 #include "core/cuda/math.cuh"
+#include "core/cuda/hash.cuh"
 #include "core/cuda/stream.cuh"
 #include "core/cuda/types.cuh"  // top level for this object
 #include "macros.h"
@@ -35,7 +36,9 @@ namespace gnc {
 
 using namespace core::cuda::types; // include type aliases at top level
 using namespace core::cuda::cast;  // include type aliases at top level
+
 namespace cmath = core::cuda::math; // include the cuda math lib as cmath
+namespace chash = core::cuda::hash;// include the cuda math lib as cmath
 
 
 

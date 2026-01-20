@@ -153,41 +153,11 @@ DH_INLINE float4 lerp(float4 a, float4 b, float fade) {
         a.w * (1.0f - fade) + b.w * fade);
 }
 
-#pragma region GLOBAL_THREAD_POS
-
-#ifdef __CUDACC__ // only use when compiling with NVCC
-
-// get position in 1D kernel
-D_INLINE int global_thread_pos1() {
-    return int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x);
-}
-
-// get position in 2D kernel
-D_INLINE int2 global_thread_pos2() {
-    return make_int2(
-        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
-        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y));
-}
-
-// get position in 3D kernel
-D_INLINE int3 global_thread_pos3() {
-    return make_int3(
-        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
-        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y),
-        int(blockIdx.z) * int(blockDim.z) + int(threadIdx.z));
-}
-
-#endif
-
 #pragma endregion
 
 #pragma region HASH // MurmurHash3 hash
 
-// ================================================================================================================================
-
 using namespace core::cuda::hash;
-
-// ================================================================================================================================
 
 #pragma endregion
 
@@ -234,8 +204,6 @@ DH_INLINE float2 normal_vector2_fast(int x, int y, int z, int seed) {
 
 #pragma endregion
 
-#pragma endregion
-
 #pragma region POSMOD // wrapping coordinates
 
 // positive modulo for wrapping map coordinates (branchless)
@@ -276,7 +244,8 @@ DH_INLINE float3 posmod(float3 pos, float3 mod) {
 
 #pragma endregion
 
-#pragma region IDX // pos to idx formulae
+#pragma region HELPERS // pos to idx, calc grid, thread pos
+// ================================================================================================================================
 
 // pos to idx shortcut
 DH_INLINE int pos_to_idx(int2 pos, int map_width) {
@@ -292,6 +261,42 @@ DH_INLINE int pos_to_idx(int2 pos, int2 map_size) {
 DH_INLINE int pos_to_idx(int x, int y, int map_width) {
     return y * map_width + x;
 }
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
+#ifdef __CUDACC__ // only use when compiling with NVCC
+
+// get position in 1D kernel
+D_INLINE int global_thread_pos1() {
+    return int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x);
+}
+
+// get position in 2D kernel
+D_INLINE int2 global_thread_pos2() {
+    return make_int2(
+        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
+        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y));
+}
+
+// get position in 3D kernel
+D_INLINE int3 global_thread_pos3() {
+    return make_int3(
+        int(blockIdx.x) * int(blockDim.x) + int(threadIdx.x),
+        int(blockIdx.y) * int(blockDim.y) + int(threadIdx.y),
+        int(blockIdx.z) * int(blockDim.z) + int(threadIdx.z));
+}
+
+#endif
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
+__host__ inline dim3 calculate_grid(int2 size, dim3 block = dim3(16, 16)) {
+    return dim3(
+        (size.x + block.x - 1) / block.x,
+        (size.y + block.y - 1) / block.y);
+}
+
+// ================================================================================================================================
 
 #pragma endregion
 
@@ -319,10 +324,6 @@ DH_INLINE int2 clamp_index(int2 pos, int2 range) {
         clamp_index(pos.x, range.x),
         clamp_index(pos.y, range.y));
 }
-
-#pragma endregion
-
-#pragma region WRAP_OR_CLAMP // shortcuts for image coordinates
 
 // // wrap or clamp an index, used for accesing map in range
 // template <typename T>
@@ -419,11 +420,6 @@ DH_INLINE float3 cross(float3 a, float3 b) {
 DH_INLINE float soft_saturate(float value, float ceiling, float sharpness = 1.0f) {
     return ceiling * fast::tanhf((value / ceiling) * sharpness);
 }
-
-#pragma endregion
-
-#pragma region SLOPES // calculate slope vectors, however in practise we hardcode this as we need jitter
-
 
 #pragma endregion
 
