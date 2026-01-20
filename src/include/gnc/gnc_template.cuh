@@ -287,7 +287,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     void _ready_device() {
 
         // --------------------------------------------------------------------------------------------------------------------------------
-        copy_properties(*this, _pars); // 🧪 testing
+        // copy_properties(*this, _pars); // 🧪 testing
 
         // --------------------------------------------------------------------------------------------------------------------------------
 

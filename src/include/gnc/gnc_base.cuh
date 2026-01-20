@@ -21,27 +21,149 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include "core/cuda/types.cuh" // top level for this object
 #include "macros.h"
 
-// more reflection
-#include <string_view>
-
-//
-//
-
 // ================================================================================================================================
-// REFACTOR OPTIONS
+
+namespace core::reflection{
+
+
+#pragma region REFLECTION_PROPERTIES
+// ================================================================================================================================
+// [Property object for reflection]
 // --------------------------------------------------------------------------------------------------------------------------------
-#define REFACTOR_GNC_STORAGE_IN_PARS 0 // 0 is normal, 1 i was trying to refactor to point props to a member structure (lowering copying)
-#define REFACTOR_GNC_TEMPLATE_VALIDATION
-// #define ATTEMPT_GENERIC_REFLECTION // broken
+
+// struct for properties
+template <typename T, typename Member>
+struct _Property {
+    const char *name;
+    Member member;
+};
+
+// helper to lower boilerplate in final form (see gnc_example for usage)
+template <typename T, auto Member>
+using Property = _Property<T, decltype(Member)>;
+
 // ================================================================================================================================
+// [Copy properties by reflection, whenever the "name" of the property matches]
+// --------------------------------------------------------------------------------------------------------------------------------
+// this pattern should allow copying from two objects with "properties()"
+
+// copy one source property into matching dst property by name
+template <std::size_t J = 0, class SrcProp, class SrcType, class DstType, class DstTuple>
+static inline void copy_one_dst(const SrcProp &sp,
+                                const SrcType &src,
+                                DstType &dst,
+                                const DstTuple &dst_props) {
+    if constexpr (J < std::tuple_size_v<DstTuple>) {
+        auto &dp = std::get<J>(dst_props);
+
+        if (std::strcmp(sp.name, dp.name) == 0) {
+            if constexpr (std::is_same_v<
+                              decltype(src.*(sp.member)),
+                              decltype(dst.*(dp.member))>) {
+                dst.*(dp.member) = src.*(sp.member);
+            }
+        }
+
+        copy_one_dst<J + 1>(sp, src, dst, dst_props);
+    }
+}
+
+// iterate all source properties
+template <std::size_t I = 0, class SrcType, class DstType, class SrcTuple, class DstTuple>
+static inline void copy_all_src(const SrcType &src,
+                                DstType &dst,
+                                const SrcTuple &src_props,
+                                const DstTuple &dst_props) {
+    if constexpr (I < std::tuple_size_v<SrcTuple>) {
+        auto const &sp = std::get<I>(src_props);
+        copy_one_dst<>(sp, src, dst, dst_props);
+        copy_all_src<I + 1>(src, dst, src_props, dst_props);
+    }
+}
+
+// // inside your CRTP base / GNC_Template
+// void __copy_properties(const Self &src, Parameters &dst) {
+//     constexpr auto src_props = Self::properties();
+//     constexpr auto dst_props = Parameters::properties();
+//     copy_all_src(src, dst, src_props, dst_props);
+// }
+
+// copies all properties from a src object to dst
+// both objects must have properties() implemented
+template <class Src, class Dst>
+static inline void copy_properties(const Src &src, Dst &dst) {
+    constexpr auto src_props = Src::properties();
+    constexpr auto dst_props = Dst::properties();
+    copy_all_src(src, dst, src_props, dst_props);
+}
+
+
+/*
+EXAMPLE OF AN OBJECT THAT HAS PROPERTY:
+
+struct Parameters {
+    using Self = Parameters;
+
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    TYPE NAME = DEFAULT_VAL;
+    TEMPLATE_CLASS_PARAMETERS_STRUCT
+#undef X
+#endif
+
+    // reflection string to member functions
+    static constexpr auto properties() {
+        return std::tuple{
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+            TEMPLATE_CLASS_PARAMETERS_STRUCT
+#undef X
+#endif
+        };
+    }
+};
+static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
+
+*/
+
+
+// example property:
+// Property<Self, &Self::stream>{"stream", &Self::stream},
+
+
+
+#pragma endregion
+//
+//
+//
+// 🧪 trying same for methods
+template <typename T, auto MethodPtr>
+struct Method {
+    const char *name;
+    static constexpr auto member = MethodPtr;
+    // if your property metadata exposes __this, add it too:
+    // using This = T;
+    // static constexpr auto __this = static_cast<T*>(nullptr);
+};
+
+}
+
+
 
 namespace gnc {
 
 using namespace core::cuda::types; // include type aliases at top level
 using namespace core::cuda::cast;  // include type aliases at top level
+using namespace core::reflection; // include at top level
+
+
 
 namespace cmath = core::cuda::math; // include the cuda math lib as cmath
 namespace chash = core::cuda::hash; // include the cuda math lib as cmath
+
+
+#pragma region VALIDATORS // check if something is a particular type by template
 
 // ================================================================================================================================
 // Template Validators
@@ -68,70 +190,9 @@ struct is_ref<core::Ref<U>> : std::true_type {};
 
 // ================================================================================================================================
 
-#ifdef ATTEMPT_GENERIC_REFLECTION
+#pragma endregion
 
-template <typename Tuple, typename F, std::size_t... I>
-constexpr void tuple_for_each_impl(Tuple &&t, F &&f, std::index_sequence<I...>) {
-    (f(std::get<I>(t)), ...);
-}
-
-template <typename Tuple, typename F>
-constexpr void tuple_for_each(Tuple &&t, F &&f) {
-    tuple_for_each_impl(
-        std::forward<Tuple>(t),
-        std::forward<F>(f),
-        std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>{});
-}
-#endif
-
-//
-//
-//
-//
-// struct for properties
-template <typename T, typename Member>
-struct _Property {
-    const char *name;
-    Member member;
-};
-
-// helper to lower boilerplate in final form (see gnc_example for usage)
-template <typename T, auto Member>
-using Property = _Property<T, decltype(Member)>;
-
-//
-//
-//
-// 🧪 trying same for methods
-template <typename T, auto MethodPtr>
-struct Method {
-    const char *name;
-    static constexpr auto member = MethodPtr;
-    // if your property metadata exposes __this, add it too:
-    // using This = T;
-    // static constexpr auto __this = static_cast<T*>(nullptr);
-};
-
-//
-//
-//
-
-#if REFACTOR_GNC_STORAGE_IN_PARS == 1
-// 🧪 attempting to bind properties direct to structure, is more complicated
-template <typename T, auto SubobjectPtr, auto FieldPtr>
-struct NestedProperty {
-    const char *name;
-
-    // Accessor
-    auto &get(T &obj) const {
-        return (obj.*SubobjectPtr).*FieldPtr;
-    }
-};
-#endif
-
-//
-//
-//
+#pragma region BASE
 
 struct NoParams {}; // default if we don't use the params
 
@@ -183,34 +244,11 @@ class GNC_Base {
     // [Ensure Array Ref Ready]
     // ensure the array ref is not empty, and if creating a new one set it up also marking sync as dirty
     // (ensuring pointers are uploaded before kernel launch)
+        // --------------------------------------------------------------------------------------------------------------------------------
+    // EXAMPLE:
+    // ensure_array_ref_ready(water_map, height_map->shape(), true);
     // --------------------------------------------------------------------------------------------------------------------------------
-
-    // template <typename Container, size_t Dim>
-    // std::array<size_t, Dim> to_size_array(const Container &c) {
-    //     std::array<size_t, Dim> out{};
-    //     for (size_t i = 0; i < Dim; ++i)
-    //         out[i] = static_cast<size_t>(c[i]);
-    //     return out;
-    // }
-
-    // template <
-    //     typename MapT,
-    //     typename ShapeT,
-    //     typename = std::enable_if_t<gnc::is_array_ref<MapT>::value>>
-    // inline void ensure_array_ref_ready(
-    //     MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
-
-    //     map.instantiate_if_null();
-
-    //     auto desired = to_size_array(desired_shape); // canonicalize here
-
-    //     if (map->shape() != desired) {
-    //         _pars_synced = false;
-    //         map->resize(desired);
-    //         if (zero_device) map->zero_device();
-    //     }
-    // }
-
+  
     template <
         typename MapT,
         typename ShapeT,
@@ -228,65 +266,6 @@ class GNC_Base {
     }
 
     // ================================================================================================================================
-    // [🧪 New Reflection for Paramaters and ArrayPointers 20260120]
-    // --------------------------------------------------------------------------------------------------------------------------------
-    // this pattern should allow copying from two objects with "properties()"
-
-#pragma region WORKING_TEST_ON_DERIVED
-
-    // copy one source property into matching dst property by name
-    template <std::size_t J = 0, class SrcProp, class SrcType, class DstType, class DstTuple>
-    static inline void copy_one_dst(const SrcProp &sp,
-                                    const SrcType &src,
-                                    DstType &dst,
-                                    const DstTuple &dst_props) {
-        if constexpr (J < std::tuple_size_v<DstTuple>) {
-            auto &dp = std::get<J>(dst_props);
-
-            if (std::strcmp(sp.name, dp.name) == 0) {
-                if constexpr (std::is_same_v<
-                                  decltype(src.*(sp.member)),
-                                  decltype(dst.*(dp.member))>) {
-                    dst.*(dp.member) = src.*(sp.member);
-                }
-            }
-
-            copy_one_dst<J + 1>(sp, src, dst, dst_props);
-        }
-    }
-
-    // iterate all source properties
-    template <std::size_t I = 0, class SrcType, class DstType, class SrcTuple, class DstTuple>
-    static inline void copy_all_src(const SrcType &src,
-                                    DstType &dst,
-                                    const SrcTuple &src_props,
-                                    const DstTuple &dst_props) {
-        if constexpr (I < std::tuple_size_v<SrcTuple>) {
-            auto const &sp = std::get<I>(src_props);
-            copy_one_dst<>(sp, src, dst, dst_props);
-            copy_all_src<I + 1>(src, dst, src_props, dst_props);
-        }
-    }
-
-    // // inside your CRTP base / GNC_Template
-    // void __copy_properties(const Self &src, Parameters &dst) {
-    //     constexpr auto src_props = Self::properties();
-    //     constexpr auto dst_props = Parameters::properties();
-    //     copy_all_src(src, dst, src_props, dst_props);
-    // }
-
-    // copies all properties from a src object to dst
-    // both objects must have properties() implemented
-    template <class Src, class Dst>
-    static inline void copy_properties(const Src &src, Dst &dst) {
-        constexpr auto src_props = Src::properties();
-        constexpr auto dst_props = Dst::properties();
-        copy_all_src(src, dst, src_props, dst_props);
-    }
-
-#pragma endregion
-
-    // ================================================================================================================================
 
     // ready device ensuring par structs are uploaded
     void ready_device() {
@@ -299,11 +278,10 @@ class GNC_Base {
 
         // ----------------------------------------------------------------
 
-        // copy_properties(*this, _pars); // 🧪 should copy properties from one object to another, both need to implement reflection with properties()
+        copy_properties(derived(), _pars); // 🧪 should copy properties from one object to another, both need to implement reflection with properties()
 
         // doubled up (this is the current working copy pattern)
         derived()._ready_device(); // run derived which is set up by macro (currently copies all the vars to the pars by macro)
-
 
         // ----------------------------------------------------------------
 
@@ -439,6 +417,8 @@ class GNC_Base {
     }
     //
 };
+
+#pragma endregion
 
 } // namespace gnc
 
