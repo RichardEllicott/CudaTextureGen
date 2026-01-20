@@ -220,6 +220,9 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     // CRTP requirement
     void _ready_device() {
 
+
+        // copy_properties(*this, _pars); // 🧪 testing
+
         // copy all pars to struct
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \

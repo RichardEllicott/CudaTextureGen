@@ -21,6 +21,9 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include "core/cuda/types.cuh" // top level for this object
 #include "macros.h"
 
+// more reflection
+#include <string_view>
+
 //
 //
 
@@ -227,29 +230,67 @@ class GNC_Base {
     // ================================================================================================================================
     // [🧪 New Reflection for Paramaters and ArrayPointers 20260120]
     // --------------------------------------------------------------------------------------------------------------------------------
+    // this pattern should allow copying from two objects with "properties()"
 
-    // copy using the reflection pattern, pars must be in order
-    template <class Obj, class Pars>
-    static void copy_by_order(Obj &obj, Pars &pars) {
-        constexpr auto obj_props = Obj::properties();
-        constexpr auto pars_props = Pars::properties();
+#pragma region COPY_PROPERTIES
 
-        static_assert(std::tuple_size_v<decltype(obj_props)> ==
-                      std::tuple_size_v<decltype(pars_props)>);
+    // // Copy matching properties from source to destination
+    // template <typename Src, typename Dst>
+    // void copy_properties(const Src &src, Dst &dst) {
+    //     auto src_props = Src::properties();
+    //     auto dst_props = Dst::properties();
 
-        std::apply([&](auto... obj_p) {
-            std::apply([&](auto... pars_p) {
-                ((pars.*pars_p.member_ptr = obj.*obj_p.member_ptr), ...);
-            },
-                       pars_props);
-        },
-                   obj_props);
-    }
+    //     // Iterate over each destination property
+    //     std::apply([&](auto &&...dst_p) {
+    //         (
+    //             // For each dst property, iterate over source properties
+    //             std::apply([&](auto &&...src_p) {
+    //                 (
+    //                     [&]() {
+    //                         // Compare names using the .name member directly
+    //                         if constexpr (std::string_view(dst_p.name) == std::string_view(src_p.name)) {
+    //                             using DstType = std::remove_reference_t<decltype(dst.*(dst_p.ptr))>;
+    //                             using SrcType = std::remove_reference_t<decltype(src.*(src_p.ptr))>;
 
-    // --------------------------------------------------------------------------------------------------------------------------------
+    //                             // Copy if types match
+    //                             if constexpr (std::is_same_v<DstType, SrcType>) {
+    //                                 dst.*(dst_p.ptr) = src.*(src_p.ptr);
+    //                             }
+    //                         }
+    //                     }(),
+    //                     ...);
+    //             },
+    //                        src_props),
+    //             ...);
+    //     },
+    //                dst_props);
+    // }
 
+    // // Version that allows type conversions
+    // template <typename Src, typename Dst>
+    // void copy_properties_with_conversion(const Src &src, Dst &dst) {
+    //     auto src_props = Src::properties();
+    //     auto dst_props = Dst::properties();
 
+    //     std::apply([&](auto &&...dst_p) {
+    //         (
+    //             std::apply([&](auto &&...src_p) {
+    //                 (
+    //                     [&]() {
+    //                         if constexpr (std::string_view(dst_p.name) == std::string_view(src_p.name)) {
+    //                             // Allow implicit conversions
+    //                             dst.*(dst_p.ptr) = src.*(src_p.ptr);
+    //                         }
+    //                     }(),
+    //                     ...);
+    //             },
+    //                        src_props),
+    //             ...);
+    //     },
+    //                dst_props);
+    // }
 
+#pragma endregion
 
     // ================================================================================================================================
 
@@ -273,6 +314,8 @@ class GNC_Base {
 
         // copy_by_name(*this, _pars);
         // copy_by_name(*this, _arrays);
+
+        // copy_properties(*this, _pars);
 
         derived()._ready_device(); // doubled up!!
 
