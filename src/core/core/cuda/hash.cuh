@@ -1,5 +1,6 @@
 /*
 
+cuda hash functions
 
 */
 #pragma once
@@ -30,6 +31,7 @@ static const uint32_t XXH_PRIME32_3 = 0xC2B2AE3DU;
 static const uint32_t XXH_PRIME32_4 = 0x27D4EB2FU;
 static const uint32_t XXH_PRIME32_5 = 0x165667B1U;
 
+// splitmix32
 constexpr uint32_t SPLITMIX32_C1 = 0x7FEB352D;
 constexpr uint32_t SPLITMIX32_C2 = 0x846CA68B;
 
@@ -41,7 +43,7 @@ constexpr float INV_U31 = 0x1p-31f; // exactly 2^-31
 
 #pragma endregion
 
-#pragma region COMPILE_TIME_RANDOM
+#pragma region COMPILE_TIME_RANDOM  // non cuda compile time random numbers, to use with cuda make sure to generate outside kernels
 
 // compile time splitmix32
 constexpr uint32_t constexpr_splitmix32(uint32_t x) {
@@ -62,7 +64,7 @@ constexpr uint32_t constexpr_random32(int index) {
 
 #pragma endregion
 
-#pragma region MIX
+#pragma region MIX // mix functions or finalizers, take existing high entropy numbers and give more (cheaper than the initial hash)
 
 // ================================================================================================================================
 // [Hash Mixing]

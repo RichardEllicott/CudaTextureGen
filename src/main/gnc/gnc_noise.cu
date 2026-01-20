@@ -8,12 +8,24 @@ namespace cmath = core::cuda::math;
 
 #pragma region NOISE2
 
+// DH_INLINE float2 noise_gradient2(int x, int y, int seed, float angle) {
+//     float theta = chash::hash_float(x, y, 0, seed) * cmath::TAU + angle;
+//     float s, c;
+//     cmath::fast::sincosf(theta, &s, &c);
+//     return make_float2(c, s);
+// }
+
+// old one
 DH_INLINE float2 noise_gradient2(int x, int y, int seed, float angle) {
-    float theta = chash::hash_float(x, y, 0, seed) * cmath::TAU + angle;
-    float s, c;
-    cmath::fast::sincosf(theta, &s, &c);
-    return make_float2(c, s);
+    float raw_angle = (chash::hash_int(x, y, 0,  seed) / 1073741824.0f) * 2.0f * 3.14159265f;
+    float final_angle = raw_angle + angle;
+
+    return make_float2(cosf(final_angle), sinf(final_angle));
 }
+
+
+
+
 
 // 2D Gradient Noise
 DH_INLINE float gradient_noise2(

@@ -15,9 +15,7 @@ functions to covert numpy arrays back and forth to std::vector and core::Array2D
 
 #include "nanobind_helper/nb_object_to_any.h" // conversion of nanobind objects to and from std::any with fixed types
 
-// typecasters
-#include "nanobind_helper/typecasters/cuda_vector.h" // for core::Ref
-#include "nanobind_helper/typecasters/ref.h"         // for float2, float3, float4, int2, int3....
+#include "nanobind_helper/typecasters.h"
 
 // #include <nanobind/nanobind.h>
 // #include <nanobind/ndarray.h>

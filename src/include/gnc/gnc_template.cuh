@@ -59,24 +59,52 @@ namespace TEMPLATE_NAMESPACE {
 // Parameters struct for uploading to GPU (UNUSED)
 // --------------------------------------------------------------------------------------------------------------------------------
 struct Parameters {
+    using Self = Parameters;
+
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
     TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 #endif
+
+    // reflection string to member functions
+    static constexpr auto properties() {
+        return std::tuple{
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+            TEMPLATE_CLASS_PARAMETERS_STRUCT
+#undef X
+#endif
+        };
+    }
 };
 static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
 // ================================================================================================================================
 // ArrayDevicePointers struct for uploading to GPU (UNUSED)
 // --------------------------------------------------------------------------------------------------------------------------------
 struct ArrayPointers {
+    using Self = ArrayPointers;
+
 #ifdef TEMPLATE_CLASS_ARRAYS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     TYPE *NAME;
     TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
+
+    // reflection string to member functions
+    static constexpr auto properties() {
+        return std::tuple{
+#ifdef TEMPLATE_CLASS_ARRAYS // bind pars
+#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+            TEMPLATE_CLASS_ARRAYS
+#undef X
+#endif
+        };
+    }
 };
 static_assert(std::is_trivially_copyable<ArrayPointers>::value, "ArrayPointers must remain trivially copyable for CUDA memcpy");
 // ================================================================================================================================
@@ -124,7 +152,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
 #if REFACTOR_GNC_STORAGE_IN_PARS == 0
 
-        // referencing class body (old version)
+        // references by name of class parameters for reflection
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
@@ -132,7 +160,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
-#elif REFACTOR_GNC_STORAGE_IN_PARS == 1
+#elif REFACTOR_GNC_STORAGE_IN_PARS == 1 // this was an attempt to bind to the par stucts properties... instead now building reflection to the pars ob
 
         // NestedProperty<Self, &Self::parameters, &Parameters::tile_size>{"tile_size"}, // tested working
 
@@ -210,9 +238,6 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
-        // now upload the pars
-        _dev_pars.upload(_pars);
-        _dev_arrays.upload(_arrays);
     }
 // --------------------------------------------------------------------------------------------------------------------------------
 // bind extra methods

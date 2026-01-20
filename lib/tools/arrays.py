@@ -5,6 +5,8 @@ array helpers
 """
 
 from scipy.ndimage import zoom, gaussian_filter
+
+
 import numpy as np
 from numpy.typing import NDArray, DTypeLike
 from typing import Any
@@ -86,6 +88,32 @@ def offset(array: np.ndarray, x_offset: float = 0.5, y_offset: float = 0.5) -> N
 
     # Apply toroidal shift
     array[:] = np.roll(array, shift=(dy, dx), axis=(0, 1))
+
+
+def rotate(array: np.ndarray, angle: float, reshape: bool = False, order: int = 3) -> None:
+    """
+    Rotate array by angle (in degrees) around its center.
+
+    Parameters
+    ----------
+    array : np.ndarray
+        2D array to rotate in place.
+    angle : float
+        Rotation angle in degrees (counterclockwise). Use negative for clockwise.
+    reshape : bool
+        If False (default), output shape matches input (may crop corners).
+        If True, output shape expands to fit rotated array.
+    order : int
+        Interpolation order. Default 3 (cubic).
+        0 = nearest, 1 = linear, 3 = cubic, 5 = quintic.
+    """
+
+    from scipy.ndimage import rotate
+
+    # Rotate and update array in place
+    array[:] = rotate(array, angle, reshape=reshape, order=order, mode='constant', cval=0.0)
+
+    # array[:] = rotate(array, angle, reshape=reshape, order=order)
 
 
 def merge_to_color(

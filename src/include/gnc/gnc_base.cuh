@@ -15,10 +15,10 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 
 #include "core/cuda/cast.cuh" // top level for this object
 #include "core/cuda/device_struct.cuh"
-#include "core/cuda/math.cuh"
 #include "core/cuda/hash.cuh"
+#include "core/cuda/math.cuh"
 #include "core/cuda/stream.cuh"
-#include "core/cuda/types.cuh"  // top level for this object
+#include "core/cuda/types.cuh" // top level for this object
 #include "macros.h"
 
 //
@@ -38,11 +38,7 @@ using namespace core::cuda::types; // include type aliases at top level
 using namespace core::cuda::cast;  // include type aliases at top level
 
 namespace cmath = core::cuda::math; // include the cuda math lib as cmath
-namespace chash = core::cuda::hash;// include the cuda math lib as cmath
-
-
-
-
+namespace chash = core::cuda::hash; // include the cuda math lib as cmath
 
 // ================================================================================================================================
 // Template Validators
@@ -154,7 +150,7 @@ class GNC_Base {
     Parameters _pars;
     ArrayPointers _arrays;
 
-    core::cuda::DeviceStruct<Parameters> _dev_pars;              // uploads parameters struct to device
+    core::cuda::DeviceStruct<Parameters> _dev_pars;      // uploads parameters struct to device
     core::cuda::DeviceStruct<ArrayPointers> _dev_arrays; // uploads array_pointers struct to device
     bool _pars_synced = false;
 
@@ -229,6 +225,33 @@ class GNC_Base {
     }
 
     // ================================================================================================================================
+    // [🧪 New Reflection for Paramaters and ArrayPointers 20260120]
+    // --------------------------------------------------------------------------------------------------------------------------------
+
+    // copy using the reflection pattern, pars must be in order
+    template <class Obj, class Pars>
+    static void copy_by_order(Obj &obj, Pars &pars) {
+        constexpr auto obj_props = Obj::properties();
+        constexpr auto pars_props = Pars::properties();
+
+        static_assert(std::tuple_size_v<decltype(obj_props)> ==
+                      std::tuple_size_v<decltype(pars_props)>);
+
+        std::apply([&](auto... obj_p) {
+            std::apply([&](auto... pars_p) {
+                ((pars.*pars_p.member_ptr = obj.*obj_p.member_ptr), ...);
+            },
+                       pars_props);
+        },
+                   obj_props);
+    }
+
+    // --------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+    // ================================================================================================================================
 
     // ready device ensuring par structs are uploaded
     void ready_device() {
@@ -236,14 +259,31 @@ class GNC_Base {
         if (_pars_synced) return;     // skip if already synced
         stream.instantiate_if_null(); // ensure we have a stream
 
-        _dev_pars.set_stream(stream->get());
+        _dev_pars.set_stream(stream->get()); // ensure streams
         _dev_arrays.set_stream(stream->get());
 
+#define REFLECTION_CODE_ROUTE 1
+#if REFLECTION_CODE_ROUTE == 0
 
-        derived()._ready_device();
+        derived()._ready_device(); // run derived which is set up by macro (currently copies all the vars to the pars by macro)
 
-        stream->sync(); // wait on stream, to ensure copying completes
-        _pars_synced = true;
+#elif REFLECTION_CODE_ROUTE == 1
+
+        // copy_by_order(*this, _pars);
+
+        // copy_by_name(*this, _pars);
+        // copy_by_name(*this, _arrays);
+
+        derived()._ready_device(); // doubled up!!
+
+#endif
+#undef REFLECTION_CODE_ROUTE
+
+        _dev_pars.upload(_pars);     // upload pars
+        _dev_arrays.upload(_arrays); // upload array pointers
+
+        stream->sync();      // wait on stream, to ensure copying completes
+        _pars_synced = true; // mark the pars as having synced, should prevent uploading unless pars have changed
     }
 
     // ================================================================================================================================

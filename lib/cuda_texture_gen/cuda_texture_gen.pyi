@@ -299,6 +299,7 @@ class GNC_Example:
 class GNC_Noise:
     _debug: Incomplete
     basis3: Incomplete
+    mode: Incomplete
     offset: Incomplete
     output: Incomplete
     period: Incomplete
@@ -322,6 +323,18 @@ class GNC_Resample:
     sample_mode: Incomplete
     scale_by_output_size: Incomplete
     stream: Incomplete
+    def __init__(self) -> None: ...
+    def compute(self) -> None: ...
+    def process(self) -> None: ...
+
+class GNC_SeaErosion:
+    _size: Incomplete
+    _step: Incomplete
+    height_map: Incomplete
+    sediment_map: Incomplete
+    stream: Incomplete
+    water_map: Incomplete
+    wrap: Incomplete
     def __init__(self) -> None: ...
     def compute(self) -> None: ...
     def process(self) -> None: ...
