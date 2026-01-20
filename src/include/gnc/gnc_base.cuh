@@ -160,22 +160,17 @@ namespace chash = core::cuda::hash; // include the cuda math lib as cmath
 // Template Validators
 // --------------------------------------------------------------------------------------------------------------------------------
 
-// alternate shorter, more generic??
+// [core::Ref<core::cuda::DeviceArray<T, N>>]
 template <typename T>
-struct is_array_ref : std::false_type {};
-
+struct is_device_array_ref : std::false_type {};
 template <typename T, int N>
-struct is_array_ref<core::Ref<core::cuda::DeviceArray<T, N>>> : std::true_type {};
-
-// static_assert(is_array_ref<T>::value, "T must be an array ref");
+struct is_device_array_ref<core::Ref<core::cuda::DeviceArray<T, N>>> : std::true_type {};
 
 // --------------------------------------------------------------------------------------------------------------------------------
 
-//
-// extra is a ref?
+// [core::Ref<U>]
 template <typename T>
 struct is_ref : std::false_type {};
-
 template <typename U>
 struct is_ref<core::Ref<U>> : std::true_type {};
 
@@ -243,7 +238,7 @@ class GNC_Base {
     template <
         typename MapT,
         typename ShapeT,
-        typename = std::enable_if_t<gnc::is_array_ref<MapT>::value>>
+        typename = std::enable_if_t<gnc::is_device_array_ref<MapT>::value>>
     inline void ensure_array_ref_ready(
         MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
 

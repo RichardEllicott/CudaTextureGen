@@ -55,6 +55,20 @@ contains master bolerplate that is copied via python script to gnc_boilerplate
 #endif
 
 namespace TEMPLATE_NAMESPACE {
+
+//     // ----------------------------------------------------------------
+// // don't even need this?.... oh it was getting the type
+// template <class T>
+// struct is_device_array_type;
+
+// template <class U, int N>
+// struct is_device_array_type<core::Ref<core::cuda::DeviceArray<U, N>>> {
+//     using type = core::cuda::DeviceArray<U, N>;
+//     using value_type = U;
+//     static constexpr int dims = N;
+// };
+// // ----------------------------------------------------------------
+
 // ================================================================================================================================
 // Parameters struct for uploading to GPU (UNUSED)
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -97,12 +111,12 @@ struct ArrayPointers {
     // reflection string to member functions ⚠️ seems to be broken for the arrays atm, can't reflect these yet!
     static constexpr auto properties() {
         return std::tuple{
-// #ifdef TEMPLATE_CLASS_ARRAYS // bind pars
-// #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+            // #ifdef TEMPLATE_CLASS_ARRAYS // bind pars
+            // #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
 //     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-//             TEMPLATE_CLASS_ARRAYS
-// #undef X
-// #endif
+            //             TEMPLATE_CLASS_ARRAYS
+            // #undef X
+            // #endif
         };
     }
 };
@@ -215,24 +229,85 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         };
     }
 
+    // --------------------------------------------------------------------------------------------------------------------------------
+    // TEST ITERATE
+
+    // 🧪 trying to iterate props, perform an action
+    template <std::size_t I = 0, class Tuple, class F>
+    static inline void for_each_property(const Tuple &props, F &&func) {
+        if constexpr (I < std::tuple_size_v<Tuple>) {
+            func(std::get<I>(props));
+            for_each_property<I + 1>(props, std::forward<F>(func));
+        }
+    }
+
+    // 🧪 testing iterating
+    void test_iterate_props_to_get_arrays() {
+        constexpr auto props = Self::properties();
+
+        printf("test_iterate_props_to_get_arrays()...\n");
+
+        for_each_property(props, [&](auto const &p) {
+            printf("prop: %s\n", p.name);
+            using MemberT = decltype(std::declval<Self>().*(p.member));
+            using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
+
+            // is_ref
+            if constexpr (is_ref<RawMemberT>::value) {
+                printf("is_ref == true!\n");
+                auto &ref = derived().*(p.member);
+                ref.instantiate_if_null();
+            }
+            // is_device_array_ref
+            if constexpr (is_device_array_ref<RawMemberT>::value) {
+                // printf("is_device_array_ref == true!\n");
+                // auto &value = derived().*(p.member); // should point to our member
+            }
+
+            // get actual device array
+            if constexpr (is_device_array_ref<RawMemberT>::value) {
+
+                // Access the actual Ref<DeviceArray<T,N>> instance
+                auto &ref = derived().*(p.member);
+
+                // ----------------------------------------------------------------
+                // ⚠️ breaks GCC
+                // core::RefBase &ref_base = ref; // for autotype
+                // ref_base.instantiate_if_null();
+                // ⚠️ also breaks GCC
+                // core::RefBase &ref_base = static_cast<core::RefBase &>(ref);
+                // ref_base.instantiate_if_null();
+                // ----------------------------------------------------------------
+
+                // Safety check (optional)
+                if (!ref) {
+                    printf("  %s is empty\n", p.name);
+                    return;
+                }
+
+                // Now get the device pointer
+                auto *ptr = ref->dev_ptr();
+
+                printf("  %s -> dev_ptr() = %p\n", p.name, (void *)ptr);
+            }
+        });
+    }
 
     // --------------------------------------------------------------------------------------------------------------------------------
 
     // CRTP requirement
     void _ready_device() {
 
-        // --------------------------------------------------------------------------------------------------------------------------------
-        // copy_properties(*this, _pars); // 🧪 testing
+        test_iterate_props_to_get_arrays();
 
-        // --------------------------------------------------------------------------------------------------------------------------------
-
-        // copy all pars to struct
-#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
-#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    _pars.NAME = NAME;
-        TEMPLATE_CLASS_PARAMETERS_STRUCT
-#undef X
-#endif
+        //         // 🧪 testing DISABLED (handled by constexpr)
+        //         // copy all pars to struct
+        // #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
+        // #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+//     _pars.NAME = NAME;
+        //         TEMPLATE_CLASS_PARAMETERS_STRUCT
+        // #undef X
+        // #endif
 
         // copy all array pointers
 #ifdef TEMPLATE_CLASS_ARRAYS // bind arrays2 (second pattern)

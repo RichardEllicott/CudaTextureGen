@@ -32,29 +32,25 @@ def test():
 
     # ================================================================
     gnc_noise = ct.GNC_Noise()
-    gnc_noise.period = (13, 13, 13)
+    gnc_noise.period = (20, 13, 13)
     gnc_noise.wrap = (False, False, False)
     gnc_noise.size = (256, 256)
     gnc_noise.mode = 1
-
     # ----------------------------------------------------------------
-
     gnc_noise.process()
     noise = gnc_noise.output.array
     # tools.arrays.offset(noise)
     tools.arrays.normalize(noise)
     tools.images.save(noise, f"{script_path}.noise.png")
+    # ----------------------------------------------------------------
 
 
-
-    gnc_noise.rotation = (0.0, 0.0, math.radians(20))
-    gnc_noise.process()
-    noise = gnc_noise.output.array
-    tools.arrays.normalize(noise)
-
-    # tools.arrays.rotate(noise, math.radians(-90))
-
-    tools.images.save(noise, f"{script_path}.noise2.png")
+    # gnc_noise.rotation = (0.0, 0.0, math.radians(20))
+    # gnc_noise.process()
+    # noise = gnc_noise.output.array
+    # tools.arrays.normalize(noise)
+    # # tools.arrays.rotate(noise, math.radians(-90))
+    # tools.images.save(noise, f"{script_path}.noise2.png")
 
 
     # ================================================================
@@ -95,4 +91,42 @@ def test():
     tools.images.save(output, f"{script_path}.erode.png")
 
 
-test()
+# test()
+
+
+def test_reflection():
+
+
+    # ================================================================
+    gnc_noise = ct.GNC_Noise()
+    gnc_noise.period = (20, 13, 13)
+    gnc_noise.wrap = (False, False, False)
+    gnc_noise.size = (256, 256)
+    gnc_noise.mode = 1
+    # ----------------------------------------------------------------
+    gnc_noise.process()
+    noise = gnc_noise.output.array
+    # tools.arrays.offset(noise)
+    tools.arrays.normalize(noise)
+
+
+
+
+    
+    # ----------------------------------------------------------------
+
+    template = ct.GNC_Template()
+
+
+    device_array = ct.DeviceArrayFloat2D()
+    device_array.array = noise
+    template.input = device_array
+
+    template.process()
+
+    noise = device_array.array
+
+    tools.images.save(noise, f"{script_path}.noise.png")
+
+
+test_reflection()

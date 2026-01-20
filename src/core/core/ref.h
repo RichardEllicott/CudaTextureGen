@@ -18,8 +18,19 @@ created with CoPilot
 
 namespace core {
 
+class RefBase {
+
+  public:
+    void instantiate_if_null() {
+        // optional: default no-op
+    }
+    bool is_null() const {
+        return false; // or whatever default makes sense
+    }
+};
+
 template <typename T>
-class Ref {
+class Ref : RefBase {
 
   public:
     std::shared_ptr<T> shared_ptr; // i need to leave this public to allow the type caster to see it
