@@ -32,12 +32,12 @@ struct Parameters {
     // reflection string to member functions
     static constexpr auto properties() {
         return std::tuple{
-// #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
-// #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-//     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-//             TEMPLATE_CLASS_PARAMETERS_STRUCT
-// #undef X
-// #endif
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+            TEMPLATE_CLASS_PARAMETERS_STRUCT
+#undef X
+#endif
         };
     }
 };

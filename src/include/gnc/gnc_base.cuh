@@ -23,8 +23,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 
 // ================================================================================================================================
 
-namespace core::reflection{
-
+namespace core::reflection {
 
 #pragma region REFLECTION_PROPERTIES
 // ================================================================================================================================
@@ -97,7 +96,6 @@ static inline void copy_properties(const Src &src, Dst &dst) {
     copy_all_src(src, dst, src_props, dst_props);
 }
 
-
 /*
 EXAMPLE OF AN OBJECT THAT HAS PROPERTY:
 
@@ -127,13 +125,9 @@ static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must re
 
 */
 
-
 // example property:
 // Property<Self, &Self::stream>{"stream", &Self::stream},
 
-
-
-#pragma endregion
 //
 //
 //
@@ -147,21 +141,18 @@ struct Method {
     // static constexpr auto __this = static_cast<T*>(nullptr);
 };
 
-}
+#pragma endregion
 
-
+} // namespace core::reflection
 
 namespace gnc {
 
 using namespace core::cuda::types; // include type aliases at top level
 using namespace core::cuda::cast;  // include type aliases at top level
-using namespace core::reflection; // include at top level
-
-
+using namespace core::reflection;  // include at top level
 
 namespace cmath = core::cuda::math; // include the cuda math lib as cmath
 namespace chash = core::cuda::hash; // include the cuda math lib as cmath
-
 
 #pragma region VALIDATORS // check if something is a particular type by template
 
@@ -244,11 +235,11 @@ class GNC_Base {
     // [Ensure Array Ref Ready]
     // ensure the array ref is not empty, and if creating a new one set it up also marking sync as dirty
     // (ensuring pointers are uploaded before kernel launch)
-        // --------------------------------------------------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------------------------------------------
     // EXAMPLE:
     // ensure_array_ref_ready(water_map, height_map->shape(), true);
     // --------------------------------------------------------------------------------------------------------------------------------
-  
+
     template <
         typename MapT,
         typename ShapeT,

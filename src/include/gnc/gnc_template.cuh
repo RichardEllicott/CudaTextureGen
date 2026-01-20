@@ -94,7 +94,7 @@ struct ArrayPointers {
 #undef X
 #endif
 
-    // reflection string to member functions
+    // reflection string to member functions ⚠️ seems to be broken for the arrays atm, can't reflect these yet!
     static constexpr auto properties() {
         return std::tuple{
 // #ifdef TEMPLATE_CLASS_ARRAYS // bind pars
