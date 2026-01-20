@@ -32,12 +32,12 @@ struct Parameters {
     // reflection string to member functions
     static constexpr auto properties() {
         return std::tuple{
-#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
-#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-            TEMPLATE_CLASS_PARAMETERS_STRUCT
-#undef X
-#endif
+// #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
+// #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+//     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+//             TEMPLATE_CLASS_PARAMETERS_STRUCT
+// #undef X
+// #endif
         };
     }
 };
@@ -58,12 +58,12 @@ struct ArrayPointers {
     // reflection string to member functions
     static constexpr auto properties() {
         return std::tuple{
-#ifdef TEMPLATE_CLASS_ARRAYS // bind pars
-#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-            TEMPLATE_CLASS_ARRAYS
-#undef X
-#endif
+// #ifdef TEMPLATE_CLASS_ARRAYS // bind pars
+// #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+//     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+//             TEMPLATE_CLASS_ARRAYS
+// #undef X
+// #endif
         };
     }
 };
@@ -176,13 +176,16 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         };
     }
 
+
     // --------------------------------------------------------------------------------------------------------------------------------
 
     // CRTP requirement
     void _ready_device() {
 
-
+        // --------------------------------------------------------------------------------------------------------------------------------
         // copy_properties(*this, _pars); // 🧪 testing
+
+        // --------------------------------------------------------------------------------------------------------------------------------
 
         // copy all pars to struct
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
