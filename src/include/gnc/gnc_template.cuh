@@ -215,13 +215,81 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         };
     }
 
+    // ================================================================================================================================
+    // TRYNG TO GET THIS WORKING HERE BEFORE BASE
+    // --------------------------------------------------------------------------------------------------------------------------------
+
+    // // 🧪 testing
+    // void __copy_properties(const Self &src, Parameters &dst) {
+
+    //     constexpr auto src_props = Self::properties();
+    //     constexpr auto dst_props = Parameters::properties();
+
+    // }
+
+    // --------------------------------------------------------------------------------------------------------------------------------
+
+#pragma region WORKING_TEST_ON_DERIVED
+
+    // // copy one source property into matching dst property by name
+    // template <std::size_t J = 0, class SrcProp, class SrcType, class DstType, class DstTuple>
+    // static inline void copy_one_dst(const SrcProp &sp,
+    //                                 const SrcType &src,
+    //                                 DstType &dst,
+    //                                 const DstTuple &dst_props) {
+    //     if constexpr (J < std::tuple_size_v<DstTuple>) {
+    //         auto &dp = std::get<J>(dst_props);
+
+    //         if (std::strcmp(sp.name, dp.name) == 0) {
+    //             if constexpr (std::is_same_v<
+    //                               decltype(src.*(sp.member)),
+    //                               decltype(dst.*(dp.member))>) {
+    //                 dst.*(dp.member) = src.*(sp.member);
+    //             }
+    //         }
+
+    //         copy_one_dst<J + 1>(sp, src, dst, dst_props);
+    //     }
+    // }
+
+    // // iterate all source properties
+    // template <std::size_t I = 0, class SrcType, class DstType, class SrcTuple, class DstTuple>
+    // static inline void copy_all_src(const SrcType &src,
+    //                                 DstType &dst,
+    //                                 const SrcTuple &src_props,
+    //                                 const DstTuple &dst_props) {
+    //     if constexpr (I < std::tuple_size_v<SrcTuple>) {
+    //         auto const &sp = std::get<I>(src_props);
+    //         copy_one_dst<>(sp, src, dst, dst_props);
+    //         copy_all_src<I + 1>(src, dst, src_props, dst_props);
+    //     }
+    // }
+
+    // // // inside your CRTP base / GNC_Template
+    // // void __copy_properties(const Self &src, Parameters &dst) {
+    // //     constexpr auto src_props = Self::properties();
+    // //     constexpr auto dst_props = Parameters::properties();
+    // //     copy_all_src(src, dst, src_props, dst_props);
+    // // }
+
+    // template <class Src, class Dst>
+    // static inline void __copy_properties(const Src &src, Dst &dst) {
+    //     constexpr auto src_props = Src::properties();
+    //     constexpr auto dst_props = Dst::properties();
+    //     copy_all_src(src, dst, src_props, dst_props);
+    // }
+
+#pragma endregion
+
     // --------------------------------------------------------------------------------------------------------------------------------
 
     // CRTP requirement
     void _ready_device() {
 
+        // --------------------------------------------------------------------------------------------------------------------------------
+        copy_properties(*this, _pars); // 🧪 testing
 
-        // copy_properties(*this, _pars); // 🧪 testing
+        // --------------------------------------------------------------------------------------------------------------------------------
 
         // copy all pars to struct
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT

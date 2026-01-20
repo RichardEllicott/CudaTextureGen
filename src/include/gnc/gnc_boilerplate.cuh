@@ -30,7 +30,7 @@ struct Parameters {
 #endif
 
     // reflection string to member functions
-    static constexpr auto _properties() {
+    static constexpr auto properties() {
         return std::tuple{
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
@@ -56,7 +56,7 @@ struct ArrayPointers {
 #endif
 
     // reflection string to member functions
-    static constexpr auto _properties() {
+    static constexpr auto properties() {
         return std::tuple{
 #ifdef TEMPLATE_CLASS_ARRAYS // bind pars
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
@@ -180,6 +180,9 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
     // CRTP requirement
     void _ready_device() {
+
+
+        // copy_properties(*this, _pars); // 🧪 testing
 
         // copy all pars to struct
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT

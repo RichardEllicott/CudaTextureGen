@@ -232,63 +232,57 @@ class GNC_Base {
     // --------------------------------------------------------------------------------------------------------------------------------
     // this pattern should allow copying from two objects with "properties()"
 
-#pragma region COPY_PROPERTIES
+#pragma region WORKING_TEST_ON_DERIVED
 
-    // // Copy matching properties from source to destination
-    // template <typename Src, typename Dst>
-    // void copy_properties(const Src &src, Dst &dst) {
-    //     auto src_props = Src::properties();
-    //     auto dst_props = Dst::properties();
+    // copy one source property into matching dst property by name
+    template <std::size_t J = 0, class SrcProp, class SrcType, class DstType, class DstTuple>
+    static inline void copy_one_dst(const SrcProp &sp,
+                                    const SrcType &src,
+                                    DstType &dst,
+                                    const DstTuple &dst_props) {
+        if constexpr (J < std::tuple_size_v<DstTuple>) {
+            auto &dp = std::get<J>(dst_props);
 
-    //     // Iterate over each destination property
-    //     std::apply([&](auto &&...dst_p) {
-    //         (
-    //             // For each dst property, iterate over source properties
-    //             std::apply([&](auto &&...src_p) {
-    //                 (
-    //                     [&]() {
-    //                         // Compare names using the .name member directly
-    //                         if constexpr (std::string_view(dst_p.name) == std::string_view(src_p.name)) {
-    //                             using DstType = std::remove_reference_t<decltype(dst.*(dst_p.ptr))>;
-    //                             using SrcType = std::remove_reference_t<decltype(src.*(src_p.ptr))>;
+            if (std::strcmp(sp.name, dp.name) == 0) {
+                if constexpr (std::is_same_v<
+                                  decltype(src.*(sp.member)),
+                                  decltype(dst.*(dp.member))>) {
+                    dst.*(dp.member) = src.*(sp.member);
+                }
+            }
 
-    //                             // Copy if types match
-    //                             if constexpr (std::is_same_v<DstType, SrcType>) {
-    //                                 dst.*(dst_p.ptr) = src.*(src_p.ptr);
-    //                             }
-    //                         }
-    //                     }(),
-    //                     ...);
-    //             },
-    //                        src_props),
-    //             ...);
-    //     },
-    //                dst_props);
+            copy_one_dst<J + 1>(sp, src, dst, dst_props);
+        }
+    }
+
+    // iterate all source properties
+    template <std::size_t I = 0, class SrcType, class DstType, class SrcTuple, class DstTuple>
+    static inline void copy_all_src(const SrcType &src,
+                                    DstType &dst,
+                                    const SrcTuple &src_props,
+                                    const DstTuple &dst_props) {
+        if constexpr (I < std::tuple_size_v<SrcTuple>) {
+            auto const &sp = std::get<I>(src_props);
+            copy_one_dst<>(sp, src, dst, dst_props);
+            copy_all_src<I + 1>(src, dst, src_props, dst_props);
+        }
+    }
+
+    // // inside your CRTP base / GNC_Template
+    // void __copy_properties(const Self &src, Parameters &dst) {
+    //     constexpr auto src_props = Self::properties();
+    //     constexpr auto dst_props = Parameters::properties();
+    //     copy_all_src(src, dst, src_props, dst_props);
     // }
 
-    // // Version that allows type conversions
-    // template <typename Src, typename Dst>
-    // void copy_properties_with_conversion(const Src &src, Dst &dst) {
-    //     auto src_props = Src::properties();
-    //     auto dst_props = Dst::properties();
-
-    //     std::apply([&](auto &&...dst_p) {
-    //         (
-    //             std::apply([&](auto &&...src_p) {
-    //                 (
-    //                     [&]() {
-    //                         if constexpr (std::string_view(dst_p.name) == std::string_view(src_p.name)) {
-    //                             // Allow implicit conversions
-    //                             dst.*(dst_p.ptr) = src.*(src_p.ptr);
-    //                         }
-    //                     }(),
-    //                     ...);
-    //             },
-    //                        src_props),
-    //             ...);
-    //     },
-    //                dst_props);
-    // }
+    // copies all properties from a src object to dst
+    // both objects must have properties() implemented
+    template <class Src, class Dst>
+    static inline void copy_properties(const Src &src, Dst &dst) {
+        constexpr auto src_props = Src::properties();
+        constexpr auto dst_props = Dst::properties();
+        copy_all_src(src, dst, src_props, dst_props);
+    }
 
 #pragma endregion
 
@@ -303,24 +297,15 @@ class GNC_Base {
         _dev_pars.set_stream(stream->get()); // ensure streams
         _dev_arrays.set_stream(stream->get());
 
-#define REFLECTION_CODE_ROUTE 1
-#if REFLECTION_CODE_ROUTE == 0
+        // ----------------------------------------------------------------
 
+        // copy_properties(*this, _pars); // 🧪 should copy properties from one object to another, both need to implement reflection with properties()
+
+        // doubled up (this is the current working copy pattern)
         derived()._ready_device(); // run derived which is set up by macro (currently copies all the vars to the pars by macro)
 
-#elif REFLECTION_CODE_ROUTE == 1
 
-        // copy_by_order(*this, _pars);
-
-        // copy_by_name(*this, _pars);
-        // copy_by_name(*this, _arrays);
-
-        // copy_properties(*this, _pars);
-
-        derived()._ready_device(); // doubled up!!
-
-#endif
-#undef REFLECTION_CODE_ROUTE
+        // ----------------------------------------------------------------
 
         _dev_pars.upload(_pars);     // upload pars
         _dev_arrays.upload(_arrays); // upload array pointers
