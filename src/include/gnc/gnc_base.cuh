@@ -370,7 +370,7 @@ class GNC_Base {
     // ================================================================================================================================
     // [constexpr Reflection]
     // --------------------------------------------------------------------------------------------------------------------------------
-    // return properties plus defaults
+    // return properties
     static constexpr auto properties() {
         return std::tuple_cat(Derived::_properties(), // CRTP requirement
                               std::tuple{
@@ -384,7 +384,7 @@ class GNC_Base {
                               });
     }
 
-    // return properties plus defaults
+    // return properties UNUSED second store
     static constexpr auto properties2() {
         return std::tuple_cat(Derived::_properties2(), // CRTP requirement
                               std::tuple{
@@ -398,8 +398,7 @@ class GNC_Base {
                               });
     }
 
-    // 🧪 trying same with methods
-    // return properties plus defaults
+    // return methods
     static constexpr auto methods() {
         return std::tuple_cat(Derived::_methods(), // CRTP requirement
                               std::tuple{

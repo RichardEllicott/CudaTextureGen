@@ -56,21 +56,8 @@ contains master bolerplate that is copied via python script to gnc_boilerplate
 
 namespace TEMPLATE_NAMESPACE {
 
-//     // ----------------------------------------------------------------
-// // don't even need this?.... oh it was getting the type
-// template <class T>
-// struct is_device_array_type;
-
-// template <class U, int N>
-// struct is_device_array_type<core::Ref<core::cuda::DeviceArray<U, N>>> {
-//     using type = core::cuda::DeviceArray<U, N>;
-//     using value_type = U;
-//     static constexpr int dims = N;
-// };
-// // ----------------------------------------------------------------
-
 // ================================================================================================================================
-// Parameters struct for uploading to GPU (UNUSED)
+// Parameters struct for uploading to GPU
 // --------------------------------------------------------------------------------------------------------------------------------
 struct Parameters {
     using Self = Parameters;
@@ -85,12 +72,14 @@ struct Parameters {
     // reflection string to member functions
     static constexpr auto properties() {
         return std::tuple{
-            // #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
-            // #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-//     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-            //             TEMPLATE_CLASS_PARAMETERS_STRUCT
-            // #undef X
-            // #endif
+#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT         // bind pars
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+            TEMPLATE_CLASS_PARAMETERS_STRUCT
+#undef X
+#endif
+#endif
         };
     }
 };
@@ -111,12 +100,14 @@ struct ArrayPointers {
     // reflection string to member functions ⚠️ seems to be broken for the arrays atm, can't reflect these yet!
     static constexpr auto properties() {
         return std::tuple{
-            // #ifdef TEMPLATE_CLASS_ARRAYS // bind pars
-            // #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-//     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-            //             TEMPLATE_CLASS_ARRAYS
-            // #undef X
-            // #endif
+#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
+#ifdef TEMPLATE_CLASS_ARRAYS                    // bind pars
+#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+            TEMPLATE_CLASS_ARRAYS
+#undef X
+#endif
+#endif
         };
     }
 };
@@ -127,9 +118,9 @@ static_assert(std::is_trivially_copyable<ArrayPointers>::value, "ArrayPointers m
 class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, ArrayPointers> {
     using Self = TEMPLATE_CLASS_NAME;
 
-    // ================================================================
+    // ================================================================================================================================
     // [Create pars and arrays]
-    // ----------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------------------------------------------
 
     // create pars
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
@@ -155,46 +146,41 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
+// create methods
+#ifdef TEMPLATE_CLASS_METHODS // bind arrays2 (second pattern)
+#define X(TYPE, NAME, DESCRIPTION) \
+    TYPE NAME();
+    TEMPLATE_CLASS_METHODS
+#undef X
+#endif
+
   public:
-    // ================================================================
+    // ================================================================================================================================
     // [Properties Binding]
-    // ----------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------------------------------------------
 
     // CRTP requirement
     static constexpr auto _properties() {
         return std::tuple{
 
-#if REFACTOR_GNC_STORAGE_IN_PARS == 0
-
-        // references by name of class parameters for reflection
-#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
+        // bind structure parameters
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
             TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 #endif
 
-#elif REFACTOR_GNC_STORAGE_IN_PARS == 1 // this was an attempt to bind to the par stucts properties... instead now building reflection to the pars ob
-
-        // NestedProperty<Self, &Self::parameters, &Parameters::tile_size>{"tile_size"}, // tested working
-
-#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
-#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    NestedProperty<Self, &Self::parameters, &Parameters::NAME>{EXPAND_AND_STRINGIFY(NAME)},
-            TEMPLATE_CLASS_PARAMETERS_STRUCT
-#undef X
-#endif
-
-#endif
-
-#ifdef TEMPLATE_CLASS_PARAMETERS // bind arrays
+// bind non structure parameters
+#ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
                 TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
 
-#ifdef TEMPLATE_CLASS_ARRAYS // bind arrays2 (second pattern)
+// bind arrays
+#ifdef TEMPLATE_CLASS_ARRAYS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
                     TEMPLATE_CLASS_ARRAYS
@@ -202,24 +188,24 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #endif
         };
     }
-    // --------------------------------------------------------------------------------------------------------------------------------
-    // CRTP requirement
+
+    // CRTP requirement (unused)
     static constexpr auto _properties2() {
         return std::tuple{
 
         };
     }
 
-    // ================================================================
+    // ================================================================================================================================
     // [Method Binding]
-    // ----------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------------------------------------------
 
     // CRTP requirement
     static constexpr auto _methods() {
         return std::tuple{
-        // Method<Self, &Self::test_method2>{"test_method2"},
 
-#ifdef TEMPLATE_CLASS_METHODS // bind methods
+// bind methods
+#ifdef TEMPLATE_CLASS_METHODS
 #define X(TYPE, NAME, DESCRIPTION) \
     Method<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME)},
             TEMPLATE_CLASS_METHODS
@@ -228,45 +214,6 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
         };
     }
-
-    // --------------------------------------------------------------------------------------------------------------------------------
-    // 🧪 set property with string helper
-
-    // --------------------------------------------------------------------------------------------------------------------------------
-    // iterating all properties
-
-    // // 🧪 trying to iterate props, perform an action
-    // template <std::size_t I = 0, class Tuple, class F>
-    // static inline void for_each_property(const Tuple &props, F &&func) {
-    //     if constexpr (I < std::tuple_size_v<Tuple>) {
-    //         func(std::get<I>(props));
-    //         for_each_property<I + 1>(props, std::forward<F>(func));
-    //     }
-    // }
-
-    // void copy_array_pointers() {
-
-    //     // constexpr auto properties = Self::properties();
-    //     static constexpr auto properties = Self::properties(); // are we copying? i think static is correct here
-
-    //     for_each_property(properties, [&](auto const &prop) {
-    //         // printf("prop: %s\n", property.name);
-    //         using MemberT = decltype(std::declval<Self>().*(prop.member));
-    //         using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
-
-    //         if constexpr (is_device_array_ref<RawMemberT>::value) {
-    //             auto &ref = derived().*(prop.member); // ref to core::Ref
-    //             // ref.instantiate_if_null();
-    //             if (!ref) {
-    //                 set_property_by_name(_arrays, prop.name, nullptr); // set null if DeviceArray
-    //                 return;
-    //             }
-
-    //             auto *ptr = ref->dev_ptr();
-    //             set_property_by_name(_arrays, prop.name, ptr); // set the pointer on the array
-    //         }
-    //     });
-    // }
 
 #ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
 
@@ -325,7 +272,8 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     }
 
 #endif
-
+    //================================================================================================================================
+    // [Ready Device]
     // --------------------------------------------------------------------------------------------------------------------------------
 
     // CRTP requirement
@@ -350,17 +298,10 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
     }
-// --------------------------------------------------------------------------------------------------------------------------------
-// bind extra methods
-#ifdef TEMPLATE_CLASS_METHODS // bind arrays2 (second pattern)
-#define X(TYPE, NAME, DESCRIPTION) \
-    TYPE NAME();
-    TEMPLATE_CLASS_METHODS
-#undef X
-#endif
-    // --------------------------------------------------------------------------------------------------------------------------------
 
-    void _compute(); // CRTP
+    //================================================================================================================================
+
+    void _compute(); // CRTP requirement
 };
 } // namespace TEMPLATE_NAMESPACE
 
