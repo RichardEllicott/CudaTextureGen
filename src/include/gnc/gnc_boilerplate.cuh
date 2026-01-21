@@ -46,12 +46,12 @@ struct Parameters {
     // reflection string to member functions
     static constexpr auto properties() {
         return std::tuple{
-#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
-#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-            TEMPLATE_CLASS_PARAMETERS_STRUCT
-#undef X
-#endif
+            // #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
+            // #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+//     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+            //             TEMPLATE_CLASS_PARAMETERS_STRUCT
+            // #undef X
+            // #endif
         };
     }
 };
@@ -72,12 +72,12 @@ struct ArrayPointers {
     // reflection string to member functions ⚠️ seems to be broken for the arrays atm, can't reflect these yet!
     static constexpr auto properties() {
         return std::tuple{
-#ifdef TEMPLATE_CLASS_ARRAYS // bind pars
-#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-            TEMPLATE_CLASS_ARRAYS
-#undef X
-#endif
+            // #ifdef TEMPLATE_CLASS_ARRAYS // bind pars
+            // #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+//     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+            //             TEMPLATE_CLASS_ARRAYS
+            // #undef X
+            // #endif
         };
     }
 };
@@ -191,87 +191,45 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     }
 
     // --------------------------------------------------------------------------------------------------------------------------------
-    // 🧪 copy one property helper
-
-
-    // COMPILES BUT NOT WHAT IS NEEDED
-    // template <class Src, class Dst, class SrcProp, class DstTuple, std::size_t J = 0>
-    // static inline void copy_property_by_name_impl(const Src &src,
-    //                                               Dst &dst,
-    //                                               const SrcProp &sp,
-    //                                               const DstTuple &dst_props) {
-    //     if constexpr (J < std::tuple_size_v<DstTuple>) {
-    //         auto &dp = std::get<J>(dst_props);
-
-    //         if (std::strcmp(sp.name, dp.name) == 0) {
-    //             // Only copy if the types match exactly
-    //             if constexpr (std::is_same_v<
-    //                               decltype(src.*(sp.member)),
-    //                               decltype(dst.*(dp.member))>) {
-    //                 dst.*(dp.member) = src.*(sp.member);
-    //             }
-    //         }
-
-    //         copy_property_by_name_impl<Src, Dst, SrcProp, DstTuple, J + 1>(src, dst, sp, dst_props);
-    //     }
-    // }
-
-    // template <class Src, class Dst, class SrcProp>
-    // static inline void copy_property_by_name(const Src &src,
-    //                                          Dst &dst,
-    //                                          const SrcProp &sp) {
-    //     constexpr auto dst_props = Dst::properties();
-    //     copy_property_by_name_impl(src, dst, sp, dst_props);
-    // }
-
-
-template <std::size_t I = 0, class Dst, class Value, class DstTuple>
-static inline void set_property_by_name_impl(
-    Dst& dst,
-    const char* name,
-    const Value& value,
-    const DstTuple& dst_props)
-{
-    if constexpr (I < std::tuple_size_v<DstTuple>) {
-        auto& dp = std::get<I>(dst_props);
-
-        if (std::strcmp(dp.name, name) == 0) {
-            // Only assign if the types match exactly
-            if constexpr (std::is_same_v<
-                              decltype(dst.*(dp.member)),
-                              Value>)
-            {
-                dst.*(dp.member) = value;
-            }
-        }
-
-        set_property_by_name_impl<I + 1>(dst, name, value, dst_props);
-    }
-}
-
-template <class Dst, class Value>
-static inline void set_property_by_name(Dst& dst,
-                                        const char* name,
-                                        const Value& value)
-{
-    constexpr auto dst_props = Dst::properties();
-    set_property_by_name_impl(dst, name, value, dst_props);
-}
-
-
-
+    // 🧪 set property with string helper
 
     // --------------------------------------------------------------------------------------------------------------------------------
     // iterating all properties
 
-    // 🧪 trying to iterate props, perform an action
-    template <std::size_t I = 0, class Tuple, class F>
-    static inline void for_each_property(const Tuple &props, F &&func) {
-        if constexpr (I < std::tuple_size_v<Tuple>) {
-            func(std::get<I>(props));
-            for_each_property<I + 1>(props, std::forward<F>(func));
-        }
-    }
+    // // 🧪 trying to iterate props, perform an action
+    // template <std::size_t I = 0, class Tuple, class F>
+    // static inline void for_each_property(const Tuple &props, F &&func) {
+    //     if constexpr (I < std::tuple_size_v<Tuple>) {
+    //         func(std::get<I>(props));
+    //         for_each_property<I + 1>(props, std::forward<F>(func));
+    //     }
+    // }
+
+    // void copy_array_pointers() {
+
+    //     // constexpr auto properties = Self::properties();
+    //     static constexpr auto properties = Self::properties(); // are we copying? i think static is correct here
+
+    //     for_each_property(properties, [&](auto const &prop) {
+    //         // printf("prop: %s\n", property.name);
+    //         using MemberT = decltype(std::declval<Self>().*(prop.member));
+    //         using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
+
+    //         if constexpr (is_device_array_ref<RawMemberT>::value) {
+    //             auto &ref = derived().*(prop.member); // ref to core::Ref
+    //             // ref.instantiate_if_null();
+    //             if (!ref) {
+    //                 set_property_by_name(_arrays, prop.name, nullptr); // set null if DeviceArray
+    //                 return;
+    //             }
+
+    //             auto *ptr = ref->dev_ptr();
+    //             set_property_by_name(_arrays, prop.name, ptr); // set the pointer on the array
+    //         }
+    //     });
+    // }
+
+#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
 
     // 🧪 testing iterating
     void test_iterate_props_to_get_arrays() {
@@ -322,27 +280,25 @@ static inline void set_property_by_name(Dst& dst,
 
                 set_property_by_name(_arrays, p.name, ptr);
 
-
                 printf("  %s -> dev_ptr() = %p\n", p.name, (void *)ptr);
             }
         });
     }
+
+#endif
 
     // --------------------------------------------------------------------------------------------------------------------------------
 
     // CRTP requirement
     void _ready_device() {
 
-        test_iterate_props_to_get_arrays();
-
-        //         // 🧪 testing DISABLED (handled by constexpr)
-        //         // copy all pars to struct
-        // #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
-        // #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-//     _pars.NAME = NAME;
-        //         TEMPLATE_CLASS_PARAMETERS_STRUCT
-        // #undef X
-        // #endif
+        // copy all pars to struct
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    _pars.NAME = NAME;
+        TEMPLATE_CLASS_PARAMETERS_STRUCT
+#undef X
+#endif
 
         // copy all array pointers
 #ifdef TEMPLATE_CLASS_ARRAYS // bind arrays2 (second pattern)

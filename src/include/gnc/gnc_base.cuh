@@ -41,6 +41,8 @@ struct _Property {
 template <typename T, auto Member>
 using Property = _Property<T, decltype(Member)>;
 
+#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times! 
+
 // ================================================================================================================================
 // [Copy properties by reflection, whenever the "name" of the property matches]
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -124,6 +126,8 @@ static inline void set_property_by_name(Dst &dst,
     set_property_by_name_impl(dst, name, value, dst_props);
 }
 
+#endif
+
 // ================================================================================================================================
 
 /*
@@ -158,10 +162,9 @@ static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must re
 // example property:
 // Property<Self, &Self::stream>{"stream", &Self::stream},
 
-//
-//
-//
-// 🧪 trying same for methods
+// ================================================================================================================================
+
+// method record, similar to the Property (not yet used)
 template <typename T, auto MethodPtr>
 struct Method {
     const char *name;
@@ -170,6 +173,19 @@ struct Method {
     // using This = T;
     // static constexpr auto __this = static_cast<T*>(nullptr);
 };
+
+// ================================================================================================================================
+
+// iterate a properties tuple
+template <std::size_t I = 0, class Tuple, class F>
+static inline void for_each_property(const Tuple &props, F &&func) {
+    if constexpr (I < std::tuple_size_v<Tuple>) {
+        func(std::get<I>(props));
+        for_each_property<I + 1>(props, std::forward<F>(func));
+    }
+}
+
+// ================================================================================================================================
 
 #pragma endregion
 
@@ -214,7 +230,12 @@ struct NoParams {}; // default if we don't use the params
 
 template <typename Derived, typename Parameters = NoParams, typename ArrayPointers = NoParams>
 class GNC_Base {
+
+#ifndef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
     using Self = GNC_Base;
+#else
+    using Self = Derived;
+#endif
     // ================================================================================================================================
   protected:
     // canonical CRTP
@@ -281,44 +302,38 @@ class GNC_Base {
         }
     }
 
-
     // ================================================================================================================================
     // [Copy Array Pointers]
     // --------------------------------------------------------------------------------------------------------------------------------
 
+#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
 
-    // // 🧪 trying to iterate props, perform an action
-    // template <std::size_t I = 0, class Tuple, class F>
-    // static inline void for_each_property(const Tuple &props, F &&func) {
-    //     if constexpr (I < std::tuple_size_v<Tuple>) {
-    //         func(std::get<I>(props));
-    //         for_each_property<I + 1>(props, std::forward<F>(func));
-    //     }
-    // }
+    // copy all the array pointers to the _array structure
+    void copy_array_pointers() {
 
-    //     void copy_array_pointers() {
+        // constexpr auto properties = Self::properties();
+        static constexpr auto properties = Self::properties(); // i belive we are still copying the tuple
 
-    //     // constexpr auto properties = Self::properties();
-    //     static constexpr auto properties = Self::properties(); // are we copying
+        for_each_property(properties, [&](auto const &prop) {
+            // printf("prop: %s\n", property.name);
+            using MemberT = decltype(std::declval<Self>().*(prop.member));
+            using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
 
-    //     for_each_property(properties, [&](auto const &prop) {
-    //         // printf("prop: %s\n", property.name);
-    //         using MemberT = decltype(std::declval<Self>().*(prop.member));
-    //         using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
+            if constexpr (is_device_array_ref<RawMemberT>::value) {
+                auto &ref = derived().*(prop.member); // ref to core::Ref
+                // ref.instantiate_if_null();
+                if (!ref) {
+                    set_property_by_name(_arrays, prop.name, nullptr); // set null if DeviceArray
+                    return;
+                }
 
-    //         if constexpr (is_device_array_ref<RawMemberT>::value) {
-    //             auto &ref = derived().*(prop.member); // ref to core::Ref
-    //             // ref.instantiate_if_null();
-    //             if (!ref) {
-    //                 set_property_by_name(_arrays, prop.name, nullptr); // set null if DeviceArray
-    //                 return;
-    //             }
+                auto *ptr = ref->dev_ptr();
+                set_property_by_name(_arrays, prop.name, ptr); // set the pointer on the array
+            }
+        });
+    }
 
-    //             auto *ptr = ref->dev_ptr();
-    //             set_property_by_name(_arrays, prop.name, ptr); // set the pointer on the array
-    //         }
-    //     });
-    // }
+#endif
 
     // ================================================================================================================================
 
@@ -331,12 +346,14 @@ class GNC_Base {
         _dev_pars.set_stream(stream->get()); // ensure streams
         _dev_arrays.set_stream(stream->get());
 
+#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
         // ----------------------------------------------------------------
-
+        // SEEMS TO BE VERY SLOW!!
         copy_properties(derived(), _pars); // 🧪 should copy properties from one object to another, both need to implement reflection with properties()
-        // copy_array_pointers(); // 🧪
+        copy_array_pointers();             // 🧪 seeems to be very slow!!!!??
+                                           // ----------------------------------------------------------------
 
-
+#endif
 
         // doubled up (this is the current working copy pattern)
         derived()._ready_device(); // run derived which is set up by macro (currently copies all the vars to the pars by macro)
