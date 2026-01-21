@@ -80,13 +80,6 @@ static inline void copy_all_src(const SrcType &src,
     }
 }
 
-// // inside your CRTP base / GNC_Template
-// void __copy_properties(const Self &src, Parameters &dst) {
-//     constexpr auto src_props = Self::properties();
-//     constexpr auto dst_props = Parameters::properties();
-//     copy_all_src(src, dst, src_props, dst_props);
-// }
-
 // copies all properties from a src object to dst
 // both objects must have properties() implemented
 template <class Src, class Dst>
@@ -95,6 +88,43 @@ static inline void copy_properties(const Src &src, Dst &dst) {
     constexpr auto dst_props = Dst::properties();
     copy_all_src(src, dst, src_props, dst_props);
 }
+
+// ================================================================================================================================
+// [Set Property By Name]
+// --------------------------------------------------------------------------------------------------------------------------------
+// sets the property by name on the reflectable object
+
+template <std::size_t I = 0, class Dst, class Value, class DstTuple>
+static inline void set_property_by_name_impl(
+    Dst &dst,
+    const char *name,
+    const Value &value,
+    const DstTuple &dst_props) {
+    if constexpr (I < std::tuple_size_v<DstTuple>) {
+        auto &dp = std::get<I>(dst_props);
+
+        if (std::strcmp(dp.name, name) == 0) {
+            // Only assign if the types match exactly
+            if constexpr (std::is_same_v<
+                              decltype(dst.*(dp.member)),
+                              Value>) {
+                dst.*(dp.member) = value;
+            }
+        }
+
+        set_property_by_name_impl<I + 1>(dst, name, value, dst_props);
+    }
+}
+
+template <class Dst, class Value>
+static inline void set_property_by_name(Dst &dst,
+                                        const char *name,
+                                        const Value &value) {
+    constexpr auto dst_props = Dst::properties();
+    set_property_by_name_impl(dst, name, value, dst_props);
+}
+
+// ================================================================================================================================
 
 /*
 EXAMPLE OF AN OBJECT THAT HAS PROPERTY:
@@ -251,6 +281,45 @@ class GNC_Base {
         }
     }
 
+
+    // ================================================================================================================================
+    // [Copy Array Pointers]
+    // --------------------------------------------------------------------------------------------------------------------------------
+
+
+    // // 🧪 trying to iterate props, perform an action
+    // template <std::size_t I = 0, class Tuple, class F>
+    // static inline void for_each_property(const Tuple &props, F &&func) {
+    //     if constexpr (I < std::tuple_size_v<Tuple>) {
+    //         func(std::get<I>(props));
+    //         for_each_property<I + 1>(props, std::forward<F>(func));
+    //     }
+    // }
+
+    //     void copy_array_pointers() {
+
+    //     // constexpr auto properties = Self::properties();
+    //     static constexpr auto properties = Self::properties(); // are we copying
+
+    //     for_each_property(properties, [&](auto const &prop) {
+    //         // printf("prop: %s\n", property.name);
+    //         using MemberT = decltype(std::declval<Self>().*(prop.member));
+    //         using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
+
+    //         if constexpr (is_device_array_ref<RawMemberT>::value) {
+    //             auto &ref = derived().*(prop.member); // ref to core::Ref
+    //             // ref.instantiate_if_null();
+    //             if (!ref) {
+    //                 set_property_by_name(_arrays, prop.name, nullptr); // set null if DeviceArray
+    //                 return;
+    //             }
+
+    //             auto *ptr = ref->dev_ptr();
+    //             set_property_by_name(_arrays, prop.name, ptr); // set the pointer on the array
+    //         }
+    //     });
+    // }
+
     // ================================================================================================================================
 
     // ready device ensuring par structs are uploaded
@@ -265,6 +334,9 @@ class GNC_Base {
         // ----------------------------------------------------------------
 
         copy_properties(derived(), _pars); // 🧪 should copy properties from one object to another, both need to implement reflection with properties()
+        // copy_array_pointers(); // 🧪
+
+
 
         // doubled up (this is the current working copy pattern)
         derived()._ready_device(); // run derived which is set up by macro (currently copies all the vars to the pars by macro)

@@ -111,12 +111,12 @@ struct ArrayPointers {
     // reflection string to member functions ⚠️ seems to be broken for the arrays atm, can't reflect these yet!
     static constexpr auto properties() {
         return std::tuple{
-            // #ifdef TEMPLATE_CLASS_ARRAYS // bind pars
-            // #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-//     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-            //             TEMPLATE_CLASS_ARRAYS
-            // #undef X
-            // #endif
+#ifdef TEMPLATE_CLASS_ARRAYS // bind pars
+#define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
+    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+            TEMPLATE_CLASS_ARRAYS
+#undef X
+#endif
         };
     }
 };
@@ -230,7 +230,13 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     }
 
     // --------------------------------------------------------------------------------------------------------------------------------
-    // TEST ITERATE
+    // 🧪 set property with string helper
+
+
+
+
+    // --------------------------------------------------------------------------------------------------------------------------------
+    // iterating all properties
 
     // 🧪 trying to iterate props, perform an action
     template <std::size_t I = 0, class Tuple, class F>
@@ -239,6 +245,30 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
             func(std::get<I>(props));
             for_each_property<I + 1>(props, std::forward<F>(func));
         }
+    }
+
+    void copy_array_pointers() {
+
+        // constexpr auto properties = Self::properties();
+        static constexpr auto properties = Self::properties(); // are we copying
+
+        for_each_property(properties, [&](auto const &prop) {
+            // printf("prop: %s\n", property.name);
+            using MemberT = decltype(std::declval<Self>().*(prop.member));
+            using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
+
+            if constexpr (is_device_array_ref<RawMemberT>::value) {
+                auto &ref = derived().*(prop.member); // ref to core::Ref
+                // ref.instantiate_if_null();
+                if (!ref) {
+                    set_property_by_name(_arrays, prop.name, nullptr); // set null if DeviceArray
+                    return;
+                }
+
+                auto *ptr = ref->dev_ptr();
+                set_property_by_name(_arrays, prop.name, ptr); // set the pointer on the array
+            }
+        });
     }
 
     // 🧪 testing iterating
@@ -287,6 +317,8 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
                 // Now get the device pointer
                 auto *ptr = ref->dev_ptr();
+
+                set_property_by_name(_arrays, p.name, ptr);
 
                 printf("  %s -> dev_ptr() = %p\n", p.name, (void *)ptr);
             }

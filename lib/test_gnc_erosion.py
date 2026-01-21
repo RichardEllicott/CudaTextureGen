@@ -122,11 +122,11 @@ def test_reflection():
     device_array.array = noise
     template.input = device_array
 
-    template.process()
+    template.compute()
 
-    noise = device_array.array
+    noise2 = device_array.array
 
-    tools.images.save(noise, f"{script_path}.noise.png")
+    tools.images.save(noise2, f"{script_path}.noise.png")
 
 
 test_reflection()
