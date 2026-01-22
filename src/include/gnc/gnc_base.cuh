@@ -27,21 +27,74 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 
 namespace core::reflection {
 
-#pragma region REFLECTION_PROPERTIES
-// ================================================================================================================================
-// [Property object for reflection]
-// --------------------------------------------------------------------------------------------------------------------------------
+#pragma region COMPILE_TIME_REFLECTION
 
-// struct for properties
+// compile‑time description of a data member
 template <typename T, typename Member>
 struct _Property {
     const char *name;
     Member member;
 };
 
-// helper to lower boilerplate in final form (see gnc_example for usage)
+// compile‑time helper alias (reduces boilerplate)
 template <typename T, auto Member>
 using Property = _Property<T, decltype(Member)>;
+
+// compile‑time description of a member function
+template <typename T, auto MethodPtr>
+struct Method {
+    const char *name;
+    static constexpr auto member = MethodPtr;
+    // if your property metadata exposes __this, add it too:
+    // using This = T;
+    // static constexpr auto __this = static_cast<T*>(nullptr);
+};
+
+#pragma endregion
+
+#pragma region RUNTIME_REFLECTION
+
+#ifdef GNC_BASE_LAZY_EVALUATION
+
+// structure to store runtime class property
+struct RuntimeProperty {
+    const char *name;
+    size_t offset;
+    const std::type_info *type; // NEW
+};
+
+// get memory offset of property
+template <typename Class, typename Member>
+constexpr size_t offset_of(Member Class::*m) {
+    return reinterpret_cast<size_t>(
+        &(reinterpret_cast<Class *>(0)->*m));
+}
+
+// build the runtime properties from the constexpr tuple
+template <typename Derived, typename Tuple>
+std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple &props) {
+    std::vector<RuntimeProperty> result;
+
+    std::apply(
+        [&](auto const &...prop) {
+            (result.push_back(
+                 RuntimeProperty{
+                     prop.name,
+                     offset_of(prop.member),                                                            // deduces Class automatically
+                     &typeid(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>) // NEW
+                 }),
+             ...);
+        },
+        props);
+
+    return result;
+}
+
+#endif
+
+#pragma endregion
+
+#pragma region COMPILE_TIME_REFLECTION_PROPERTIES_OLD // failed pattern too heavy on compile
 
 #ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
 
@@ -128,6 +181,16 @@ static inline void set_property_by_name(Dst &dst,
     set_property_by_name_impl(dst, name, value, dst_props);
 }
 
+// i have got confused by this, i think it's for compile time reflection
+// iterate a properties tuple
+template <std::size_t I = 0, class Tuple, class F>
+static inline void for_each_property(const Tuple &props, F &&func) {
+    if constexpr (I < std::tuple_size_v<Tuple>) {
+        func(std::get<I>(props));
+        for_each_property<I + 1>(props, std::forward<F>(func));
+    }
+}
+
 #endif
 
 // ================================================================================================================================
@@ -166,68 +229,11 @@ static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must re
 
 // ================================================================================================================================
 
-// method record, similar to the Property (not yet used)
-template <typename T, auto MethodPtr>
-struct Method {
-    const char *name;
-    static constexpr auto member = MethodPtr;
-    // if your property metadata exposes __this, add it too:
-    // using This = T;
-    // static constexpr auto __this = static_cast<T*>(nullptr);
-};
-
 // ================================================================================================================================
-
-// iterate a properties tuple
-template <std::size_t I = 0, class Tuple, class F>
-static inline void for_each_property(const Tuple &props, F &&func) {
-    if constexpr (I < std::tuple_size_v<Tuple>) {
-        func(std::get<I>(props));
-        for_each_property<I + 1>(props, std::forward<F>(func));
-    }
-}
 
 // ================================================================================================================================
 
 #pragma endregion
-
-#ifdef GNC_BASE_LAZY_EVALUATION
-
-// structure to store runtime class property
-struct RuntimeProperty {
-    const char *name;
-    size_t offset;
-    const std::type_info *type; // NEW
-};
-
-// get memory offset of property
-template <typename Class, typename Member>
-constexpr size_t offset_of(Member Class::*m) {
-    return reinterpret_cast<size_t>(
-        &(reinterpret_cast<Class *>(0)->*m));
-}
-
-// build the runtime properties from the constexpr tuple
-template <typename Derived, typename Tuple>
-std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple &props) {
-    std::vector<RuntimeProperty> result;
-
-    std::apply(
-        [&](auto const &...prop) {
-            (result.push_back(
-                 RuntimeProperty{
-                     prop.name,
-                     offset_of(prop.member),                                                            // deduces Class automatically
-                     &typeid(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>) // NEW
-                 }),
-             ...);
-        },
-        props);
-
-    return result;
-}
-
-#endif
 
 } // namespace core::reflection
 
@@ -513,40 +519,35 @@ class GNC_Base {
 
 #endif
 
+#pragma region RUNTIME_REFLECTION
+
 #ifdef GNC_BASE_LAZY_EVALUATION
 
-    // ================================================================
-    // struct RuntimeProperty {
-    //     const char *name;
-    //     size_t offset;
-    // };
 
-    // static std::vector<RuntimeProperty> build_runtime_properties() {
-    //     std::vector<RuntimeProperty> result;
-
-    //     std::apply(
-    //         [&](auto const &...prop) {
-    //             (result.push_back(RuntimeProperty{
-    //                  prop.name,
-    //                  offset_of(prop.member) // <-- no <Derived> here
-    //              }),
-    //              ...);
-    //         },
-    //         Derived::properties());
-
-    //     return result;
-    // }
-
-    // ================================================================
-
-    static std::vector<RuntimeProperty> build_runtime_properties() {
-        return build_runtime_properties_from_tuple<Derived>(Derived::properties());
-    }
-
+    // Returns the lazily‑constructed runtime property table for this class.
+    // The table is built exactly once per *type*, on first use, and then cached.
     static const std::vector<RuntimeProperty> &runtime_properties() {
-        static const auto props = build_runtime_properties();
+        static const std::vector<RuntimeProperty> props =
+            build_runtime_properties_from_tuple<Derived>(Derived::properties());
         return props;
     }
+
+    // lazy map
+    static const std::unordered_map<std::string, RuntimeProperty> &runtime_property_map() {
+        static const std::unordered_map<std::string, RuntimeProperty> map = [] {
+            std::unordered_map<std::string, RuntimeProperty> m;
+            m.reserve(runtime_properties().size());
+            for (const auto &rp : runtime_properties()) {
+                m.emplace(rp.name, rp);
+            }
+            return m;
+        }();
+        return map;
+    }
+
+
+
+    // ----------------------------------------------------------------
 
     // this one needed the type to be stored
     // it's working well
@@ -569,9 +570,9 @@ class GNC_Base {
         return result;
     }
 
-  
-
 #endif
+
+#pragma endregion
 
     void _instance_test_1() {
         printf("_instance_test_1()...\n");
@@ -591,7 +592,9 @@ class GNC_Base {
         }
     }
 
-
+    int _return_int_test(int v) {
+        return v;
+    }
 
     void _debug_test() {
 
@@ -624,7 +627,6 @@ class GNC_Base {
 #ifdef REF_DEVICE_ARRAY_TYPES
 #define X(NAME)                                  \
     for (auto *arr : get_all_of_type2<NAME>()) { \
-        printf("found an array!");               \
         arr->instantiate_if_null();              \
     }
         REF_DEVICE_ARRAY_TYPES
@@ -703,14 +705,12 @@ class GNC_Base {
     static constexpr auto methods() {
         return std::tuple_cat(Derived::_methods(), // CRTP requirement
                               std::tuple{
-                                  Method<GNC_Base, &GNC_Base::test_inst_all_darrays>{"test_inst_all_darrays"},
-                                  Method<GNC_Base, &GNC_Base::_instance_test_1>{"_instance_test_1"},
-                                  Method<GNC_Base, &GNC_Base::_instance_test_2>{"_instance_test_2"},
+                                  Method<GNC_Base, &GNC_Base::test_inst_all_darrays>{"test_inst_all_darrays"}, // ✔️
+                                  Method<GNC_Base, &GNC_Base::_instance_test_1>{"_instance_test_1"},           // ✔️
+                                  Method<GNC_Base, &GNC_Base::_instance_test_2>{"_instance_test_2"},           // ✔️
+                                  Method<GNC_Base, &GNC_Base::_return_int_test>{"_return_int_test"},           // ✔️
                               });
     }
-
-
-
 
 #pragma endregion
 };

@@ -33,13 +33,11 @@ struct Parameters {
     // reflection string to member functions
     static constexpr auto properties() {
         return std::tuple{
-#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
-#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT         // bind pars
+#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
             TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
-#endif
 #endif
         };
     }
@@ -61,13 +59,11 @@ struct ArrayPointers {
     // reflection string to member functions ⚠️ seems to be broken for the arrays atm, can't reflect these yet!
     static constexpr auto properties() {
         return std::tuple{
-#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
-#ifdef TEMPLATE_CLASS_ARRAYS                    // bind pars
+#ifdef TEMPLATE_CLASS_ARRAYS // bind pars
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
             TEMPLATE_CLASS_ARRAYS
 #undef X
-#endif
 #endif
         };
     }
@@ -233,7 +229,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     }
 
 #endif
-    //================================================================================================================================
+    // ================================================================================================================================
     // [Ready Device]
     // --------------------------------------------------------------------------------------------------------------------------------
 
@@ -260,7 +256,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #endif
     }
 
-    //================================================================================================================================
+    // ================================================================================================================================
 
     void _compute(); // CRTP requirement
 };

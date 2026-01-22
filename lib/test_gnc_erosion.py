@@ -129,13 +129,15 @@ def test_reflection():
     # tools.images.save(noise2, f"{script_path}.noise.png")
 
     print(template.input2)
-    # template.test_inst_all_darrays()
-    template._instance_test_3()
+    template.test_inst_all_darrays()
     print(template.input2)
-    # template._instance_test_2()
-    # print(template.input2)
+    template._instance_test_2()
+    print(template.input2)
     # template._instance_test_1()
     # print(template.input2)
+
+
+    print(template._return_int_test(777))
 
 
 test_reflection()
