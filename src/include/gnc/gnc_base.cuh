@@ -21,6 +21,8 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include "core/cuda/types.cuh" // top level for this object
 #include "macros.h"
 
+#define GNC_BASE_LAZY_EVALUATION
+
 // ================================================================================================================================
 
 namespace core::reflection {
@@ -189,6 +191,44 @@ static inline void for_each_property(const Tuple &props, F &&func) {
 
 #pragma endregion
 
+#ifdef GNC_BASE_LAZY_EVALUATION
+
+// structure to store runtime class property
+struct RuntimeProperty {
+    const char *name;
+    size_t offset;
+    const std::type_info *type; // NEW
+};
+
+// get memory offset of property
+template <typename Class, typename Member>
+constexpr size_t offset_of(Member Class::*m) {
+    return reinterpret_cast<size_t>(
+        &(reinterpret_cast<Class *>(0)->*m));
+}
+
+// build the runtime properties from the constexpr tuple
+template <typename Derived, typename Tuple>
+std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple &props) {
+    std::vector<RuntimeProperty> result;
+
+    std::apply(
+        [&](auto const &...prop) {
+            (result.push_back(
+                 RuntimeProperty{
+                     prop.name,
+                     offset_of(prop.member),                                                            // deduces Class automatically
+                     &typeid(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>) // NEW
+                 }),
+             ...);
+        },
+        props);
+
+    return result;
+}
+
+#endif
+
 } // namespace core::reflection
 
 namespace gnc {
@@ -231,8 +271,7 @@ struct NoParams {}; // default if we don't use the params
 template <typename Derived, typename Parameters = NoParams, typename ArrayPointers = NoParams>
 class GNC_Base {
 
-    // using Self = GNC_Base;
-    using Self = Derived; // it seems Self being Derived is correct and cannonical
+    using Self = Derived; // ⚠️ "Self" as an alias is causing confusion, as we need Derived for properties, Base for methods
 
     // ================================================================================================================================
   protected:
@@ -350,7 +389,8 @@ class GNC_Base {
         // SEEMS TO BE VERY SLOW!!
         copy_properties(derived(), _pars); // 🧪 should copy properties from one object to another, both need to implement reflection with properties()
         copy_array_pointers();             // 🧪 seeems to be very slow!!!!??
-                                           // ----------------------------------------------------------------
+
+        // ----------------------------------------------------------------
 
 #endif
 
@@ -373,14 +413,13 @@ class GNC_Base {
 
     // move to bottom
 
-#pragma region REFLECTION_TESTS // getting all of type, to do stuff like make all arrays valid etc
+#pragma region COMPILE_TIME_REFLECTION // getting all of type, to do stuff like make all arrays valid etc
 
     // ================================================================================================================================
     // [OPTIONAL REFLECTION] return vector pointers to members whose type is exactly T
     // --------------------------------------------------------------------------------------------------------------------------------
 
-    // this pattern gets all of a certain type T
-    // this pattern is not general enough but works
+    // compile time get_all_of_type ... using too many of these can slow compile!
     template <typename T>
     auto get_all_of_type() {
         // auto &self = static_cast<Derived &>(*this); // GCC didn't like this
@@ -411,6 +450,9 @@ class GNC_Base {
     // --------------------------------------------------------------------------------------------------------------------------------
     // attempting to seperat the logic so it can be generalized
 
+#ifdef FAILED_GENERAL_PATTERN // this pattern worked on windows, broke on Linux, feels like fighting the compiler too much
+
+    // more general attempt but broke gcc... bade idea
     // this pattern would generalize the above pattern
     template <typename T, typename Properties>
     auto get_properties_of_type(const Properties &props) {
@@ -443,9 +485,9 @@ class GNC_Base {
     }
 
     void test_new_reflection() {
-        auto int_props = get_properties_of_type<int>(Self::properties());
+        auto int_props = get_properties_of_type<int>(Self::properties()); // this should add to compile time
 
-        for (auto *prop : int_props) {
+        for (auto *prop : int_props) { // but this should iterate runtime
             auto *prop_ptr = get_member_ptr(derived(), prop);
 
             // do something with prop_ptr
@@ -453,6 +495,7 @@ class GNC_Base {
     }
 
     // same as previous, but now using our helpers
+    // ⚠️
     template <typename T>
     auto get_all_of_type2() {
         std::vector<T *> result;
@@ -466,6 +509,103 @@ class GNC_Base {
         }
 
         return result;
+    }
+
+#endif
+
+#ifdef GNC_BASE_LAZY_EVALUATION
+
+    // ================================================================
+    // struct RuntimeProperty {
+    //     const char *name;
+    //     size_t offset;
+    // };
+
+    // static std::vector<RuntimeProperty> build_runtime_properties() {
+    //     std::vector<RuntimeProperty> result;
+
+    //     std::apply(
+    //         [&](auto const &...prop) {
+    //             (result.push_back(RuntimeProperty{
+    //                  prop.name,
+    //                  offset_of(prop.member) // <-- no <Derived> here
+    //              }),
+    //              ...);
+    //         },
+    //         Derived::properties());
+
+    //     return result;
+    // }
+
+    // ================================================================
+
+    static std::vector<RuntimeProperty> build_runtime_properties() {
+        return build_runtime_properties_from_tuple<Derived>(Derived::properties());
+    }
+
+    static const std::vector<RuntimeProperty> &runtime_properties() {
+        static const auto props = build_runtime_properties();
+        return props;
+    }
+
+    // this one needed the type to be stored
+    // it's working well
+    // https://copilot.microsoft.com/chats/VjWscLPV9HBFgtzn1ypH8
+    template <typename T>
+    auto get_all_of_type2() {
+        using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
+
+        std::vector<T *> result;
+        auto &self = derived();
+
+        for (auto const &rp : runtime_properties()) {
+            if (*rp.type == typeid(CleanT)) {
+                auto *raw_ptr = reinterpret_cast<char *>(&self) + rp.offset;
+                auto *ptr = reinterpret_cast<T *>(raw_ptr);
+                result.push_back(ptr);
+            }
+        }
+
+        return result;
+    }
+
+  
+
+#endif
+
+    void _instance_test_1() {
+        printf("_instance_test_1()...\n");
+
+        for (auto *arr : get_all_of_type<RefDeviceArrayFloat2D>()) {
+            printf(" arr->instantiate_if_null()...\n");
+            arr->instantiate_if_null();
+        }
+    }
+
+    void _instance_test_2() {
+        printf("_instance_test_2()...\n");
+
+        for (auto *arr : get_all_of_type2<RefDeviceArrayFloat2D>()) {
+            printf(" arr->instantiate_if_null()...\n");
+            arr->instantiate_if_null();
+        }
+    }
+
+
+
+    void _debug_test() {
+
+        // printf("_debug_test()...\n");
+
+        // for (auto const &rp : runtime_properties()) {
+        //     printf("RP: %s  offset=%zu\n", rp.name, rp.offset);
+        //     printf("RP type: %s\n", rp.type->name());
+        // }
+
+        // for (auto *arr : get_all_of_type2<RefDeviceArrayFloat2D>()) {
+        //     printf(" arr->instantiate_if_null()...\n");
+        //     arr->instantiate_if_null();
+        // }
     }
 
     // ================================================================================================================================
@@ -482,9 +622,11 @@ class GNC_Base {
     X(RefDeviceArrayInt2D)     \
     X(RefDeviceArrayInt3D)
 #ifdef REF_DEVICE_ARRAY_TYPES
-#define X(NAME)                                \
-    for (auto *arr : get_all_of_type2<NAME>()) \
-        arr->instantiate_if_null();
+#define X(NAME)                                  \
+    for (auto *arr : get_all_of_type2<NAME>()) { \
+        printf("found an array!");               \
+        arr->instantiate_if_null();              \
+    }
         REF_DEVICE_ARRAY_TYPES
 #undef X
 #endif
@@ -515,6 +657,8 @@ class GNC_Base {
 #pragma endregion
 
     GNC_Base() {
+        _debug_test();
+
         // instantiate_all_arrays();
         stream.instantiate_if_null();
     }
@@ -525,18 +669,17 @@ class GNC_Base {
         derived()._compute();
     }
 
-#pragma region REFLECTION_REGISTRY
+#pragma region REFLECTION_REGISTRY // properties and methods reflected at the end the class
 
     // return properties
+    // note we must used "Derived" for properties
     static constexpr auto properties() {
         return std::tuple_cat(Derived::_properties(), // CRTP requirement
                               std::tuple{
                                   // ================================================================
                                   // [Default Properties]
                                   // ----------------------------------------------------------------
-                                  Property<Self, &Self::stream>{"stream", &Self::stream},
-                                  //   Property<Self, &Self::width>{"width", &Self::width},
-                                  //   Property<Self, &Self::height>{"width", &Self::height},
+                                  Property<Derived, &Derived::stream>{"stream", &Derived::stream}, // trailing comma optional
                                   // ================================================================
                               });
     }
@@ -556,12 +699,18 @@ class GNC_Base {
     }
 
     // return methods
+    // ⚠️ note we MUST reference GNC_Base here for methods (not Derived)
     static constexpr auto methods() {
         return std::tuple_cat(Derived::_methods(), // CRTP requirement
                               std::tuple{
-                                  //   Method<Self, &Self::test_inst_all_darrays>{"test_inst_all_darrays"}, // breaks!!
+                                  Method<GNC_Base, &GNC_Base::test_inst_all_darrays>{"test_inst_all_darrays"},
+                                  Method<GNC_Base, &GNC_Base::_instance_test_1>{"_instance_test_1"},
+                                  Method<GNC_Base, &GNC_Base::_instance_test_2>{"_instance_test_2"},
                               });
     }
+
+
+
 
 #pragma endregion
 };
