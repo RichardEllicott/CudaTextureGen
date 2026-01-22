@@ -6,7 +6,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #pragma once
 // #include "template_macro_undef.h" // guard from defines
 
-#include <array> // std::array (if you use arrays instead of tuples)
+// #include <array> // std::array
 #include <optional>
 #include <stdexcept>   // exceptions
 #include <tuple>       // std::tuple, std::make_tuple
@@ -41,7 +41,7 @@ struct _Property {
 template <typename T, auto Member>
 using Property = _Property<T, decltype(Member)>;
 
-#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times! 
+#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
 
 // ================================================================================================================================
 // [Copy properties by reflection, whenever the "name" of the property matches]
@@ -231,11 +231,9 @@ struct NoParams {}; // default if we don't use the params
 template <typename Derived, typename Parameters = NoParams, typename ArrayPointers = NoParams>
 class GNC_Base {
 
-#ifndef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
-    using Self = GNC_Base;
-#else
-    using Self = Derived;
-#endif
+    // using Self = GNC_Base;
+    using Self = Derived; // it seems Self being Derived is correct and cannonical
+
     // ================================================================================================================================
   protected:
     // canonical CRTP
@@ -286,6 +284,7 @@ class GNC_Base {
     // ensure_array_ref_ready(water_map, height_map->shape(), true);
     // --------------------------------------------------------------------------------------------------------------------------------
 
+    // simple helper to make ensuring an array exists with desired shape (if it doesn't already) quicker
     template <
         typename MapT,
         typename ShapeT,
@@ -371,43 +370,17 @@ class GNC_Base {
     // [constexpr Reflection]
     // --------------------------------------------------------------------------------------------------------------------------------
     // return properties
-    static constexpr auto properties() {
-        return std::tuple_cat(Derived::_properties(), // CRTP requirement
-                              std::tuple{
-                                  // ================================================================
-                                  // [Default Properties]
-                                  // ----------------------------------------------------------------
-                                  Property<Self, &Self::stream>{"stream", &Self::stream},
-                                  //   Property<Self, &Self::width>{"width", &Self::width},
-                                  //   Property<Self, &Self::height>{"width", &Self::height},
-                                  // ================================================================
-                              });
-    }
 
-    // return properties UNUSED second store
-    static constexpr auto properties2() {
-        return std::tuple_cat(Derived::_properties2(), // CRTP requirement
-                              std::tuple{
-                                  // ================================================================
-                                  // [Default Properties]
-                                  // ----------------------------------------------------------------
-                                  //   Property<Self, &Self::stream>{"stream", &Self::stream},
-                                  //   Property<Self, &Self::width>{"width", &Self::width},
-                                  //   Property<Self, &Self::height>{"width", &Self::height},
-                                  // ================================================================
-                              });
-    }
+    // move to bottom
 
-    // return methods
-    static constexpr auto methods() {
-        return std::tuple_cat(Derived::_methods(), // CRTP requirement
-                              std::tuple{
-
-                              });
-    }
+#pragma region REFLECTION_TESTS // getting all of type, to do stuff like make all arrays valid etc
 
     // ================================================================================================================================
     // [OPTIONAL REFLECTION] return vector pointers to members whose type is exactly T
+    // --------------------------------------------------------------------------------------------------------------------------------
+
+    // this pattern gets all of a certain type T
+    // this pattern is not general enough but works
     template <typename T>
     auto get_all_of_type() {
         // auto &self = static_cast<Derived &>(*this); // GCC didn't like this
@@ -435,10 +408,70 @@ class GNC_Base {
         return result;
     }
 
+    // --------------------------------------------------------------------------------------------------------------------------------
+    // attempting to seperat the logic so it can be generalized
+
+    // this pattern would generalize the above pattern
+    template <typename T, typename Properties>
+    auto get_properties_of_type(const Properties &props) {
+        using Class = typename Properties::class_type;
+
+        std::vector<const void *> result;
+
+        std::apply(
+            [&](auto &...prop) {
+                (([&] {
+                     using MemberPtr = decltype(prop.member);
+                     using MemberT = std::remove_reference_t<
+                         decltype(std::declval<Class>().*(prop.member))>;
+
+                     if constexpr (std::is_same_v<MemberT, T>) {
+                         result.push_back(&prop);
+                     }
+                 }()),
+                 ...);
+            },
+            props);
+
+        return result;
+    }
+
+    // get a member pointer from a Property
+    template <typename Self, typename Property>
+    auto get_member_ptr(Self &self, const Property *p) {
+        return &(self.*(p->member));
+    }
+
+    void test_new_reflection() {
+        auto int_props = get_properties_of_type<int>(Self::properties());
+
+        for (auto *prop : int_props) {
+            auto *prop_ptr = get_member_ptr(derived(), prop);
+
+            // do something with prop_ptr
+        }
+    }
+
+    // same as previous, but now using our helpers
+    template <typename T>
+    auto get_all_of_type2() {
+        std::vector<T *> result;
+
+        // Step 1: filter property descriptors by type T
+        auto props = get_properties_of_type<T>(Self::properties());
+
+        // Step 2: turn descriptors into actual pointers
+        for (auto *prop : props) {
+            result.push_back(get_member_ptr(derived(), prop));
+        }
+
+        return result;
+    }
+
     // ================================================================================================================================
 
     // using get_all_of_type, ensure all arrays are instantiated (they will still be empty though)
-    void instantiate_all_arrays() {
+    void test_inst_all_darrays() {
 
 // (NAME)
 #define REF_DEVICE_ARRAY_TYPES \
@@ -449,8 +482,8 @@ class GNC_Base {
     X(RefDeviceArrayInt2D)     \
     X(RefDeviceArrayInt3D)
 #ifdef REF_DEVICE_ARRAY_TYPES
-#define X(NAME)                               \
-    for (auto *arr : get_all_of_type<NAME>()) \
+#define X(NAME)                                \
+    for (auto *arr : get_all_of_type2<NAME>()) \
         arr->instantiate_if_null();
         REF_DEVICE_ARRAY_TYPES
 #undef X
@@ -458,7 +491,7 @@ class GNC_Base {
 #undef REF_DEVICE_ARRAY_TYPES
     }
 
-#ifdef ATTEMPT_GENERIC_REFLECTION // broken on linux
+#ifdef ATTEMPT_GENERIC_REFLECTION_OLD // broken on linux
 
     void instantiate_all_arrays2() {
 
@@ -479,6 +512,8 @@ class GNC_Base {
     }
 #endif
 
+#pragma endregion
+
     GNC_Base() {
         // instantiate_all_arrays();
         stream.instantiate_if_null();
@@ -489,7 +524,46 @@ class GNC_Base {
         // ready_device();      // ensure device ready
         derived()._compute();
     }
-    //
+
+#pragma region REFLECTION_REGISTRY
+
+    // return properties
+    static constexpr auto properties() {
+        return std::tuple_cat(Derived::_properties(), // CRTP requirement
+                              std::tuple{
+                                  // ================================================================
+                                  // [Default Properties]
+                                  // ----------------------------------------------------------------
+                                  Property<Self, &Self::stream>{"stream", &Self::stream},
+                                  //   Property<Self, &Self::width>{"width", &Self::width},
+                                  //   Property<Self, &Self::height>{"width", &Self::height},
+                                  // ================================================================
+                              });
+    }
+
+    // return properties UNUSED second store for testing
+    static constexpr auto properties2() {
+        return std::tuple_cat(Derived::_properties2(), // CRTP requirement
+                              std::tuple{
+                                  // ================================================================
+                                  // [Default Properties]
+                                  // ----------------------------------------------------------------
+                                  //   Property<Self, &Self::stream>{"stream", &Self::stream},
+                                  //   Property<Self, &Self::width>{"width", &Self::width},
+                                  //   Property<Self, &Self::height>{"width", &Self::height},
+                                  // ================================================================
+                              });
+    }
+
+    // return methods
+    static constexpr auto methods() {
+        return std::tuple_cat(Derived::_methods(), // CRTP requirement
+                              std::tuple{
+                                  //   Method<Self, &Self::test_inst_all_darrays>{"test_inst_all_darrays"}, // breaks!!
+                              });
+    }
+
+#pragma endregion
 };
 
 #pragma endregion
