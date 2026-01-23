@@ -7,6 +7,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 // #include "template_macro_undef.h" // guard from defines
 
 // #include <array> // std::array
+#include <cassert>
 #include <optional>
 #include <stdexcept>   // exceptions
 #include <tuple>       // std::tuple, std::make_tuple
@@ -307,6 +308,115 @@ class GNC_Base {
 
 #pragma endregion
 
+#pragma region COPY_TO_ARRAY_WITH_RUNTIME_REFLECTION
+// here we attempt to make a function that will copy are pars accross to the
+#define COPY_FROM_ALL_OUR_LOCALS_TO_CUDA_STRUCTURES
+#ifdef COPY_FROM_ALL_OUR_LOCALS_TO_CUDA_STRUCTURES
+
+    // copy the properties to structure
+    // ⚠️ This reflection system requires trivially-copyable POD types due to memcpy
+    void copy_data_to_arrays() {
+
+        bool debug_print = true;
+
+        if (debug_print) printf("copy_data_to_arrays()...\n");
+
+        auto &_props_map = runtime_property_map();
+
+#define PART_1
+#define PART_2
+
+#ifdef PART_1
+
+        // list of par properties
+        static const std::vector<RuntimeProperty> _pars_props =
+            build_runtime_properties_from_tuple<Parameters>(Parameters::properties());
+
+        // for each prop
+        for (auto &par_prop : _pars_props) {
+
+            // Destination: inside _pars
+            void *dst_ptr = get_ptr_from_runtime_property(par_prop, _pars);
+
+            if (auto it = _props_map.find(par_prop.name); it != _props_map.end()) {
+
+                if (debug_print) printf("matched parameter '%s'\n", par_prop.name);
+
+                const RuntimeProperty *inst_prop = &it->second;
+
+                // check types match
+                if (*par_prop.type != *inst_prop->type) {
+                    printf("Type mismatch for '%s' — skipping copy\n", par_prop.name);
+                    continue;
+                }
+
+                void *src_ptr = get_ptr_from_runtime_property(*inst_prop, derived());
+
+                if (debug_print && *par_prop.type == typeid(int)) {
+                    int value = *reinterpret_cast<int *>(dst_ptr);
+                    printf("int value before copy = %d\n", value);
+                }
+
+                memcpy(dst_ptr, src_ptr, par_prop.size); // copy from source to destination
+
+                // Debug: print the copied value if it's an int
+                if (debug_print && *par_prop.type == typeid(int)) {
+                    int value = *reinterpret_cast<int *>(dst_ptr);
+                    printf("int value after copy = %d\n", value);
+                }
+            }
+        }
+
+#endif
+
+#ifdef PART_2
+
+        // list of array props
+        static const std::vector<RuntimeProperty> _arrays_props =
+            build_runtime_properties_from_tuple<ArrayPointers>(ArrayPointers::properties());
+
+        for (auto &arrays_prop : _arrays_props) {
+
+            void *dst_ptr = get_ptr_from_runtime_property(arrays_prop, _arrays);
+            *reinterpret_cast<void **>(dst_ptr) = nullptr; // set dst_ptr to nullptr (default)
+
+            if (auto it = _props_map.find(arrays_prop.name); it != _props_map.end()) {
+                if (debug_print) printf("matched array parameter '%s'\n", arrays_prop.name);
+
+                const RuntimeProperty *inst_prop = &it->second;
+
+                void *src_ptr = get_ptr_from_runtime_property(*inst_prop, derived());
+
+                auto *ref = reinterpret_cast<core::RefBase *>(src_ptr); // might be unsafe?
+
+                assert(dynamic_cast<core::RefBase *>(ref) &&
+                       "Reflection error: expected property to be a Ref<T> (invalid src_ptr type)"); // OPTIONAL check
+
+                if (ref->is_valid()) {
+                    void *obj_ptr = ref->raw_ptr();
+
+                    // reinterpret_cast first (just changes type does not check)
+                    // dynamic_cast checks, will give nullptr if not valid
+                    auto *arr = dynamic_cast<core::cuda::DeviceArrayBase *>(
+                        reinterpret_cast<core::cuda::DeviceArrayBase *>(obj_ptr));
+
+                    assert(arr && "Reflection error: expected DeviceArrayBase"); // OPTIONAL check
+
+                    if (arr) *reinterpret_cast<void **>(dst_ptr) = arr->raw_dev_ptr();
+                }
+            }
+        }
+
+#endif
+
+#undef PART_1
+#undef PART_2
+    }
+
+#endif
+#undef BASE_PARS_STRUCT_REFLECTION_TEST
+#pragma endregion
+
     // ready device ensuring par structs are uploaded
     void ready_device() {
 
@@ -369,19 +479,27 @@ class GNC_Base {
     // return methods
     // ⚠️ note we MUST reference GNC_Base here for methods (not Derived)
     // this is slightly confusing as properties use Derived
+
+#define METHOD(FUNC) \
+    Method<GNC_Base, &GNC_Base::FUNC> { #FUNC }
+
     static constexpr auto methods() {
         return std::tuple_cat(Derived::_methods(), // CRTP requirement
                               std::tuple{
                                   // ================================================================
                                   // [Default Methods]
                                   // ----------------------------------------------------------------
-                                  Method<GNC_Base, &GNC_Base::_instance_test_1>{"_instance_test_1"},
-                                  Method<GNC_Base, &GNC_Base::_instance_test_2>{"_instance_test_2"},
-                                  Method<GNC_Base, &GNC_Base::_return_int_test>{"_return_int_test"},
-                                  Method<GNC_Base, &GNC_Base::instantiate_all_refs>{"instantiate_all_refs"},
+                                  //   Method<GNC_Base, &GNC_Base::_instance_test_1>{"_instance_test_1"},
+                                  METHOD(_instance_test_1),
+                                  METHOD(_instance_test_2),
+                                  METHOD(_return_int_test),
+                                  METHOD(instantiate_all_refs),
+                                  METHOD(copy_data_to_arrays),
                                   // ================================================================
                               });
     }
+
+#undef METHOD
 
 #pragma endregion
 };

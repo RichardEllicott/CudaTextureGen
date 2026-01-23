@@ -128,20 +128,24 @@ def test_reflection():
     device_array.array = noise
     template.input = device_array
 
-    template.compute()
 
-    print("test4")
-
-    # noise2 = device_array.array
-
-    template.stream.sync()
-
-    print("test5")
+    template.copy_data_to_arrays()
 
 
-    tools.images.save(template.output.array, f"{script_path}.noise2.png")
+    # template.compute()
 
-    print("test6")
+    # print("test4")
+
+    # # noise2 = device_array.array
+
+    # template.stream.sync()
+
+    # print("test5")
+
+
+    # tools.images.save(template.output.array, f"{script_path}.noise2.png")
+
+    # print("test6")
 
     # print("input2 =", template.input2)
     # template.test_inst_all_darrays()
@@ -154,8 +158,6 @@ def test_reflection():
     # print("input2 =", template.input2)
     # template._instance_test_1()
     # print(template.input2)
-
-
 
 
 test_reflection()
