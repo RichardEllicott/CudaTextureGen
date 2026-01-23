@@ -197,11 +197,9 @@ class GNC_Base {
 
 #pragma region RUNTIME_REFLECTION
 
-
 // refactoring to use a helper object, note might break lazy design intention!!
-#define REFACTOR_TO_REFLECTION_OB 1
-
-#if REFACTOR_TO_REFLECTION_OB == 0
+#define BASE_REFACTOR_TO_REFLECTION_OB 0
+#if BASE_REFACTOR_TO_REFLECTION_OB == 0
 
     // Returns the lazily‑constructed runtime property table for this class.
     // The table is built exactly once per *type*, on first use, and then cached.
@@ -245,7 +243,7 @@ class GNC_Base {
         return result;
     }
 
-#elif REFACTOR_TO_REFLECTION_OB == 1
+#elif BASE_REFACTOR_TO_REFLECTION_OB == 1
 
     template <typename T>
     auto get_properties_of_type() {
@@ -254,13 +252,13 @@ class GNC_Base {
     }
 
 #endif
+#undef BASE_REFACTOR_TO_REFLECTION_OB
 
 #pragma endregion
 
 #pragma region TESTS
 
-
-// compile time test
+    // compile time test
     void _instance_test_1() {
         printf("_instance_test_1()...\n");
 
@@ -300,9 +298,9 @@ class GNC_Base {
     X(RefDeviceArrayInt2D)     \
     X(RefDeviceArrayInt3D)
 #ifdef REF_DEVICE_ARRAY_TYPES
-#define X(NAME)                                 \
+#define X(NAME)                                        \
     for (auto *arr : get_properties_of_type<NAME>()) { \
-        arr->instantiate_if_null();             \
+        arr->instantiate_if_null();                    \
     }
         REF_DEVICE_ARRAY_TYPES
 #undef X
