@@ -286,26 +286,58 @@ class GNC_Base {
 
     // ================================================================================================================================
 
-    // using get_all_of_type, ensure all arrays are instantiated (they will still be empty though)
-    void test_inst_all_darrays() {
+    // compile time reflection pattern that ensures all Ref's are instantiated
+    void instantiate_all_refs() {
+        printf("instantiate_all_refs()...\n");
 
-// (NAME)
-#define REF_DEVICE_ARRAY_TYPES \
-    X(RefDeviceArrayFloat1D)   \
-    X(RefDeviceArrayFloat2D)   \
-    X(RefDeviceArrayFloat3D)   \
-    X(RefDeviceArrayInt1D)     \
-    X(RefDeviceArrayInt2D)     \
-    X(RefDeviceArrayInt3D)
-#ifdef REF_DEVICE_ARRAY_TYPES
-#define X(NAME)                                        \
-    for (auto *arr : get_properties_of_type<NAME>()) { \
-        arr->instantiate_if_null();                    \
-    }
-        REF_DEVICE_ARRAY_TYPES
-#undef X
-#endif
-#undef REF_DEVICE_ARRAY_TYPES
+        constexpr auto props = Derived::properties();
+
+        for_each_property(props, [&](auto const &p) {
+            // printf("prop: %s\n", p.name);
+            using MemberT = decltype(std::declval<Derived>().*(p.member));
+            using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
+
+            // is_ref
+            if constexpr (is_ref<RawMemberT>::value) {
+                // printf("is_ref == true!\n");
+                auto &ref = derived().*(p.member);
+                ref.instantiate_if_null();
+            }
+            // // is_device_array_ref
+            // if constexpr (is_device_array_ref<RawMemberT>::value) {
+            //     // printf("is_device_array_ref == true!\n");
+            //     // auto &value = derived().*(p.member); // should point to our member
+            // }
+
+            // // get actual device array
+            // if constexpr (is_device_array_ref<RawMemberT>::value) {
+
+            //     // Access the actual Ref<DeviceArray<T,N>> instance
+            //     auto &ref = derived().*(p.member);
+
+            //     // ----------------------------------------------------------------
+            //     // ⚠️ breaks GCC
+            //     // core::RefBase &ref_base = ref; // for autotype
+            //     // ref_base.instantiate_if_null();
+            //     // ⚠️ also breaks GCC
+            //     // core::RefBase &ref_base = static_cast<core::RefBase &>(ref);
+            //     // ref_base.instantiate_if_null();
+            //     // ----------------------------------------------------------------
+
+            //     // Safety check (optional)
+            //     if (!ref) {
+            //         printf("  %s is empty\n", p.name);
+            //         return;
+            //     }
+
+            //     // Now get the device pointer
+            //     auto *ptr = ref->dev_ptr();
+
+            //     set_property_by_name(_arrays, p.name, ptr);
+
+            //     printf("  %s -> dev_ptr() = %p\n", p.name, (void *)ptr);
+            // }
+        });
     }
 
 #pragma endregion
@@ -358,10 +390,10 @@ class GNC_Base {
                                   // ================================================================
                                   // [Default Methods]
                                   // ----------------------------------------------------------------
-                                  Method<GNC_Base, &GNC_Base::test_inst_all_darrays>{"test_inst_all_darrays"},
                                   Method<GNC_Base, &GNC_Base::_instance_test_1>{"_instance_test_1"},
                                   Method<GNC_Base, &GNC_Base::_instance_test_2>{"_instance_test_2"},
                                   Method<GNC_Base, &GNC_Base::_return_int_test>{"_return_int_test"},
+                                  Method<GNC_Base, &GNC_Base::instantiate_all_refs>{"instantiate_all_refs"},
                                   // ================================================================
                               });
     }

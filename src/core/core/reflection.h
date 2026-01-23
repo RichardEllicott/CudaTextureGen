@@ -148,8 +148,6 @@ class Reflection {
         return result;
     }
 
-#pragma region COMPILE_TIME_PATTERN
-
     // get pointer list to all of type T
     // note used for multiple types could add more compile time overhead
     template <typename T>
@@ -176,9 +174,44 @@ class Reflection {
 
         return result;
     }
+};
 
 #pragma endregion
-};
+
+#pragma region HELPERS
+
+// Compile‑time tuple iteration: apply a callable to each reflected property.
+template <std::size_t I = 0, class Tuple, class F>
+static inline void for_each_property(const Tuple &props, F &&func) {
+    if constexpr (I < std::tuple_size_v<Tuple>) {
+        func(std::get<I>(props));
+        for_each_property<I + 1>(props, std::forward<F>(func));
+    }
+}
+
+/*
+EXAMPLE:
+
+void instantiate_all_refs() {
+    printf("instantiate_all_refs()...\n");
+
+    constexpr auto props = Derived::properties();
+
+    for_each_property(props, [&](auto const &p) {
+        printf("prop: %s\n", p.name);
+        using MemberT = decltype(std::declval<Derived>().*(p.member));
+        using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
+
+        // is_ref
+        if constexpr (is_ref<RawMemberT>::value) {
+            printf("is_ref == true!\n");
+            auto &ref = derived().*(p.member);
+            ref.instantiate_if_null();
+        }
+    });
+}
+*/
+
 
 #pragma endregion
 
