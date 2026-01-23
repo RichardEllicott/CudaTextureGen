@@ -126,7 +126,7 @@ class Reflection {
 
     // change to static?
     template <typename T>
-    static std::vector<T *> get_all_of_type(Derived &self) {
+    static std::vector<T *> get_properties_of_type(Derived &self) {
         std::vector<T *> result;
 
         auto props = Derived::properties();
@@ -153,7 +153,7 @@ class Reflection {
     // get pointer list to all of type T
     // note used for multiple types could add more compile time overhead
     template <typename T>
-    auto ct_get_all_of_type() {
+    auto ct_get_properties_of_type() {
 
         Derived &self = static_cast<Derived &>(*this); //
         std::vector<T *> result;

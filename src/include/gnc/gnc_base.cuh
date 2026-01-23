@@ -197,7 +197,11 @@ class GNC_Base {
 
 #pragma region RUNTIME_REFLECTION
 
-#ifdef GNC_BASE_LAZY_EVALUATION
+
+// refactoring to use a helper object, note might break lazy design intention!!
+#define REFACTOR_TO_REFLECTION_OB 1
+
+#if REFACTOR_TO_REFLECTION_OB == 0
 
     // Returns the lazily‑constructed runtime property table for this class.
     // The table is built exactly once per *type*, on first use, and then cached.
@@ -222,12 +226,9 @@ class GNC_Base {
 
     // ----------------------------------------------------------------
 
-
-    
-
     // get all of type from the runtime_properties
     template <typename T>
-    auto get_all_of_type() {
+    auto get_properties_of_type() {
         using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
 
         std::vector<T *> result;
@@ -244,14 +245,22 @@ class GNC_Base {
         return result;
     }
 
+#elif REFACTOR_TO_REFLECTION_OB == 1
+
+    template <typename T>
+    auto get_properties_of_type() {
+        auto &self = derived();
+        return Reflection<Derived>::template get_properties_of_type<RefDeviceArrayFloat2D>(self);
+    }
+
 #endif
 
 #pragma endregion
 
 #pragma region TESTS
 
-#define REFACTOR_TO_REFLECTION_OB 1 // refactor to using the seperate Reflection object
 
+// compile time test
     void _instance_test_1() {
         printf("_instance_test_1()...\n");
 
@@ -264,25 +273,10 @@ class GNC_Base {
     void _instance_test_2() {
         printf("_instance_test_2()...\n");
 
-#if REFACTOR_TO_REFLECTION_OB == 0
-
-        for (auto *arr : get_all_of_type<RefDeviceArrayFloat2D>()) {
+        for (auto *arr : get_properties_of_type<RefDeviceArrayFloat2D>()) {
             printf(" arr->instantiate_if_null()...\n");
             arr->instantiate_if_null();
         }
-
-#elif REFACTOR_TO_REFLECTION_OB == 1
-
-        auto &self = derived();
-
-        for (auto *arr :
-             core::reflection::Reflection<Derived>::template get_all_of_type<RefDeviceArrayFloat2D>(self)) {
-
-            printf(" arr->instantiate_if_null()...\n");
-            arr->instantiate_if_null();
-        }
-
-#endif
     }
 
     int _return_int_test(int v) {
@@ -307,7 +301,7 @@ class GNC_Base {
     X(RefDeviceArrayInt3D)
 #ifdef REF_DEVICE_ARRAY_TYPES
 #define X(NAME)                                 \
-    for (auto *arr : get_all_of_type<NAME>()) { \
+    for (auto *arr : get_properties_of_type<NAME>()) { \
         arr->instantiate_if_null();             \
     }
         REF_DEVICE_ARRAY_TYPES
