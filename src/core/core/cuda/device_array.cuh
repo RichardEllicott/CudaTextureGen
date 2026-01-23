@@ -103,6 +103,9 @@ class DeviceArrayBase {
     virtual ~DeviceArrayBase() = default;
     // callable on any base object, designed for easy macro usage
     virtual void resize_helper(size_t width, size_t height = 1, size_t depth = 1) = 0;
+
+    // raw device pointer (no type)
+    virtual void *raw_dev_ptr() const = 0;
 };
 
 template <typename T, int Dim>
@@ -241,10 +244,11 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         }
     }
 
-    // device side pointer accessors
-    T *dev_ptr() {
-        return _dev_ptr;
-    }
+    // device side pointer accessor
+    T *dev_ptr() { return _dev_ptr; }
+
+    // raw device pointer (no type)
+    void *raw_dev_ptr() const override { return _dev_ptr; }
 
     // ================================================================================================================================
     // [Resize]
@@ -260,7 +264,6 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         _shape = dimensions;
         allocate_device();
     }
-
 
     // ⚠️ MAY HAVE OVERCOMPLICATED THIS
     // allow accepting any collection of numbers with correct length
@@ -290,8 +293,8 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
         resize(std::array<size_t, Dim>{static_cast<size_t>(sizes)...}); // Pack into std::array and forward to canonical resize
     }
 
-    //KEEP?
-    // resize helper, allows resizing 1D, 2D and 3D arrays with the same function, designed for macros
+    // KEEP?
+    //  resize helper, allows resizing 1D, 2D and 3D arrays with the same function, designed for macros
     void resize_helper(size_t width, size_t height = 1, size_t depth = 1) override {
         if constexpr (Dim == 1) {
             if (height != 1 || depth != 1)

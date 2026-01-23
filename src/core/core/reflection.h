@@ -42,6 +42,9 @@ struct Method {
 struct RuntimeProperty {
     const char *name;
     size_t offset;
+
+    size_t size; // ← ADD THIS
+
     const std::type_info *type; // NEW
 };
 
@@ -52,19 +55,64 @@ constexpr size_t offset_of(Member Class::*m) {
         &(reinterpret_cast<Class *>(0)->*m));
 }
 
-// build the runtime properties from the constexpr tuple
+// // build the runtime properties from the constexpr tuple
+// template <typename Derived, typename Tuple>
+// std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple &props) {
+//     std::vector<RuntimeProperty> result;
+
+//     std::apply(
+//         [&](auto const &...prop) {
+//             (result.push_back(
+//                  RuntimeProperty{
+//                      prop.name,
+//                      offset_of(prop.member),                                                            // deduces Class automatically
+//                      &typeid(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>) // NEW
+//                  }),
+//              ...);
+//         },
+//         props);
+
+//     return result;
+// }
+
+// added size
+// template <typename Derived, typename Tuple>
+// std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple& props) {
+//     std::vector<RuntimeProperty> result;
+
+//     std::apply(
+//         [&](auto const&... prop) {
+//             (result.push_back(
+//                  RuntimeProperty{
+//                      prop.name,
+//                      offset_of(prop.member),
+//                      sizeof(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>),
+//                      &typeid(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>)
+//                  }),
+//              ...);
+//         },
+//         props);
+
+//     return result;
+// }
+
+// refactor to be clearer
 template <typename Derived, typename Tuple>
 std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple &props) {
     std::vector<RuntimeProperty> result;
 
     std::apply(
         [&](auto const &...prop) {
-            (result.push_back(
-                 RuntimeProperty{
-                     prop.name,
-                     offset_of(prop.member),                                                            // deduces Class automatically
-                     &typeid(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>) // NEW
-                 }),
+            ([&result](auto const &prop) {
+                using MemberT = std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>;
+                // static_assert(std::is_trivially_copyable_v<MemberT>, "Reflected members must be trivially copyable"); // check is trivially copyable
+
+                result.push_back(RuntimeProperty{
+                    prop.name,
+                    offset_of(prop.member),
+                    sizeof(MemberT),
+                    &typeid(MemberT)});
+            }(prop),
              ...);
         },
         props);
@@ -211,7 +259,6 @@ void instantiate_all_refs() {
     });
 }
 */
-
 
 #pragma endregion
 

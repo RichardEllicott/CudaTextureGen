@@ -59,7 +59,7 @@ struct NoParams {}; // default if we don't use the params
 template <typename Derived, typename Parameters = NoParams, typename ArrayPointers = NoParams>
 class GNC_Base {
 
-  private:
+  protected:
     // CRTP: obtain this object as the concrete Derived type.
     Derived &derived() { return static_cast<Derived &>(*this); }
     const Derived &derived() const { return static_cast<const Derived &>(*this); }
@@ -242,15 +242,13 @@ class GNC_Base {
 #define BASE_REFACTOR_TO_REFLECTION_OB 0
 #if BASE_REFACTOR_TO_REFLECTION_OB == 0
 
-    // Returns the lazily‑constructed runtime property table for this class.
-    // The table is built exactly once per *type*, on first use, and then cached.
+    // runtime property list (lazy)
     static const std::vector<RuntimeProperty> &runtime_properties() {
-        static const std::vector<RuntimeProperty> props =
-            build_runtime_properties_from_tuple<Derived>(Derived::properties());
+        static const std::vector<RuntimeProperty> props = build_runtime_properties_from_tuple<Derived>(Derived::properties());
         return props;
     }
 
-    // lazy map
+    // runtime property map (lazy)
     static const std::unordered_map<std::string, RuntimeProperty> &runtime_property_map() {
         static const std::unordered_map<std::string, RuntimeProperty> map = [] {
             std::unordered_map<std::string, RuntimeProperty> m;
@@ -263,9 +261,9 @@ class GNC_Base {
         return map;
     }
 
-    // ----------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------------------------------------------
 
-    // get all of type from the runtime_properties
+    // get all of type from runtime_properties()
     template <typename T>
     auto get_properties_of_type() {
         using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
@@ -284,7 +282,7 @@ class GNC_Base {
         return result;
     }
 
-#elif BASE_REFACTOR_TO_REFLECTION_OB == 1
+#elif BASE_REFACTOR_TO_REFLECTION_OB == 1 // trying to use a helper object
 
     template <typename T>
     auto get_properties_of_type() {
@@ -294,6 +292,12 @@ class GNC_Base {
 
 #endif
 #undef BASE_REFACTOR_TO_REFLECTION_OB
+
+
+
+
+
+
 
 #pragma endregion
 

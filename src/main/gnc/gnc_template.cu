@@ -45,6 +45,9 @@ void TEMPLATE_CLASS_NAME::_compute() {
 }
 
 void TEMPLATE_CLASS_NAME::test() {
+
+    printf("test()...\n");
+    copy_data_to_arrays(); // test
 }
 
 } // namespace TEMPLATE_NAMESPACE

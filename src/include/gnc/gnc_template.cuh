@@ -20,7 +20,8 @@ contains master bolerplate that is copied via python script to gnc_boilerplate
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT             \
     X(bool, _debug, false, "")                       \
     X(int2, _size, {}, "")                           \
-    X(int, tile_size, false, "for chequer_test")     \
+    X(int, tile_size, 16, "for chequer_test")        \
+    X(int, test_int, 777, "test int")                \
     X(FloatArray<8>, float8, {}, "float array test") \
     X(IntArray<8>, int8, {}, "int array test")
 
@@ -234,6 +235,132 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     // ================================================================================================================================
 
     void _compute(); // CRTP requirement
+
+    // ================================================================================================================================
+
+    // THIS SHOULD GO TO BASE WHEN IT WORKS!!!
+
+    using Derived = Self;
+
+// here we attempt to make a function that will copy are pars accross to the
+#define COPY_FROM_ALL_OUR_LOCALS_TO_CUDA_STRUCTURES
+#ifdef COPY_FROM_ALL_OUR_LOCALS_TO_CUDA_STRUCTURES
+
+    // take a RuntimeProperty and an instance, use that to find the memory address of our property (on the instance)
+    template <typename Instance>
+    void *get_ptr_from_runtime_property(const RuntimeProperty &rp, Instance &inst) {
+        return reinterpret_cast<char *>(&inst) + rp.offset;
+    }
+
+    // copy the properties to structure
+    // ⚠️ This reflection system requires trivially-copyable POD types due to memcpy
+    void copy_data_to_arrays() {
+
+        bool debug = true;
+
+        if (debug) printf("copy_data_to_arrays()...\n");
+
+        auto &_props_map = runtime_property_map();
+
+#define PART_1
+#define PART_2
+
+#ifdef PART_1
+
+        // list of par properties
+        static const std::vector<RuntimeProperty> _pars_props =
+            build_runtime_properties_from_tuple<Parameters>(Parameters::properties());
+
+        // for each prop
+        for (auto &par_prop : _pars_props) {
+
+            // Destination: inside _pars
+            void *dst_ptr = get_ptr_from_runtime_property(par_prop, _pars);
+
+            if (auto it = _props_map.find(par_prop.name); it != _props_map.end()) {
+
+                if (debug) printf("matched parameter '%s'\n", par_prop.name);
+
+                const RuntimeProperty *inst_prop = &it->second;
+
+                // check types match
+                if (*par_prop.type != *inst_prop->type) {
+                    printf("Type mismatch for '%s' — skipping copy\n", par_prop.name);
+                    continue;
+                }
+
+                void *src_ptr = get_ptr_from_runtime_property(*inst_prop, derived());
+
+                if (debug && *par_prop.type == typeid(int)) {
+                    int value = *reinterpret_cast<int *>(dst_ptr);
+                    printf("int value before copy = %d\n", value);
+                }
+
+                memcpy(dst_ptr, src_ptr, par_prop.size); // copy from source to destination
+
+                // Debug: print the copied value if it's an int
+                if (debug && *par_prop.type == typeid(int)) {
+                    int value = *reinterpret_cast<int *>(dst_ptr);
+                    printf("int value after copy = %d\n", value);
+                }
+            }
+        }
+
+#endif
+
+#ifdef PART_2
+
+        // list of array props
+        static const std::vector<RuntimeProperty> _arrays_props =
+            build_runtime_properties_from_tuple<ArrayPointers>(ArrayPointers::properties());
+
+        for (auto &arrays_prop : _arrays_props) {
+
+            void *dst_ptr = get_ptr_from_runtime_property(arrays_prop, _arrays);
+
+            if (auto it = _props_map.find(arrays_prop.name); it != _props_map.end()) {
+                if (debug) printf("matched array parameter '%s'\n", arrays_prop.name);
+
+                const RuntimeProperty *inst_prop = &it->second;
+
+                void *src_ptr = get_ptr_from_runtime_property(*inst_prop, derived());
+
+                //
+                //
+                //
+
+                // auto *src = reinterpret_cast<core::cuda::DeviceArrayBase *>(src_ptr);
+
+#ifdef DEBUG
+                auto *src_checked = dynamic_cast<DeviceArrayBase *>(src_ptr); // requires DeviceArrayBase to be polymorphic (have a virtual function)
+                if (!src_checked) {
+                    printf("ERROR: '%s' is not a DeviceArrayBase\n", arrays_prop.name);
+                    continue;
+                }
+                auto *src = src_checked;
+#else
+                auto *src = reinterpret_cast<core::cuda::DeviceArrayBase *>(src_ptr);
+#endif
+                //
+                //
+                //
+
+                *reinterpret_cast<void **>(dst_ptr) = src->raw_dev_ptr(); // breaks??
+            }
+        }
+
+#endif
+
+#undef PART_1
+#undef PART_2
+    }
+
+#endif
+#undef BASE_PARS_STRUCT_REFLECTION_TEST
+
+    // ================================================================================================================================
+    // ================================================================================================================================
+    // ================================================================================================================================
 };
 } // namespace TEMPLATE_NAMESPACE
 

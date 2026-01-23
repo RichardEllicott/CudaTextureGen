@@ -383,6 +383,7 @@ class GNC_Template:
     output: Incomplete
     output2: Incomplete
     stream: Incomplete
+    test_int: Incomplete
     tile_size: Incomplete
     def __init__(self) -> None: ...
     def _instance_test_1(self) -> None: ...
