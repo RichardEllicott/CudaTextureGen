@@ -41,11 +41,9 @@ struct Method {
 // structure to store runtime class property
 struct RuntimeProperty {
     const char *name;
-    size_t offset;
-
-    size_t size; // ← ADD THIS
-
-    const std::type_info *type; // NEW
+    size_t offset; // memory offset
+    size_t size; // memory size
+    const std::type_info *type;
 };
 
 // get memory offset of property
@@ -54,47 +52,6 @@ constexpr size_t offset_of(Member Class::*m) {
     return reinterpret_cast<size_t>(
         &(reinterpret_cast<Class *>(0)->*m));
 }
-
-// // build the runtime properties from the constexpr tuple
-// template <typename Derived, typename Tuple>
-// std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple &props) {
-//     std::vector<RuntimeProperty> result;
-
-//     std::apply(
-//         [&](auto const &...prop) {
-//             (result.push_back(
-//                  RuntimeProperty{
-//                      prop.name,
-//                      offset_of(prop.member),                                                            // deduces Class automatically
-//                      &typeid(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>) // NEW
-//                  }),
-//              ...);
-//         },
-//         props);
-
-//     return result;
-// }
-
-// added size
-// template <typename Derived, typename Tuple>
-// std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple& props) {
-//     std::vector<RuntimeProperty> result;
-
-//     std::apply(
-//         [&](auto const&... prop) {
-//             (result.push_back(
-//                  RuntimeProperty{
-//                      prop.name,
-//                      offset_of(prop.member),
-//                      sizeof(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>),
-//                      &typeid(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>)
-//                  }),
-//              ...);
-//         },
-//         props);
-
-//     return result;
-// }
 
 // refactor to be clearer
 template <typename Derived, typename Tuple>
@@ -118,6 +75,12 @@ std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple &pr
         props);
 
     return result;
+}
+
+// take a RuntimeProperty and an instance, use that to find the memory address of our property (on the instance)
+template <typename Instance>
+void *get_ptr_from_runtime_property(const RuntimeProperty &rp, Instance &inst) {
+    return reinterpret_cast<char *>(&inst) + rp.offset;
 }
 
 #pragma endregion

@@ -99,7 +99,7 @@ def test_reflection():
 
     # ================================================================
     gnc_noise = ct.GNC_Noise()
-    gnc_noise.period = (20, 13, 13)
+    gnc_noise.period = (13, 13, 13)
     gnc_noise.wrap = (False, False, False)
     gnc_noise.size = (256, 256)
     gnc_noise.mode = 1
@@ -110,6 +110,7 @@ def test_reflection():
     tools.arrays.normalize(noise)
 
 
+    tools.images.save(noise, f"{script_path}.noise.png")
 
 
     
@@ -117,20 +118,30 @@ def test_reflection():
 
     template = ct.GNC_Template()
 
+
     template.test_int = 666
 
-    template.test()
 
 
-    # device_array = ct.DeviceArrayFloat2D()
-    # device_array.array = noise
-    # template.input = device_array
 
-    # template.compute()
+    device_array = ct.DeviceArrayFloat2D()
+    device_array.array = noise
+    template.input = device_array
+
+    template.compute()
+
+    print("test4")
 
     # noise2 = device_array.array
 
-    # tools.images.save(noise2, f"{script_path}.noise.png")
+    template.stream.sync()
+
+    print("test5")
+
+
+    tools.images.save(template.output.array, f"{script_path}.noise2.png")
+
+    print("test6")
 
     # print("input2 =", template.input2)
     # template.test_inst_all_darrays()

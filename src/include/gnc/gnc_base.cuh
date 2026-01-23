@@ -81,7 +81,7 @@ class GNC_Base {
 
     // ================================================================================================================================
     // [Set Par]
-    // also marking the sync as dirty
+    // also marking the sync as dirty (bound by nanobind)
     // --------------------------------------------------------------------------------------------------------------------------------
     // template for setting a par, is bound to python, will mark the _pars_synced
     template <typename T>
@@ -125,24 +125,6 @@ class GNC_Base {
     }
 
     // ================================================================================================================================
-
-    // ready device ensuring par structs are uploaded
-    void ready_device() {
-
-        if (_pars_synced) return;     // skip if already synced
-        stream.instantiate_if_null(); // ensure we have a stream
-
-        _dev_pars.set_stream(stream->get()); // ensure streams
-        _dev_arrays.set_stream(stream->get());
-
-        derived()._ready_device(); // run derived which is set up by macro (currently copies all the vars to the pars by macro)
-
-        _dev_pars.upload(_pars);     // upload pars
-        _dev_arrays.upload(_arrays); // upload array pointers
-
-        stream->sync();      // wait on stream, to ensure copying completes
-        _pars_synced = true; // mark the pars as having synced, should prevent uploading unless pars have changed
-    }
 
     // ================================================================================================================================
     // [constexpr Reflection]
@@ -293,12 +275,6 @@ class GNC_Base {
 #endif
 #undef BASE_REFACTOR_TO_REFLECTION_OB
 
-
-
-
-
-
-
 #pragma endregion
 
 #pragma region TESTS
@@ -330,6 +306,26 @@ class GNC_Base {
     }
 
 #pragma endregion
+
+    // ready device ensuring par structs are uploaded
+    void ready_device() {
+
+        if (_pars_synced) return;     // skip if already synced
+        stream.instantiate_if_null(); // ensure we have a stream
+
+        _dev_pars.set_stream(stream->get()); // ensure streams
+        _dev_arrays.set_stream(stream->get());
+
+        derived()._ready_device(); // run derived which is set up by macro (currently copies all the vars to the pars by macro)
+
+        // copy_data_to_arrays(); // new reflection
+
+        _dev_pars.upload(_pars);     // upload pars
+        _dev_arrays.upload(_arrays); // upload array pointers
+
+        stream->sync();      // wait on stream, to ensure copying completes
+        _pars_synced = true; // mark the pars as having synced, should prevent uploading unless pars have changed
+    }
 
     GNC_Base() {
         _init_tests();

@@ -212,6 +212,9 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     // CRTP requirement
     void _ready_device() {
 
+#define MACRO_COPY_METHOD
+#ifdef MACRO_COPY_METHOD
+
         // copy all pars to struct
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
@@ -230,35 +233,28 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
+
+#endif
     }
 
     // ================================================================================================================================
 
     void _compute(); // CRTP requirement
 
-    // ================================================================================================================================
 
-    // THIS SHOULD GO TO BASE WHEN IT WORKS!!!
-
-    using Derived = Self;
-
+    
+#pragma region COPY_TO_ARRAY_WITH_RUNTIME_REFLECTION
 // here we attempt to make a function that will copy are pars accross to the
 #define COPY_FROM_ALL_OUR_LOCALS_TO_CUDA_STRUCTURES
 #ifdef COPY_FROM_ALL_OUR_LOCALS_TO_CUDA_STRUCTURES
-
-    // take a RuntimeProperty and an instance, use that to find the memory address of our property (on the instance)
-    template <typename Instance>
-    void *get_ptr_from_runtime_property(const RuntimeProperty &rp, Instance &inst) {
-        return reinterpret_cast<char *>(&inst) + rp.offset;
-    }
 
     // copy the properties to structure
     // ⚠️ This reflection system requires trivially-copyable POD types due to memcpy
     void copy_data_to_arrays() {
 
-        bool debug = true;
+        bool debug_print = true;
 
-        if (debug) printf("copy_data_to_arrays()...\n");
+        if (debug_print) printf("copy_data_to_arrays()...\n");
 
         auto &_props_map = runtime_property_map();
 
@@ -279,7 +275,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
             if (auto it = _props_map.find(par_prop.name); it != _props_map.end()) {
 
-                if (debug) printf("matched parameter '%s'\n", par_prop.name);
+                if (debug_print) printf("matched parameter '%s'\n", par_prop.name);
 
                 const RuntimeProperty *inst_prop = &it->second;
 
@@ -291,7 +287,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
                 void *src_ptr = get_ptr_from_runtime_property(*inst_prop, derived());
 
-                if (debug && *par_prop.type == typeid(int)) {
+                if (debug_print && *par_prop.type == typeid(int)) {
                     int value = *reinterpret_cast<int *>(dst_ptr);
                     printf("int value before copy = %d\n", value);
                 }
@@ -299,7 +295,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
                 memcpy(dst_ptr, src_ptr, par_prop.size); // copy from source to destination
 
                 // Debug: print the copied value if it's an int
-                if (debug && *par_prop.type == typeid(int)) {
+                if (debug_print && *par_prop.type == typeid(int)) {
                     int value = *reinterpret_cast<int *>(dst_ptr);
                     printf("int value after copy = %d\n", value);
                 }
@@ -319,31 +315,27 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
             void *dst_ptr = get_ptr_from_runtime_property(arrays_prop, _arrays);
 
             if (auto it = _props_map.find(arrays_prop.name); it != _props_map.end()) {
-                if (debug) printf("matched array parameter '%s'\n", arrays_prop.name);
+                if (debug_print) printf("matched array parameter '%s'\n", arrays_prop.name);
 
                 const RuntimeProperty *inst_prop = &it->second;
 
                 void *src_ptr = get_ptr_from_runtime_property(*inst_prop, derived());
 
-                //
-                //
-                //
 
-                // auto *src = reinterpret_cast<core::cuda::DeviceArrayBase *>(src_ptr);
+                // the problem will be it will be a Ref<DeviceArrayBase> ??
 
-#ifdef DEBUG
-                auto *src_checked = dynamic_cast<DeviceArrayBase *>(src_ptr); // requires DeviceArrayBase to be polymorphic (have a virtual function)
+#define PTR_CHECK
+#ifdef PTR_CHECK
+                auto *as_base = static_cast<core::cuda::DeviceArrayBase *>(src_ptr);
+                auto *src_checked = dynamic_cast<core::cuda::DeviceArrayBase *>(as_base);
                 if (!src_checked) {
                     printf("ERROR: '%s' is not a DeviceArrayBase\n", arrays_prop.name);
                     continue;
                 }
-                auto *src = src_checked;
+                core::cuda::DeviceArrayBase *src = src_checked;
 #else
                 auto *src = reinterpret_cast<core::cuda::DeviceArrayBase *>(src_ptr);
 #endif
-                //
-                //
-                //
 
                 *reinterpret_cast<void **>(dst_ptr) = src->raw_dev_ptr(); // breaks??
             }
@@ -357,10 +349,8 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
 #endif
 #undef BASE_PARS_STRUCT_REFLECTION_TEST
+#pragma endregion
 
-    // ================================================================================================================================
-    // ================================================================================================================================
-    // ================================================================================================================================
 };
 } // namespace TEMPLATE_NAMESPACE
 
