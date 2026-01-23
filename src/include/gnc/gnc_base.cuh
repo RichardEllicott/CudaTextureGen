@@ -39,23 +39,17 @@ namespace chash = core::cuda::hash; // include the cuda math lib as cmath
 #pragma region VALIDATORS // check if something is a particular type by template
 
 // ================================================================================================================================
-// Template Validators
-// --------------------------------------------------------------------------------------------------------------------------------
-
 // [core::Ref<core::cuda::DeviceArray<T, N>>]
 template <typename T>
 struct is_device_array_ref : std::false_type {};
 template <typename T, int N>
 struct is_device_array_ref<core::Ref<core::cuda::DeviceArray<T, N>>> : std::true_type {};
-
 // --------------------------------------------------------------------------------------------------------------------------------
-
 // [core::Ref<U>]
 template <typename T>
 struct is_ref : std::false_type {};
 template <typename U>
 struct is_ref<core::Ref<U>> : std::true_type {};
-
 // ================================================================================================================================
 
 #pragma endregion
@@ -159,10 +153,6 @@ class GNC_Base {
 
 #pragma region COMPILE_TIME_REFLECTION // getting all of type, to do stuff like make all arrays valid etc
 
-    // ================================================================================================================================
-    // [OPTIONAL REFLECTION] return vector pointers to members whose type is exactly T
-    // --------------------------------------------------------------------------------------------------------------------------------
-
     // get pointer list to all of type T
     // note used for multiple types could add more compile time overhead
     template <typename T>
@@ -190,8 +180,59 @@ class GNC_Base {
         return result;
     }
 
-    // --------------------------------------------------------------------------------------------------------------------------------
-    // attempting to seperat the logic so it can be generalized
+    // compile time reflection pattern that ensures all Ref's are instantiated
+    void instantiate_all_refs() {
+        printf("instantiate_all_refs()...\n");
+
+        constexpr auto props = Derived::properties();
+
+        for_each_property(props, [&](auto const &p) {
+            // printf("prop: %s\n", p.name);
+            using MemberT = decltype(std::declval<Derived>().*(p.member));
+            using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
+
+            // is_ref
+            if constexpr (is_ref<RawMemberT>::value) {
+                // printf("is_ref == true!\n");
+                auto &ref = derived().*(p.member);
+                ref.instantiate_if_null();
+            }
+            // // is_device_array_ref
+            // if constexpr (is_device_array_ref<RawMemberT>::value) {
+            //     // printf("is_device_array_ref == true!\n");
+            //     // auto &value = derived().*(p.member); // should point to our member
+            // }
+
+            // // get actual device array
+            // if constexpr (is_device_array_ref<RawMemberT>::value) {
+
+            //     // Access the actual Ref<DeviceArray<T,N>> instance
+            //     auto &ref = derived().*(p.member);
+
+            //     // ----------------------------------------------------------------
+            //     // ⚠️ breaks GCC
+            //     // core::RefBase &ref_base = ref; // for autotype
+            //     // ref_base.instantiate_if_null();
+            //     // ⚠️ also breaks GCC
+            //     // core::RefBase &ref_base = static_cast<core::RefBase &>(ref);
+            //     // ref_base.instantiate_if_null();
+            //     // ----------------------------------------------------------------
+
+            //     // Safety check (optional)
+            //     if (!ref) {
+            //         printf("  %s is empty\n", p.name);
+            //         return;
+            //     }
+
+            //     // Now get the device pointer
+            //     auto *ptr = ref->dev_ptr();
+
+            //     set_property_by_name(_arrays, p.name, ptr);
+
+            //     printf("  %s -> dev_ptr() = %p\n", p.name, (void *)ptr);
+            // }
+        });
+    }
 
 #pragma endregion
 
@@ -284,62 +325,6 @@ class GNC_Base {
     void _init_tests() {
     }
 
-    // ================================================================================================================================
-
-    // compile time reflection pattern that ensures all Ref's are instantiated
-    void instantiate_all_refs() {
-        printf("instantiate_all_refs()...\n");
-
-        constexpr auto props = Derived::properties();
-
-        for_each_property(props, [&](auto const &p) {
-            // printf("prop: %s\n", p.name);
-            using MemberT = decltype(std::declval<Derived>().*(p.member));
-            using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
-
-            // is_ref
-            if constexpr (is_ref<RawMemberT>::value) {
-                // printf("is_ref == true!\n");
-                auto &ref = derived().*(p.member);
-                ref.instantiate_if_null();
-            }
-            // // is_device_array_ref
-            // if constexpr (is_device_array_ref<RawMemberT>::value) {
-            //     // printf("is_device_array_ref == true!\n");
-            //     // auto &value = derived().*(p.member); // should point to our member
-            // }
-
-            // // get actual device array
-            // if constexpr (is_device_array_ref<RawMemberT>::value) {
-
-            //     // Access the actual Ref<DeviceArray<T,N>> instance
-            //     auto &ref = derived().*(p.member);
-
-            //     // ----------------------------------------------------------------
-            //     // ⚠️ breaks GCC
-            //     // core::RefBase &ref_base = ref; // for autotype
-            //     // ref_base.instantiate_if_null();
-            //     // ⚠️ also breaks GCC
-            //     // core::RefBase &ref_base = static_cast<core::RefBase &>(ref);
-            //     // ref_base.instantiate_if_null();
-            //     // ----------------------------------------------------------------
-
-            //     // Safety check (optional)
-            //     if (!ref) {
-            //         printf("  %s is empty\n", p.name);
-            //         return;
-            //     }
-
-            //     // Now get the device pointer
-            //     auto *ptr = ref->dev_ptr();
-
-            //     set_property_by_name(_arrays, p.name, ptr);
-
-            //     printf("  %s -> dev_ptr() = %p\n", p.name, (void *)ptr);
-            // }
-        });
-    }
-
 #pragma endregion
 
     GNC_Base() {
@@ -370,16 +355,16 @@ class GNC_Base {
                               });
     }
 
-    // return properties UNUSED second store for testing
-    static constexpr auto properties2() {
-        return std::tuple_cat(Derived::_properties2(), // CRTP requirement
-                              std::tuple{
-                                  // ================================================================
-                                  // [Default Properties]
-                                  // ----------------------------------------------------------------
-                                  // ================================================================
-                              });
-    }
+    // // return properties UNUSED second store for testing
+    // static constexpr auto properties2() {
+    //     return std::tuple_cat(Derived::_properties2(), // CRTP requirement
+    //                           std::tuple{
+    //                               // ================================================================
+    //                               // [Default Properties]
+    //                               // ----------------------------------------------------------------
+    //                               // ================================================================
+    //                           });
+    // }
 
     // return methods
     // ⚠️ note we MUST reference GNC_Base here for methods (not Derived)

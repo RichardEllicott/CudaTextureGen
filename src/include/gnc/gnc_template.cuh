@@ -185,13 +185,6 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         };
     }
 
-    // CRTP requirement (unused)
-    static constexpr auto _properties2() {
-        return std::tuple{
-
-        };
-    }
-
     // ================================================================================================================================
     // [Method Binding]
     // --------------------------------------------------------------------------------------------------------------------------------
