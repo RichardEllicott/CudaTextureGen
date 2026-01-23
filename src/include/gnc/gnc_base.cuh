@@ -21,228 +21,11 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include "core/cuda/types.cuh" // top level for this object
 #include "macros.h"
 
+#include "core/reflection.h"
+
 #define GNC_BASE_LAZY_EVALUATION
 
 // ================================================================================================================================
-
-namespace core::reflection {
-
-#pragma region COMPILE_TIME_REFLECTION
-
-// compile‑time description of a data member
-template <typename T, typename Member>
-struct _Property {
-    const char *name;
-    Member member;
-};
-
-// compile‑time helper alias (reduces boilerplate)
-template <typename T, auto Member>
-using Property = _Property<T, decltype(Member)>;
-
-// compile‑time description of a member function
-template <typename T, auto MethodPtr>
-struct Method {
-    const char *name;
-    static constexpr auto member = MethodPtr;
-    // if your property metadata exposes __this, add it too:
-    // using This = T;
-    // static constexpr auto __this = static_cast<T*>(nullptr);
-};
-
-#pragma endregion
-
-#pragma region RUNTIME_REFLECTION
-
-#ifdef GNC_BASE_LAZY_EVALUATION
-
-// structure to store runtime class property
-struct RuntimeProperty {
-    const char *name;
-    size_t offset;
-    const std::type_info *type; // NEW
-};
-
-// get memory offset of property
-template <typename Class, typename Member>
-constexpr size_t offset_of(Member Class::*m) {
-    return reinterpret_cast<size_t>(
-        &(reinterpret_cast<Class *>(0)->*m));
-}
-
-// build the runtime properties from the constexpr tuple
-template <typename Derived, typename Tuple>
-std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple &props) {
-    std::vector<RuntimeProperty> result;
-
-    std::apply(
-        [&](auto const &...prop) {
-            (result.push_back(
-                 RuntimeProperty{
-                     prop.name,
-                     offset_of(prop.member),                                                            // deduces Class automatically
-                     &typeid(std::remove_reference_t<decltype(std::declval<Derived>().*(prop.member))>) // NEW
-                 }),
-             ...);
-        },
-        props);
-
-    return result;
-}
-
-#endif
-
-#pragma endregion
-
-#pragma region COMPILE_TIME_REFLECTION_PROPERTIES_OLD // failed pattern too heavy on compile
-
-#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
-
-// ================================================================================================================================
-// [Copy properties by reflection, whenever the "name" of the property matches]
-// --------------------------------------------------------------------------------------------------------------------------------
-// this pattern should allow copying from two objects with "properties()"
-
-// copy one source property into matching dst property by name
-template <std::size_t J = 0, class SrcProp, class SrcType, class DstType, class DstTuple>
-static inline void copy_one_dst(const SrcProp &sp,
-                                const SrcType &src,
-                                DstType &dst,
-                                const DstTuple &dst_props) {
-    if constexpr (J < std::tuple_size_v<DstTuple>) {
-        auto &dp = std::get<J>(dst_props);
-
-        if (std::strcmp(sp.name, dp.name) == 0) {
-            if constexpr (std::is_same_v<
-                              decltype(src.*(sp.member)),
-                              decltype(dst.*(dp.member))>) {
-                dst.*(dp.member) = src.*(sp.member);
-            }
-        }
-
-        copy_one_dst<J + 1>(sp, src, dst, dst_props);
-    }
-}
-
-// iterate all source properties
-template <std::size_t I = 0, class SrcType, class DstType, class SrcTuple, class DstTuple>
-static inline void copy_all_src(const SrcType &src,
-                                DstType &dst,
-                                const SrcTuple &src_props,
-                                const DstTuple &dst_props) {
-    if constexpr (I < std::tuple_size_v<SrcTuple>) {
-        auto const &sp = std::get<I>(src_props);
-        copy_one_dst<>(sp, src, dst, dst_props);
-        copy_all_src<I + 1>(src, dst, src_props, dst_props);
-    }
-}
-
-// copies all properties from a src object to dst
-// both objects must have properties() implemented
-template <class Src, class Dst>
-static inline void copy_properties(const Src &src, Dst &dst) {
-    constexpr auto src_props = Src::properties();
-    constexpr auto dst_props = Dst::properties();
-    copy_all_src(src, dst, src_props, dst_props);
-}
-
-// ================================================================================================================================
-// [Set Property By Name]
-// --------------------------------------------------------------------------------------------------------------------------------
-// sets the property by name on the reflectable object
-
-template <std::size_t I = 0, class Dst, class Value, class DstTuple>
-static inline void set_property_by_name_impl(
-    Dst &dst,
-    const char *name,
-    const Value &value,
-    const DstTuple &dst_props) {
-    if constexpr (I < std::tuple_size_v<DstTuple>) {
-        auto &dp = std::get<I>(dst_props);
-
-        if (std::strcmp(dp.name, name) == 0) {
-            // Only assign if the types match exactly
-            if constexpr (std::is_same_v<
-                              decltype(dst.*(dp.member)),
-                              Value>) {
-                dst.*(dp.member) = value;
-            }
-        }
-
-        set_property_by_name_impl<I + 1>(dst, name, value, dst_props);
-    }
-}
-
-template <class Dst, class Value>
-static inline void set_property_by_name(Dst &dst,
-                                        const char *name,
-                                        const Value &value) {
-    constexpr auto dst_props = Dst::properties();
-    set_property_by_name_impl(dst, name, value, dst_props);
-}
-
-// i have got confused by this, i think it's for compile time reflection
-// iterate a properties tuple
-template <std::size_t I = 0, class Tuple, class F>
-static inline void for_each_property(const Tuple &props, F &&func) {
-    if constexpr (I < std::tuple_size_v<Tuple>) {
-        func(std::get<I>(props));
-        for_each_property<I + 1>(props, std::forward<F>(func));
-    }
-}
-
-#endif
-
-// ================================================================================================================================
-
-/*
-EXAMPLE OF AN OBJECT THAT HAS PROPERTY:
-
-struct Parameters {
-    using Self = Parameters;
-
-#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
-#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    TYPE NAME = DEFAULT_VAL;
-    TEMPLATE_CLASS_PARAMETERS_STRUCT
-#undef X
-#endif
-
-    // reflection string to member functions
-    static constexpr auto properties() {
-        return std::tuple{
-#ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
-#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
-            TEMPLATE_CLASS_PARAMETERS_STRUCT
-#undef X
-#endif
-        };
-    }
-};
-static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must remain trivially copyable for CUDA memcpy");
-
-*/
-
-// example property:
-// Property<Self, &Self::stream>{"stream", &Self::stream},
-
-// ================================================================================================================================
-
-// ================================================================================================================================
-
-// ================================================================================================================================
-
-#pragma endregion
-
-
-
-
-
-
-
-
-} // namespace core::reflection
 
 namespace gnc {
 
@@ -284,18 +67,14 @@ struct NoParams {}; // default if we don't use the params
 template <typename Derived, typename Parameters = NoParams, typename ArrayPointers = NoParams>
 class GNC_Base {
 
-    using Self = Derived; // ⚠️ "Self" as an alias is causing confusion, as we need Derived for properties, Base for methods
+  private:
+    // CRTP: obtain this object as the concrete Derived type.
+    Derived &derived() { return static_cast<Derived &>(*this); }
+    const Derived &derived() const { return static_cast<const Derived &>(*this); }
 
-    // ================================================================================================================================
   protected:
-    // canonical CRTP
-    Derived &derived() {
-        return static_cast<Derived &>(*this);
-    }
-    // canonical CRTP
-    const Derived &derived() const {
-        return static_cast<const Derived &>(*this);
-    }
+    static core::reflection::Reflection<Derived> reflection; // using a generalize reflection pattern
+
     // ================================================================================================================================
   protected:
     Parameters _pars;
@@ -354,39 +133,6 @@ class GNC_Base {
     }
 
     // ================================================================================================================================
-    // [Copy Array Pointers]
-    // --------------------------------------------------------------------------------------------------------------------------------
-
-#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
-
-    // copy all the array pointers to the _array structure
-    void copy_array_pointers() {
-
-        // constexpr auto properties = Self::properties();
-        static constexpr auto properties = Self::properties(); // i belive we are still copying the tuple
-
-        for_each_property(properties, [&](auto const &prop) {
-            // printf("prop: %s\n", property.name);
-            using MemberT = decltype(std::declval<Self>().*(prop.member));
-            using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
-
-            if constexpr (is_device_array_ref<RawMemberT>::value) {
-                auto &ref = derived().*(prop.member); // ref to core::Ref
-                // ref.instantiate_if_null();
-                if (!ref) {
-                    set_property_by_name(_arrays, prop.name, nullptr); // set null if DeviceArray
-                    return;
-                }
-
-                auto *ptr = ref->dev_ptr();
-                set_property_by_name(_arrays, prop.name, ptr); // set the pointer on the array
-            }
-        });
-    }
-
-#endif
-
-    // ================================================================================================================================
 
     // ready device ensuring par structs are uploaded
     void ready_device() {
@@ -432,14 +178,15 @@ class GNC_Base {
     // [OPTIONAL REFLECTION] return vector pointers to members whose type is exactly T
     // --------------------------------------------------------------------------------------------------------------------------------
 
-    // compile time get_all_of_type ... using too many of these can slow compile!
+
+
+    // get pointer list to all of type T
+    // note used for multiple types could add more compile time overhead
     template <typename T>
-    auto get_all_of_type() {
-        // auto &self = static_cast<Derived &>(*this); // GCC didn't like this
+    std::vector<T *> get_all_of_type() {
+
         Derived &self = static_cast<Derived &>(*this); //
-
         std::vector<T *> result;
-
         auto props = Derived::properties();
 
         std::apply(
@@ -462,69 +209,6 @@ class GNC_Base {
 
     // --------------------------------------------------------------------------------------------------------------------------------
     // attempting to seperat the logic so it can be generalized
-
-#ifdef FAILED_GENERAL_PATTERN // this pattern worked on windows, broke on Linux, feels like fighting the compiler too much
-
-    // more general attempt but broke gcc... bade idea
-    // this pattern would generalize the above pattern
-    template <typename T, typename Properties>
-    auto get_properties_of_type(const Properties &props) {
-        using Class = typename Properties::class_type;
-
-        std::vector<const void *> result;
-
-        std::apply(
-            [&](auto &...prop) {
-                (([&] {
-                     using MemberPtr = decltype(prop.member);
-                     using MemberT = std::remove_reference_t<
-                         decltype(std::declval<Class>().*(prop.member))>;
-
-                     if constexpr (std::is_same_v<MemberT, T>) {
-                         result.push_back(&prop);
-                     }
-                 }()),
-                 ...);
-            },
-            props);
-
-        return result;
-    }
-
-    // get a member pointer from a Property
-    template <typename Self, typename Property>
-    auto get_member_ptr(Self &self, const Property *p) {
-        return &(self.*(p->member));
-    }
-
-    void test_new_reflection() {
-        auto int_props = get_properties_of_type<int>(Self::properties()); // this should add to compile time
-
-        for (auto *prop : int_props) { // but this should iterate runtime
-            auto *prop_ptr = get_member_ptr(derived(), prop);
-
-            // do something with prop_ptr
-        }
-    }
-
-    // same as previous, but now using our helpers
-    // ⚠️
-    template <typename T>
-    auto get_all_of_type2() {
-        std::vector<T *> result;
-
-        // Step 1: filter property descriptors by type T
-        auto props = get_properties_of_type<T>(Self::properties());
-
-        // Step 2: turn descriptors into actual pointers
-        for (auto *prop : props) {
-            result.push_back(get_member_ptr(derived(), prop));
-        }
-
-        return result;
-    }
-
-#endif
 
 #pragma region RUNTIME_REFLECTION
 
@@ -553,9 +237,7 @@ class GNC_Base {
 
     // ----------------------------------------------------------------
 
-    // this one needed the type to be stored
-    // it's working well
-    // https://copilot.microsoft.com/chats/VjWscLPV9HBFgtzn1ypH8
+    // get all of type from the runtime_properties
     template <typename T>
     auto get_all_of_type2() {
         using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
@@ -601,18 +283,6 @@ class GNC_Base {
     }
 
     void _debug_test() {
-
-        // printf("_debug_test()...\n");
-
-        // for (auto const &rp : runtime_properties()) {
-        //     printf("RP: %s  offset=%zu\n", rp.name, rp.offset);
-        //     printf("RP type: %s\n", rp.type->name());
-        // }
-
-        // for (auto *arr : get_all_of_type2<RefDeviceArrayFloat2D>()) {
-        //     printf(" arr->instantiate_if_null()...\n");
-        //     arr->instantiate_if_null();
-        // }
     }
 
     // ================================================================================================================================
@@ -638,27 +308,6 @@ class GNC_Base {
 #endif
 #undef REF_DEVICE_ARRAY_TYPES
     }
-
-#ifdef ATTEMPT_GENERIC_REFLECTION_OLD // broken on linux
-
-    void instantiate_all_arrays2() {
-
-        auto props = Self::properties();
-
-        tuple_for_each(Self::properties(), [&](auto &prop) {
-            using PropT = decltype(prop);
-            using MemberT = typename PropT::member_type;
-
-            if constexpr (gnc::is_ref<MemberT>::value) {
-                auto &ref = this->*(PropT::member_ptr);
-                // handle Ref<T>
-            } else {
-                auto &value = this->*(PropT::member_ptr);
-                // handle normal property
-            }
-        });
-    }
-#endif
 
 #pragma endregion
 
@@ -697,15 +346,13 @@ class GNC_Base {
                                   // ================================================================
                                   // [Default Properties]
                                   // ----------------------------------------------------------------
-                                  //   Property<Self, &Self::stream>{"stream", &Self::stream},
-                                  //   Property<Self, &Self::width>{"width", &Self::width},
-                                  //   Property<Self, &Self::height>{"width", &Self::height},
                                   // ================================================================
                               });
     }
 
     // return methods
     // ⚠️ note we MUST reference GNC_Base here for methods (not Derived)
+    // this is slightly confusing as properties use Derived
     static constexpr auto methods() {
         return std::tuple_cat(Derived::_methods(), // CRTP requirement
                               std::tuple{

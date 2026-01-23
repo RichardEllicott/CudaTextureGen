@@ -137,7 +137,6 @@ def test_reflection():
     # print(template.input2)
 
 
-    print(template._return_int_test(777))
 
 
 test_reflection()

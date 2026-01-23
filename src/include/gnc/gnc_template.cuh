@@ -211,63 +211,6 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         };
     }
 
-#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
-
-    // 🧪 testing iterating
-    void test_iterate_props_to_get_arrays() {
-        constexpr auto props = Self::properties();
-
-        printf("test_iterate_props_to_get_arrays()...\n");
-
-        for_each_property(props, [&](auto const &p) {
-            printf("prop: %s\n", p.name);
-            using MemberT = decltype(std::declval<Self>().*(p.member));
-            using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
-
-            // is_ref
-            if constexpr (is_ref<RawMemberT>::value) {
-                printf("is_ref == true!\n");
-                auto &ref = derived().*(p.member);
-                ref.instantiate_if_null();
-            }
-            // is_device_array_ref
-            if constexpr (is_device_array_ref<RawMemberT>::value) {
-                // printf("is_device_array_ref == true!\n");
-                // auto &value = derived().*(p.member); // should point to our member
-            }
-
-            // get actual device array
-            if constexpr (is_device_array_ref<RawMemberT>::value) {
-
-                // Access the actual Ref<DeviceArray<T,N>> instance
-                auto &ref = derived().*(p.member);
-
-                // ----------------------------------------------------------------
-                // ⚠️ breaks GCC
-                // core::RefBase &ref_base = ref; // for autotype
-                // ref_base.instantiate_if_null();
-                // ⚠️ also breaks GCC
-                // core::RefBase &ref_base = static_cast<core::RefBase &>(ref);
-                // ref_base.instantiate_if_null();
-                // ----------------------------------------------------------------
-
-                // Safety check (optional)
-                if (!ref) {
-                    printf("  %s is empty\n", p.name);
-                    return;
-                }
-
-                // Now get the device pointer
-                auto *ptr = ref->dev_ptr();
-
-                set_property_by_name(_arrays, p.name, ptr);
-
-                printf("  %s -> dev_ptr() = %p\n", p.name, (void *)ptr);
-            }
-        });
-    }
-
-#endif
     // ================================================================================================================================
     // [Ready Device]
     // --------------------------------------------------------------------------------------------------------------------------------
