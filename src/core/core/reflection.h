@@ -105,21 +105,45 @@ class Reflection {
         return map;
     }
 
-    // runtime get all of type
+    // // runtime get all of type
+    // template <typename T>
+    // auto get_all_of_type() {
+    //     using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
+
+    //     std::vector<T *> result;
+    //     auto &self = derived();
+
+    //     for (auto const &rp : runtime_properties()) {
+    //         if (*rp.type == typeid(CleanT)) {
+    //             auto *raw_ptr = reinterpret_cast<char *>(&self) + rp.offset;
+    //             auto *ptr = reinterpret_cast<T *>(raw_ptr);
+    //             result.push_back(ptr);
+    //         }
+    //     }
+
+    //     return result;
+    // }
+
+    // change to static?
     template <typename T>
-    auto get_all_of_type() {
-        using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
-
+    static std::vector<T *> get_all_of_type(Derived &self) {
         std::vector<T *> result;
-        auto &self = derived();
 
-        for (auto const &rp : runtime_properties()) {
-            if (*rp.type == typeid(CleanT)) {
-                auto *raw_ptr = reinterpret_cast<char *>(&self) + rp.offset;
-                auto *ptr = reinterpret_cast<T *>(raw_ptr);
-                result.push_back(ptr);
-            }
-        }
+        auto props = Derived::properties();
+
+        std::apply(
+            [&](auto &...prop) {
+                ([&](auto &p) {
+                    using MemberT = decltype(self.*(p.member));
+                    using Decayed = std::remove_reference_t<MemberT>;
+
+                    if constexpr (std::is_same_v<Decayed, T>) {
+                        result.push_back(&(self.*(p.member)));
+                    }
+                }(prop),
+                 ...);
+            },
+            props);
 
         return result;
     }

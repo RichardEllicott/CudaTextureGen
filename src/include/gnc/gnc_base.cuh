@@ -60,8 +60,6 @@ struct is_ref<core::Ref<U>> : std::true_type {};
 
 #pragma endregion
 
-#pragma region BASE
-
 struct NoParams {}; // default if we don't use the params
 
 template <typename Derived, typename Parameters = NoParams, typename ArrayPointers = NoParams>
@@ -143,20 +141,7 @@ class GNC_Base {
         _dev_pars.set_stream(stream->get()); // ensure streams
         _dev_arrays.set_stream(stream->get());
 
-#ifdef BASE_CONSTEXPR_REFLECTION_STRUCTURE_COPY // 🧪 got extremely slow compile times!
-        // ----------------------------------------------------------------
-        // SEEMS TO BE VERY SLOW!!
-        copy_properties(derived(), _pars); // 🧪 should copy properties from one object to another, both need to implement reflection with properties()
-        copy_array_pointers();             // 🧪 seeems to be very slow!!!!??
-
-        // ----------------------------------------------------------------
-
-#endif
-
-        // doubled up (this is the current working copy pattern)
         derived()._ready_device(); // run derived which is set up by macro (currently copies all the vars to the pars by macro)
-
-        // ----------------------------------------------------------------
 
         _dev_pars.upload(_pars);     // upload pars
         _dev_arrays.upload(_arrays); // upload array pointers
@@ -181,7 +166,7 @@ class GNC_Base {
     // get pointer list to all of type T
     // note used for multiple types could add more compile time overhead
     template <typename T>
-    std::vector<T *> get_all_of_type() {
+    std::vector<T *> ct_get_all_of_type() {
 
         Derived &self = static_cast<Derived &>(*this); //
         std::vector<T *> result;
@@ -207,6 +192,8 @@ class GNC_Base {
 
     // --------------------------------------------------------------------------------------------------------------------------------
     // attempting to seperat the logic so it can be generalized
+
+#pragma endregion
 
 #pragma region RUNTIME_REFLECTION
 
@@ -235,9 +222,12 @@ class GNC_Base {
 
     // ----------------------------------------------------------------
 
+
+    
+
     // get all of type from the runtime_properties
     template <typename T>
-    auto get_all_of_type2() {
+    auto get_all_of_type() {
         using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
 
         std::vector<T *> result;
@@ -258,10 +248,14 @@ class GNC_Base {
 
 #pragma endregion
 
+#pragma region TESTS
+
+#define REFACTOR_TO_REFLECTION_OB 1 // refactor to using the seperate Reflection object
+
     void _instance_test_1() {
         printf("_instance_test_1()...\n");
 
-        for (auto *arr : get_all_of_type<RefDeviceArrayFloat2D>()) {
+        for (auto *arr : ct_get_all_of_type<RefDeviceArrayFloat2D>()) {
             printf(" arr->instantiate_if_null()...\n");
             arr->instantiate_if_null();
         }
@@ -270,17 +264,32 @@ class GNC_Base {
     void _instance_test_2() {
         printf("_instance_test_2()...\n");
 
-        for (auto *arr : get_all_of_type2<RefDeviceArrayFloat2D>()) {
+#if REFACTOR_TO_REFLECTION_OB == 0
+
+        for (auto *arr : get_all_of_type<RefDeviceArrayFloat2D>()) {
             printf(" arr->instantiate_if_null()...\n");
             arr->instantiate_if_null();
         }
+
+#elif REFACTOR_TO_REFLECTION_OB == 1
+
+        auto &self = derived();
+
+        for (auto *arr :
+             core::reflection::Reflection<Derived>::template get_all_of_type<RefDeviceArrayFloat2D>(self)) {
+
+            printf(" arr->instantiate_if_null()...\n");
+            arr->instantiate_if_null();
+        }
+
+#endif
     }
 
     int _return_int_test(int v) {
         return v;
     }
 
-    void _debug_test() {
+    void _init_tests() {
     }
 
     // ================================================================================================================================
@@ -297,9 +306,9 @@ class GNC_Base {
     X(RefDeviceArrayInt2D)     \
     X(RefDeviceArrayInt3D)
 #ifdef REF_DEVICE_ARRAY_TYPES
-#define X(NAME)                                  \
-    for (auto *arr : get_all_of_type2<NAME>()) { \
-        arr->instantiate_if_null();              \
+#define X(NAME)                                 \
+    for (auto *arr : get_all_of_type<NAME>()) { \
+        arr->instantiate_if_null();             \
     }
         REF_DEVICE_ARRAY_TYPES
 #undef X
@@ -310,7 +319,7 @@ class GNC_Base {
 #pragma endregion
 
     GNC_Base() {
-        _debug_test();
+        _init_tests();
 
         // instantiate_all_arrays();
         stream.instantiate_if_null();
@@ -368,8 +377,4 @@ class GNC_Base {
 #pragma endregion
 };
 
-#pragma endregion
-
 } // namespace gnc
-
-#undef DEVICE_ARRAY_TYPES

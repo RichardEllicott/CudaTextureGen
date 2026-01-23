@@ -84,6 +84,12 @@ void bind_one_method(nb::class_<T> &cls, const char *name) {
 }
 // --------------------------------------------------------------------------------------------------------------------------------
 
+
+// generic bind a class called to bind a class that has:
+// properties() - returns constexpr properties tuple
+// methods() - returns constexpr methods tuple
+// _compute() - launches compute
+//
 template <typename T>
 nb::class_<T> bind_class(nb::module_ &m, const char *name) {
     auto cls = nb::class_<T>(m, name).def(nb::init<>());
@@ -92,8 +98,7 @@ nb::class_<T> bind_class(nb::module_ &m, const char *name) {
     // [Bind Properties]
     // ----------------------------------------------------------------
 
-    static_assert(has_methods<T>::value, "Class T must define static constexpr methods()"); // optional check
-
+    static_assert(has_methods<T>::value, "Class T must define static constexpr properties()"); // optional check
     if constexpr (has_properties<T>::value) { // optional check
         std::apply(
             [&](auto... p) {
@@ -107,7 +112,6 @@ nb::class_<T> bind_class(nb::module_ &m, const char *name) {
     // ----------------------------------------------------------------
 
     static_assert(has_methods<T>::value, "Class T must define static constexpr methods()"); // optional check
-
     if constexpr (has_methods<T>::value) { // optional check
         std::apply(
             [&](auto... mtd) {
@@ -118,7 +122,7 @@ nb::class_<T> bind_class(nb::module_ &m, const char *name) {
     // ----------------------------------------------------------------
 
     cls.def("compute", [](T &self) { self._compute(); });
-    cls.def("process", [](T &self) { self._compute(); }); // alias
+    // cls.def("process", [](T &self) { self._compute(); }); // alias
 
     return cls;
 }

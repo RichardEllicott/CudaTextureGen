@@ -37,7 +37,7 @@ def test():
     gnc_noise.size = (256, 256)
     gnc_noise.mode = 1
     # ----------------------------------------------------------------
-    gnc_noise.process()
+    gnc_noise.compute()
     noise = gnc_noise.output.array
     # tools.arrays.offset(noise)
     tools.arrays.normalize(noise)
@@ -104,7 +104,7 @@ def test_reflection():
     gnc_noise.size = (256, 256)
     gnc_noise.mode = 1
     # ----------------------------------------------------------------
-    gnc_noise.process()
+    gnc_noise.compute()
     noise = gnc_noise.output.array
     # tools.arrays.offset(noise)
     tools.arrays.normalize(noise)
