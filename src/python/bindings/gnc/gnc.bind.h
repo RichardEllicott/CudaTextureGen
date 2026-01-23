@@ -16,6 +16,8 @@ binding for ALL the gnc modules
 #include "gnc/gnc_erosion.cuh"
 #include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
+#include "gnc/gnc_normal_map.cuh"
+#include "gnc/gnc_ao_map.cuh"
 #include "gnc/gnc_resample.cuh"
 #include "gnc/gnc_sea_erosion.cuh"
 #include "gnc/gnc_slope_erosion.cuh"
@@ -30,7 +32,9 @@ binding for ALL the gnc modules
     X(wind::GNC_Wind, GNC_Wind)                          \
     X(resample::GNC_Resample, GNC_Resample)              \
     X(slope_erosion::GNC_SlopeErosion, GNC_SlopeErosion) \
-    X(sea_erosion::GNC_SeaErosion, GNC_SeaErosion)
+    X(sea_erosion::GNC_SeaErosion, GNC_SeaErosion)       \
+    X(normal_map::GNC_NormalMap, GNC_NormalMap)\
+    X(ao_map::GNC_AO_Map, GNC_AO_Map)
 
 // ================================================================================================================================
 
@@ -64,7 +68,7 @@ void bind_one_property(nb::class_<Class> &cls,
         },
         // setter
         [member, name](Class &self, const Field &value) {
-            printf("[GNC] parameter '%s' updating...\n", name);
+            // printf("[GNC] parameter '%s' updating...\n", name);
             self.set_par(self.*member, value); // hook setter
         });
 }
@@ -84,7 +88,6 @@ void bind_one_method(nb::class_<T> &cls, const char *name) {
 }
 // --------------------------------------------------------------------------------------------------------------------------------
 
-
 // generic bind a class called to bind a class that has:
 // properties() - returns constexpr properties tuple
 // methods() - returns constexpr methods tuple
@@ -99,7 +102,7 @@ nb::class_<T> bind_class(nb::module_ &m, const char *name) {
     // ----------------------------------------------------------------
 
     static_assert(has_methods<T>::value, "Class T must define static constexpr properties()"); // optional check
-    if constexpr (has_properties<T>::value) { // optional check
+    if constexpr (has_properties<T>::value) {                                                  // optional check
         std::apply(
             [&](auto... p) {
                 (bind_one_property<T>(cls, p.name, p.member), ...);
@@ -112,7 +115,7 @@ nb::class_<T> bind_class(nb::module_ &m, const char *name) {
     // ----------------------------------------------------------------
 
     static_assert(has_methods<T>::value, "Class T must define static constexpr methods()"); // optional check
-    if constexpr (has_methods<T>::value) { // optional check
+    if constexpr (has_methods<T>::value) {                                                  // optional check
         std::apply(
             [&](auto... mtd) {
                 (bind_one_method<T, mtd.member>(cls, mtd.name), ...);
@@ -122,7 +125,6 @@ nb::class_<T> bind_class(nb::module_ &m, const char *name) {
     // ----------------------------------------------------------------
 
     cls.def("compute", [](T &self) { self._compute(); });
-    // cls.def("process", [](T &self) { self._compute(); }); // alias
 
     return cls;
 }
@@ -134,7 +136,7 @@ nb::class_<T> bind_class(nb::module_ &m, const char *name) {
 inline void bind(nb::module_ &m) {
 #ifdef CLASS_NAMES
 #define X(NAME, PYTHON_NAME) \
-    bind_class<NAME>(m, EXPAND_AND_STRINGIFY(PYTHON_NAME));
+    bind_class<NAME>(m, #PYTHON_NAME);
     CLASS_NAMES
 #undef X
 #endif

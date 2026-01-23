@@ -402,7 +402,8 @@
         },
         {
             "folderPath": "cuda_texture_gen\\src\\include\\gnc\\",
-            "badge": "🧙‍♂️"
+            "badge": "🧙‍♂️",
+            "color": "foldercolorizer.color_00cc99"
         },
         {
             "folderPath": "cuda_texture_gen\\src\\python\\bindings\\gnc\\gnc.bind.h\\",
@@ -421,13 +422,12 @@
             "badge": "📷"
         },
         {
-            "folderPath": "cuda_texture_gen\\src\\main\\gnc\\",
-            "badge": "🧙‍♂️",
-            "color": "foldercolorizer.color_ff0033"
-        },
-        {
             "folderPath": "cuda_texture_gen\\src\\main\\gnc\\gnc_template.cu\\",
             "badge": "👑"
+        },
+        {
+            "folderPath": "cuda_texture_gen\\src\\main\\gnc\\",
+            "color": "foldercolorizer.color_ff0066"
         }
     ],
 }

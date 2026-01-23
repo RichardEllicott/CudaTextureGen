@@ -70,7 +70,7 @@ struct Parameters {
 #undef X
 #endif
 
-    // reflection string to member functions
+    // constexpr binding for reflection
     static constexpr auto properties() {
         return std::tuple{
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
@@ -96,7 +96,7 @@ struct ArrayPointers {
 #undef X
 #endif
 
-    // reflection string to member functions ⚠️ seems to be broken for the arrays atm, can't reflect these yet!
+    // constexpr binding for reflection
     static constexpr auto properties() {
         return std::tuple{
 #ifdef TEMPLATE_CLASS_ARRAYS // bind pars
@@ -116,7 +116,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     using Self = TEMPLATE_CLASS_NAME;
 
     // ================================================================================================================================
-    // [Create pars and arrays]
+    // [Create Pars, Arrays and Methods]
     // --------------------------------------------------------------------------------------------------------------------------------
 
     // create pars
@@ -211,6 +211,8 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
     // CRTP requirement
     void _ready_device() {
+
+        // functionality of this section being replaced by constexpr voodoo
 
 // #define MACRO_COPY_METHOD
 #ifdef MACRO_COPY_METHOD
