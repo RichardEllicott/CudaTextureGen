@@ -8,6 +8,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 
 // #include <array> // std::array
 #include <cassert>
+#include <functional> // std::invoke
 #include <optional>
 #include <stdexcept>   // exceptions
 #include <tuple>       // std::tuple, std::make_tuple
@@ -24,11 +25,13 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 
 #include "core/reflection.h"
 
+#include "core/util.h"
+
 #define GNC_BASE_LAZY_EVALUATION
 
-// ================================================================================================================================
-
 namespace gnc {
+
+// ================================================================================================================================
 
 using namespace core::cuda::types; // include type aliases at top level
 using namespace core::cuda::cast;  // include type aliases at top level
@@ -231,16 +234,10 @@ class GNC_Base {
         return props;
     }
 
-    // runtime property map (lazy)
-    static const std::unordered_map<std::string, RuntimeProperty> &runtime_property_map() {
-        static const std::unordered_map<std::string, RuntimeProperty> map = [] {
-            std::unordered_map<std::string, RuntimeProperty> m;
-            m.reserve(runtime_properties().size());
-            for (const auto &rp : runtime_properties()) {
-                m.emplace(rp.name, rp);
-            }
-            return m;
-        }();
+    // ----------------------------------------------------------------
+
+    static const auto &runtime_property_map() {
+        static const auto map = core::util::to_unordered_map(runtime_properties());
         return map;
     }
 
@@ -309,22 +306,19 @@ class GNC_Base {
 #pragma endregion
 
 #pragma region COPY_TO_ARRAY_WITH_RUNTIME_REFLECTION
-// here we attempt to make a function that will copy are pars accross to the
-#define COPY_FROM_ALL_OUR_LOCALS_TO_CUDA_STRUCTURES
-#ifdef COPY_FROM_ALL_OUR_LOCALS_TO_CUDA_STRUCTURES
-
-    // copy the properties to structure
-    // ⚠️ This reflection system requires trivially-copyable POD types due to memcpy
-    void copy_data_to_arrays() {
-
-        bool debug_print = true;
-
-        if (debug_print) printf("copy_data_to_arrays()...\n");
-
-        auto &_props_map = runtime_property_map();
 
 #define PART_1
 #define PART_2
+
+    // copy the properties to structure
+    // ⚠️ This reflection system requires trivially-copyable POD types due to memcpy
+    void _copy_pars_and_array_ptrs_to_structs() {
+
+        bool debug_print = false;
+
+        if (debug_print) printf("_copy_pars_and_array_ptrs_to_structs()...\n");
+
+        auto &_props_map = runtime_property_map();
 
 #ifdef PART_1
 
@@ -413,8 +407,6 @@ class GNC_Base {
 #undef PART_2
     }
 
-#endif
-#undef BASE_PARS_STRUCT_REFLECTION_TEST
 #pragma endregion
 
     // ready device ensuring par structs are uploaded
@@ -428,7 +420,7 @@ class GNC_Base {
 
         derived()._ready_device(); // run derived which is set up by macro (currently copies all the vars to the pars by macro)
 
-        // copy_data_to_arrays(); // new reflection
+        _copy_pars_and_array_ptrs_to_structs(); // 🧪 new reflection pattern, might be a tad slower than macros on boilerplate
 
         _dev_pars.upload(_pars);     // upload pars
         _dev_arrays.upload(_arrays); // upload array pointers
@@ -454,16 +446,22 @@ class GNC_Base {
 
     // return properties
     // note we must used "Derived" for properties
+
+#define PROPERTY(NAME) \
+    Property<Derived, &Derived::NAME> { #NAME, &Derived::NAME }
+
     static constexpr auto properties() {
         return std::tuple_cat(Derived::_properties(), // CRTP requirement
                               std::tuple{
                                   // ================================================================
                                   // [Default Properties]
                                   // ----------------------------------------------------------------
-                                  Property<Derived, &Derived::stream>{"stream", &Derived::stream}, // trailing comma optional
+                                  PROPERTY(stream),
                                   // ================================================================
                               });
     }
+
+#undef PROPERTY
 
     // // return properties UNUSED second store for testing
     // static constexpr auto properties2() {
@@ -494,7 +492,7 @@ class GNC_Base {
                                   METHOD(_instance_test_2),
                                   METHOD(_return_int_test),
                                   METHOD(instantiate_all_refs),
-                                  METHOD(copy_data_to_arrays),
+                                  METHOD(_copy_pars_and_array_ptrs_to_structs),
                                   // ================================================================
                               });
     }

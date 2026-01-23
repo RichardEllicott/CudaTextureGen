@@ -35,7 +35,7 @@ struct Parameters {
         return std::tuple{
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT // bind pars
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+    Property<Self, &Self::NAME>{#NAME, &Self::NAME},
             TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 #endif
@@ -61,7 +61,7 @@ struct ArrayPointers {
         return std::tuple{
 #ifdef TEMPLATE_CLASS_ARRAYS // bind pars
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+    Property<Self, &Self::NAME>{#NAME, &Self::NAME},
             TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
@@ -123,7 +123,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
         // bind structure parameters
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+    Property<Self, &Self::NAME>{#NAME, &Self::NAME},
             TEMPLATE_CLASS_PARAMETERS_STRUCT
 #undef X
 #endif
@@ -131,7 +131,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 // bind non structure parameters
 #ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
-    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+    Property<Self, &Self::NAME>{#NAME, &Self::NAME},
                 TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
@@ -139,19 +139,12 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 // bind arrays
 #ifdef TEMPLATE_CLASS_ARRAYS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    Property<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME), &Self::NAME},
+    Property<Self, &Self::NAME>{#NAME, &Self::NAME},
                     TEMPLATE_CLASS_ARRAYS
 #undef X
 #endif
         };
     }
-
-    // // CRTP requirement (unused)
-    // static constexpr auto _properties2() {
-    //     return std::tuple{
-
-    //     };
-    // }
 
     // ================================================================================================================================
     // [Method Binding]
@@ -164,7 +157,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 // bind methods
 #ifdef TEMPLATE_CLASS_METHODS
 #define X(TYPE, NAME, DESCRIPTION) \
-    Method<Self, &Self::NAME>{EXPAND_AND_STRINGIFY(NAME)},
+    Method<Self, &Self::NAME>{#NAME},
             TEMPLATE_CLASS_METHODS
 #undef X
 #endif
@@ -178,6 +171,9 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
     // CRTP requirement
     void _ready_device() {
+
+// #define MACRO_COPY_METHOD
+#ifdef MACRO_COPY_METHOD
 
         // copy all pars to struct
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
@@ -196,6 +192,8 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     }
         TEMPLATE_CLASS_ARRAYS
 #undef X
+#endif
+
 #endif
     }
 

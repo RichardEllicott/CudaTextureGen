@@ -119,45 +119,17 @@ def test_reflection():
     template = ct.GNC_Template()
 
 
-    template.test_int = 666
-
-
-
-
     device_array = ct.DeviceArrayFloat2D()
     device_array.array = noise
     template.input = device_array
 
-
-    template.copy_data_to_arrays()
-
-
-    # template.compute()
-
-    # print("test4")
-
-    # # noise2 = device_array.array
-
-    # template.stream.sync()
-
-    # print("test5")
-
-
-    # tools.images.save(template.output.array, f"{script_path}.noise2.png")
-
-    # print("test6")
-
-    # print("input2 =", template.input2)
-    # template.test_inst_all_darrays()
-    # template.instantiate_all_refs()
+    template.compute()
+    template.stream.sync()
+    noise2 = device_array.array
+    tools.images.save(template.output.array, f"{script_path}.noise2.png")
 
 
 
-    # print("input2 =", template.input2)
-    # template._instance_test_2()
-    # print("input2 =", template.input2)
-    # template._instance_test_1()
-    # print(template.input2)
 
 
 test_reflection()
