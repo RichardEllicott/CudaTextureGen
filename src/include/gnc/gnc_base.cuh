@@ -73,7 +73,7 @@ class GNC_Base {
     const Derived &derived() const { return static_cast<const Derived &>(*this); }
 
   protected:
-    static core::reflection::Reflection<Derived> reflection; // using a generalize reflection pattern
+    // static core::reflection::Reflection<Derived> reflection; // using a generalize reflection pattern
 
     // ================================================================================================================================
   protected:
@@ -177,8 +177,6 @@ class GNC_Base {
     // ================================================================================================================================
     // [OPTIONAL REFLECTION] return vector pointers to members whose type is exactly T
     // --------------------------------------------------------------------------------------------------------------------------------
-
-
 
     // get pointer list to all of type T
     // note used for multiple types could add more compile time overhead
