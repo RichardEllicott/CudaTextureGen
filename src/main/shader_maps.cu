@@ -1,4 +1,3 @@
-// #include "core.h"
 #include "core/cuda/types_collection.cuh"
 #include "shader_maps.cuh"
 

@@ -5,8 +5,6 @@
 */
 
 #pragma once
-// #include "template_d_base.cuh"
-#include "core.h"
 #include "template_e_base.cuh"
 #include <stdexcept>
 #include <unordered_set>

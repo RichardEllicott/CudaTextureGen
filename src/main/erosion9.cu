@@ -2,7 +2,7 @@
 #include "erosion9.cuh"
 #include "erosion9_kernels.cuh"
 // #include "noise_util.cuh"
-#include "core.h" // timer
+#include "core/util/timer.h"
 // #include "cuda_math.cuh"
 #include "core/cuda/math.cuh"
 #include <stdexcept> // std::runtime_error

@@ -5,8 +5,6 @@
 */
 #pragma once
 
-// #include "core.h"
-// #include <chrono>
 #include <cuda_runtime.h>
 #include <iostream>
 

@@ -19,10 +19,12 @@ Bedrock: nearly immune, only erodes under extreme conditions.
 #include "erosion10.cuh"
 // #include "erosion9_kernels.cuh"
 // #include "noise_util.cuh"
-#include "core.h" // timer
+#include "core/util/timer.h" // timer
 #include "core/cuda/math.cuh"
 #include <stdexcept> // std::runtime_error
 #include <stdint.h>
+
+#include "core/logging.h"
 
 #include "core/cuda/math/grid.cuh" // refactoring away
 

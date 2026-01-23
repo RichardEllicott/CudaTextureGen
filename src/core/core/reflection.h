@@ -42,7 +42,7 @@ struct Method {
 struct RuntimeProperty {
     const char *name;
     size_t offset; // memory offset
-    size_t size; // memory size
+    size_t size;   // memory size
     const std::type_info *type;
 };
 
@@ -53,7 +53,7 @@ constexpr size_t offset_of(Member Class::*m) {
         &(reinterpret_cast<Class *>(0)->*m));
 }
 
-// refactor to be clearer
+// build runtime property list from Property tuple
 template <typename Derived, typename Tuple>
 std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple &props) {
     std::vector<RuntimeProperty> result;
@@ -66,9 +66,9 @@ std::vector<RuntimeProperty> build_runtime_properties_from_tuple(const Tuple &pr
 
                 result.push_back(RuntimeProperty{
                     prop.name,
-                    offset_of(prop.member),
-                    sizeof(MemberT),
-                    &typeid(MemberT)});
+                    offset_of(prop.member), // memory offset
+                    sizeof(MemberT),        // size of type (must be trivially copyable)
+                    &typeid(MemberT)});     // type ID (can match type)
             }(prop),
              ...);
         },
@@ -199,29 +199,6 @@ static inline void for_each_property(const Tuple &props, F &&func) {
         for_each_property<I + 1>(props, std::forward<F>(func));
     }
 }
-
-/*
-EXAMPLE:
-
-void instantiate_all_refs() {
-    printf("instantiate_all_refs()...\n");
-
-    constexpr auto props = Derived::properties();
-
-    for_each_property(props, [&](auto const &p) {
-        printf("prop: %s\n", p.name);
-        using MemberT = decltype(std::declval<Derived>().*(p.member));
-        using RawMemberT = std::remove_cv_t<std::remove_reference_t<MemberT>>;
-
-        // is_ref
-        if constexpr (is_ref<RawMemberT>::value) {
-            printf("is_ref == true!\n");
-            auto &ref = derived().*(p.member);
-            ref.instantiate_if_null();
-        }
-    });
-}
-*/
 
 #pragma endregion
 

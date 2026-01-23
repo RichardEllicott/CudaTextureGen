@@ -224,24 +224,24 @@ class GNC_Base {
 
 #pragma region RUNTIME_REFLECTION
 
-// refactoring to use a helper object, note might break lazy design intention!!
-#define BASE_REFACTOR_TO_REFLECTION_OB 0
-#if BASE_REFACTOR_TO_REFLECTION_OB == 0
-
-    // runtime property list (lazy)
+    // runtime property list (static lazy)
     static const std::vector<RuntimeProperty> &runtime_properties() {
-        static const std::vector<RuntimeProperty> props = build_runtime_properties_from_tuple<Derived>(Derived::properties());
+        static const std::vector<RuntimeProperty> props =
+            build_runtime_properties_from_tuple<Derived>(Derived::properties());
         return props;
     }
 
-    // ----------------------------------------------------------------
-
+    // runtime property map (static lazy)
     static const auto &runtime_property_map() {
-        static const auto map = core::util::to_unordered_map(runtime_properties());
+        static const auto map = core::util::to_unordered_map(runtime_properties()); // lazy
         return map;
     }
 
-    // --------------------------------------------------------------------------------------------------------------------------------
+    // ================================================================================================================================
+
+// refactoring to use a helper object, note might break lazy design intention!!
+#define BASE_REFACTOR_TO_REFLECTION_OB 0 // trying to seperate the code off to Reflection object (didn't work)
+#if BASE_REFACTOR_TO_REFLECTION_OB == 0
 
     // get all of type from runtime_properties()
     template <typename T>
@@ -463,21 +463,8 @@ class GNC_Base {
 
 #undef PROPERTY
 
-    // // return properties UNUSED second store for testing
-    // static constexpr auto properties2() {
-    //     return std::tuple_cat(Derived::_properties2(), // CRTP requirement
-    //                           std::tuple{
-    //                               // ================================================================
-    //                               // [Default Properties]
-    //                               // ----------------------------------------------------------------
-    //                               // ================================================================
-    //                           });
-    // }
-
     // return methods
     // ⚠️ note we MUST reference GNC_Base here for methods (not Derived)
-    // this is slightly confusing as properties use Derived
-
 #define METHOD(FUNC) \
     Method<GNC_Base, &GNC_Base::FUNC> { #FUNC }
 
