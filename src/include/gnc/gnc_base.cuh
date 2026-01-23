@@ -235,6 +235,13 @@ static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must re
 
 #pragma endregion
 
+
+
+
+
+
+
+
 } // namespace core::reflection
 
 namespace gnc {
@@ -523,7 +530,6 @@ class GNC_Base {
 
 #ifdef GNC_BASE_LAZY_EVALUATION
 
-
     // Returns the lazily‑constructed runtime property table for this class.
     // The table is built exactly once per *type*, on first use, and then cached.
     static const std::vector<RuntimeProperty> &runtime_properties() {
@@ -544,8 +550,6 @@ class GNC_Base {
         }();
         return map;
     }
-
-
 
     // ----------------------------------------------------------------
 
@@ -705,10 +709,14 @@ class GNC_Base {
     static constexpr auto methods() {
         return std::tuple_cat(Derived::_methods(), // CRTP requirement
                               std::tuple{
-                                  Method<GNC_Base, &GNC_Base::test_inst_all_darrays>{"test_inst_all_darrays"}, // ✔️
-                                  Method<GNC_Base, &GNC_Base::_instance_test_1>{"_instance_test_1"},           // ✔️
-                                  Method<GNC_Base, &GNC_Base::_instance_test_2>{"_instance_test_2"},           // ✔️
-                                  Method<GNC_Base, &GNC_Base::_return_int_test>{"_return_int_test"},           // ✔️
+                                  // ================================================================
+                                  // [Default Methods]
+                                  // ----------------------------------------------------------------
+                                  Method<GNC_Base, &GNC_Base::test_inst_all_darrays>{"test_inst_all_darrays"},
+                                  Method<GNC_Base, &GNC_Base::_instance_test_1>{"_instance_test_1"},
+                                  Method<GNC_Base, &GNC_Base::_instance_test_2>{"_instance_test_2"},
+                                  Method<GNC_Base, &GNC_Base::_return_int_test>{"_return_int_test"},
+                                  // ================================================================
                               });
     }
 
