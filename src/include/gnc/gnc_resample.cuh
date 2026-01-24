@@ -31,6 +31,6 @@ reample an image, distortion by a map
 
 // ================================================================================================================================
 
-#include "gnc_boilerplate.cuh"
+#include "_gnc_boilerplate.cuh"
 
 // #undef DEFAULT_PERIOD

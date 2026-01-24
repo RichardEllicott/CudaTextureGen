@@ -25,4 +25,4 @@ Normal Map Generator
     X(float, 2, input, "input map") \
     X(float, 3, output, "output map (rgb)")
 
-#include "gnc_boilerplate.cuh"
+#include "_gnc_boilerplate.cuh"

@@ -39,4 +39,4 @@
 #define TEMPLATE_CLASS_ARRAYS \
     X(float, 2, output, "")
 
-#include "gnc_boilerplate.cuh"
+#include "_gnc_boilerplate.cuh"

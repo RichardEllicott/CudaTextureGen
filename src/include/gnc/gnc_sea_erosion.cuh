@@ -28,4 +28,4 @@ sea erosion simulation
     X(float, 2, sediment_map, "")\
     X(float, 2, _water_vertical_velocity, "")\
 
-#include "gnc_boilerplate.cuh"
+#include "_gnc_boilerplate.cuh"

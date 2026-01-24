@@ -41,7 +41,7 @@ dynamic properties for easy binding using CRTP and constexpr
 
 
 
-#include "gnc_boilerplate.cuh"
+#include "_gnc_boilerplate.cuh"
 
 #undef TEMPLATE_CLASS_PARAMETERS_STRUCT_1
 #undef TEMPLATE_CLASS_PARAMETERS_STRUCT_2

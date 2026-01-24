@@ -23,4 +23,4 @@ Ambient Occlusion Generator
     X(float, 2, output, "output map")
 
 // ================================================================================================================================
-#include "gnc_boilerplate.cuh"
+#include "_gnc_boilerplate.cuh"

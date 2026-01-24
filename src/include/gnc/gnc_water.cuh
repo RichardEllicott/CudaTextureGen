@@ -35,4 +35,4 @@ water simulation with velocity
     X(float, 3, _water_lateral_velocity, "")\
     X(float, 3, _slope_vector2_map, "")\
 
-#include "gnc_boilerplate.cuh"
+#include "_gnc_boilerplate.cuh"
