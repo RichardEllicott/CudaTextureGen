@@ -125,55 +125,27 @@ __global__ void run_wind(
     store_float2(wind_vec2_map_out, idx2, wind);
 }
 
-// ================================================================================================================================
-// __global__ void flux_pass(
-//     const Parameters *__restrict__ pars,
-//     const ArrayPointers *__restrict__ arrays,
-//     const int step) {
-// }
-
-// __global__ void apply_pass(
-//     const Parameters *__restrict__ pars,
-//     const ArrayPointers *__restrict__ arrays,
-//     const int step) {
-// }
-// ================================================================================================================================
-
-// navier stokes vs manning
-//
-//
-// https://copilot.microsoft.com/chats/UzviJqCo12CACrgzFqkVt
-//
-//
-//
-
 void TEMPLATE_CLASS_NAME::_compute() {
 
-    if (height_map.is_null() || height_map->empty())
-        throw std::runtime_error("height_map is null or empty");
+    if (!height_map.is_valid()) throw std::runtime_error("height_map is not valid");
+    if (height_map->empty()) throw std::runtime_error("height_map is empty");
+    auto shape = height_map->shape();
+    set_par(_size, make_int2(shape[0], shape[1]));
+    auto shape2 = std::array<size_t, 3>{shape[0], shape[1], 2};
 
-    auto height_map_shape = height_map->shape();
-
-    size_t _width = height_map_shape[0];
-    size_t _height = height_map_shape[1];
-    _map_size = {(int)_width, (int)_height};
-
-    // _width = height_map->width();
-    // _height = height_map->height();
-
-    ensure_array_ref_ready(slope_vec2_map, std::array<size_t, 3>{_width, _height, 2});
-    ensure_array_ref_ready(wind_vec2_map, std::array<size_t, 3>{_width, _height, 2}, true);
-    ensure_array_ref_ready(wind_vec2_map_out, std::array<size_t, 3>{_width, _height, 2});
-    ensure_array_ref_ready(dust_map, height_map_shape, true);
+    ensure_array_ref_ready(slope_vec2_map, shape2);
+    ensure_array_ref_ready(wind_vec2_map, shape2, true);
+    ensure_array_ref_ready(wind_vec2_map_out, shape2);
+    ensure_array_ref_ready(dust_map, shape, true);
 
     dim3 block(16, 16);
-    dim3 grid((_width + block.x - 1) / block.x, (_height + block.y - 1) / block.y);
+    auto grid = cmath::calculate_grid(_size, block);
 
     ready_device();
 
     // precalculate slope vectors
     cmath::grid::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
-        _map_size,
+        _size,
 
         height_map->dev_ptr(), // in
         nullptr,
@@ -187,7 +159,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
         _dev_pars.dev_ptr(),
         // dev_array_pointers.dev_ptr(),
 
-        _map_size,
+        _size,
         wind_vec2_map->dev_ptr(),     // in
         slope_vec2_map->dev_ptr(),    // in
         wind_vec2_map_out->dev_ptr(), // out

@@ -113,21 +113,20 @@ __global__ void resample_kernel(Parameters *pars,
 
 void TEMPLATE_CLASS_NAME::_compute() {
 
-    if (input.is_null() || input->empty())
-        throw std::runtime_error("input is null or empty");
+    if (!input.is_valid()) throw std::runtime_error("input is not valid");
+    if (input->empty()) throw std::runtime_error("input is empty");
 
-    auto input_shape = input->shape();
+    auto shape = input->shape();
 
-    _size = to_int2(input_shape);
+    _size = to_int2(shape);
 
-    ensure_array_ref_ready(output, input_shape);
+    ensure_array_ref_ready(output, shape);
 
-    ensure_array_ref_ready(map_x, input_shape, true); // fill 0's if not present
-    ensure_array_ref_ready(map_y, input_shape, true); // fill 0's if not present
+    ensure_array_ref_ready(map_x, shape, true); // fill 0's if not present
+    ensure_array_ref_ready(map_y, shape, true); // fill 0's if not present
 
     dim3 block(16, 16);
-    dim3 grid((_size.x + block.x - 1) / block.x,
-              (_size.y + block.y - 1) / block.y);
+    auto grid = cmath::calculate_grid(_size, block);
 
     ready_device();
 

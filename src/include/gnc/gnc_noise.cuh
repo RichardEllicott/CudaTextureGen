@@ -28,7 +28,8 @@
     X(FloatArray<9>, basis3, {}, "basis for rotation and/or scaling")   \
     X(float3, rotation, {}, "rotation in angles x,y,z (radians)")       \
     X(float3, offset, {}, "")                                           \
-    X(BoolArray<3>, wrap, DEFAULT_WRAP, "")
+    X(BoolArray<3>, wrap, DEFAULT_WRAP, "")                             \
+    X(float, worley_scale, 1.0f, "")
 
 // #undef DEFAULT_PERIOD
 // #undef DEFAULT_SIZE

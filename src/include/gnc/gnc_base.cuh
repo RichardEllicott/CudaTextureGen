@@ -168,7 +168,7 @@ class GNC_Base {
 
     // compile time reflection pattern that ensures all Ref's are instantiated
     void instantiate_all_refs() {
-        printf("instantiate_all_refs()...\n");
+        // printf("instantiate_all_refs()...\n");
 
         constexpr auto props = Derived::properties();
 
@@ -431,8 +431,7 @@ class GNC_Base {
 
     GNC_Base() {
         _init_tests();
-
-        // instantiate_all_arrays();
+        instantiate_all_refs(); // ensure all refs exist
         stream.instantiate_if_null();
     }
 

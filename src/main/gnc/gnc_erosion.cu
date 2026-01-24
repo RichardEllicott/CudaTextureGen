@@ -335,7 +335,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     setup();
 
     dim3 block(16, 16);
-    dim3 grid((_size.x + block.x - 1) / block.x, (_size.y + block.y - 1) / block.y);
+    auto grid = cmath::calculate_grid(_size, block);
 
     for (int i = 0; i < steps; i++) {
         // ================================================================

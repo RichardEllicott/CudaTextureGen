@@ -157,6 +157,10 @@ DH_INLINE int hash_int(int x, int y, int z, int seed) {
     return hash_int(x, y, z, 0, seed);
 }
 
+DH_INLINE int hash_int(int x, int y, int seed) {
+    return hash_int(x, y, 0, 0, seed);
+}
+
 DH_INLINE uint32_t hash_uint(int x, int y, int z, int seed) {
     return hash_uint(x, y, z, 0, seed);
 }
@@ -181,6 +185,11 @@ DH_INLINE float hash_float_signed(int hash) {
 // float from [-1,1] range:
 DH_INLINE float hash_float_signed(int x, int y, int z, int seed) {
     return hash_float_signed(hash_int(x, y, z, seed));
+}
+
+// float from [-1,1] range:
+DH_INLINE float hash_float_signed(int x, int y, int seed) {
+    return hash_float_signed(hash_int(x, y, seed));
 }
 
 // take in a hash, extract a bool (set index from 0 to 31)

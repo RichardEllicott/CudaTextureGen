@@ -6,6 +6,83 @@ namespace TEMPLATE_NAMESPACE {
 
 namespace cmath = core::cuda::math;
 
+#pragma region VALUE_NOISE
+
+// 2D Value Noise
+__device__ float value_noise2(float x, float y, int period_x, int period_y, int seed) {
+    int xi = (int)floorf(x);
+    int yi = (int)floorf(y);
+
+    float xf = x - floorf(x);
+    float yf = y - floorf(y);
+
+    float u = cmath::smooth::cubic(xf);
+    float v = cmath::smooth::cubic(yf);
+
+    // Wrap grid coordinates to the period
+    int xi0 = cmath::posmod(xi, period_x);
+    int yi0 = cmath::posmod(yi, period_y);
+    int xi1 = cmath::posmod(xi + 1, period_x);
+    int yi1 = cmath::posmod(yi + 1, period_y);
+
+    float a = chash::hash_float_signed(xi0, yi0, seed);
+    float b = chash::hash_float_signed(xi1, yi0, seed);
+    float c = chash::hash_float_signed(xi0, yi1, seed);
+    float d = chash::hash_float_signed(xi1, yi1, seed);
+
+    float x1 = cmath::lerp(a, b, u);
+    float x2 = cmath::lerp(c, d, u);
+
+    return cmath::lerp(x1, x2, v);
+}
+
+// 2D Value Noise (with rotation) .... BROKEN!!
+__device__ float value_noise2(float x, float y, int period_x, int period_y, int seed, float angle) {
+    // Compute center of the noise domain
+    float cx = 0.5f * period_x;
+    float cy = 0.5f * period_y;
+
+    // Shift coordinates so rotation is centered
+    float x_shifted = x - cx;
+    float y_shifted = y - cy;
+
+    // Apply rotation
+    float cos_a = cosf(angle);
+    float sin_a = sinf(angle);
+    float x_rot = cos_a * x_shifted - sin_a * y_shifted + cx;
+    float y_rot = sin_a * x_shifted + cos_a * y_shifted + cy;
+
+    // Compute grid cell and fractional offset from rotated coordinates
+    int xi = (int)floorf(x_rot);
+    int yi = (int)floorf(y_rot);
+
+    float xf = x_rot - floorf(x_rot);
+    float yf = y_rot - floorf(y_rot);
+
+    // Interpolation weights
+    float u = cmath::smooth::cubic(xf);
+    float v = cmath::smooth::cubic(yf);
+
+    // Wrap grid coordinates to the period
+    int xi0 = cmath::posmod(xi, period_x);
+    int yi0 = cmath::posmod(yi, period_y);
+    int xi1 = cmath::posmod(xi + 1, period_x);
+    int yi1 = cmath::posmod(yi + 1, period_y);
+
+    // Sample scalar values at corners
+    float a = chash::hash_float_signed(xi0, yi0, seed);
+    float b = chash::hash_float_signed(xi1, yi0, seed);
+    float c = chash::hash_float_signed(xi0, yi1, seed);
+    float d = chash::hash_float_signed(xi1, yi1, seed);
+
+    // Interpolate
+    float x1 = cmath::lerp(a, b, u);
+    float x2 = cmath::lerp(c, d, u);
+    return cmath::lerp(x1, x2, v);
+}
+
+#pragma endregion
+
 #pragma region NOISE2
 
 // DH_INLINE float2 noise_gradient2(int x, int y, int seed, float angle) {
@@ -17,15 +94,11 @@ namespace cmath = core::cuda::math;
 
 // old one
 DH_INLINE float2 noise_gradient2(int x, int y, int seed, float angle) {
-    float raw_angle = (chash::hash_int(x, y, 0,  seed) / 1073741824.0f) * 2.0f * 3.14159265f;
+    float raw_angle = (chash::hash_int(x, y, 0, seed) / 1073741824.0f) * 2.0f * 3.14159265f;
     float final_angle = raw_angle + angle;
 
     return make_float2(cosf(final_angle), sinf(final_angle));
 }
-
-
-
-
 
 // 2D Gradient Noise
 DH_INLINE float gradient_noise2(
@@ -416,6 +489,30 @@ DH_INLINE float2 worley2(float2 p, int2 period, int seed) {
     return make_float2(F1, F2);
 }
 
+__global__ void generate_worley(
+    int2 size,
+    float *out,
+    float scale,
+    int2 period,
+    int seed) {
+    // ================================================================
+    int2 pos = cmath::global_thread_pos2();
+    if (pos.x >= size.x || pos.y >= size.y) return;
+    int idx = cmath::pos_to_idx(pos, size);
+    // ================================================================
+
+    // Convert pixel coordinate → noise coordinate
+    float2 p = make_float2(pos.x, pos.y) * scale;
+
+    // Compute F1/F2
+    float2 f = worley2(p, period, seed);
+
+    // Example: classic Worley F1 noise
+    float value = sqrtf(f.x);
+
+    out[idx] = value;
+}
+
 #pragma endregion
 
 void TEMPLATE_CLASS_NAME::_compute() {
@@ -438,8 +535,9 @@ void TEMPLATE_CLASS_NAME::_compute() {
     printf("⚠️ rotation still in experimental!\n");
 
     switch (mode) {
-        // ================================================================
+
     case 0: {
+        // ================================================================
         gradient_noise3_kernel<<<grid, block, 0, stream->get()>>>(
             size,
             output->dev_ptr(),
@@ -450,9 +548,10 @@ void TEMPLATE_CLASS_NAME::_compute() {
             seed,
             smoothing_mode,
             basis);
-    } break;
         // ----------------------------------------------------------------
+    } break;
     case 1: {
+        // ================================================================
         gradient_noise2_kernel<<<grid, block, 0, stream->get()>>>(
             size,
             output->dev_ptr(),
@@ -462,11 +561,30 @@ void TEMPLATE_CLASS_NAME::_compute() {
             make_int2(wrap[0], wrap[1]),
             seed,
             rotation.z);
+        // ----------------------------------------------------------------
     } break;
+    case 2: {
         // ================================================================
-
+        generate_worley<<<grid, block, 0, stream->get()>>>(
+            size,
+            output->dev_ptr(),
+            worley_scale,
+            to_int2(make_float2(period.x, period.y)),
+            seed);
+        // ----------------------------------------------------------------
+    } break;
+    case 3: {
+        // ================================================================
+        // ----------------------------------------------------------------
+    } break;
+    case 4: {
+        // ================================================================
+        // ----------------------------------------------------------------
+    } break;
     default: {
+        // ================================================================
         throw std::runtime_error("Invalid noise mode");
+        // ----------------------------------------------------------------
     } break;
     }
 }

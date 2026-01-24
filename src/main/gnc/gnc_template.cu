@@ -21,18 +21,17 @@ __global__ void chequer_test(
 
 void TEMPLATE_CLASS_NAME::_compute() {
 
-    if (!input.is_valid()) throw std::runtime_error("GNA_Base.input is not valid"); // if no DeviceArray, error
-    if (input->empty()) throw std::runtime_error("GNA_Base.input is empty");        // if DeviceArray is empty, error
+    if (!input.is_valid()) throw std::runtime_error("input is not valid");
+    if (input->empty()) throw std::runtime_error("input is empty");
+    auto shape = input->shape();
+    set_par(_size, make_int2(shape[0], shape[1]));
+    auto shape2 = std::array<size_t, 3>{shape[0], shape[1], 2};
 
     output.instantiate_if_null();           // if no DeviceArray make one
     *output.shared_ptr = *input.shared_ptr; // will copy the memory (on the gpu) from input to output (by dereferencing)
 
-    // _width = input->width();
-    // _height = input->height();
-    _size = to_int2(input->shape());
-
     dim3 block(16, 16);
-    dim3 grid((_size.x + block.x - 1) / block.x, (_size.y + block.y - 1) / block.y);
+    auto grid = cmath::calculate_grid(_size, block);
 
     ready_device();
 
@@ -40,8 +39,6 @@ void TEMPLATE_CLASS_NAME::_compute() {
         _size.x, _size.y,
         output->dev_ptr(),
         tile_size);
-
-    // // stream->sync();
 }
 
 void TEMPLATE_CLASS_NAME::test() {

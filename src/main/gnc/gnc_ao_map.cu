@@ -300,8 +300,8 @@ void generate_ao_map(
 
 void TEMPLATE_CLASS_NAME::_compute() {
 
-    if (!input.is_valid()) throw std::runtime_error("input is not valid"); // if no DeviceArray, error
-    if (input->empty()) throw std::runtime_error("input is empty");        // if DeviceArray is empty, error
+    if (!input.is_valid()) throw std::runtime_error("input is not valid");
+    if (input->empty()) throw std::runtime_error("input is empty");
 
     auto shape = input->shape();
     _size = to_int2(shape);

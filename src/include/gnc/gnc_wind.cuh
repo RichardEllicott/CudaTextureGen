@@ -15,7 +15,7 @@ wind simulation, should blow sediment around
 
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT                                            \
-    X(int2, _map_size, {}, "")                                                      \
+    X(int2, _size, {}, "")                                                      \
     X(int, _step, 0, "")                                                            \
     X(bool, wrap, true, "")                                                            \
     X(float, random_wind, 1.0f, "")                                                 \

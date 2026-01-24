@@ -13,14 +13,15 @@ binding for ALL the gnc modules
 // [Modules]
 // --------------------------------------------------------------------------------------------------------------------------------
 
+#include "gnc/gnc_ao_map.cuh"
 #include "gnc/gnc_erosion.cuh"
 #include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
 #include "gnc/gnc_normal_map.cuh"
-#include "gnc/gnc_ao_map.cuh"
 #include "gnc/gnc_resample.cuh"
 #include "gnc/gnc_sea_erosion.cuh"
 #include "gnc/gnc_slope_erosion.cuh"
+#include "gnc/gnc_water.cuh"
 #include "gnc/gnc_wind.cuh"
 
 // (NAME, PYTHON_NAME)
@@ -30,10 +31,11 @@ binding for ALL the gnc modules
     X(noise::GNC_Noise, GNC_Noise)                       \
     X(erosion::GNC_Erosion, GNC_Erosion)                 \
     X(wind::GNC_Wind, GNC_Wind)                          \
+    X(water::GNC_Water, GNC_Water)                       \
     X(resample::GNC_Resample, GNC_Resample)              \
     X(slope_erosion::GNC_SlopeErosion, GNC_SlopeErosion) \
     X(sea_erosion::GNC_SeaErosion, GNC_SeaErosion)       \
-    X(normal_map::GNC_NormalMap, GNC_NormalMap)\
+    X(normal_map::GNC_NormalMap, GNC_NormalMap)          \
     X(ao_map::GNC_AO_Map, GNC_AO_Map)
 
 // ================================================================================================================================
