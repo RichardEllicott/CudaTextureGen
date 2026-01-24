@@ -25,6 +25,11 @@ __global__ void velocity_cell_water(
     // build _water_lateral_velocity based on slopes
 }
 
+
+
+
+
+
 void TEMPLATE_CLASS_NAME::_compute() {
 
     if (!height_map.is_valid()) throw std::runtime_error("height_map is not valid");

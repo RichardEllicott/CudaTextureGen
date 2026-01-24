@@ -33,7 +33,7 @@ contains master bolerplate that is copied via python script to gnc_boilerplate
 
 // different pattern for arrays, allows better introspection
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS \
+#define TEMPLATE_CLASS_ARRAYS_STRUCT \
     X(float, 2, input2, "")   \
     X(float, 2, output2, "")
 
@@ -43,6 +43,14 @@ contains master bolerplate that is copied via python script to gnc_boilerplate
     X(void, test, "test method")
 
 #pragma region BOILERPLATE
+
+
+// correction while refactor
+#ifdef TEMPLATE_CLASS_ARRAYS
+#define TEMPLATE_CLASS_ARRAYS_STRUCT TEMPLATE_CLASS_ARRAYS
+#endif
+
+
 // ================================================================================================================================
 // [Boilerplate (all below can be cocidered a copy, should match)]
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -127,7 +135,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
-    // create arrays
+    // create pars (no struct)
 #ifdef TEMPLATE_CLASS_PARAMETERS
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
@@ -135,11 +143,14 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
+
+
+
     // create arrays2 (second pattern)
-#ifdef TEMPLATE_CLASS_ARRAYS
+#ifdef TEMPLATE_CLASS_ARRAYS_STRUCT
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     core::Ref<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
-    TEMPLATE_CLASS_ARRAYS
+    TEMPLATE_CLASS_ARRAYS_STRUCT
 #undef X
 #endif
 

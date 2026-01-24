@@ -5,7 +5,7 @@
 dynamic properties for easy binding using CRTP and constexpr
 
 ⚠️ Same as first example, but with
-    #include "gnc_boilerplate.cuh"
+    #include "_gnc_boilerplate.cuh"
 
 */
 #pragma once
