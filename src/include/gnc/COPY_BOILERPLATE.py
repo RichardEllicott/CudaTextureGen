@@ -61,19 +61,24 @@ def extract_region(
     print(f"Extracted region '{region_name}' to {dst_path}")
 
 
-src_filename = "gnc_template.cuh"
-dst_filename = "gnc_boilerplate.cuh"
+
+def generate(dst_filename = "gnc_boilerplate.cuh"):
+
+    src_filename = "gnc_template.cuh"
+    
+    notes = ""
+    notes += "//\n"
+    notes += f"// ⚠️ THIS FILE IS COPIED OR GENERATED FROM '{src_filename}'\n"
+    notes += "//\n"
+    notes += "\n"
+
+    extract_region(
+        src_path=os.path.join(SCRIPT_DIR, src_filename),
+        dst_path=os.path.join(SCRIPT_DIR, dst_filename),
+        region_name="BOILERPLATE",
+        notes=notes
+    )
 
 
-notes = ""
-notes += "//\n"
-notes += f"// ⚠️ THIS FILE IS COPIED OR GENERATED FROM '{src_filename}'\n"
-notes += "//\n"
-notes += "\n"
-
-extract_region(
-    src_path=os.path.join(SCRIPT_DIR, src_filename),
-    dst_path=os.path.join(SCRIPT_DIR, dst_filename),
-    region_name="BOILERPLATE",
-    notes=notes
-)
+generate("gnc_boilerplate.cuh")
+generate("_gnc_boilerplate.cuh")

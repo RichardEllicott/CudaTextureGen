@@ -33,6 +33,6 @@ wind simulation, should blow sediment around
     X(float, 3, wind_vec2_map_out, "wind")    \
     X(float, 3, slope_vec2_map, "slope calculations")
 
-#include "gnc_boilerplate.cuh"
+#include "_gnc_boilerplate.cuh"
 
 #undef DEFAULT_PERIOD
