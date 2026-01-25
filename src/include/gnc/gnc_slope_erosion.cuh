@@ -25,12 +25,10 @@ simple slope erosion
     X(float, jitter, 0.0f, "")
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS   \
-    X(float, 2, height_map, "") \
+#define TEMPLATE_CLASS_ARRAYS_STRUCT \
+    X(float, 2, height_map, "")      \
     X(float, 2, sediment_map, "")
 
 // --------------------------------------------------------------------------------------------------------------------------------
 
-
 #include "_gnc_boilerplate.cuh"
-

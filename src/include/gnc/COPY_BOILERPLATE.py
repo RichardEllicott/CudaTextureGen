@@ -80,5 +80,5 @@ def generate(dst_filename = "gnc_boilerplate.cuh"):
     )
 
 
-generate("gnc_boilerplate.cuh")
+# generate("gnc_boilerplate.cuh")
 generate("_gnc_boilerplate.cuh")

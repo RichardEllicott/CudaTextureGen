@@ -431,7 +431,7 @@ class GNC_Base {
 
     GNC_Base() {
         _init_tests();
-        instantiate_all_refs(); // ensure all refs exist
+        // instantiate_all_refs(); // ensure all refs exist
         stream.instantiate_if_null();
     }
 

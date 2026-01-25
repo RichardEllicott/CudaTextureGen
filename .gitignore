@@ -33,5 +33,8 @@ compile_flags.txt
 # ignore all PNGs inside godot project
 godot/cuda_texture_gen/**/*.png
 
+**/*.png
+
+
 
 lib/cuda_texture_gen/cuda_texture_gen.cp313-win_amd64.pyd

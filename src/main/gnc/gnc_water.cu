@@ -20,15 +20,87 @@ __global__ void velocity_cell_water(
     float *sediment_map = arrays->sediment_map;
     // // ================================================================
 
-
-
     // build _water_lateral_velocity based on slopes
+}
+
+#define DH_CONST __device__ __constant__ const
+
+// DH_CONST int2 GRID_OFFSETS_8[8] =
+//     {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
+
+DH_CONST int2 GRID_OFFSETS_8[8] =
+    {
+        {1, 0},
+        {0, 1},
+        {1, 1},
+        {1, -1},
+};
+
+#undef DH_CONST
+
+// quater a square perimeter ring
+std::vector<int2> square_ring_quart(int radius = 1) {
+    std::vector<int2> out;
+    int l = radius * 2;
+    for (int i = 0; i < l; i++) {
+        int2 pos = make_int2(-radius + 1 + i, radius); // gives the seg from (-n+1,n) → (n,n)
+        out.push_back(pos);
+    }
+    return out;
+}
+
+// half a square perimeter ring
+std::vector<int2> square_ring_half(int radius = 1) {
+    std::vector<int2> out;
+    int l = radius * 2;
+
+    // original quarter: top edge from (-n+1, n) → (n, n)
+    for (int i = 0; i < l; i++) {
+        int2 p = make_int2(-radius + 1 + i, radius);
+        out.push_back(p);
+
+        // rotated 90° CCW: (x, y) → (-y, x)
+        int2 r = make_int2(-p.y, p.x);
+        out.push_back(r);
+    }
+
+    return out;
+}
+
+void print_int2_list(const std::vector<int2> &pts) {
+    std::cout << "{";
+    for (size_t i = 0; i < pts.size(); ++i) {
+        const auto &p = pts[i];
+        std::cout << "{" << p.x << "," << p.y << "}";
+        if (i + 1 < pts.size())
+            std::cout << ", ";
+    }
+    std::cout << "}\n";
 }
 
 
 
 
+void TEMPLATE_CLASS_NAME::test() {
 
+    printf("test()...\n");
+
+    for (int i = 1; i < 4; i++) {
+
+        auto points = square_ring_quart(i);
+
+        print_int2_list(points);
+    }
+
+    /*
+
+
+
+
+    */
+
+    // cmath::GRID_OFFSETS_8
+}
 
 void TEMPLATE_CLASS_NAME::_compute() {
 

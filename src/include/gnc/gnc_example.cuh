@@ -19,27 +19,23 @@ dynamic properties for easy binding using CRTP and constexpr
 #define TEMPLATE_NAMESPACE gnc::example
 
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT_1 \
-    X(bool, _debug, false, "")      \
-    X(int, _width, 0, "")           \
-    X(int, _height, 0, "")          \
+    X(bool, _debug, false, "")             \
+    X(int2, _size, {}, "")                  \
     X(int, tile_size, 0, "for chequer_test")
 
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT_2 \
     X(bool, extra_test, false, "")
 
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT \
-    TEMPLATE_CLASS_PARAMETERS_STRUCT_1          \
+    TEMPLATE_CLASS_PARAMETERS_STRUCT_1   \
     TEMPLATE_CLASS_PARAMETERS_STRUCT_2
-
 
 // --------------------------------------------------------------------------------------------------------------------------------
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS \
-    X(float, 2, input, "")     \
+#define TEMPLATE_CLASS_ARRAYS_STRUCT \
+    X(float, 2, input, "")           \
     X(float, 2, output, "")
-
-
 
 #include "_gnc_boilerplate.cuh"
 
@@ -47,4 +43,4 @@ dynamic properties for easy binding using CRTP and constexpr
 #undef TEMPLATE_CLASS_PARAMETERS_STRUCT_2
 #undef TEMPLATE_CLASS_PARAMETERS_STRUCT
 
-#undef TEMPLATE_CLASS_ARRAYS
+#undef TEMPLATE_CLASS_ARRAYS_STRUCT

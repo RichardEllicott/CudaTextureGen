@@ -18,14 +18,13 @@ sea erosion simulation
     X(int2, _size, {}, "")               \
     X(int, _step, 0, "")                 \
     X(int, steps, 1, "")                 \
-    X(bool, wrap, true, "")\
-
+    X(bool, wrap, true, "")
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS   \
-    X(float, 2, height_map, "") \
-    X(float, 2, water_map, "")  \
-    X(float, 2, sediment_map, "")\
-    X(float, 2, _water_vertical_velocity, "")\
+#define TEMPLATE_CLASS_ARRAYS_STRUCT \
+    X(float, 2, height_map, "")      \
+    X(float, 2, water_map, "")       \
+    X(float, 2, sediment_map, "")    \
+    X(float, 2, _water_vertical_velocity, "")
 
 #include "_gnc_boilerplate.cuh"

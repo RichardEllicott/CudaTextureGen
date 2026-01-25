@@ -13,9 +13,9 @@ contains master bolerplate that is copied via python script to gnc_boilerplate
 // [Single Source of Truth]
 // --------------------------------------------------------------------------------------------------------------------------------
 #define TEMPLATE_CLASS_NAME GNC_Template
-#define TEMPLATE_NAMESPACE gnc::_template // ❗ template is reserved
+#define TEMPLATE_NAMESPACE gnc::_template // template is reserved (underscore required)
 
-// must be trivially_copyable
+// properties that are added to the struct (must be trivially_copyable)
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT             \
     X(bool, _debug, false, "")                       \
@@ -25,31 +25,24 @@ contains master bolerplate that is copied via python script to gnc_boilerplate
     X(FloatArray<8>, float8, {}, "float array test") \
     X(IntArray<8>, int8, {}, "int array test")
 
-// properties will not be added to the struct, eg Ref<> types work
-// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
-#define TEMPLATE_CLASS_PARAMETERS           \
-    X(RefDeviceArrayFloat2D, input, {}, "") \
-    X(RefDeviceArrayFloat2D, output, {}, "")
-
-// different pattern for arrays, allows better introspection
+// arrays will also get a pointer uploaded to a struct
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_ARRAYS_STRUCT \
-    X(float, 2, input2, "")   \
-    X(float, 2, output2, "")
+    X(float, 2, input, "")           \
+    X(float, 2, output, "")
 
-// optional class methods extra
+// properties will NOT be added to the struct, eg Ref<> types work
+// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
+#define TEMPLATE_CLASS_PARAMETERS            \
+    X(RefDeviceArrayFloat2D, input2, {}, "") \
+    X(RefDeviceArrayFloat2D, output2, {}, "")
+
+// extra class methods
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_METHODS \
     X(void, test, "test method")
 
 #pragma region BOILERPLATE
-
-
-// correction while refactor
-#ifdef TEMPLATE_CLASS_ARRAYS
-#define TEMPLATE_CLASS_ARRAYS_STRUCT TEMPLATE_CLASS_ARRAYS
-#endif
-
 
 // ================================================================================================================================
 // [Boilerplate (all below can be cocidered a copy, should match)]
@@ -97,20 +90,20 @@ static_assert(std::is_trivially_copyable<Parameters>::value, "Parameters must re
 struct ArrayPointers {
     using Self = ArrayPointers;
 
-#ifdef TEMPLATE_CLASS_ARRAYS
+#ifdef TEMPLATE_CLASS_ARRAYS_STRUCT
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     TYPE *NAME;
-    TEMPLATE_CLASS_ARRAYS
+    TEMPLATE_CLASS_ARRAYS_STRUCT
 #undef X
 #endif
 
     // constexpr binding for reflection
     static constexpr auto properties() {
         return std::tuple{
-#ifdef TEMPLATE_CLASS_ARRAYS // bind pars
+#ifdef TEMPLATE_CLASS_ARRAYS_STRUCT // bind pars
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     Property<Self, &Self::NAME>{#NAME, &Self::NAME},
-            TEMPLATE_CLASS_ARRAYS
+            TEMPLATE_CLASS_ARRAYS_STRUCT
 #undef X
 #endif
         };
@@ -142,9 +135,6 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     TEMPLATE_CLASS_PARAMETERS
 #undef X
 #endif
-
-
-
 
     // create arrays2 (second pattern)
 #ifdef TEMPLATE_CLASS_ARRAYS_STRUCT
@@ -188,10 +178,10 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #endif
 
 // bind arrays
-#ifdef TEMPLATE_CLASS_ARRAYS
+#ifdef TEMPLATE_CLASS_ARRAYS_STRUCT
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     Property<Self, &Self::NAME>{#NAME, &Self::NAME},
-                    TEMPLATE_CLASS_ARRAYS
+                    TEMPLATE_CLASS_ARRAYS_STRUCT
 #undef X
 #endif
         };
@@ -237,13 +227,13 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #endif
 
         // copy all array pointers
-#ifdef TEMPLATE_CLASS_ARRAYS // bind arrays2 (second pattern)
+#ifdef TEMPLATE_CLASS_ARRAYS_STRUCT // bind arrays2 (second pattern)
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     _arrays.NAME = nullptr;                    \
     if (NAME.is_valid()) {                     \
         _arrays.NAME = NAME->dev_ptr();        \
     }
-        TEMPLATE_CLASS_ARRAYS
+        TEMPLATE_CLASS_ARRAYS_STRUCT
 #undef X
 #endif
 

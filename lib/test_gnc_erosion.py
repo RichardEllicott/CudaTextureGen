@@ -132,4 +132,23 @@ def test_reflection():
 
 
 
-test_reflection()
+# test_reflection()
+
+
+
+def test_drawing():
+
+    print("test_drawing()...")
+
+
+    # template = ct.GNC_Drawing()
+    # template.compute()
+
+    # image = template.output.array
+
+    # print(image)
+
+
+    # tools.images.save(template.output.array, f"{script_path}.sample.png")
+
+test_drawing()

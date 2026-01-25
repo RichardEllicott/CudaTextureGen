@@ -14,6 +14,7 @@ binding for ALL the gnc modules
 // --------------------------------------------------------------------------------------------------------------------------------
 
 #include "gnc/gnc_ao_map.cuh"
+#include "gnc/gnc_drawing.cuh"
 #include "gnc/gnc_erosion.cuh"
 #include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
@@ -36,7 +37,8 @@ binding for ALL the gnc modules
     X(slope_erosion::GNC_SlopeErosion, GNC_SlopeErosion) \
     X(sea_erosion::GNC_SeaErosion, GNC_SeaErosion)       \
     X(normal_map::GNC_NormalMap, GNC_NormalMap)          \
-    X(ao_map::GNC_AO_Map, GNC_AO_Map)
+    X(ao_map::GNC_AO_Map, GNC_AO_Map)                    \
+    X(drawing::GNC_Drawing, GNC_Drawing)
 
 // ================================================================================================================================
 

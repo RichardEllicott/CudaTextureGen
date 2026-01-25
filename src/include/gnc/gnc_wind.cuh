@@ -26,7 +26,7 @@ wind simulation, should blow sediment around
     X(float2, test_float2, {}, "test test_float2")
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS                 \
+#define TEMPLATE_CLASS_ARRAYS_STRUCT          \
     X(float, 2, height_map, "terrain height") \
     X(float, 2, dust_map, "dust")             \
     X(float, 3, wind_vec2_map, "wind")        \

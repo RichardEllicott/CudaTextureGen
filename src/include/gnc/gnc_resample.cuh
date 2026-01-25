@@ -23,7 +23,7 @@ reample an image, distortion by a map
 
 // DeviceArray2D ... abstraction of DeviceArray that will be visible in python
 // // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS                                               \
+#define TEMPLATE_CLASS_ARRAYS_STRUCT                                        \
     X(float, 2, input, "input image")                                       \
     X(float, 2, output, "buffer array to write to")                         \
     X(float, 2, map_x, "image to offset x (feed with noise to warp image)") \

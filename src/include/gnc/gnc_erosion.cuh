@@ -83,9 +83,9 @@ the big erosion model with flux and apply passes
     X(float, 2, _slope_magnitude_map, "calculation of strength based on gradient vector") \
     X(float, 2, _water_velocity_map, "🧪 scalar water velocity")
 
-#define TEMPLATE_CLASS_ARRAYS \
-    TEMPLATE_CLASS_ARRAYS_1   \
-    TEMPLATE_CLASS_ARRAYS_2   \
+#define TEMPLATE_CLASS_ARRAYS_STRUCT \
+    TEMPLATE_CLASS_ARRAYS_1          \
+    TEMPLATE_CLASS_ARRAYS_2          \
     TEMPLATE_CLASS_ARRAYS_3
 
 // #define TEMPLATE_CLASS_ARRAYS     \

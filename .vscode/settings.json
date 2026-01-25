@@ -418,7 +418,7 @@
             "badge": "👑"
         },
         {
-            "folderPath": "cuda_texture_gen\\src\\include\\gnc\\gnc_boilerplate.cuh\\",
+            "folderPath": "cuda_texture_gen\\src\\include\\gnc\\_gnc_boilerplate.cuh\\",
             "badge": "📷"
         },
         {

@@ -21,8 +21,8 @@ Normal Map Generator
     X(float, normal_scale, 1.0, "")
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS       \
-    X(float, 2, input, "input map") \
+#define TEMPLATE_CLASS_ARRAYS_STRUCT \
+    X(float, 2, input, "input map")  \
     X(float, 3, output, "output map (rgb)")
 
 #include "_gnc_boilerplate.cuh"

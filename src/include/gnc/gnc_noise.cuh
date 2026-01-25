@@ -36,7 +36,7 @@
 // #undef DEFAULT_WRAP
 // --------------------------------------------------------------------------------------------------------------------------------
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS \
+#define TEMPLATE_CLASS_ARRAYS_STRUCT \
     X(float, 2, output, "")
 
 #include "_gnc_boilerplate.cuh"

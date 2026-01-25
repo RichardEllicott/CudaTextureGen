@@ -22,7 +22,7 @@ water simulation with velocity
     X(float, slope_jitter, 0.0f, "")
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS                 \
+#define TEMPLATE_CLASS_ARRAYS_STRUCT          \
     X(float, 2, height_map, "")               \
     X(float, 2, water_map, "")                \
     X(float, 2, sediment_map, "")             \
@@ -30,13 +30,8 @@ water simulation with velocity
     X(float, 3, _water_lateral_velocity, "")  \
     X(float, 3, _slope_vector2_map, "")
 
-
-
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_METHODS \
     X(void, test, "test method")
-
-
-
 
 #include "_gnc_boilerplate.cuh"

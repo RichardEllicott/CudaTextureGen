@@ -18,8 +18,8 @@ Ambient Occlusion Generator
     X(int, radius, 1, "")
 
 // (TYPE, DIMENSIONS, NAME, DESCRIPTION)
-#define TEMPLATE_CLASS_ARRAYS       \
-    X(float, 2, input, "input map") \
+#define TEMPLATE_CLASS_ARRAYS_STRUCT \
+    X(float, 2, input, "input map")  \
     X(float, 2, output, "output map")
 
 // ================================================================================================================================
