@@ -9,13 +9,9 @@ casting various arrays and types to cuda types like int3 etc
 #include <array>
 #include <cuda_runtime.h>
 
-// #include "core/cuda/types.cuh"
-#include "types.cuh"
-
 #include "core/cuda/math/fast.cuh"
-
-#define D_INLINE __device__ __forceinline__           // device only functions
-#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
+#include "core/defines.h"
+#include "types.cuh"
 
 #define CASTING_CODE_ROUTE 0
 

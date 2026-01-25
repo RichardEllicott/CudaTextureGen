@@ -5,17 +5,14 @@ cuda math functions, main library
 */
 #pragma once
 
-#include "math/constants.cuh"
-#include "math/fast.cuh" // intrinsics
-#include "math/operators.cuh"
-
-#include "hash.cuh"
-
 #include <cstdint> // uint32_t (required for gcc)
 #include <cuda_runtime.h>
 
-#define D_INLINE __device__ __forceinline__           // device only functions
-#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
+#include "core/defines.h"
+#include "hash.cuh"
+#include "math/constants.cuh"
+#include "math/fast.cuh" // intrinsics
+#include "math/operators.cuh"
 
 namespace core::cuda::math {
 

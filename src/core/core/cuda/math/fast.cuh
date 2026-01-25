@@ -8,17 +8,17 @@ used by the math library
 
 */
 #pragma once
-// #include <cstdint> // uint32_t
+
 #include <cuda_runtime.h>
-// #include <math.h>
+
+#include "core/defines.h"
+
 // ========================================================================================================================
 // [Options]
 // ------------------------------------------------------------------------------------------------------------------------
 #define ENABLE_FAST_MATH // comment out to disable fast math
 // #pragma warning(disable:4068) // optional supress warnings
 // ========================================================================================================================
-
-#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
 
 #if !defined(__CUDA_ARCH__)
 #undef ENABLE_FAST_MATH // disable fast math on host side
@@ -182,6 +182,6 @@ DH_INLINE float tanhf(float x) {
 
 #pragma endregion
 
-} // namespace core::cuda::math
+} // namespace core::cuda::math::fast
 
 #undef ENABLE_FAST_MATH // comment out to disable fast math

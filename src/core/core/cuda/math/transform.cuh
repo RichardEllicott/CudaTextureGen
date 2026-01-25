@@ -3,11 +3,10 @@
 */
 #pragma once
 
-#include "core/cuda/math.cuh"
 #include <cuda_runtime.h>
 
-#define D_INLINE __device__ __forceinline__           // device only functions
-#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
+#include "core/cuda/math.cuh"
+#include "core/defines.h"
 
 namespace core::cuda::math {
 

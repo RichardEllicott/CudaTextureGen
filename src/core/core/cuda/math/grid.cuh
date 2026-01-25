@@ -9,11 +9,9 @@ global kernel code in .cu file due to one-definition-rule
 */
 #pragma once
 
-#define D_INLINE __device__ __forceinline__           // device only functions
-#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
-
 #include "core/cuda/hash.cuh"
 #include "core/cuda/math.cuh"
+#include "core/defines.h"
 
 namespace core::cuda::math::grid {
 
@@ -286,10 +284,5 @@ __global__ void layer_info_kernel(
 );
 
 #pragma endregion
-
-
-
-
-
 
 } // namespace core::cuda::math::grid

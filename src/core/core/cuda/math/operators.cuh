@@ -10,8 +10,7 @@ this file being seperate allows import into cuh headers... where the math.cuh ca
 #include <cstdint> // uint32_t (required for gcc)
 #include <cuda_runtime.h>
 
-#define D_INLINE __device__ __forceinline__
-#define DH_INLINE __device__ __host__ __forceinline__
+#include "core/defines.h"
 
 #pragma region EQUALITY_OPERATORS // equality for vector 2D and 3D vector types
 

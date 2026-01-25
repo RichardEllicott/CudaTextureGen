@@ -6,15 +6,13 @@ custom Cuda objects, designed to automaticly allocate and free memory, download 
 
 #pragma once
 
-#include "core/cuda/device_array.cuh"
-#include "core/ref.h"
-#include "types/array.cuh" // moved my cuda array here
 #include <array>
-
 #include <cstddef> // size_t
 
-#define D_INLINE __device__ __forceinline__           // device only functions
-#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
+#include "core/cuda/device_array.cuh"
+#include "core/defines.h"
+#include "core/ref.h"
+#include "types/array.cuh" // moved my cuda array here
 
 namespace core::cuda::types {
 

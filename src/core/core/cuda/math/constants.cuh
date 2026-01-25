@@ -7,12 +7,7 @@ maths constants
 
 #include <cstdint> // uint32_t (required for gcc)
 
-// define DH_CONST different for host and device
-#ifdef __CUDACC__
-#define DH_CONST __device__ __constant__ const
-#else
-#define DH_CONST constexpr
-#endif
+#include "core/defines.h"
 
 namespace core::cuda::math {
 
@@ -70,5 +65,3 @@ DH_CONST float2 GRID_OFFSETS_8_NORMALIZED[8] =
 #pragma endregion
 
 } // namespace core::cuda::math
-
-#undef DH_CONST

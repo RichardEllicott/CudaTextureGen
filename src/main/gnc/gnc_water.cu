@@ -1,8 +1,9 @@
 #include "gnc/gnc_water.cuh"
 
 #include "core/cuda/math/grid.cuh"
-
 #include "core/cuda/strings.cuh"
+#include "core/defines.h"
+#include "core/math/grid.h"
 
 using core::strings::to_string;
 
@@ -27,8 +28,6 @@ __global__ void velocity_cell_water(
     // build _water_lateral_velocity based on slopes
 }
 
-#define DH_CONST __device__ __constant__ const
-
 // DH_CONST int2 GRID_OFFSETS_8[8] =
 //     {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
 
@@ -40,19 +39,6 @@ DH_CONST int2 GRID_OFFSETS[8] =
         {1, -1},
 };
 
-
-std::vector<int2> get_tiles(int order) {
-
-    std::vector<int2> result;
-
-    for (int r = 1; r <= order; r++) {
-        auto ring = math::grid::square_ring_interlaced(r);
-        result.insert(result.end(), ring.begin(), ring.end());
-    }
-
-    return result;
-}
-
 void TEMPLATE_CLASS_NAME::test() {
 
     printf("test()...\n");
@@ -62,8 +48,14 @@ void TEMPLATE_CLASS_NAME::test() {
     //     printf("%s\n", core::strings::to_string(points).c_str());
     // }
 
-    auto offsets = get_tiles(2);
+    auto offsets = math::grid::get_surrounding_offsets(3);
+    // auto offsets = math::grid::get_surrounding_offsets(3, 2);
+
+    offsets = math::grid::filter_by_distance(offsets, 3.5f);
+
     printf("%s\n", to_string(offsets).c_str());
+
+    printf(math::grid::tiles_to_string(offsets).c_str());
 }
 
 void TEMPLATE_CLASS_NAME::_compute() {

@@ -12,58 +12,6 @@ host side maths
 
 namespace core::math {
 
-namespace grid {
-
-// quater of a square perimeter ring (in order)
-inline std::vector<int2> square_ring_quart(int radius = 1) {
-    std::vector<int2> out;
-
-    for (int i = 0; i < radius * 2; i++)
-        out.push_back(make_int2(-radius + 1 + i, radius)); // gives the seg from (-n+1,n) → (n,n)
-    return out;
-}
-
-// half of a square perimeter ring (in order)
-inline std::vector<int2> square_ring_half(int radius = 1) {
-    auto in = square_ring_quart(radius);
-    std::vector<int2> out = in;
-    out.reserve(in.size() * 2);
-
-    for (const auto &pos : in)
-        out.push_back(make_int2(-pos.y, pos.x)); // 90° rotated point
-
-    return out;
-}
-
-// square perimeter ring (in order)
-inline std::vector<int2> square_ring(int radius = 1) {
-    auto in = square_ring_half(radius);
-    std::vector<int2> out = in;
-    out.reserve(in.size() * 2);
-
-    for (const auto &pos : in)
-        out.push_back(make_int2(-pos.x, -pos.y)); // 180° rotated point
-
-    return out;
-}
-
-// square perimeter ring (interlaced: point, opposite, point, opposite...)
-// this way ref i ^ 1 is the opposite
-inline std::vector<int2> square_ring_interlaced(int radius = 1) {
-    auto in = square_ring_half(radius);
-    std::vector<int2> out;
-    out.reserve(in.size() * 2);
-
-    for (const auto &pos : in) {
-        out.push_back(pos);                       // original
-        out.push_back(make_int2(-pos.x, -pos.y)); // opposite (180° rotation)
-    }
-
-    return out;
-}
-
-} // namespace grid
-
 // ================================================================================================================================
 
 // Full-period 32-bit reversible permutation

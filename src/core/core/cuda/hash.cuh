@@ -5,15 +5,11 @@ cuda hash functions
 */
 #pragma once
 
-#define D_INLINE __device__ __forceinline__           // device only functions
-#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
-
-// #include <cstdio> // print
 #include <cstdint> // uint32_t (required for gcc)
 #include <cuda_runtime.h>
 
-// #include "math/constants.cuh"
 #include "math/fast.cuh" // intrinsics
+#include "core/defines.h"
 
 namespace core::cuda::hash {
 
