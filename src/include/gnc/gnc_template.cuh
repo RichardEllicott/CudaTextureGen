@@ -34,8 +34,8 @@ contains master bolerplate that is copied via python script to gnc_boilerplate
 // properties will NOT be added to the struct, eg Ref<> types work
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS            \
-    X(RefDeviceArrayFloat2D, input2, {}, "") \
-    X(RefDeviceArrayFloat2D, output2, {}, "")
+    X(DeviceArrayFloat2DRef, input2, {}, "") \
+    X(DeviceArrayFloat2DRef, output2, {}, "")
 
 // extra class methods
 // (TYPE, NAME, DESCRIPTION)

@@ -3,7 +3,7 @@ python bindings for DeviceArray
 */
 #pragma once
 
-#include "macros.h"
+#include "core/macros.h"
 #include "nanobind_helper.h"
 
 #include "core/cuda/device_array.cuh"

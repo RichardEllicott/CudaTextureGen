@@ -5,7 +5,7 @@ python bindings for Stream
 */
 #pragma once
 
-#include "macros.h"
+#include "core/macros.h"
 #include "nanobind_helper.h"
 
 #include "core/cuda/stream.cuh"

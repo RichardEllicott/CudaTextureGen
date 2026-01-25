@@ -19,8 +19,8 @@ included at the bottom of the bind headers that use the template pattern
 #undef TEMPLATE_CLASS_DEVICE_ARRAY_NS  // device side only ND arrays
 #undef TEMPLATE_CLASS_DEVICE_ARRAY_NDS // device side only ND arrays
 
-#undef STRINGIFY
-#undef EXPAND_AND_STRINGIFY
+// #undef STRINGIFY
+// #undef EXPAND_AND_STRINGIFY
 
 // unused most likely
 #undef TEMPLATE_CLASS_METHODS
@@ -32,8 +32,8 @@ included at the bottom of the bind headers that use the template pattern
 #undef LAYER_PERMEABILITY_DEFAULT
 #undef LAYER_THRESHOLD_DEFAULT
 
-#define STRINGIFY(x) #x
-#define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
+// #define STRINGIFY(x) #x
+// #define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
 
 
 

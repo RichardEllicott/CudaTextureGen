@@ -39,6 +39,9 @@ def test_drawing():
     drawing = ct.GNC_Drawing()
     # template = ct.GNC_Template()
 
+
+    print(drawing.output)
+
     print("test_drawing()...")
 
     # drawing.radius /= 2.0
@@ -51,9 +54,9 @@ def test_drawing():
     for i in range(5):
 
         drawing.mode = i
-        drawing.compute()
-        tools.images.save(drawing.output.array, f"{script_path}.sample.{i}.png")
-
+        # drawing.compute()
+        # tools.images.save(drawing.output.array, f"{script_path}.sample.{i}.png")
+    
 
 
     

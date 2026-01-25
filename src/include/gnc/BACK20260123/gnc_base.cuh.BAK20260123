@@ -27,7 +27,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include "core/cuda/math.cuh"
 #include "core/cuda/stream.cuh"
 #include "core/cuda/types.cuh" // top level for this object
-#include "macros.h"
+#include "core/macros.h"
 
 #define GNC_BASE_LAZY_EVALUATION
 

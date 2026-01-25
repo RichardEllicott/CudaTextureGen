@@ -1,6 +1,29 @@
 #include "gnc/gnc_drawing.cuh"
 
+namespace core::cuda::math::kernel {
+
+DH_INLINE float gaussian(float distance, float sigma) {
+    float a = distance / sigma;
+    // return expf(-0.5f * a * a);
+    return core::cuda::math::fast::expf(-0.5f * a * a);
+}
+
+
+
+
+} // namespace core::cuda::math::kernel
+
 namespace TEMPLATE_NAMESPACE {
+
+// add to math::kernel
+// math::kernel::gaussian
+
+// kernel in this context
+// A radially symmetric weighting function that maps distance → influence.
+
+// math::kernel::gaussian
+// math::kernel::cubic_spline_sph
+// math::kernel::wendland_c2
 
 // ================================================================
 
@@ -107,7 +130,9 @@ __global__ void draw_kernel(
         w = wendland_c2(d, radius);
         break;
     case 2:
-        w = gaussian_falloff(d, radius / 6.0f);
+
+        w = cmath::kernel::gaussian(d, radius / 6.0f);
+
         break;
     case 3:
         w = linear_falloff(d, radius);

@@ -7,8 +7,7 @@ conviniant loading from arrays or int's or floats
 
 #include <cuda_runtime.h>
 
-#define D_INLINE __device__ __forceinline__           // device only functions
-#define DH_INLINE __device__ __host__ __forceinline__ // device and host functions
+#include "core/defines.h"
 
 namespace core::cuda::math::array {
 

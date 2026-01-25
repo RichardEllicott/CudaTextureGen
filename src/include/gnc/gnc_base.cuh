@@ -21,7 +21,11 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include "core/cuda/math.cuh"
 #include "core/cuda/stream.cuh"
 #include "core/cuda/types.cuh" // top level for this object
-#include "macros.h"
+#include "core/macros.h"
+
+
+#include "core/math.h"
+
 
 #include "core/reflection.h"
 
@@ -37,8 +41,9 @@ using namespace core::cuda::types; // include type aliases at top level
 using namespace core::cuda::cast;  // include type aliases at top level
 using namespace core::reflection;  // include at top level
 
-namespace cmath = core::cuda::math; // include the cuda math lib as cmath
-namespace chash = core::cuda::hash; // include the cuda math lib as cmath
+namespace cmath = core::cuda::math;
+namespace chash = core::cuda::hash;
+namespace math = core::math;
 
 #pragma region VALIDATORS // check if something is a particular type by template
 
@@ -166,6 +171,7 @@ class GNC_Base {
         return result;
     }
 
+    // ⚠️ may be broken
     // compile time reflection pattern that ensures all Ref's are instantiated
     void instantiate_all_refs() {
         // printf("instantiate_all_refs()...\n");
@@ -267,11 +273,20 @@ class GNC_Base {
     template <typename T>
     auto get_properties_of_type() {
         auto &self = derived();
-        return Reflection<Derived>::template get_properties_of_type<RefDeviceArrayFloat2D>(self);
+        return Reflection<Derived>::template get_properties_of_type<DeviceArray<float, 2>>(self);
     }
 
 #endif
 #undef BASE_REFACTOR_TO_REFLECTION_OB
+
+    // // ⚠️ doesn't work
+    void instantiate_all_refs2() {
+
+        for (auto *ref : get_properties_of_type<core::RefBase>()) {
+            printf(" ref->instantiate_if_null()...\n");
+            ref->instantiate_if_null();
+        }
+    }
 
 #pragma endregion
 
@@ -281,7 +296,7 @@ class GNC_Base {
     void _instance_test_1() {
         printf("_instance_test_1()...\n");
 
-        for (auto *arr : ct_get_all_of_type<RefDeviceArrayFloat2D>()) {
+        for (auto *arr : ct_get_all_of_type<DeviceArrayFloat2DRef>()) {
             printf(" arr->instantiate_if_null()...\n");
             arr->instantiate_if_null();
         }
@@ -290,7 +305,7 @@ class GNC_Base {
     void _instance_test_2() {
         printf("_instance_test_2()...\n");
 
-        for (auto *arr : get_properties_of_type<RefDeviceArrayFloat2D>()) {
+        for (auto *arr : get_properties_of_type<DeviceArrayFloat2DRef>()) {
             printf(" arr->instantiate_if_null()...\n");
             arr->instantiate_if_null();
         }
@@ -431,7 +446,9 @@ class GNC_Base {
 
     GNC_Base() {
         _init_tests();
-        // instantiate_all_refs(); // ensure all refs exist
+        // instantiate_all_refs(); // ensure all refs exist ⚠️ may be broken
+        // instantiate_all_refs2(); // ⚠️ doesn't work
+
         stream.instantiate_if_null();
     }
 

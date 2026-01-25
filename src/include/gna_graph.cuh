@@ -19,7 +19,7 @@ GN-A
 #pragma once
 
 #include "core/cuda/device_array.cuh"
-#include "macros.h"
+#include "core/macros.h"
 #include <memory> // shared_ptr
 #include <variant>
 
