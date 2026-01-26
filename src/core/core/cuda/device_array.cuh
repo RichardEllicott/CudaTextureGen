@@ -69,6 +69,8 @@ class TempBuffer {
     TempBuffer &operator=(TempBuffer &&) noexcept = default;
 };
 
+// ================================================================================================================================
+
 class DeviceArrayBase {
   protected:
     // optional stream
@@ -107,6 +109,8 @@ class DeviceArrayBase {
     // raw device pointer (no type)
     virtual void *raw_dev_ptr() const = 0;
 };
+
+// ================================================================================================================================
 
 template <typename T, int Dim>
 class DeviceArray : public core::cuda::DeviceArrayBase {
@@ -342,6 +346,8 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
             cudaDeviceSynchronize(); // No stream set → default stream, so wait for all outstanding work
     }
 
+#pragma region UPLOAD_DOWNLOAD
+
     // Upload from host pointer (optional callback)
     void upload(const T *host_ptr, std::array<size_t, Dim> dimensions, std::function<void()> callback = {}) {
 
@@ -394,6 +400,28 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
             throw std::runtime_error("cudaMemcpy (Device->Host) failed");
         }
     }
+
+    // ================================================================================================================================
+    // [Vector Shortcuts]
+    // --------------------------------------------------------------------------------------------------------------------------------
+
+    // upload a vector, note no ref, extra copy makes this safe
+    void upload(std::vector<T> data, std::array<size_t, Dim> dimensions, std::function<void()> callback = {}) {
+        auto holder = std::make_shared<std::vector<T>>(std::move(data));
+
+        upload(holder->data(), dimensions, [holder, callback]() {
+            if (callback) callback();
+        });
+    }
+
+    // Overload only available when Dim == 1, uses the vector's size
+    template <size_t D = Dim, typename = std::enable_if_t<D == 1>>
+    void upload(std::vector<T> data, std::function<void()> callback = {}) {
+        std::array<size_t, 1> dims{data.size()};
+        upload(std::move(data), dims, std::move(callback)); // move avoids copying the memory twice
+    }
+
+#pragma region endregion
 
 #pragma region SWAP
     // swap member function
@@ -467,6 +495,23 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 
 #pragma endregion
 };
+
+// ================================================================================================================================
+
+// aliases
+// template <typename T>
+// using DeviceArray1D = DeviceArray<T, 1>;
+
+// template <typename T>
+// using DeviceArray2D = DeviceArray<T, 2>;
+
+// template <typename T>
+// using DeviceArray3D = DeviceArray<T, 3>;
+
+// template <typename T>
+// using DeviceArray4D = DeviceArray<T, 4>;
+
+// ================================================================================================================================
 
 // thin wrapper for 1D
 template <typename T>

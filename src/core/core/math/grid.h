@@ -64,7 +64,7 @@ inline std::vector<int2> square_ring_interlaced(int radius = 1) {
 
 // ================================================================
 
-std::vector<int2> get_surrounding_offsets(int order, int mode = 0) {
+static std::vector<int2> _surrounding_offsets(int order, int mode = 0) {
 
     std::vector<int2> result;
 
@@ -88,6 +88,17 @@ std::vector<int2> get_surrounding_offsets(int order, int mode = 0) {
     }
 
     return result;
+}
+
+std::vector<int2> surrounding_offsets(int order) {
+    return _surrounding_offsets(order, 0);
+}
+
+std::vector<int2> surrounding_offsets_half(int order) {
+    return _surrounding_offsets(order, 1);
+}
+std::vector<int2> surrounding_offsets_quart(int order) {
+    return _surrounding_offsets(order, 2);
 }
 
 #pragma endregion
@@ -133,7 +144,8 @@ std::vector<int2> filter_by_distance(
 H_INLINE std::string tiles_to_string(
     const std::vector<int2> &tiles,
     const std::string &filled = "[]",
-    const std::string &empty = "  ") {
+    const std::string &empty = "__",
+    bool with_axes = false) {
     if (tiles.empty())
         return {};
 
@@ -161,12 +173,50 @@ H_INLINE std::string tiles_to_string(
 
     // Build output
     std::string out;
-    out.reserve((width * filled.size() + 1) * height);
 
+    const int cell_w = (int)empty.size();
+    const int label_w = with_axes ? 4 : 0; // enough for negative coords
+
+    out.reserve((width * filled.size() + label_w + 4) * height);
+
+    // Rows (top → bottom)
     for (int y = 0; y < height; y++) {
+
+        if (with_axes) {
+            int actual_y = max_y - y; // real coordinate
+            std::string s = std::to_string(actual_y);
+
+            // right-align inside label_w
+            out.append(label_w - (int)s.size(), ' ');
+            out += s;
+        }
+
+        // Row contents
         for (int x = 0; x < width; x++) {
             out += (mask[y * width + x] ? filled : empty);
         }
+
+        out += '\n';
+    }
+
+    // Bottom axis
+    if (with_axes) {
+        out.append(label_w, ' '); // left margin
+
+        for (int x = 0; x < width; x++) {
+            int actual_x = min_x + x;
+            std::string s = std::to_string(actual_x);
+
+            // center inside cell width
+            int pad = cell_w - (int)s.size();
+            int left = pad / 2;
+            int right = pad - left;
+
+            out.append(left, ' ');
+            out += s;
+            out.append(right, ' ');
+        }
+
         out += '\n';
     }
 

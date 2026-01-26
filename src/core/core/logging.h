@@ -95,4 +95,21 @@ inline void println(const Args &...args) {
 //     va_end(args);
 // }
 
+
+
+// ================================================================================================================================
+// // printf passthrough
+// template <typename... Args>
+// DH_INLINE void printf(const char *fmt, Args... args) {
+// #ifdef __CUDA_ARCH__
+//     // Device-side: use CUDA printf directly
+//     printf(fmt, args...);
+// #else
+//     // Host-side: use standard printf
+//     std::printf(fmt, args...);
+// #endif
+// }
+
+
+
 } // namespace core::logging

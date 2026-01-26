@@ -3,7 +3,7 @@
 Custom CUDA compatible array
 
 
-alternative to 
+alternative to
 
 custom array type designed to be the same as std::array but works in kernels (__device__ __host__)
 has a corrosponding required type caster as nanobind doesn't recognise out of the box
@@ -17,6 +17,7 @@ use with xmacros as IntArray<8>, FloatArray<10>, BoolArray<3> etc...
 
 #include <cstddef> // size_t
 
+#include "core/cuda/strings.cuh"
 #include "core/defines.h"
 
 namespace core::cuda::types {
@@ -60,6 +61,11 @@ struct Array {
 
     // size (constexpr, host-only is fine here)
     static constexpr std::size_t size() { return N; }
+
+    // default to string
+    std::string to_string() const {
+        return core::strings::to_string(data);
+    }
 };
 
 template <std::size_t N>
@@ -135,6 +141,11 @@ struct BoolArray {
 
     DH_INLINE bool operator!=(const BoolArray &other) const {
         return !(*this == other);
+    }
+
+    // default to string
+    std::string to_string() const {
+        return core::strings::to_string(data);
     }
 };
 

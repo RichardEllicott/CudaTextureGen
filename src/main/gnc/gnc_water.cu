@@ -39,6 +39,13 @@ DH_CONST int2 GRID_OFFSETS[8] =
         {1, -1},
 };
 
+auto tiles_to_string(std::vector<int2> tiles) {
+    return math::grid::tiles_to_string(tiles, "[ ]", " . ", true);
+}
+
+
+
+
 void TEMPLATE_CLASS_NAME::test() {
 
     printf("test()...\n");
@@ -48,14 +55,38 @@ void TEMPLATE_CLASS_NAME::test() {
     //     printf("%s\n", core::strings::to_string(points).c_str());
     // }
 
-    auto offsets = math::grid::get_surrounding_offsets(3);
-    // auto offsets = math::grid::get_surrounding_offsets(3, 2);
+    auto offsets = math::grid::surrounding_offsets(3);
 
-    offsets = math::grid::filter_by_distance(offsets, 3.5f);
-
+    // offsets = math::grid::filter_by_distance(offsets, 3.5f);
     printf("%s\n", to_string(offsets).c_str());
+    printf(tiles_to_string(offsets).c_str());
+    printf("count = %zu\n", offsets.size());
 
-    printf(math::grid::tiles_to_string(offsets).c_str());
+    printf("\n");
+
+    offsets = math::grid::surrounding_offsets_half(3);
+    printf("%s\n", to_string(offsets).c_str());
+    printf(tiles_to_string(offsets).c_str());
+    printf("count = %zu\n", offsets.size());
+    printf("\n");
+
+    offsets = math::grid::surrounding_offsets_quart(3);
+    printf("%s\n", to_string(offsets).c_str());
+    printf(tiles_to_string(offsets).c_str());
+    printf("count = %zu\n", offsets.size());
+
+
+    // // Array<float, 4> test_array = {1.0f, 1.0f, 1.0f, 1.0f};
+    // Array<int2, 4> test_array = {
+    //     int2{1, 0},
+    //     int2{0, 1},
+    //     int2{1, 1},
+    //     int2{1, -1},
+    // };
+    // printf("%s\n", to_string(test_array.data).c_str());
+
+    // core::cuda::DeviceArray<int2, 1> darray;
+    // darray.upload(offsets);
 }
 
 void TEMPLATE_CLASS_NAME::_compute() {

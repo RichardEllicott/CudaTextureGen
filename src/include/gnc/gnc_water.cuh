@@ -30,6 +30,14 @@ water simulation with velocity
     X(float, 3, _water_lateral_velocity, "")  \
     X(float, 3, _slope_vector2_map, "")
 
+// properties will NOT be added to the struct, eg Ref<> types work
+// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
+#define TEMPLATE_CLASS_PARAMETERS            \
+    X(DeviceArrayFloat2DRef, input2, {}, "") \
+    X(DeviceArrayFloat2DRef, output2, {}, "")
+
+
+
 // (TYPE, NAME, DESCRIPTION)
 #define TEMPLATE_CLASS_METHODS \
     X(void, test, "test method")
