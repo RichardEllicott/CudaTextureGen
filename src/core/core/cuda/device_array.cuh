@@ -498,7 +498,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 
 // ================================================================================================================================
 
-// aliases
+// // aliases ⚠️ CANNOT REFACTOR UNTIL OLD EROSION'S REMOVED!!!!
 // template <typename T>
 // using DeviceArray1D = DeviceArray<T, 1>;
 
@@ -512,6 +512,8 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 // using DeviceArray4D = DeviceArray<T, 4>;
 
 // ================================================================================================================================
+
+// ⚠️ following wrappers are required for the older code!!!
 
 // thin wrapper for 1D
 template <typename T>

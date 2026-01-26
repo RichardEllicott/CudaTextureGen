@@ -80,7 +80,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     // [Create Pars, Arrays and Methods]
     // --------------------------------------------------------------------------------------------------------------------------------
 
-    // create pars
+    // create pars (mirrored on struct)
 #ifdef TEMPLATE_CLASS_PARAMETERS_STRUCT
 #define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
     TYPE NAME = DEFAULT_VAL;
@@ -96,11 +96,19 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
-    // create arrays2 (second pattern)
+    // create array ref's
 #ifdef TEMPLATE_CLASS_ARRAYS_STRUCT
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
     core::Ref<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
     TEMPLATE_CLASS_ARRAYS_STRUCT
+#undef X
+#endif
+
+// private paramaters
+#ifdef TEMPLATE_CLASS_PRIVATE_PARAMETERS
+#define X(TYPE, NAME, DEFAULT_VAL, DESCRIPTION) \
+    TYPE NAME = DEFAULT_VAL;
+    TEMPLATE_CLASS_PRIVATE_PARAMETERS
 #undef X
 #endif
 

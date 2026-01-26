@@ -144,11 +144,11 @@ void TEMPLATE_CLASS_NAME::process() {
     auto s2 = sediment_map_out.dev_ptr();
 
     // init random if we need jitter
-    core::cuda::DeviceArray1D<curandState> rng_states;
-    if (pars.jitter > 0.0f) {
-        rng_states.resize(height_map.size());                                             // resize and allocate
-        init_rand_states<<<grid, block, 0, stream.get()>>>(rng_states.dev_ptr(), 1234UL); // init the rand states with a seed
-    }
+    core::cuda::DeviceArray1D<curandState> rng_states; // ⚠️ broken
+    // if (pars.jitter > 0.0f) {
+    //     rng_states.resize(height_map.size());                                             // resize and allocate
+    //     init_rand_states<<<grid, block, 0, stream.get()>>>(rng_states.dev_ptr(), 1234UL); // init the rand states with a seed
+    // }
 
     switch (pars.mode) {
     case 0:

@@ -31,6 +31,21 @@ namespace core::cuda::types {
 // [Device Array Refs]
 // --------------------------------------------------------------------------------------------------------------------------------
 
+// aliases ⚠️ WANT TO PUT THESE WHERE DEVICE ARRAY LIVES BUT CODE RELIES ON THE OLD TEMPLATES!!!
+template <typename T>
+using DeviceArray1D = DeviceArray<T, 1>;
+
+template <typename T>
+using DeviceArray2D = DeviceArray<T, 2>;
+
+template <typename T>
+using DeviceArray3D = DeviceArray<T, 3>;
+
+template <typename T>
+using DeviceArray4D = DeviceArray<T, 4>;
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
 using DeviceArrayFloat1D = DeviceArray<float, 1>;
 using DeviceArrayFloat2D = DeviceArray<float, 2>;
 using DeviceArrayFloat3D = DeviceArray<float, 3>;
