@@ -64,7 +64,7 @@ inline std::vector<int2> square_ring_interlaced(int radius = 1) {
 
 // ================================================================
 
-static std::vector<int2> _surrounding_offsets(int order, int mode = 0) {
+static inline std::vector<int2> _surrounding_offsets(int order, int mode = 0) {
 
     std::vector<int2> result;
 
@@ -90,20 +90,20 @@ static std::vector<int2> _surrounding_offsets(int order, int mode = 0) {
     return result;
 }
 
-std::vector<int2> surrounding_offsets(int order) {
+inline std::vector<int2> surrounding_offsets(int order) {
     return _surrounding_offsets(order, 0);
 }
 
-std::vector<int2> surrounding_offsets_half(int order) {
+inline std::vector<int2> surrounding_offsets_half(int order) {
     return _surrounding_offsets(order, 1);
 }
-std::vector<int2> surrounding_offsets_quart(int order) {
+inline std::vector<int2> surrounding_offsets_quart(int order) {
     return _surrounding_offsets(order, 2);
 }
 
 #pragma endregion
 
-std::vector<int2> filter_by_distance(
+inline std::vector<int2> filter_by_distance(
     const std::vector<int2> &tiles,
     float radius) {
 
@@ -141,7 +141,7 @@ std::vector<int2> filter_by_distance(
     return result;
 }
 
-H_INLINE std::string tiles_to_string(
+inline std::string tiles_to_string(
     const std::vector<int2> &tiles,
     const std::string &filled = "[]",
     const std::string &empty = "__",

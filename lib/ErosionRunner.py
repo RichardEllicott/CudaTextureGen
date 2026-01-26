@@ -20,6 +20,52 @@ import json
 import warnings
 
 
+from pathlib import Path
+
+
+class RunnerBase:
+
+    debug: bool = True  # print debug information (could slow down processing)
+
+    erosion = None
+
+    _erosion_default_pars: dict[str, Any]  # filled with the starting pars of erosion
+
+    output_folder: str = "E:/"  # output folder for movies and images
+    # output_folder: str = "./output/"
+    # output_folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
+
+    filename_base: str = "erosion"  # base string for files
+
+    def get_file_path(self, ext: str) -> Path:
+        """
+        get file path for saving
+        """
+        folder = Path(self.output_folder)
+        name = f"{self.filename_base}.{ext}"
+        return folder / name
+
+    # region MAP_CACHE
+
+    starting_heightmap: NDArray[np.float32] | None = None  # save a starting heightmap
+
+    _image_cache: dict[str, npt.NDArray[np.float32]] = {}  # downloaded maps cache
+
+    def clear_image_cache(self):
+        """
+        clear cache, call to ensure we donwload a new map
+        """
+        self._image_cache.clear()
+
+    def download_image(self, name) -> NDArray:
+        """
+        download a map (if not already in cache)
+        """
+        if not name in self._image_cache:
+            self._image_cache[name] = getattr(self.erosion, name).array
+        return self._image_cache[name]
+
+
 class FrameProfile:
     """
     a profile of a frame, builds a frame from the channels list
@@ -50,6 +96,8 @@ class FrameProfile:
     albedo_map_0: bool = False
 
     _gradient_strip = None
+
+    nearest_neighbor_upscale = 1  # if larger than one upscale
 
     def apply_gradient(self, map):
 
@@ -89,7 +137,7 @@ class FrameProfile:
                 f"FrameProfile albedo_map_0 must be 1 channel, got {len(self.channels)}: {self.channels}"
             )
 
-    def __init__(self, runner: "Runner") -> None:
+    def __init__(self, runner: RunnerBase) -> None:
         self.runner = runner
 
     def get_frame(self) -> NDArray:
@@ -109,7 +157,12 @@ class FrameProfile:
             channel = channels[i]
 
             if channel:  # if channel not None
-                map = self.runner._maps[channel].copy()
+                # map = self.runner._maps[channel].copy()
+                map = self.runner.download_image(channel).copy()
+
+                # nearest neighbor upscale (maybe move to last?)
+                if self.nearest_neighbor_upscale > 1:
+                    map = np.repeat(np.repeat(map, self.nearest_neighbor_upscale, axis=0), self.nearest_neighbor_upscale, axis=1)
 
                 # clip
                 clip = self.clip[i]
@@ -142,61 +195,33 @@ class FrameProfile:
         return tools.arrays.merge_to_color(*processed_maps)  # should be 3 channels
 
 
-class MovieProfile(FrameProfile):
+class FP_NormalMap(FrameProfile):
 
-    # # Create an in-memory buffer
-    # buf = io.BytesIO()
-
-    fps: int = 30
-
-    def __init__(self, runner: "Runner") -> None:
-        super().__init__(runner)
-
-        # self.move_writer = imageio.get_writer(filename, fps=fps)
-
-        # self.writer = imageio.get_writer(self.buf, codec="libx264", fps=30)
+    pass
 
 
-class Runner:
-
-    # erosion: cuda_texture_gen.Erosion10  # the main erosion object
-
-    _erosion_default_pars: dict[str, Any]  # filled with the starting pars of erosion
-
-    folder: str = "E:/"  # output folder for movies and images
-    # folder: str = "./output/"
-    # folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
-
-    filename_base: str = "erosion"  # base string for files
-
-    debug: bool = True  # print debug information (note slows us down a bit)
+class Runner(RunnerBase):
 
     animation_fps: int = 5
     frame_count: int = 64
-    steps_per_frame: int = 16
-    nearest_neighbor_upscale: int = 1  # 🐞 if > 1 upscale the pixel sizes (makes it easier to see what's going on)
+    # nearest_neighbor_upscale: int = 1
     process_time: float = 0.0
 
     # profiles build movies each frame in process
-    movie_profiles: dict[str, MovieProfile] = {}
+    movie_profiles: dict[str, FrameProfile] = {}
     # profiles build image at end of process
     image_profiles: dict[str, FrameProfile] = {}
 
-    _maps: dict[str, npt.NDArray[np.float32]] = {}  # downloaded maps cache
-
-    movie_profile_map_names: set[str] = set()  # contains all the map names to download each frame
-    image_profile_maps_names: set[str] = set()  # contains the map names to download for the final images
-
-    starting_heightmap: NDArray[np.float32] | None = None
-
     def __init__(self) -> None:
 
-        self.erosion = cuda_texture_gen.Erosion10()
+        # self.erosion = cuda_texture_gen.Erosion10()
+
+        self.erosion = cuda_texture_gen.GNC_Erosion()
+        # self.erosion = cuda_texture_gen.GNC_Noise()
+
         self._erosion_default_pars = tools.dicts.from_object(self.erosion)
 
         self.OUTPUT_PRESET_01()  # defaults
-
-        pass
 
     def OUTPUT_PRESET_01(self):
 
@@ -204,19 +229,19 @@ class Runner:
         self.image_profiles = {}
 
         # combined map movie
-        movie_profile = MovieProfile(self)
+        movie_profile = FrameProfile(self)
         movie_profile.channels = ["sediment_map", "height_map", "water_map"]  # all channels
         # movie_profile.channels = ["height_map", "height_map", "water_map"]  # height does yellow
         # movie_profile.clip = [None, None, 1.0]
         self.movie_profiles["combined"] = movie_profile
 
         # height map movie
-        movie_profile = MovieProfile(self)
+        movie_profile = FrameProfile(self)
         movie_profile.channels = ["height_map"]
         self.movie_profiles["height"] = movie_profile
 
         # water map movie
-        movie_profile = MovieProfile(self)
+        movie_profile = FrameProfile(self)
         movie_profile.channels = ["water_map"]
         self.movie_profiles["water"] = movie_profile
 
@@ -259,7 +284,7 @@ class Runner:
 
         self.OUTPUT_PRESET_01()
         # combined map movie
-        movie_profile = MovieProfile(self)
+        movie_profile = FrameProfile(self)
         # movie_profile.channels = ["sediment_map", "height_map", "water_map"]  # all channels
         movie_profile.channels = ["height_map", "height_map", "water_map"]  # height does yellow
         # movie_profile.clip = [None, None, 1.0]
@@ -269,7 +294,7 @@ class Runner:
 
         self.OUTPUT_PRESET_01()
         # combined map movie
-        movie_profile = MovieProfile(self)
+        movie_profile = FrameProfile(self)
         # movie_profile.channels = ["sediment_map", "height_map", "water_map"]  # all channels
         movie_profile.channels = ["height_map", "height_map", "water_map"]  # height does yellow
         movie_profile.clip = [None, None, 1.0]
@@ -302,25 +327,9 @@ class Runner:
         """
         tools.dicts.set_object(self.erosion, pars)
 
-    def get_debug_data(self):
-
-        debug = {}
-        self.erosion.debug_update()
-        tile_count = self.erosion._width * self.erosion._height
-
-        for attr in dir(self.erosion):
-            if attr.startswith("_debug"):
-                value = getattr(self.erosion, attr)
-
-                if isinstance(value, float):  # round floats
-                    value /= float(tile_count)
-                    debug[attr] = value
-
-        return debug
-
     def save_meta_data(self):
 
-        filename = f"{self.folder}{self.filename_base}.data.json"
+        file_path = self.get_file_path(ext="data.json")
 
         data = {}
 
@@ -330,246 +339,10 @@ class Runner:
 
         runner_settings = {}
         runner_settings["frame_count"] = self.frame_count
-        runner_settings["steps_per_frame"] = self.steps_per_frame
         data["runner_settings"] = runner_settings
 
-        data["metrics"] = self.get_metric_data()
-
-        if self.debug:
-            data["debug"] = self.get_debug_data()
-
-        with open(filename, "w", encoding="utf-8") as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
-
-    def get_last_meta_data(self):
-        filename = f"{self.folder}{self.filename_base}.data.json"
-        try:
-            with open(filename, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return {}
-
-    _metric_data = {}
-
-    # # names of the maps to get metric data from
-    metric_data_map_names: list[str] = ["height_map", "water_map", "sediment_map"]
-
-    def get_metric_data(self) -> dict:
-
-        if self._metric_data:
-            return self._metric_data
-
-        for name in self.metric_data_map_names:
-
-            if not name in self._maps:
-                self._maps[name] = getattr(self.erosion, name)
-
-            entry: dict = {}
-            map = self._maps[name]
-            entry['min'] = float(map.min())
-            entry['max'] = float(map.max())
-            entry['mean'] = float(map.mean())
-            entry['std'] = float(map.std())
-            self._metric_data[name] = entry
-
-        return self._metric_data
-
-    def print_metric_data(self) -> None:
-        """
-        print meta data table
-        """
-        meta_data = self.get_metric_data()
-
-        # Build rows
-        rows = []
-        for name, stats in meta_data.items():
-            rows.append([name, stats['min'], stats['max'], stats['mean'], stats['std']])
-
-        # Print as table
-        print(tabulate(rows, headers=["Name", "Min", "Max", "Mean", "Std"], floatfmt=".4f"))
-
-    def clear_downloaded_maps(self):
-        self._maps.clear()
-
-    def download_image_profile_maps(self):
-        """
-        download all image profile maps, if not already downloaded
-        (need to clear if we expect the maps to have changed)
-        """
-        for map_name in self.image_profile_maps_names:
-            if not map_name in self._maps:
-                map = getattr(self.erosion, map_name)
-                self._maps[map_name] = map
-
-    def download_movie_profile_maps(self):
-        """
-        download all movie profile maps, if not already downloaded
-        (need to clear if we expect the maps to have changed)
-        """
-        for map_name in self.movie_profile_map_names:
-            if not map_name in self._maps:
-                map = getattr(self.erosion, map_name)
-                self._maps[map_name] = map
-
-    def _setup(self):
-        """
-        run at start of process
-        """
-        # find all unique map names for the movie profiles (to download each frame)
-        self.movie_profile_map_names: set[str] = set()
-        for key in self.movie_profiles:
-            movie_profile: MovieProfile = self.movie_profiles[key]
-            for name in movie_profile.channels:
-                self.movie_profile_map_names.add(name)
-
-        # find all unique map names for the image profiles (to download at end of complete process)
-        self.image_profile_maps_names: set[str] = set()
-        for key in self.image_profiles:
-            image_profile: FrameProfile = self.image_profiles[key]
-            for name in image_profile.channels:
-                self.image_profile_maps_names.add(name)
-
-    def _compute(self):
-        """
-        hook to override
-        """
-        self.erosion.process()
-
-        pass
-
-    def process(self) -> None:
-        """
-
-        """
-        self._setup()
-
-        start_time = time.perf_counter()
-        erosion = self.erosion
-
-        self.starting_heightmap = erosion.height_map
-        if self.starting_heightmap is not None and self.starting_heightmap.size > 0:
-
-            tools.arrays.print_array_information(self.starting_heightmap)
-
-            tools.images.save(
-                tools.arrays.normalized(self.starting_heightmap),
-                f"{self.folder}/{self.filename_base}.start.png")
-
-        erosion._debug = self.debug
-        if self.debug:
-            erosion.allocate_device()  # pre-allocate to allow debug download
-            # self._download_maps()  # ⚠️ downloads even though it uploaded (slow)
-            print("🚀 launch erosion...")
-            print("-" * 64)
-            self.print_metric_data()  # ⚠️ gets meta data (slow)
-
-        self._metric_data = {}
-
-        erosion.steps = self.steps_per_frame
-
-        movie_writers = {}
-        for key in self.movie_profiles:
-            writer = imageio.get_writer(f"{self.folder}/{self.filename_base}.{key}.mp4", fps=self.animation_fps)
-            movie_writers[key] = writer
-
-        for i in range(self.frame_count):
-
-            self._compute()
-
-            self.clear_downloaded_maps()  # ensures new maps are downloaded
-            self.download_movie_profile_maps()
-
-            # 🐞 nearest upscale (allows seeing the erosion)
-            if self.nearest_neighbor_upscale > 1:
-                for name, map in self._maps.items():
-                    # self._maps[name] = np.repeat(np.repeat(map, self.nearest_neighbor_upscale, axis=0), self.nearest_neighbor_upscale, axis=1)
-                    self._maps[name] = tools.arrays.nearest_neighbor_upscale(map, self.nearest_neighbor_upscale)
-
-                # if self.starting_heightmap is not None:
-                #     self.starting_heightmap = tools.arrays.nearest_neighbor_upscale(self.starting_heightmap, self.nearest_neighbor_upscale)
-
-            # for each movie writer write using frame profile
-            for key in movie_writers:
-                profile = self.movie_profiles[key]
-                frame = profile.get_frame()
-                writer = movie_writers[key]
-                writer.append_data((frame * 255.0).astype(np.uint8))
-
-        end_time = time.perf_counter()
-        self.process_time = end_time - start_time
-
-        if self.debug:
-            print("-" * 64)
-            self.print_metric_data()
-            print("-" * 64)
-
-        print(f"process time: {self.process_time:.3f} seconds")
-
-        self.clear_downloaded_maps()  # only required to clear the upscale i think
-        self.download_image_profile_maps()
-
-        for name in self.image_profiles:
-            profile = self.image_profiles[name]
-            frame = profile.get_frame()
-            tools.images.save(frame, f"{self.folder}/{self.filename_base}.{name}")
-
-        if self.debug:
-            self.erosion.debug_update()
-            tile_count = erosion._width * erosion._height
-
-            for attr in dir(self.erosion):
-                if attr.startswith("_debug"):
-                    value = getattr(self.erosion, attr)
-
-                    if isinstance(value, float):  # round floats
-                        value /= float(tile_count)
-                        print(f"{attr}: {value:.4f}")
-
-        self.save_meta_data()
-
-
-class ErosionRunner(Runner):
-    """
-    Default runner still working
-    """
-
-    pass
-
-
-class ErosionRunnerGNC(Runner):
-
-    def __init__(self) -> None:
-
-        # self.erosion = cuda_texture_gen.Erosion10()
-
-        self.erosion = cuda_texture_gen.GNC_Erosion()
-        # self.erosion = cuda_texture_gen.GNC_Noise()
-
-        self._erosion_default_pars = tools.dicts.from_object(self.erosion)
-
-        self.OUTPUT_PRESET_01()  # defaults
-
-    def download_image_profile_maps(self):
-        """
-        download all image profile maps, if not already downloaded
-        (need to clear if we expect the maps to have changed)
-        """
-        for map_name in self.image_profile_maps_names:
-            if not map_name in self._maps:
-                map = getattr(self.erosion, map_name)
-                self._maps[map_name] = map.array
-
-    def download_movie_profile_maps(self):
-        """
-        download all movie profile maps, if not already downloaded
-        (need to clear if we expect the maps to have changed)
-        """
-        for map_name in self.movie_profile_map_names:
-            if not map_name in self._maps:
-                map: cuda_texture_gen.DeviceArrayFloat2D = getattr(self.erosion, map_name)
-                print(map_name, map)
-                print(map_name, map.shape)
-                self._maps[map_name] = map.array
 
     def _compute(self):
         """
@@ -581,61 +354,30 @@ class ErosionRunnerGNC(Runner):
         """
 
         """
-        self._setup()
 
         start_time = time.perf_counter()
-        erosion = self.erosion
 
-        self.starting_heightmap = erosion.height_map.array
-        if self.starting_heightmap is not None and self.starting_heightmap.size > 0:
+        # save starting heightmap
+        if not self.starting_heightmap:
+            self.starting_heightmap = self.erosion.height_map.array
+            if self.starting_heightmap is not None and self.starting_heightmap.size > 0:
+                tools.images.save(
+                    tools.arrays.normalized(self.starting_heightmap),
+                    self.get_file_path(ext="start.png")
+                )
 
-            tools.arrays.print_array_information(self.starting_heightmap)
-
-            tools.images.save(
-                tools.arrays.normalized(self.starting_heightmap),
-                f"{self.folder}/{self.filename_base}.start.png")
-
-        # erosion._debug = self.debug
-        # if self.debug:
-        #     erosion.allocate_device()  # pre-allocate to allow debug download
-        #     # self._download_maps()  # ⚠️ downloads even though it uploaded (slow)
-        #     print("🚀 launch erosion...")
-        #     print("-" * 64)
-        #     self.print_metric_data()  # ⚠️ gets meta data (slow)
-
-        self._metric_data = {}
-
-        erosion.steps = self.steps_per_frame
-
+        # create movie writers
         movie_writers = {}
         for key in self.movie_profiles:
-            writer = imageio.get_writer(f"{self.folder}/{self.filename_base}.{key}.mp4", fps=self.animation_fps)
+            file_path = self.get_file_path(ext=f"{key}.mp4")
+            writer = imageio.get_writer(file_path, fps=self.animation_fps)
             movie_writers[key] = writer
 
         for i in range(self.frame_count):
 
+            self.clear_image_cache()  # ensures new maps are downloaded
+
             self._compute()
-
-            print("compute done!")
-            # stream: cuda_texture_gen.
-
-            # stream: cuda_texture_gen.Stream = self.erosion.stream
-            # stream.sync()
-
-            # 
-
-
-            self.clear_downloaded_maps()  # ensures new maps are downloaded
-            self.download_movie_profile_maps()
-
-            # 🐞 nearest upscale (allows seeing the erosion)
-            if self.nearest_neighbor_upscale > 1:
-                for name, map in self._maps.items():
-                    # self._maps[name] = np.repeat(np.repeat(map, self.nearest_neighbor_upscale, axis=0), self.nearest_neighbor_upscale, axis=1)
-                    self._maps[name] = tools.arrays.nearest_neighbor_upscale(map, self.nearest_neighbor_upscale)
-
-                # if self.starting_heightmap is not None:
-                #     self.starting_heightmap = tools.arrays.nearest_neighbor_upscale(self.starting_heightmap, self.nearest_neighbor_upscale)
 
             # for each movie writer write using frame profile
             for key in movie_writers:
@@ -647,34 +389,20 @@ class ErosionRunnerGNC(Runner):
         end_time = time.perf_counter()
         self.process_time = end_time - start_time
 
-        if self.debug:
-            print("-" * 64)
-            self.print_metric_data()
-            print("-" * 64)
-
         print(f"process time: {self.process_time:.3f} seconds")
-
-        self.clear_downloaded_maps()  # only required to clear the upscale i think
-        self.download_image_profile_maps()
 
         for name in self.image_profiles:
             profile = self.image_profiles[name]
             frame = profile.get_frame()
-            tools.images.save(frame, f"{self.folder}/{self.filename_base}.{name}")
 
-        # if self.debug:
-        #     self.erosion.debug_update()
-        #     tile_count = erosion._width * erosion._height
-
-        #     for attr in dir(self.erosion):
-        #         if attr.startswith("_debug"):
-        #             value = getattr(self.erosion, attr)
-
-        #             if isinstance(value, float):  # round floats
-        #                 value /= float(tile_count)
-        #                 print(f"{attr}: {value:.4f}")
+            tools.images.save(frame, self.get_file_path(ext=name))
 
         self.save_meta_data()
+
+
+class ErosionRunnerGNC(Runner):
+
+    pass
 
 
 def main():

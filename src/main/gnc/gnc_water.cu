@@ -1,11 +1,9 @@
 #include "gnc/gnc_water.cuh"
 
 #include "core/cuda/math/grid.cuh"
-#include "core/cuda/strings.cuh"
-#include "core/defines.h"
+
 #include "core/math/grid.h"
 
-using core::strings::to_string;
 
 namespace TEMPLATE_NAMESPACE {
 

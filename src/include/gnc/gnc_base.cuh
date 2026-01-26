@@ -16,18 +16,19 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include <utility>     // std::forward, std::index_sequence, etc.  std::swap
 
 #include "core/cuda/cast.cuh" // top level for this object
-#include "core/cuda/device_struct.cuh"
-#include "core/cuda/hash.cuh"
-#include "core/cuda/math.cuh"
-#include "core/cuda/stream.cuh"
+#include "core/cuda/device_struct.cuh" // structure device uploader
+#include "core/cuda/hash.cuh" // cuda hash
+#include "core/cuda/math.cuh" // cuda math
+#include "core/cuda/stream.cuh" // device stream
 #include "core/cuda/types.cuh" // top level for this object
-#include "core/macros.h"
+#include "core/macros.h" // misc macros
 
+#include "core/cuda/strings.cuh" // to_string
+#include "core/defines.h" // default definitions
 
-#include "core/math.h"
+#include "core/math.h" // host only math
 
-
-#include "core/reflection.h"
+#include "core/reflection.h" // constexpr reflection 
 
 #include "core/util.h"
 
@@ -38,8 +39,9 @@ namespace gnc {
 // ================================================================================================================================
 
 using namespace core::cuda::types; // include type aliases at top level
-using namespace core::cuda::cast;  // include type aliases at top level
+using namespace core::cuda::cast;  // cast aliases at top level
 using namespace core::reflection;  // include at top level
+using core::strings::to_string; // to_string at top level
 
 namespace cmath = core::cuda::math;
 namespace chash = core::cuda::hash;

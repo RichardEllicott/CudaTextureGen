@@ -12,6 +12,9 @@ import numpy as np
 import imageio.v2 as imageio  # version 2 loads to numpy arrays
 from collections.abc import Sequence
 from typing import cast
+from pathlib import Path
+
+
 
 ImageArray = NDArray[np.uint8] | NDArray[np.floating]
 
@@ -25,7 +28,7 @@ __all__ = [
 
 def save(
     array: ImageArray,
-    filename: str | Sequence[str],
+    filename: str | Sequence[str] | Path | Sequence[Path],
     verbose: bool = True,
     scale_pngs: bool = True
 ) -> None:
@@ -41,7 +44,7 @@ def save(
         return
 
     filename = cast(str, filename)
-    ext = filename.lower()
+    ext = str(filename).lower()
 
     if verbose:
         print(f"💾 saving: {filename}")

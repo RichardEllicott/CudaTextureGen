@@ -15,7 +15,6 @@ binding for ALL the gnc modules
 
 #include "gnc/gnc_ao_map.cuh"
 #include "gnc/gnc_drawing.cuh"
-#include "gnc/gnc_erosion.cuh"
 #include "gnc/gnc_example.cuh"
 #include "gnc/gnc_noise.cuh"
 #include "gnc/gnc_normal_map.cuh"
@@ -25,12 +24,14 @@ binding for ALL the gnc modules
 #include "gnc/gnc_water.cuh"
 #include "gnc/gnc_wind.cuh"
 
+// #include "gnc/gnc_erosion.cuh"
+#include "gnc/gnc_erosion2.cuh"
+
 // (NAME, PYTHON_NAME)
 #define CLASS_NAMES                                      \
     X(_template::GNC_Template, GNC_Template)             \
     X(example::GNC_Example, GNC_Example)                 \
     X(noise::GNC_Noise, GNC_Noise)                       \
-    X(erosion::GNC_Erosion, GNC_Erosion)                 \
     X(wind::GNC_Wind, GNC_Wind)                          \
     X(water::GNC_Water, GNC_Water)                       \
     X(resample::GNC_Resample, GNC_Resample)              \
@@ -38,7 +39,10 @@ binding for ALL the gnc modules
     X(sea_erosion::GNC_SeaErosion, GNC_SeaErosion)       \
     X(normal_map::GNC_NormalMap, GNC_NormalMap)          \
     X(ao_map::GNC_AO_Map, GNC_AO_Map)                    \
-    X(drawing::GNC_Drawing, GNC_Drawing)
+    X(drawing::GNC_Drawing, GNC_Drawing)                 \
+    X(erosion2::GNC_Erosion2, GNC_Erosion)
+
+// X(erosion::GNC_Erosion, GNC_Erosion)
 
 // ================================================================================================================================
 

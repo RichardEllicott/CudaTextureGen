@@ -451,6 +451,8 @@ class GNC_Template:
     def test(self) -> None: ...
 
 class GNC_Water:
+    _check_distances: Incomplete
+    _check_offsets: Incomplete
     _size: Incomplete
     _slope_vector2_map: Incomplete
     _step: Incomplete
