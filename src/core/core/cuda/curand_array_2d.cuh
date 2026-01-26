@@ -47,7 +47,7 @@ class CurandArray {
 
 class CurandArray2D {
 
-    core::cuda::DeviceArray2D<curandState> device_array;
+    core::cuda::DeviceArray<curandState, 2> device_array;
 
   public:
     CurandArray2D() {

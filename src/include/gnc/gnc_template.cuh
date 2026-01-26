@@ -9,6 +9,8 @@ contains master bolerplate that is copied via python script to gnc_boilerplate
 #include "_gnc_undef.h"
 #include "template_macro_undef.h"
 
+#include "core/cuda/curand_device_array.cuh"
+
 // ================================================================================================================================
 // [Single Source of Truth]
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -121,6 +123,12 @@ static_assert(std::is_trivially_copyable<ArrayPointers>::value, "ArrayPointers m
 // --------------------------------------------------------------------------------------------------------------------------------
 class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, ArrayPointers> {
     using Self = TEMPLATE_CLASS_NAME;
+
+    // ADDING new rand array
+
+
+
+
 
     // ================================================================================================================================
     // [Create Pars, Arrays and Methods]
