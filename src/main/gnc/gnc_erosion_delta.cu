@@ -23,31 +23,37 @@ __global__ void calculate_flux4(
     // ================================================================================================================================
 }
 
-void STAGE_CALCULATE_SLOPE_VECTORS(TEMPLATE_CLASS_NAME &self){
+#pragma region STAGES
 
+void EXE_CALCULATE_SLOPE_VECTORS(TEMPLATE_CLASS_NAME &self) {
 
-    // cmath::grid::slope_vector_kernel<<<self.grid, self.block, 0, stream->get()>>>(
-    //         _size,
+    auto shape = self.height_map->shape();
+    auto shape2 = std::array{shape[0], shape[1], (size_t)2};
+    // auto shape8 = std::array{shape[0], shape[1], (size_t)8};
 
-    //         height_map->dev_ptr(), // in
-    //         water_map->dev_ptr(),  // in
-    //         nullptr,
-    //         _slope_vector2_map->dev_ptr(), // out
+    // self.ensure_array_ref_ready(self.height_map, self._size, true);
+    // self.ensure_array_ref_ready(self.water_map, self._size, true);
 
-    //         wrap,
+    cmath::grid::slope_vector_kernel<<<self.grid, self.block, 0, self.stream->get()>>>(
+        self._size,
 
-    //         0, // jitter mode
-    //         slope_jitter,
-    //         _step,
-    //         0x865C34F3u,
+        self.height_map->dev_ptr(), // in
+        self.water_map->dev_ptr(),  // in
+        nullptr,
+        self._slope_vector2_map->dev_ptr(), // out
 
-    //         1.0f,
-    //         _slope_magnitude_map->dev_ptr());
+        self.wrap,
 
-// }
+        0, // jitter mode
+        self.slope_jitter,
+        self._step,
+        0x865C34F3u,
 
-
+        1.0f,
+        self._slope_magnitude_map->dev_ptr());
 }
+
+#pragma endregion
 
 void TEMPLATE_CLASS_NAME::test() {
 
@@ -59,26 +65,23 @@ void TEMPLATE_CLASS_NAME::test() {
 
 void TEMPLATE_CLASS_NAME::_compute() {
 
+    // cmath::grid::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
+    //             _size,
 
+    //             height_map->dev_ptr(), // in
+    //             water_map->dev_ptr(),  // in
+    //             nullptr,
+    //             _slope_vector2_map->dev_ptr(), // out
 
-// cmath::grid::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
-//             _size,
+    //             wrap,
 
-//             height_map->dev_ptr(), // in
-//             water_map->dev_ptr(),  // in
-//             nullptr,
-//             _slope_vector2_map->dev_ptr(), // out
+    //             0, // jitter mode
+    //             slope_jitter,
+    //             _step,
+    //             0x865C34F3u,
 
-//             wrap,
-
-//             0, // jitter mode
-//             slope_jitter,
-//             _step,
-//             0x865C34F3u,
-
-//             1.0f,
-//             _slope_magnitude_map->dev_ptr());
-
+    //             1.0f,
+    //             _slope_magnitude_map->dev_ptr());
 }
 
 } // namespace TEMPLATE_NAMESPACE
