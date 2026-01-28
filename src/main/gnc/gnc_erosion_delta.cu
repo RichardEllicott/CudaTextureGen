@@ -34,7 +34,7 @@ void EXE_CALCULATE_SLOPE_VECTORS(TEMPLATE_CLASS_NAME &self) {
     // self.ensure_array_ref_ready(self.height_map, self._size, true);
     // self.ensure_array_ref_ready(self.water_map, self._size, true);
 
-    cmath::grid::slope_vector_kernel<<<self.grid, self.block, 0, self.stream->get()>>>(
+    cmath::grid::slope_vector_kernel<<<self._grid, self._block, 0, self.stream->get()>>>(
         self._size,
 
         self.height_map->dev_ptr(), // in
@@ -64,6 +64,8 @@ void TEMPLATE_CLASS_NAME::test() {
 }
 
 void TEMPLATE_CLASS_NAME::_compute() {
+
+    _grid = cmath::calculate_grid(_size, _block);
 
     // cmath::grid::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
     //             _size,

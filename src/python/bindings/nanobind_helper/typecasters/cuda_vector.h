@@ -183,3 +183,32 @@ NB_TYPE_CASTER_VEC4(uint4, unsigned int, "uint4")
 // };
 
 #undef CODE_ROUTE
+
+
+// dim3
+template <>
+struct nb::detail::type_caster<dim3> {
+    NB_TYPE_CASTER(dim3, const_name("dim3"));
+
+    // Python → C++
+    bool from_python(nb::handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+        if (!nb::isinstance<nb::sequence>(src))
+            return false;
+
+        nb::sequence seq = nb::borrow<nb::sequence>(src);
+        if (nb::len(seq) != 3)
+            return false;
+
+        value.x = nb::cast<unsigned int>(seq[0]);
+        value.y = nb::cast<unsigned int>(seq[1]);
+        value.z = nb::cast<unsigned int>(seq[2]);
+        return true;
+    }
+
+    // C++ → Python
+    static nb::handle from_cpp(const dim3 &v,
+                               nb::rv_policy policy,
+                               nb::detail::cleanup_list *cleanup) noexcept {
+        return nb::make_tuple(v.x, v.y, v.z).release();
+    }
+};
