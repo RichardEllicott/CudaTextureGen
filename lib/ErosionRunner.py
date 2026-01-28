@@ -35,6 +35,9 @@ class RunnerBase:
     # output_folder: str = "./output/"
     # output_folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
 
+    debug_upscale: int = 1 # debug upscale
+
+
     filename_base: str = "erosion"  # base string for files
 
     def get_file_path(self, ext: str) -> Path:
@@ -62,7 +65,13 @@ class RunnerBase:
         download a map (if not already in cache)
         """
         if not name in self._image_cache:
-            self._image_cache[name] = getattr(self.erosion, name).array
+
+            map = getattr(self.erosion, name).array
+
+            if self.debug_upscale > 1:
+                map = np.repeat(np.repeat(map, self.debug_upscale, axis=0), self.debug_upscale, axis=1)
+
+            self._image_cache[name] = map
         return self._image_cache[name]
 
 
@@ -197,14 +206,16 @@ class FrameProfile:
 
 class FP_NormalMap(FrameProfile):
 
-    pass
+    normal_map: bool = True
+
+
+    
 
 
 class Runner(RunnerBase):
 
     animation_fps: int = 5
     frame_count: int = 64
-    # nearest_neighbor_upscale: int = 1
     process_time: float = 0.0
 
     # profiles build movies each frame in process
@@ -359,12 +370,13 @@ class Runner(RunnerBase):
 
         # save starting heightmap
         if not self.starting_heightmap:
-            self.starting_heightmap = self.erosion.height_map.array
-            if self.starting_heightmap is not None and self.starting_heightmap.size > 0:
-                tools.images.save(
-                    tools.arrays.normalized(self.starting_heightmap),
-                    self.get_file_path(ext="start.png")
-                )
+            # self.starting_heightmap = self.erosion.height_map.array
+            # if self.starting_heightmap is not None and self.starting_heightmap.size > 0:
+            #     tools.images.save(
+            #         tools.arrays.normalized(self.starting_heightmap),
+            #         self.get_file_path(ext="start.png")
+            #     )
+            pass
 
         # create movie writers
         movie_writers = {}

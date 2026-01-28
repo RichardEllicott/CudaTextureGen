@@ -30,11 +30,14 @@ script_path = Path(__file__)
 def test_runner():
     print("test_runner()...")
 
+
+    map_size = (512, 512)
+
     # ================================================================
     gnc_noise = ct.GNC_Noise()
     gnc_noise.period = (20, 13, 13)
     gnc_noise.wrap = (False, False, False)
-    gnc_noise.size = (256, 256)
+    gnc_noise.size = map_size
     gnc_noise.mode = 1
     # ----------------------------------------------------------------
     gnc_noise.compute()
@@ -52,30 +55,56 @@ def test_runner():
     # tools.images.save(noise, f"{script_path}.noise2.png")
 
     # ================================================================
-    noise = tools.noise.fractal(256, 256)
+    noise = tools.noise.fractal(map_size[0], map_size[1], octaves=7, base_period=1)
     tools.arrays.normalize(noise)
-    noise *= 16.0
+    noise *= 24.0
 
     # tools.images.save(noise, f"{script_path}.noise.png")
     # ================================================================
+
+
+    ISLAND_MODE = True
+    if ISLAND_MODE:
+        # island cut
+        island_generator.width = map_size[0]
+        island_generator.height = map_size[1]
+        island_generator.preset00()
+        island_generator.pre_blur = 32.0
+        island = island_generator.island
+        noise *= island
+
+        # for layer in layers:
+            # layer *= island
 
     # DEBUG
 
     # return
 
+    runner.OUTPUT_PRESET_02()
+
     device_array = ct.DeviceArrayFloat2D()
     device_array.array = noise
 
-    erosion.steps = 512
+    erosion.steps = 16
     erosion.rain_rate = 0.0007
+
+    runner.frame_count = 256
+
+    
     erosion.erosion_rate = 0.001
+    # erosion.erosion_rate = 0.005
+    
     erosion.slope_jitter = 1.0
     erosion.max_water_outflow = 0.125
+    erosion.max_water_outflow = 1.0
 
-    erosion.sediment_yield = 0.5
-    erosion.sediment_capacity = 1.0
+    # erosion.sediment_yield = 0.5
+    # erosion.sediment_capacity = 1.0
 
-    erosion.erosion_mode = 4
+    # erosion.erosion_mode = 4
+
+    erosion.min_height = 0.0
+    erosion.drain_rate = 1.0 / 1000.0
 
     erosion.layer_erosiveness_array = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, ]
 

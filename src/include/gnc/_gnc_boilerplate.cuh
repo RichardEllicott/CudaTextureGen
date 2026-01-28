@@ -76,6 +76,13 @@ static_assert(std::is_trivially_copyable<ArrayPointers>::value, "ArrayPointers m
 class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, ArrayPointers> {
     using Self = TEMPLATE_CLASS_NAME;
 
+    // ADDING new rand array
+
+  public:
+
+
+
+
     // ================================================================================================================================
     // [Create Pars, Arrays and Methods]
     // --------------------------------------------------------------------------------------------------------------------------------
@@ -120,7 +127,6 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
-  public:
     // ================================================================================================================================
     // [Properties Binding]
     // --------------------------------------------------------------------------------------------------------------------------------

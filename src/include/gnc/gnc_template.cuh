@@ -126,6 +126,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 
     // ADDING new rand array
 
+  public:
 
 
 
@@ -174,7 +175,6 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
 #undef X
 #endif
 
-  public:
     // ================================================================================================================================
     // [Properties Binding]
     // --------------------------------------------------------------------------------------------------------------------------------

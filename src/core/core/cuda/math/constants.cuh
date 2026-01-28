@@ -58,10 +58,16 @@ DH_CONST float GRID_OFFSETS_8_DISTANCES[8] =
 DH_CONST float2 GRID_OFFSETS_8_DOTS[8] =
     {{1.0f, 0.0f}, {-1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, -1.0f}, {0.5f, 0.5f}, {-0.5f, -0.5f}, {0.5f, -0.5f}, {-0.5f, 0.5f}};
 
+// normalized so all the total vector lengths total 1
+constexpr float CARD_W = 0.10355339059327374f; // normalized cardinal weight
+constexpr float DIAG_W = 0.0732233047033631f;  // normalized diagonal weight
+DH_CONST float2 GRID_OFFSETS_8_NORM_DOTS[8] = {
+    {CARD_W, 0.0f}, {-CARD_W, 0.0f}, {0.0f, CARD_W}, {0.0f, -CARD_W}, {DIAG_W, DIAG_W}, {-DIAG_W, -DIAG_W}, {DIAG_W, -DIAG_W}, {-DIAG_W, DIAG_W}};
+
 // the directions normalized (magnitude of 1.0)
 DH_CONST float2 GRID_OFFSETS_8_NORMALIZED[8] =
     {{1.0f, 0.0f}, {-1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, -1.0f}, {INV_SQRT2, INV_SQRT2}, {-INV_SQRT2, -INV_SQRT2}, {INV_SQRT2, -INV_SQRT2}, {-INV_SQRT2, INV_SQRT2}};
 
 #pragma endregion
 
-} // namespace core::cuda::math
+} // namespace core::cuda::math::constants

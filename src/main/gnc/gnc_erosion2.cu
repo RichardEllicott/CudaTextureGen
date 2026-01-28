@@ -310,6 +310,11 @@ void TEMPLATE_CLASS_NAME::test() {
     printf("test()...\n");
 }
 
+
+
+
+
+
 void TEMPLATE_CLASS_NAME::setup() {
 
     if (layer_map.is_valid() && !layer_map->empty()) { // layer mode
@@ -362,7 +367,7 @@ void TEMPLATE_CLASS_NAME::_compute() {
     setup();
 
     dim3 block(16, 16);
-    auto grid = cmath::calculate_grid(_size, block);
+    dim3 grid = cmath::calculate_grid(_size, block);
 
     for (int i = 0; i < steps; i++) {
         // ================================================================

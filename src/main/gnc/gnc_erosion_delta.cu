@@ -23,7 +23,30 @@ __global__ void calculate_flux4(
     // ================================================================================================================================
 }
 
-void EXE_CALCULATE_FLUX4(TEMPLATE_CLASS_NAME self) {
+void STAGE_CALCULATE_SLOPE_VECTORS(TEMPLATE_CLASS_NAME &self){
+
+
+    // cmath::grid::slope_vector_kernel<<<self.grid, self.block, 0, stream->get()>>>(
+    //         _size,
+
+    //         height_map->dev_ptr(), // in
+    //         water_map->dev_ptr(),  // in
+    //         nullptr,
+    //         _slope_vector2_map->dev_ptr(), // out
+
+    //         wrap,
+
+    //         0, // jitter mode
+    //         slope_jitter,
+    //         _step,
+    //         0x865C34F3u,
+
+    //         1.0f,
+    //         _slope_magnitude_map->dev_ptr());
+
+// }
+
+
 }
 
 void TEMPLATE_CLASS_NAME::test() {
@@ -35,6 +58,27 @@ void TEMPLATE_CLASS_NAME::test() {
 }
 
 void TEMPLATE_CLASS_NAME::_compute() {
+
+
+
+// cmath::grid::slope_vector_kernel<<<grid, block, 0, stream->get()>>>(
+//             _size,
+
+//             height_map->dev_ptr(), // in
+//             water_map->dev_ptr(),  // in
+//             nullptr,
+//             _slope_vector2_map->dev_ptr(), // out
+
+//             wrap,
+
+//             0, // jitter mode
+//             slope_jitter,
+//             _step,
+//             0x865C34F3u,
+
+//             1.0f,
+//             _slope_magnitude_map->dev_ptr());
+
 }
 
 } // namespace TEMPLATE_NAMESPACE

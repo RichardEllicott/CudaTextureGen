@@ -17,7 +17,8 @@ erosion using new approach to sampling
     X(int2, _size, {}, "")                 \
     X(int, _step, 0, "")                   \
     X(int, steps, 1, "")                   \
-    X(bool, wrap, true, "")
+    X(bool, wrap, true, "")                \
+    X(float, slope_jitter, 0.0, "[<0]")
 
 //     X(float, slope_jitter, 0.0f, "")
 
@@ -34,12 +35,15 @@ erosion using new approach to sampling
     X(float, 2, water_map, "")         \
     X(float, 2, sediment_map, "")
 
+// _slope_vector2_map
+
 // //     X(float, 2, _water_vertical_velocity, "") \
 // //     X(float, 3, _water_lateral_velocity, "")  \
 // //     X(float, 3, _slope_vector2_map, "")
 
-// #define TEMPLATE_CLASS_ARRAYS_STRUCT_3 \
-//     X(float, 2, _water_delta_map, "")
+#define TEMPLATE_CLASS_ARRAYS_STRUCT_3  \
+    X(float, 3, _slope_vector2_map, "") \
+    X(float, 2, _slope_magnitude_map, "")
 
 // #define TEMPLATE_CLASS_ARRAYS_STRUCT_3 \
 //     X(int2, 1, _check_offsets, "")     \
@@ -47,11 +51,15 @@ erosion using new approach to sampling
 //     X(float2, 1, _check_dot_vectors, "")
 
 #define TEMPLATE_CLASS_ARRAYS_STRUCT \
-    TEMPLATE_CLASS_ARRAYS_STRUCT_1   
+    TEMPLATE_CLASS_ARRAYS_STRUCT_1   \
+    TEMPLATE_CLASS_ARRAYS_STRUCT_3
 
+#define DEFAULT_DIM {16, 16}
 
-//     TEMPLATE_CLASS_ARRAYS_STRUCT_2   \
-//     TEMPLATE_CLASS_ARRAYS_STRUCT_3
+// (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
+#define TEMPLATE_CLASS_PRIVATE_PARAMETERS \
+    X(dim3, block, DEFAULT_DIM, "")       \
+    X(dim3, grid, {}, "")
 
 // // --------------------------------------------------------------------------------------------------------------------------------
 
