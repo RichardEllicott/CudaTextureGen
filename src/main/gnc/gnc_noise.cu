@@ -199,7 +199,7 @@ DH_INLINE float3 noise_gradient3(int x, int y, int z, int seed) {
     float v = chash::hash_float_signed(hash); // ∈ [-1,1)]
 
     // Spherical coordinates:
-    float theta = u * cmath::TAU; // theta ∈ [0, 2π)
+    float theta = u * cmath::constants::TAU; // theta ∈ [0, 2π)
     float phi = acosf(v);         // phi   ∈ [0, π]
 
     // Fast sincos for both angles

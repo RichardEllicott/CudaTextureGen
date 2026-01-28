@@ -1,17 +1,17 @@
 #include "gnc/gnc_drawing.cuh"
 
-namespace core::cuda::math::kernel {
+// namespace core::cuda::math::kernel {
 
-DH_INLINE float gaussian(float distance, float sigma) {
-    float a = distance / sigma;
-    // return expf(-0.5f * a * a);
-    return core::cuda::math::fast::expf(-0.5f * a * a);
-}
-
-
+// DH_INLINE float gaussian(float distance, float sigma) {
+//     float a = distance / sigma;
+//     // return expf(-0.5f * a * a);
+//     return core::cuda::math::fast::expf(-0.5f * a * a);
+// }
 
 
-} // namespace core::cuda::math::kernel
+
+
+// } // namespace core::cuda::math::kernel
 
 namespace TEMPLATE_NAMESPACE {
 

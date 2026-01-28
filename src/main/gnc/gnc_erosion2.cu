@@ -2,10 +2,10 @@
 
 #include "gnc/gnc_erosion2.cuh"
 
+#include "core/cuda/grid.cuh"
 #include "core/cuda/math/array.cuh"
 #include "core/cuda/math/grid.cuh"
 #include "core/math/grid.h"
-
 
 #define PRECALCULATE_EXPOSED_LAYER
 
@@ -84,12 +84,17 @@ __global__ void calculate_flux3(
     // these offsets scale the result of the diagonals down by using a magnitude of 1/SQRT(2), the axis of this is 0.5
     constexpr float2 DOT_OFFSETS_8[8] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5}};
 
+    // // normalized so all the total vector lengths total 1
+    // constexpr float CARD_W = 0.10355339059327374f; // normalized cardinal weight
+    // constexpr float DIAG_W = 0.0732233047033631f;  // normalized diagonal weight
+    // constexpr float2 DOT_OFFSETS_8[8] = {
+    //     {CARD_W, 0.0f}, {-CARD_W, 0.0f}, {0.0f, CARD_W}, {0.0f, -CARD_W}, {DIAG_W, DIAG_W}, {-DIAG_W, -DIAG_W}, {DIAG_W, -DIAG_W}, {-DIAG_W, DIAG_W}};
+
     float fluxes[8];
     float flux_total = 0.0f;
     for (int n = 0; n < 8; ++n) {
-        float2 unit_offset = DOT_OFFSETS_8[n];                 // cell offset as a float vector, not normalized as this helps scale
-        float product = cmath::dot(unit_offset, slope_vector); // dot product gets how strongly we push into this direction
-        product = max(product, 0.0);                           // positive only
+        float product = cmath::dot(DOT_OFFSETS_8[n], slope_vector); // dot product gets how strongly we push into this direction
+        product = max(product, 0.0);                                // positive only
         fluxes[n] = product;
         flux_total += product;
     }
@@ -168,10 +173,10 @@ __global__ void apply_flux3(
     float water_in = 0.0f;                                   // to calculate from neighbours
 
     for (int n = 0; n < 8; ++n) {
-        int2 new_pos = cmath::wrap_or_clamp_index(pos + cmath::GRID_OFFSETS_8[n], map_size, pars->wrap);
+        int2 new_pos = cmath::wrap_or_clamp_index(pos + cmath::constants::GRID_OFFSETS_8[n], map_size, pars->wrap);
         int new_idx = cmath::pos_to_idx(new_pos, map_size.x);
         int new_idx8 = new_idx * 8;
-        int opposite_ref = cmath::GRID_OFFSETS_8_OPPOSITE_INDEX[n];
+        int opposite_ref = cmath::constants::GRID_OFFSETS_8_OPPOSITE_INDEX[n];
 
         water_in += arrays->_flux8_map[new_idx8 + opposite_ref]; //  inflow from neighbouring tiles
         sediment_change += arrays->_sediment_flux8_map[new_idx8 + opposite_ref];
@@ -285,16 +290,24 @@ __global__ void apply_flux3(
 // ================================================================================================================================
 #pragma region MAIN
 
+void TEMPLATE_CLASS_NAME::compute_offsets() {
+    printf("compute_offsets()...\n");
+
+    auto sfg = core::cuda::grid::SamplingFieldGenerator();
+    sfg.PRESET_12_WAY();
+
+    _check_offsets->upload(sfg.get_offsets());
+    _check_dot_vectors->upload(sfg.get_dot_vectors());
+
+
+
+
+
+
+}
+
 void TEMPLATE_CLASS_NAME::test() {
     printf("test()...\n");
-
-    for (int order = 1; order <= 3; order++) {
-        auto offsets = math::grid::surrounding_offsets_quart(order);
-        offsets = math::grid::filter_by_distance(offsets, order + 0.5f);
-        printf("%s\n", to_string(offsets).c_str());
-        // printf(tiles_to_string(offsets).c_str());
-        printf("count = %zu\n", offsets.size());
-    }
 }
 
 void TEMPLATE_CLASS_NAME::setup() {

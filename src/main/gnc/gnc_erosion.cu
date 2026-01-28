@@ -166,10 +166,10 @@ __global__ void apply_flux3(
     float water_in = 0.0f;                                   // to calculate from neighbours
 
     for (int n = 0; n < 8; ++n) {
-        int2 new_pos = cmath::wrap_or_clamp_index(pos + cmath::GRID_OFFSETS_8[n], map_size, pars->wrap);
+        int2 new_pos = cmath::wrap_or_clamp_index(pos + cmath::constants::GRID_OFFSETS_8[n], map_size, pars->wrap);
         int new_idx = cmath::pos_to_idx(new_pos, map_size.x);
         int new_idx8 = new_idx * 8;
-        int opposite_ref = cmath::GRID_OFFSETS_8_OPPOSITE_INDEX[n];
+        int opposite_ref = cmath::constants::GRID_OFFSETS_8_OPPOSITE_INDEX[n];
 
         water_in += arrays->_flux8_map[new_idx8 + opposite_ref]; //  inflow from neighbouring tiles
         sediment_change += arrays->_sediment_flux8_map[new_idx8 + opposite_ref];

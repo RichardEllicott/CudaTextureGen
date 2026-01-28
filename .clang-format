@@ -9,3 +9,17 @@ AllowShortIfStatementsOnASingleLine: true
 AllowShortBlocksOnASingleLine: true
 
 # AllowShortFunctionsOnASingleLine: All # should stop splitting some of my one line functions
+
+
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+
+
+# AllowShortCaseLabelsOnASingleLine: true
+# AllowShortFunctionsOnASingleLine: Inline
+# AllowShortBlocksOnASingleLine: true
+
+# BraceWrapping:
+#   AfterControlStatement: false
+
+

@@ -54,12 +54,16 @@ the big erosion model with flux and apply passes
     X(FloatArray<8>, layer_erosiveness_array, EROSION_DEFAULT_LAYER_SETTINGS, "") \
     X(FloatArray<8>, layer_yield_array, EROSION_DEFAULT_LAYER_SETTINGS, "")
 
+#define TEMPLATE_CLASS_PARAMETERS_STRUCT_5 \
+    X(int, offset_mode, 1, "0 = 4 way, 1 = 8 way")
+
 // (TYPE, NAME, DEFAULT_VAL, DESCRIPTION)
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT \
     TEMPLATE_CLASS_PARAMETERS_STRUCT_1   \
     TEMPLATE_CLASS_PARAMETERS_STRUCT_2   \
     TEMPLATE_CLASS_PARAMETERS_STRUCT_3   \
-    TEMPLATE_CLASS_PARAMETERS_STRUCT_4
+    TEMPLATE_CLASS_PARAMETERS_STRUCT_4   \
+    TEMPLATE_CLASS_PARAMETERS_STRUCT_5
 
 // --------------------------------------------------------------------------------------------------------------------------------
 
@@ -87,7 +91,7 @@ the big erosion model with flux and apply passes
 // offsets (new)
 #define TEMPLATE_CLASS_ARRAYS_STRUCT_4 \
     X(int2, 1, _check_offsets, "")     \
-    X(float, 1, _check_distances, "")
+    X(float2, 1, _check_dot_vectors, "")
 
 #define TEMPLATE_CLASS_ARRAYS_STRUCT_5
 
@@ -104,7 +108,8 @@ the big erosion model with flux and apply passes
 #define TEMPLATE_CLASS_METHODS              \
     X(void, setup, "setup step (required)") \
     X(void, test, "test stuff")             \
-    // --------------------------------------------------------------------------------------------------------------------------------
+    X(void, compute_offsets, "")
+// --------------------------------------------------------------------------------------------------------------------------------
 
 #include "_gnc_boilerplate.cuh"
 // --------------------------------------------------------------------------------------------------------------------------------

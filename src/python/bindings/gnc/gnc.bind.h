@@ -26,6 +26,7 @@ binding for ALL the gnc modules
 
 // #include "gnc/gnc_erosion.cuh"
 #include "gnc/gnc_erosion2.cuh"
+#include "gnc/gnc_erosion_delta.cuh"
 
 // (NAME, PYTHON_NAME)
 #define CLASS_NAMES                                      \
@@ -40,7 +41,8 @@ binding for ALL the gnc modules
     X(normal_map::GNC_NormalMap, GNC_NormalMap)          \
     X(ao_map::GNC_AO_Map, GNC_AO_Map)                    \
     X(drawing::GNC_Drawing, GNC_Drawing)                 \
-    X(erosion2::GNC_Erosion2, GNC_Erosion)
+    X(erosion2::GNC_Erosion2, GNC_Erosion)\
+    X(erosion_delta::GNC_ErosionDelta, GNC_ErosionDelta)\
 
 // X(erosion::GNC_Erosion, GNC_Erosion)
 

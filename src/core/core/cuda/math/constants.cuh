@@ -9,7 +9,7 @@ maths constants
 
 #include "core/defines.h"
 
-namespace core::cuda::math {
+namespace core::cuda::math::constants {
 
 // ⚠️ adding inline to constexpr can suppress compiler warning
 // ⚠️ can't use "std::sqrt(2.0)" in constexpr due to CUDA (so using literals)

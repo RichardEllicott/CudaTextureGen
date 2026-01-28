@@ -8,22 +8,25 @@ cuda math functions, main library
 #include <cstdint> // uint32_t (required for gcc)
 #include <cuda_runtime.h>
 
+#include "core/cuda/cast.cuh"
+#include "core/cuda/hash.cuh"
+#include "core/cuda/math/constants.cuh"
+#include "core/cuda/math/fast.cuh" // intrinsics
+#include "core/cuda/math/operators.cuh"
 #include "core/defines.h"
-#include "hash.cuh"
-#include "math/constants.cuh"
-#include "math/fast.cuh" // intrinsics
-#include "math/operators.cuh"
 
 namespace core::cuda::math {
+
+using namespace constants; // refactoring
 
 #pragma region RADIANS
 
 DH_INLINE float radians(float deg) {
-    return deg * DEG_TO_RAD;
+    return deg * constants::DEG_TO_RAD;
 }
 
 DH_INLINE float degrees(float rad) {
-    return rad * RAD_TO_DEG;
+    return rad * constants::RAD_TO_DEG;
 }
 
 DH_INLINE float2 radians(float2 deg) {
@@ -166,7 +169,7 @@ DH_INLINE float2 normal_vector2(float r1, float r2) {
     r1 = fmaxf(r1, 1e-7f); // Guard against log(0)
     float r = sqrtf(-2.0f * fast::logf(r1));
 
-    float theta = r2 * TAU;
+    float theta = r2 * constants::TAU;
 
     float s, c;
     fast::sincosf(theta, &s, &c);
@@ -352,13 +355,34 @@ DH_INLINE float length(float3 vector) {
     return sqrtf(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
 }
 
-// // normalize float2 vector to length of 1.0
-// DH_INLINE float2 normalize(float2 vector) {
-//     float len = fast_sqrtf(vector.x * vector.x + vector.y * vector.y);
-//     return (len > 1e-6f) ? make_float2(vector.x / len, vector.y / len) : make_float2(0.0f, 0.0f);
+// // ----------------------------------------------------------------
+// // MIGHT BE FASTER
+// // length of float2 vector
+// DH_INLINE __device__ float length(float2 v) {
+//     float s = __fmaf_rn(v.y, v.y, v.x * v.x);
+//     return __fsqrt_rn(s);
 // }
 
-// // normalize float2 vector to length of 1.0 (with fast reciprocal root)
+// // length of float3 vector
+// DH_INLINE __device__ float length(float3 v) {
+//     float s = __fmaf_rn(v.z, v.z,
+//               __fmaf_rn(v.y, v.y,
+//                          v.x * v.x));
+//     return __fsqrt_rn(s);
+// }
+// // ----------------------------------------------------------------
+
+// length of int2 vector
+DH_INLINE float length(int2 vector) {
+    return length(core::cuda::cast::to_float2(vector));
+}
+
+// length of int3 vector
+DH_INLINE float length(int3 vector) {
+    return length(core::cuda::cast::to_float3(vector));
+}
+
+// normalize float2 vector to length of 1.0 (with fast reciprocal root)
 DH_INLINE float2 normalize(float2 v) {
     float len2 = v.x * v.x + v.y * v.y;
     if (len2 > 1e-12f) {
@@ -367,13 +391,6 @@ DH_INLINE float2 normalize(float2 v) {
     }
     return make_float2(0.0f, 0.0f);
 }
-
-// // normalize float3 vector to length of 1.0
-// DH_INLINE float3 normalize(float3 vector) {
-//     float len = fast_sqrtf(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
-//     return (len > 1e-6f) ? make_float3(vector.x / len, vector.y / len, vector.z / len)
-//                          : make_float3(0.0f, 0.0f, 0.0f);
-// }
 
 // normalize float3 vector to length of 1.0 (with fast reciprocal root)
 DH_INLINE float3 normalize(float3 v) {
@@ -387,6 +404,8 @@ DH_INLINE float3 normalize(float3 v) {
     return make_float3(0.0f, 0.0f, 0.0f);
 }
 
+// ----------------------------------------------------------------
+
 // dot product of two float2's
 DH_INLINE float dot(float2 a, float2 b) {
     // return a.x * b.x + a.y * b.y;
@@ -394,7 +413,11 @@ DH_INLINE float dot(float2 a, float2 b) {
 }
 
 // dot product of two float3's
-DH_INLINE float dot(float3 a, float3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+DH_INLINE __device__ float dot(float3 a, float3 b) {
+    return fast::fmaf(a.z, b.z,
+                      fast::fmaf(a.y, b.y,
+                                 a.x * b.x));
+}
 
 // 2D cross product (returns scalar z-component)
 DH_INLINE float cross(float2 a, float2 b) { return a.x * b.y - a.y * b.x; }
@@ -405,6 +428,34 @@ DH_INLINE float3 cross(float3 a, float3 b) {
         a.y * b.z - a.z * b.y,
         a.z * b.x - a.x * b.z,
         a.x * b.y - a.y * b.x);
+}
+
+// ----------------------------------------------------------------
+
+// rotate vector clockwise
+DH_INLINE int2 rotate(int2 v, int quarter_turns = 1) {
+    switch (posmod(quarter_turns, 4)) {
+    case 1:
+        return make_int2(-v.y, v.x); // 90°  (-y, x)
+    case 2:
+        return make_int2(-v.x, -v.y); // 180° (-x, -y)
+    case 3:
+        return make_int2(v.y, -v.x); // 270° (y, -x)
+    }
+    return v;
+}
+
+// rotate vector clockwise
+DH_INLINE float2 rotate(float2 v, int quarter_turns = 1) {
+    switch (posmod(quarter_turns, 4)) {
+    case 1:
+        return make_float2(-v.y, v.x); // 90°  (-y, x)
+    case 2:
+        return make_float2(-v.x, -v.y); // 180° (-x, -y)
+    case 3:
+        return make_float2(v.y, -v.x); // 270° (y, -x)
+    }
+    return v;
 }
 
 #pragma endregion
@@ -437,7 +488,7 @@ DH_INLINE float quintic(float t) {
 
 // Cosine interpolation — soft, wavy, analog feel
 DH_INLINE float cosine(float t) {
-    return 0.5f - 0.5f * fast::cosf(t * PI);
+    return 0.5f - 0.5f * fast::cosf(t * constants::PI);
 }
 
 // Power-law smoothing — adjustable sharpness
@@ -479,6 +530,42 @@ DH_INLINE float apply_smoothing(float t, int mode) {
 }
 
 } // namespace smooth
+
+#pragma endregion
+
+#pragma region FALLOFF_KERNELS
+
+namespace kernel {
+
+// gaussian distance based falloff, will be 1 at distance 0
+DH_INLINE float gaussian(float distance, float sigma = 1.0f) {
+    float a = distance / sigma;
+    // return expf(-0.5f * a * a);
+    return fast::expf(-0.5f * a * a);
+}
+
+// Cubic spline SPH kernel (compact support).
+DH_INLINE float cubic_spline(float d, float h) {
+    float q = d / h;
+    if (q >= 2.0f) return 0.0f;
+
+    if (q < 1.0f) {
+        return 1.0f - 1.5f * q * q + 0.75f * q * q * q;
+    } else {
+        float t = 2.0f - q;
+        return 0.25f * t * t * t;
+    }
+}
+
+// Wendland C2 radial basis function (compactly supported).
+DH_INLINE float wendland_c2(float d, float R) {
+    if (d >= R) return 0.0f;
+    float x = 1.0f - d / R;
+    float x2 = x * x;
+    return x2 * x2 * (4.0f * d / R + 1.0f);
+}
+
+} // namespace kernel
 
 #pragma endregion
 

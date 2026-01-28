@@ -20,7 +20,6 @@ from pathlib import Path
 import math
 
 
-
 runner = ErosionRunnerGNC()
 erosion = runner.erosion
 island_generator = IslandGenerator()
@@ -45,7 +44,6 @@ def test_runner():
     # tools.images.save(noise, f"{script_path}.noise.png")
     # ----------------------------------------------------------------
 
-
     # gnc_noise.rotation = (0.0, 0.0, math.radians(20))
     # gnc_noise.process()
     # noise = gnc_noise.output.array
@@ -53,12 +51,10 @@ def test_runner():
     # # tools.arrays.rotate(noise, math.radians(-90))
     # tools.images.save(noise, f"{script_path}.noise2.png")
 
-
     # ================================================================
     noise = tools.noise.fractal(256, 256)
     tools.arrays.normalize(noise)
     noise *= 16.0
-
 
     # tools.images.save(noise, f"{script_path}.noise.png")
     # ================================================================
@@ -66,7 +62,6 @@ def test_runner():
     # DEBUG
 
     # return
-
 
     device_array = ct.DeviceArrayFloat2D()
     device_array.array = noise
@@ -82,7 +77,6 @@ def test_runner():
 
     erosion.erosion_mode = 4
 
-
     erosion.layer_erosiveness_array = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, ]
 
     print(erosion.height_map)
@@ -90,7 +84,7 @@ def test_runner():
 
     print(erosion.height_map)
 
-    runner.process() # running process now messes up the next part
+    runner.process()  # running process now messes up the next part
     # erosion.compute()
 
     # erosion
@@ -103,14 +97,17 @@ def test_runner():
     # tools.images.save(output, f"{script_path}.erode.png")
 
 
-# test_runner()
+test_runner()
 
 
 def test():
     print("test()...")
 
+    # erosion.test()
+
+    erosion = ct.GNC_ErosionDelta()
+
     erosion.test()
 
 
-
-
+# test()

@@ -270,6 +270,8 @@ class GNC_Drawing:
     def instantiate_all_refs(self) -> None: ...
 
 class GNC_Erosion:
+    _check_dot_vectors: Incomplete
+    _check_offsets: Incomplete
     _exposed_layer_map: Incomplete
     _flux8_map: Incomplete
     _layer_count: Incomplete
@@ -297,6 +299,7 @@ class GNC_Erosion:
     max_height: Incomplete
     max_water_outflow: Incomplete
     min_height: Incomplete
+    offset_mode: Incomplete
     rain_map: Incomplete
     rain_rate: Incomplete
     scale: Incomplete
@@ -316,8 +319,28 @@ class GNC_Erosion:
     def _instance_test_2(self) -> None: ...
     def _return_int_test(self, arg: int) -> int: ...
     def compute(self) -> None: ...
+    def compute_offsets(self) -> None: ...
     def instantiate_all_refs(self) -> None: ...
     def setup(self) -> None: ...
+    def test(self) -> None: ...
+
+class GNC_ErosionDelta:
+    _size: Incomplete
+    _step: Incomplete
+    height_map: Incomplete
+    sediment_map: Incomplete
+    steps: Incomplete
+    stream: Incomplete
+    water_map: Incomplete
+    wrap: Incomplete
+    def __init__(self) -> None: ...
+    def _copy_pars_and_array_ptrs_to_structs(self) -> None: ...
+    def _instance_test_1(self) -> None: ...
+    def _instance_test_2(self) -> None: ...
+    def _return_int_test(self, arg: int) -> int: ...
+    def compute(self) -> None: ...
+    def instantiate_all_refs(self) -> None: ...
+    def test(self) -> None: ...
 
 class GNC_Example:
     _debug: Incomplete
@@ -452,6 +475,7 @@ class GNC_Template:
 
 class GNC_Water:
     _check_distances: Incomplete
+    _check_dot_vectors: Incomplete
     _check_offsets: Incomplete
     _size: Incomplete
     _slope_vector2_map: Incomplete

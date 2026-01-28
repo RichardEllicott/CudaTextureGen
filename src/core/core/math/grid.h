@@ -17,8 +17,9 @@ namespace core::math::grid {
 // quater of a square perimeter ring (in order)
 inline std::vector<int2> square_ring_quart(int radius = 1) {
     std::vector<int2> out;
-
-    for (int i = 0; i < radius * 2; i++)
+    int count = radius * 2;
+    out.reserve(count);
+    for (int i = 0; i < count; i++)
         out.push_back({-radius + 1 + i, radius}); // gives the seg from (-n+1,n) → (n,n)
     return out;
 }
@@ -97,46 +98,35 @@ inline std::vector<int2> surrounding_offsets(int order) {
 inline std::vector<int2> surrounding_offsets_half(int order) {
     return _surrounding_offsets(order, 1);
 }
+
 inline std::vector<int2> surrounding_offsets_quart(int order) {
     return _surrounding_offsets(order, 2);
 }
 
 #pragma endregion
 
-inline std::vector<int2> filter_by_distance(
-    const std::vector<int2> &tiles,
-    float radius) {
+#pragma region HELPER
+
+// length of float2 vector
+inline float length(float2 vector) {
+    return sqrtf(vector.x * vector.x + vector.y * vector.y);
+}
+
+// length of int2 vector
+inline float length(int2 vector) {
+    return length(make_float2(vector.x, vector.y));
+}
+
+inline std::vector<int2> filter_by_distance(const std::vector<int2> &tiles, float max_distance) {
 
     std::vector<int2> result;
+
     if (tiles.empty())
         return result;
 
-    // Compute bounding box to find center
-    int min_x = tiles[0].x, max_x = tiles[0].x;
-    int min_y = tiles[0].y, max_y = tiles[0].y;
-
-    for (const auto &t : tiles) {
-        min_x = std::min(min_x, t.x);
-        max_x = std::max(max_x, t.x);
-        min_y = std::min(min_y, t.y);
-        max_y = std::max(max_y, t.y);
-    }
-
-    // Center of the tile set (float for accuracy)
-    float cx = (min_x + max_x) * 0.5f;
-    float cy = (min_y + max_y) * 0.5f;
-
-    float r2 = radius * radius;
-
-    // Filter tiles inside the radius
-    for (const auto &t : tiles) {
-        float dx = float(t.x) - cx;
-        float dy = float(t.y) - cy;
-        float d2 = dx * dx + dy * dy;
-
-        if (d2 <= r2)
-            result.push_back(t);
-    }
+    for (const auto &tile : tiles)
+        if (length(tile) <= max_distance)
+            result.push_back(tile);
 
     return result;
 }
@@ -222,5 +212,7 @@ inline std::string tiles_to_string(
 
     return out;
 }
+
+#pragma endregion
 
 } // namespace core::math::grid
