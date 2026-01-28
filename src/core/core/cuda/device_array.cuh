@@ -125,8 +125,7 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
     void allocate_device() {
         free_device();
 
-        if (size() == 0) // skip if size is 0
-            return;
+        if (size() == 0) return; // skip if size is 0
 
         auto err = cudaMallocAsync(&_dev_ptr, size_bytes(), _stream);
         if (err != cudaSuccess) {
@@ -260,34 +259,69 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 
     // resize dimensions, free and allocate memory as required
     void resize(std::array<size_t, Dim> dimensions) {
-        if (_shape == dimensions) {
-            return; // nothing changed, skip reallocation
-        }
 
-        free_device();
+        if (_shape == dimensions) return; // nothing changed, skip reallocation
+
+        free_device(); // free existing memory
         _shape = dimensions;
         allocate_device();
     }
 
-    // ⚠️ MAY HAVE OVERCOMPLICATED THIS
-    // allow accepting any collection of numbers with correct length
-    // convert to std::array<size_t, Dim>
-    template <typename Container>
-    void resize(const Container &c) {
-
-        static_assert(
-            std::is_arithmetic<typename Container::value_type>::value,
-            "resize(Container) requires arithmetic element type");
-
-        if (c.size() != Dim)
-            throw std::runtime_error("resize(Container) requires exactly Dim elements");
-
-        std::array<size_t, Dim> dims{};
-        for (size_t i = 0; i < Dim; ++i)
-            dims[i] = static_cast<size_t>(c[i]);
-
-        resize(dims); // forward to canonical version
+    // resize with int2
+    template <size_t D = Dim>
+    std::enable_if_t<D == 2>
+    resize(const int2 &v) {
+        resize(std::array<size_t, 2>{static_cast<size_t>(v.x), static_cast<size_t>(v.y)});
     }
+
+    // resize with uint2
+    template <size_t D = Dim>
+    std::enable_if_t<D == 2>
+    resize(const uint2 &v) {
+        resize(std::array<size_t, 2>{static_cast<size_t>(v.x), static_cast<size_t>(v.y)});
+    }
+
+    // resize with int3
+    template <size_t D = Dim>
+    std::enable_if_t<D == 3>
+    resize(const int3 &v) {
+        resize(std::array<size_t, 3>{static_cast<size_t>(v.x), static_cast<size_t>(v.y), static_cast<size_t>(v.z)});
+    }
+
+    // resize with uint3
+    template <size_t D = Dim>
+    std::enable_if_t<D == 3>
+    resize(const uint3 &v) {
+        resize(std::array<size_t, 3>{static_cast<size_t>(v.x), static_cast<size_t>(v.y), static_cast<size_t>(v.z)});
+    }
+
+    // resize with dim3
+    template <size_t D = Dim>
+    std::enable_if_t<D == 3>
+    resize(const dim3 &v) {
+        resize(std::array<size_t, 3>{static_cast<size_t>(v.x), static_cast<size_t>(v.y), static_cast<size_t>(v.z)});
+    }
+
+    // // ⚠️ OVERLOAD TOO GREEDY!!! was supposed to allow containers of non-size_t
+    //
+    // // allow accepting any collection of numbers with correct length
+    // // convert to std::array<size_t, Dim>
+    // template <typename Container>
+    // void resize(const Container &c) {
+
+    //     static_assert(
+    //         std::is_arithmetic<typename Container::value_type>::value,
+    //         "resize(Container) requires arithmetic element type");
+
+    //     if (c.size() != Dim)
+    //         throw std::runtime_error("resize(Container) requires exactly Dim elements");
+
+    //     std::array<size_t, Dim> dims{};
+    //     for (size_t i = 0; i < Dim; ++i)
+    //         dims[i] = static_cast<size_t>(c[i]);
+
+    //     resize(dims); // forward to canonical version
+    // }
 
     // KEEP
     // resize overload, allows resize(w, h), resize(w, h, d) ...
@@ -349,7 +383,11 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 #pragma region UPLOAD_DOWNLOAD
 
     // Upload from host pointer (optional callback)
-    void upload(const T *host_ptr, std::array<size_t, Dim> dimensions, std::function<void()> callback = {}) {
+    void upload(
+        const T *host_ptr,                  // pointer to data
+        std::array<size_t, Dim> dimensions, // array of dimensions
+        std::function<void()> callback = {} // optional callback
+    ) {
 
         resize(dimensions); // resize, will reallocate if the size changes
         if (size() == 0) return;
@@ -406,7 +444,11 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
     // --------------------------------------------------------------------------------------------------------------------------------
 
     // upload a vector, note no ref, extra copy makes this safe
-    void upload(std::vector<T> data, std::array<size_t, Dim> dimensions, std::function<void()> callback = {}) {
+    void upload(
+        std::vector<T> data,                 // vector of data
+        std::array<size_t, Dim> dimensions,  // array of dimensions
+        std::function<void()> callback = {}) // optional callback
+    {
         auto holder = std::make_shared<std::vector<T>>(std::move(data));
 
         upload(holder->data(), dimensions, [holder, callback]() {
@@ -416,7 +458,11 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 
     // Overload only available when Dim == 1, uses the vector's size
     template <size_t D = Dim, typename = std::enable_if_t<D == 1>>
-    void upload(std::vector<T> data, std::function<void()> callback = {}) {
+    void upload(
+        std::vector<T> data,                // vector of data
+        std::function<void()> callback = {} // optional callback
+    ) {
+
         std::array<size_t, 1> dims{data.size()};
         upload(std::move(data), dims, std::move(callback)); // move avoids copying the memory twice
     }
@@ -498,85 +544,85 @@ class DeviceArray : public core::cuda::DeviceArrayBase {
 
 // ================================================================================================================================
 
-// // aliases ⚠️ CANNOT REFACTOR UNTIL OLD EROSION'S REMOVED!!!!
-// template <typename T>
-// using DeviceArray1D = DeviceArray<T, 1>;
+// prefered pattern of simple aliases
+template <typename T>
+using DeviceArray1D = DeviceArray<T, 1>;
 
-// template <typename T>
-// using DeviceArray2D = DeviceArray<T, 2>;
+template <typename T>
+using DeviceArray2D = DeviceArray<T, 2>;
 
-// template <typename T>
-// using DeviceArray3D = DeviceArray<T, 3>;
+template <typename T>
+using DeviceArray3D = DeviceArray<T, 3>;
 
-// template <typename T>
-// using DeviceArray4D = DeviceArray<T, 4>;
+template <typename T>
+using DeviceArray4D = DeviceArray<T, 4>;
 
 // ================================================================================================================================
 
 // ⚠️ following wrappers are required for the older code!!!
 
-// thin wrapper for 1D
-template <typename T>
-class DeviceArray1D : public DeviceArray<T, 1> {
-  public:
-    using Base = DeviceArray<T, 1>;
-    using Base::Base;   // inherit constructors
-    using Base::upload; // keep base overloads visible
+// // thin wrapper for 1D
+// template <typename T>
+// class DeviceArray1D : public DeviceArray<T, 1> {
+//   public:
+//     using Base = DeviceArray<T, 1>;
+//     using Base::Base;   // inherit constructors
+//     using Base::upload; // keep base overloads visible
 
-    // 1D helpers
-    void resize(size_t size) {
-        Base::resize({size});
-    }
+//     // 1D helpers
+//     void resize(size_t size) {
+//         Base::resize({size});
+//     }
 
-    void upload(const T *host_ptr, size_t size) {
-        resize(size);
-        Base::upload(host_ptr, {size});
-    }
-};
+//     void upload(const T *host_ptr, size_t size) {
+//         resize(size);
+//         Base::upload(host_ptr, {size});
+//     }
+// };
 
-// thin wrapper for 2D
-template <typename T>
-class DeviceArray2D : public DeviceArray<T, 2> {
-  public:
-    using Base = DeviceArray<T, 2>;
-    using Base::Base;   // inherit constructors
-    using Base::upload; // keep base overloads visible
+// // thin wrapper for 2D
+// template <typename T>
+// class DeviceArray2D : public DeviceArray<T, 2> {
+//   public:
+//     using Base = DeviceArray<T, 2>;
+//     using Base::Base;   // inherit constructors
+//     using Base::upload; // keep base overloads visible
 
-    // 2D helpers
-    void resize(size_t width, size_t height) {
-        Base::resize({width, height});
-    }
+//     // // 2D helpers
+//     // void resize(size_t width, size_t height) {
+//     //     Base::resize({width, height});
+//     // }
 
-    void upload(const T *host_ptr, size_t width, size_t height) {
-        resize(width, height);
-        Base::upload(host_ptr, {width, height});
-    }
+//     // void upload(const T *host_ptr, size_t width, size_t height) {
+//     //     resize(width, height);
+//     //     Base::upload(host_ptr, {width, height});
+//     // }
 
-    // size_t width() const { return this->shape()[0]; }
-    // size_t height() const { return this->shape()[1]; }
-};
+//     // size_t width() const { return this->shape()[0]; }
+//     // size_t height() const { return this->shape()[1]; }
+// };
 
-// thin wrapper for 3D
-template <typename T>
-class DeviceArray3D : public DeviceArray<T, 3> {
-  public:
-    using Base = DeviceArray<T, 3>;
-    using Base::Base;   // inherit constructors
-    using Base::upload; // keep base overloads visible
+// // thin wrapper for 3D
+// template <typename T>
+// class DeviceArray3D : public DeviceArray<T, 3> {
+//   public:
+//     using Base = DeviceArray<T, 3>;
+//     using Base::Base;   // inherit constructors
+//     using Base::upload; // keep base overloads visible
 
-    // 3D helpers
-    void resize(size_t width, size_t height, size_t depth) {
-        Base::resize({width, height, depth});
-    }
+//     // 3D helpers
+//     void resize(size_t width, size_t height, size_t depth) {
+//         Base::resize({width, height, depth});
+//     }
 
-    void upload(const T *host_ptr, size_t width, size_t height, size_t depth) {
-        resize(width, height, depth);
-        Base::upload(host_ptr, {width, height, depth});
-    }
+//     void upload(const T *host_ptr, size_t width, size_t height, size_t depth) {
+//         resize(width, height, depth);
+//         Base::upload(host_ptr, {width, height, depth});
+//     }
 
-    // size_t width() const { return this->shape()[0]; }
-    // size_t height() const { return this->shape()[1]; }
-    // size_t depth() const { return this->shape()[2]; }
-};
+//     // size_t width() const { return this->shape()[0]; }
+//     // size_t height() const { return this->shape()[1]; }
+//     // size_t depth() const { return this->shape()[2]; }
+// };
 
 } // namespace core::cuda
