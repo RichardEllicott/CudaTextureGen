@@ -1,0 +1,9 @@
+
+// replace vertex with this
+void vertex() {
+    UV = UV * uv1_scale.xy + uv1_offset.xy;
+    float h = texture(texture_heightmap, UV).r;
+    VERTEX.y += h * heightmap_scale;
+}
+
+// or

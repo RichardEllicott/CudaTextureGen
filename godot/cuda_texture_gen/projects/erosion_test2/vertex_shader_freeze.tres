@@ -1,9 +1,8 @@
 [gd_resource type="ShaderMaterial" format=3 uid="uid://b4qpi8jwgwrii"]
 
-[ext_resource type="Texture2D" uid="uid://cus1ghso80e1w" path="res://projects/erosion_test/erosion.height.png" id="1_gfadh"]
-[ext_resource type="Texture2D" uid="uid://bjj2xk5j8q1nl" path="res://projects/erosion_test/erosion.albedo.png" id="2_xm5wk"]
-[ext_resource type="Texture2D" uid="uid://c4emxtf8mcvws" path="res://projects/erosion_test/erosion.ao.png" id="3_oj2ap"]
-[ext_resource type="Texture2D" uid="uid://oxphclpymf2y" path="res://projects/erosion_test/erosion.normal.png" id="4_f22dc"]
+[ext_resource type="Texture2D" uid="uid://bn16gr28ndyn1" path="res://projects/erosion_test/erosion.albedo.png" id="2_xm5wk"]
+[ext_resource type="Texture2D" uid="uid://qei7vkfmi1il" path="res://projects/erosion_test/erosion.ao.png" id="3_oj2ap"]
+[ext_resource type="Texture2D" uid="uid://de0iyc2504gfp" path="res://projects/erosion_test/erosion.normal.png" id="4_f22dc"]
 
 [sub_resource type="Shader" id="Shader_fq17a"]
 code = "// NOTE: Shader automatically converted from Godot Engine 4.5.1.stable.mono's StandardMaterial3D.
@@ -93,5 +92,4 @@ shader_parameter/uv1_scale = Vector3(1, 1, 1)
 shader_parameter/uv1_offset = Vector3(0, 0, 0)
 shader_parameter/uv2_scale = Vector3(1, 1, 1)
 shader_parameter/uv2_offset = Vector3(0, 0, 0)
-shader_parameter/heightmap = ExtResource("1_gfadh")
 shader_parameter/heightmap_strength = 16.0

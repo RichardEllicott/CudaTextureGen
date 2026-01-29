@@ -91,56 +91,54 @@ func build_square_ring(stc, macro_size := Vector2(16, 16), subdiv := Vector2i(8,
 @export var lod_segment_size := Vector2(16, 16)
 @export var lod_subdiv := Vector2i(16, 16)
 
-#@export var lod_ring_div := [1, 1, 2, 2, 2, 4, 4 , 4]
-
-#@export var lod_ring_div := [1, 1, 1, 2, 2, 2, 2, 4, 4 , 4, 4]
-
-@export var lod_ring_div := [1, 1, 2, 4, 8, 16, 16, 16]
 
 
+#@export var lod_ring_div := [128, 128, 64, 32, 16, 8, 4, 2, 1]
+#@export var lod_ring_div := [128, 128, 64, 64, 32, 32, 32, 16, 16, 16, 16, 8, 8, 8, 8, 8, 4, 4, 4]
+@export var lod_ring_div := [128, 128, 64, 64]
 
-func build_lod_mesh(stc: SurfaceToolCache):
+
+
+func build_lod_mesh_type3(stc: SurfaceToolCache) -> void:
     
 
     var offset := -Vector3(lod_segment_size.x, 0, lod_segment_size.y) / 2.0
     
+    for i in lod_ring_div.size():        
+        build_square_ring(stc, lod_segment_size, Vector2i(1,1) * lod_ring_div[i], i, offset)
+        
+    
+func calculate_lod_mesh_type3_triangle_count() -> int:
+    
+    var triangles = 0
     
     for i in lod_ring_div.size():
-        
         var div = lod_ring_div[i]
         
-        
-        build_square_ring(stc, lod_segment_size, lod_subdiv / div, i, offset)
-        
+        if i == 0:
+            triangles += div * div * 2
+        else:
+            var count = div * div * 2 # per square
+            count *= i * 8
+            triangles += count
     
- 
-  
-
+    
+    print("estimated: ", triangles)
+    return triangles
 
 
 func do_something():
     
     print("do_something()...")
     
-    var stc := SurfaceToolCache.new()
+    calculate_lod_mesh_type3_triangle_count()
+    
+    #var stc := SurfaceToolCache.new()
+    #build_lod_mesh_type3(stc)
+    #mesh = stc.get_mesh()
     
     
     
-    
-    #build_grid(stc, macro_size, subdiv)
-
-    #build_ring(stc, macro_size, subdiv, ring_order)
-    
-    build_lod_mesh(stc)
-    
-    ##stc.make_ngon()
-    #stc.make_ngon([Vector3(0,0,0), Vector3(1,0,0),Vector3(1,0,1),Vector3(0,0,1)])
-    #stc.make_ngon([Vector3(0,0,0), Vector3(0,0,1),Vector3(0,1,1),Vector3(0,1,0)])
-    
-    #
-
-
-    mesh = stc.get_mesh()
     
     
     
