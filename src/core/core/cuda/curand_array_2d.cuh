@@ -5,7 +5,7 @@ random wrapper
 */
 #pragma once
 
-#include "device_array.cuh"
+#include "types/device_array.cuh"
 #include <curand_kernel.h>
 
 namespace core::cuda {
@@ -29,7 +29,7 @@ template <int Dim>
 class CurandArray {
 
   private:
-    core::cuda::DeviceArray<curandState, Dim> device_array;
+    core::cuda::types::DeviceArray<curandState, Dim> device_array;
 
   public:
     unsigned long seed = 1234UL;
@@ -47,7 +47,7 @@ class CurandArray {
 
 class CurandArray2D {
 
-    core::cuda::DeviceArray<curandState, 2> device_array;
+    core::cuda::types::DeviceArray<curandState, 2> device_array;
 
   public:
     CurandArray2D() {

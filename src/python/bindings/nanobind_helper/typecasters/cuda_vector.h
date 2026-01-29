@@ -1,10 +1,21 @@
 /*
 
-type_caster
+type casters for 
 
-allows nanobind to understand the custom core::Ref which is a custom wrapper for a shared_ptr
+float2
+float3
+float4
 
-this is not to allow Python to see the Ref exactly, but just handle it like a shared_ptr
+int2
+int3
+int4
+
+uint2
+uint3
+uint4
+
+dim3
+
 
 */
 #pragma once

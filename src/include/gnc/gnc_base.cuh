@@ -50,11 +50,11 @@ namespace math = core::math;
 #pragma region VALIDATORS // check if something is a particular type by template
 
 // ================================================================================================================================
-// [core::Ref<core::cuda::DeviceArray<T, N>>]
+// [core::Ref<core::cuda::types::DeviceArray<T, N>>]
 template <typename T>
 struct is_device_array_ref : std::false_type {};
 template <typename T, int N>
-struct is_device_array_ref<core::Ref<core::cuda::DeviceArray<T, N>>> : std::true_type {};
+struct is_device_array_ref<core::Ref<core::cuda::types::DeviceArray<T, N>>> : std::true_type {};
 // --------------------------------------------------------------------------------------------------------------------------------
 // [core::Ref<U>]
 template <typename T>
@@ -415,8 +415,8 @@ class GNC_Base {
 
                     // reinterpret_cast first (just changes type does not check)
                     // dynamic_cast checks, will give nullptr if not valid
-                    auto *arr = dynamic_cast<core::cuda::DeviceArrayBase *>(
-                        reinterpret_cast<core::cuda::DeviceArrayBase *>(obj_ptr));
+                    auto *arr = dynamic_cast<core::cuda::types::DeviceArrayBase *>(
+                        reinterpret_cast<core::cuda::types::DeviceArrayBase *>(obj_ptr));
 
                     assert(arr && "Reflection error: expected DeviceArrayBase"); // OPTIONAL check
 

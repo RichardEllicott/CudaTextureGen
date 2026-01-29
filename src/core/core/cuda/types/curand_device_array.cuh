@@ -2,13 +2,18 @@
 
 random wrapper
 
+
+🚧 UNDER CONSTRUCTION.... trying to replace the specific 2D and 3D with a generalized one
+
+
+
 */
 #pragma once
 
 #include "device_array.cuh"
 #include <curand_kernel.h>
 
-namespace core::cuda {
+namespace core::cuda::types {
 
 template <int Dim>
 class CurandDeviceArray {
@@ -51,7 +56,7 @@ using CurandDeviceArray2D = CurandDeviceArray<2>;
 // class CurandArray {
 
 //   private:
-//     core::cuda::DeviceArray<curandState, Dim> device_array;
+//     core::cuda::types::DeviceArray<curandState, Dim> device_array;
 
 //   public:
 //     unsigned long seed = 1234UL;
@@ -69,7 +74,7 @@ using CurandDeviceArray2D = CurandDeviceArray<2>;
 
 // class CurandArray2D {
 
-//     core::cuda::DeviceArray2D<curandState> device_array;
+//     core::cuda::types::DeviceArray2D<curandState> device_array;
 
 //   public:
 //     CurandArray2D() {

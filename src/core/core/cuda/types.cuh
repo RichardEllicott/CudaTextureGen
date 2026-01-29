@@ -9,10 +9,10 @@ custom Cuda objects, designed to automaticly allocate and free memory, download 
 #include <array>
 #include <cstddef> // size_t
 
-#include "core/cuda/device_array.cuh"
+#include "core/cuda/types/device_array.cuh"
 #include "core/defines.h"
 #include "core/ref.h"
-#include "types/array.cuh" // moved my cuda array here
+#include "types/array.cuh"
 
 namespace core::cuda::types {
 
@@ -23,7 +23,7 @@ namespace core::cuda::types {
 //     X(DeviceArrayFloat3D, float, 3)
 
 // #define X(LABEL, TYPE, DIMENSIONS) \
-//     using LABEL = core::cuda::DeviceArray<TYPE, DIMENSIONS>;
+//     using LABEL = core::cuda::types::DeviceArray<TYPE, DIMENSIONS>;
 // XMACRO_ALPHA_1
 // #undef X
 

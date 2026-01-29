@@ -57,13 +57,13 @@ class TEMPLATE_CLASS_NAME : public template_d::TemplateD<Parameters> {
 // DeviceArray's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    core::cuda::DeviceArray<TYPE, DIMENSIONS> NAME;
+    core::cuda::types::DeviceArray<TYPE, DIMENSIONS> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #undef X
 #endif
 
     // lazy function to return array pointers
-    std::vector<core::cuda::DeviceArrayBase *> get_device_array_n_ptrs() override {
+    std::vector<core::cuda::types::DeviceArrayBase *> get_device_array_n_ptrs() override {
         if (_device_array_n_ptrs.empty()) {
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSION, NAME, DESCRIPTION) \

@@ -25,7 +25,7 @@ will have a common interface of "DeviceArrayBase"
 #include <utility>        // std::swap (needed for your swap implementation)
 #include <vector>         // if you use temporary host buffers
 
-namespace core::cuda {
+namespace core::cuda::types {
 
 // BREAKS LINUX???
 // temp buffer, optional pattern for storing temp array
@@ -113,7 +113,7 @@ class DeviceArrayBase {
 // ================================================================================================================================
 
 template <typename T, int Dim>
-class DeviceArray : public core::cuda::DeviceArrayBase {
+class DeviceArray : public DeviceArrayBase {
     static_assert(Dim > 0, "DeviceArray requires Dim > 0");
 
     std::array<size_t, Dim> _shape{}; // default dimensions will be 0

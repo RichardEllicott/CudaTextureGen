@@ -6,7 +6,7 @@ python bindings for DeviceArray
 #include "core/macros.h"
 #include "nanobind_helper.h"
 
-#include "core/cuda/device_array.cuh"
+#include "core/cuda/types/device_array.cuh"
 
 namespace device_array {
 
@@ -14,7 +14,7 @@ namespace nb = nanobind;
 
 template <typename T, int Dim>
 void bind_device_array(nb::module_ &m, const char *name) {
-    using DeviceArray = core::cuda::DeviceArray<T, Dim>;
+    using DeviceArray = core::cuda::types::DeviceArray<T, Dim>;
 
     // create class
     auto cls = nb::class_<DeviceArray>(m, name).def(nb::init<>());
@@ -49,16 +49,16 @@ void bind_device_array(nb::module_ &m, const char *name) {
 inline void bind(nb::module_ &m) {
 
     // float 1-4D
-    bind_device_array<float, 1>(m, "DeviceArrayFloat1D"); // core::cuda::DeviceArray<float, 1>
-    bind_device_array<float, 2>(m, "DeviceArrayFloat2D"); // core::cuda::DeviceArray<float, 2>
-    bind_device_array<float, 3>(m, "DeviceArrayFloat3D"); // core::cuda::DeviceArray<float, 3>
-    bind_device_array<float, 4>(m, "DeviceArrayFloat4D"); // core::cuda::DeviceArray<float, 4>
+    bind_device_array<float, 1>(m, "DeviceArrayFloat1D"); // core::cuda::types::DeviceArray<float, 1>
+    bind_device_array<float, 2>(m, "DeviceArrayFloat2D"); // core::cuda::types::DeviceArray<float, 2>
+    bind_device_array<float, 3>(m, "DeviceArrayFloat3D"); // core::cuda::types::DeviceArray<float, 3>
+    bind_device_array<float, 4>(m, "DeviceArrayFloat4D"); // core::cuda::types::DeviceArray<float, 4>
 
     // int 1-4D
-    bind_device_array<int, 1>(m, "DeviceArrayInt1D"); // core::cuda::DeviceArray<int, 1>
-    bind_device_array<int, 2>(m, "DeviceArrayInt2D"); // core::cuda::DeviceArray<int, 2>
-    bind_device_array<int, 3>(m, "DeviceArrayInt3D"); // core::cuda::DeviceArray<int, 3>
-    bind_device_array<int, 4>(m, "DeviceArrayInt4D"); // core::cuda::DeviceArray<int, 4>
+    bind_device_array<int, 1>(m, "DeviceArrayInt1D"); // core::cuda::types::DeviceArray<int, 1>
+    bind_device_array<int, 2>(m, "DeviceArrayInt2D"); // core::cuda::types::DeviceArray<int, 2>
+    bind_device_array<int, 3>(m, "DeviceArrayInt3D"); // core::cuda::types::DeviceArray<int, 3>
+    bind_device_array<int, 4>(m, "DeviceArrayInt4D"); // core::cuda::types::DeviceArray<int, 4>
 }
 
 } // namespace device_array

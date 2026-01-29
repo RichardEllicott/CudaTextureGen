@@ -271,11 +271,11 @@ namespace chash = core::cuda::hash; // include the cuda math lib as cmath
 // Template Validators
 // --------------------------------------------------------------------------------------------------------------------------------
 
-// [core::Ref<core::cuda::DeviceArray<T, N>>]
+// [core::Ref<core::cuda::types::DeviceArray<T, N>>]
 template <typename T>
 struct is_device_array_ref : std::false_type {};
 template <typename T, int N>
-struct is_device_array_ref<core::Ref<core::cuda::DeviceArray<T, N>>> : std::true_type {};
+struct is_device_array_ref<core::Ref<core::cuda::types::DeviceArray<T, N>>> : std::true_type {};
 
 // --------------------------------------------------------------------------------------------------------------------------------
 

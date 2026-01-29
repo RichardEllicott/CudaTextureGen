@@ -106,7 +106,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     // create array ref's
 #ifdef TEMPLATE_CLASS_ARRAYS_STRUCT
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    core::Ref<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
+    core::Ref<core::cuda::types::DeviceArray<TYPE, DIMENSIONS>> NAME;
     TEMPLATE_CLASS_ARRAYS_STRUCT
 #undef X
 #endif

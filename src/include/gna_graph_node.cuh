@@ -18,7 +18,7 @@ GN-A
 */
 #pragma once
 
-#include "core/cuda/device_array.cuh"
+#include "core/cuda/types/device_array.cuh"
 #include "core/macros.h"
 #include <memory> // shared_ptr
 #include <variant>
@@ -55,7 +55,7 @@ using Variant = std::variant<int, float, std::string>; // my variant type
 class TEMPLATE_CLASS_NAME {
 
   public:
-    std::shared_ptr<core::cuda::DeviceArray<float, 2>> output;
+    std::shared_ptr<core::cuda::types::DeviceArray<float, 2>> output;
     std::unordered_map<std::string, Variant> props;
 
     // ================================================================================================================================

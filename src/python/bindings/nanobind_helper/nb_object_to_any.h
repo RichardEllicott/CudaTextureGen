@@ -15,7 +15,7 @@ it's sort of like a firewall really as it block dissalowed types, the main probl
 #include <any>
 #include <nanobind/nanobind.h>
 
-#include "core/cuda/device_array.cuh"
+#include "core/cuda/types/device_array.cuh"
 #include "core/ref.h"
 
 namespace nanobind::helper {
@@ -138,13 +138,13 @@ nb::object any_to_nb_object_typed(const std::any &v) {
 
 // #define SUPPORTED_TYPES int, float, bool, std::string
 
-using DeviceArrayFloat1D = core::Ref<core::cuda::DeviceArray<float, 1>>;
-using DeviceArrayFloat2D = core::Ref<core::cuda::DeviceArray<float, 2>>;
-using DeviceArrayFloat3D = core::Ref<core::cuda::DeviceArray<float, 3>>;
+using DeviceArrayFloat1D = core::Ref<core::cuda::types::DeviceArray<float, 1>>;
+using DeviceArrayFloat2D = core::Ref<core::cuda::types::DeviceArray<float, 2>>;
+using DeviceArrayFloat3D = core::Ref<core::cuda::types::DeviceArray<float, 3>>;
 
-using DeviceArrayInt1D = core::Ref<core::cuda::DeviceArray<int, 1>>;
-using DeviceArrayInt2D = core::Ref<core::cuda::DeviceArray<int, 2>>;
-using DeviceArrayInt3D = core::Ref<core::cuda::DeviceArray<int, 3>>;
+using DeviceArrayInt1D = core::Ref<core::cuda::types::DeviceArray<int, 1>>;
+using DeviceArrayInt2D = core::Ref<core::cuda::types::DeviceArray<int, 2>>;
+using DeviceArrayInt3D = core::Ref<core::cuda::types::DeviceArray<int, 3>>;
 
 #define SUPPORTED_TYPES     \
     int,                    \

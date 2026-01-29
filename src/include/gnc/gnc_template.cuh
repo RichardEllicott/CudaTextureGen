@@ -9,7 +9,7 @@ contains master bolerplate that is copied via python script to gnc_boilerplate
 #include "_gnc_undef.h"
 #include "template_macro_undef.h"
 
-#include "core/cuda/curand_device_array.cuh"
+#include "core/cuda/types/curand_device_array.cuh"
 
 // ================================================================================================================================
 // [Single Source of Truth]
@@ -154,7 +154,7 @@ class TEMPLATE_CLASS_NAME : public GNC_Base<TEMPLATE_CLASS_NAME, Parameters, Arr
     // create array ref's
 #ifdef TEMPLATE_CLASS_ARRAYS_STRUCT
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    core::Ref<core::cuda::DeviceArray<TYPE, DIMENSIONS>> NAME;
+    core::Ref<core::cuda::types::DeviceArray<TYPE, DIMENSIONS>> NAME;
     TEMPLATE_CLASS_ARRAYS_STRUCT
 #undef X
 #endif

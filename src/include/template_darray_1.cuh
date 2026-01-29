@@ -132,7 +132,7 @@ class TEMPLATE_CLASS_NAME {
 // DeviceArray's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAYS
 #define X(TYPE, DIMENSION, NAME, DESCRIPTION) \
-    core::cuda::DeviceArray1D<TYPE> NAME;
+    core::cuda::types::DeviceArray1D<TYPE> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAYS
 #undef X
 #endif
@@ -140,7 +140,7 @@ class TEMPLATE_CLASS_NAME {
 // DeviceArray2D's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_2DS
 #define X(TYPE, NAME, DESCRIPTION) \
-    core::cuda::DeviceArray2D<TYPE> NAME;
+    core::cuda::types::DeviceArray2D<TYPE> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAY_2DS
 #undef X
 #endif
@@ -148,7 +148,7 @@ class TEMPLATE_CLASS_NAME {
 // DeviceArray3D's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_3DS
 #define X(TYPE, NAME, DESCRIPTION) \
-    core::cuda::DeviceArray3D<TYPE> NAME;
+    core::cuda::types::DeviceArray3D<TYPE> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAY_3DS
 #undef X
 #endif
@@ -156,7 +156,7 @@ class TEMPLATE_CLASS_NAME {
 // DeviceArray's
 #ifdef TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #define X(TYPE, DIMENSIONS, NAME, DESCRIPTION) \
-    core::cuda::DeviceArray<TYPE, DIMENSIONS> NAME;
+    core::cuda::types::DeviceArray<TYPE, DIMENSIONS> NAME;
     TEMPLATE_CLASS_DEVICE_ARRAY_NS
 #undef X
 #endif
@@ -169,7 +169,7 @@ class TEMPLATE_CLASS_NAME {
 #undef X
 #endif
 
-    std::vector<core::cuda::DeviceArrayBase *> _device_array_n_ptrs; // store pointers to the DeviceArray's for reflection
+    std::vector<core::cuda::types::DeviceArrayBase *> _device_array_n_ptrs; // store pointers to the DeviceArray's for reflection
 
     TEMPLATE_CLASS_NAME() {
 
