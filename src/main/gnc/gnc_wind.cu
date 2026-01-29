@@ -1,11 +1,13 @@
 #include "core/cuda/math.cuh"
-#include "core/cuda/math/array.cuh"
+#include "core/cuda/array.cuh"
 #include "core/cuda/math/grid.cuh"
 #include "gnc/gnc_wind.cuh"
 
 namespace TEMPLATE_NAMESPACE {
 
-namespace cmath = core::cuda::math;
+
+namespace array = core::cuda::array;
+
 
 // ================================================================================================================================
 
@@ -35,13 +37,7 @@ D_INLINE Flux9 dot_flux_calculation(float2 v, bool positive_only = true) {
 
 // ================================================================================================================================
 
-DH_INLINE float2 load_float2(const float *base, size_t idx) {
-    return cmath::array::load_float2(base, idx);
-}
 
-DH_INLINE void store_float2(float *base, size_t idx, float2 v) {
-    cmath::array::store_float2(base, idx, v);
-}
 
 // simple wind model with slope influence
 __global__ void run_wind(
@@ -71,8 +67,8 @@ __global__ void run_wind(
     // ================================================================
     // auto _wind_vector2_map = arrays->wind_vec2;   // wind map
     // auto slope_vec2_map = arrays->slope_vec2_map; // slope map
-    float2 slope = load_float2(slope_vec2_map, idx2);
-    float2 wind = load_float2(wind_vec2_map, idx2);
+    float2 slope = array::load_float2(slope_vec2_map, idx2);
+    float2 wind = array::load_float2(wind_vec2_map, idx2);
     // ================================================================
 
     wind += cmath::normal_vector2_fast(pos.x, pos.y, step, 0x3A8FB10Au) * random_wind; // random turbulence
@@ -84,7 +80,7 @@ __global__ void run_wind(
         int new_idx = cmath::pos_to_idx(new_pos, map_size);
         int new_idx2 = new_idx * 2;
         // ----------------------------------------------------------------
-        float2 new_wind = load_float2(wind_vec2_map, new_idx2);                // wind in neighbour tile
+        float2 new_wind = array::load_float2(wind_vec2_map, new_idx2);                // wind in neighbour tile
         float dot_wind = -cmath::dot(new_wind, cmath::GRID_OFFSETS_8_DOTS[n]); // give a wind dot product scaled so diagonals are penalized
         wind += new_wind * dot_wind * wind_influence;
     }
@@ -122,7 +118,7 @@ __global__ void run_wind(
 
     // ================================================================
 
-    store_float2(wind_vec2_map_out, idx2, wind);
+    array::store_float2(wind_vec2_map_out, idx2, wind);
 }
 
 void TEMPLATE_CLASS_NAME::_compute() {

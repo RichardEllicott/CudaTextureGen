@@ -9,7 +9,7 @@ conviniant loading from arrays or int's or floats
 
 #include "core/defines.h"
 
-namespace core::cuda::math::array {
+namespace core::cuda::array {
 
 #pragma region PACKED_VECTOR_ARRAY_ACCESSORS
 

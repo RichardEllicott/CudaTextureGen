@@ -124,13 +124,20 @@ class GNC_Base {
         typename ShapeT,
         typename = std::enable_if_t<gnc::is_device_array_ref<MapT>::value>>
     inline void ensure_array_ref_ready(
-        MapT &map, const ShapeT &desired_shape, bool zero_device = false) {
+        MapT &map,
+        const ShapeT &desired_shape,
+        bool zero_device = false) {
 
-        map.instantiate_if_null(); // ensure the Ref is not empty
+        if (map.is_null()) {
+            stream.instantiate_if_null();
+            map->set_stream(stream->get());
+        }
 
-        if (map->shape() != desired_shape) { // if shape missmatch we will resize
-            _pars_synced = false;            // and mark sync dirty (to trigger par upload)
-            map->resize(desired_shape);
+        void *const raw_dev_ptr = map->raw_dev_ptr();
+        map->resize(desired_shape);
+
+        if (map->raw_dev_ptr() != raw_dev_ptr) { // dev data must have changed
+            _pars_synced = false;
             if (zero_device) map->zero_device();
         }
     }

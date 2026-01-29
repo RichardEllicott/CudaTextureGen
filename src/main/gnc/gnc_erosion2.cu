@@ -3,7 +3,7 @@
 #include "gnc/gnc_erosion2.cuh"
 
 #include "core/cuda/grid.cuh"
-#include "core/cuda/math/array.cuh"
+#include "core/cuda/array.cuh"
 #include "core/cuda/math/grid.cuh"
 #include "core/math/grid.h"
 
@@ -64,7 +64,7 @@ __global__ void calculate_flux3(
     float sediment = sediment_map[idx];
     // float surface = height + water;
 
-    float2 slope_vector = cmath::array::load_float2(arrays->_slope_vector2_map, idx2);
+    float2 slope_vector = core::cuda::array::load_float2(arrays->_slope_vector2_map, idx2);
 
     // ================================================================================================================================
 
