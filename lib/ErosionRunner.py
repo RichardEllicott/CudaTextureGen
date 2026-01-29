@@ -256,10 +256,15 @@ class Runner(RunnerBase):
         movie_profile.channels = ["water_map"]
         self.movie_profiles["water"] = movie_profile
 
-        # height map image
+        # # height map png image
+        # image_profile = FrameProfile(self)
+        # image_profile.channels = ["height_map"]
+        # self.image_profiles["height.png"] = image_profile
+
+            # height map exr image
         image_profile = FrameProfile(self)
         image_profile.channels = ["height_map"]
-        self.image_profiles["height.png"] = image_profile
+        self.image_profiles["height.exr"] = image_profile
 
         # # height map image (tif)
         # image_profile = FrameProfile(self)
@@ -421,8 +426,12 @@ class ErosionRunnerDelta(Runner):
 
     def __init__(self) -> None:
 
+        # self.__init__()
+
         self.erosion = cuda_texture_gen.GNC_ErosionDelta()
         self._erosion_default_pars = tools.dicts.from_object(self.erosion)
+        # self.OUTPUT_PRESET_02()  # defaults
+
         self.OUTPUT_PRESET_01()  # defaults
 
 

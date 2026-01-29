@@ -167,12 +167,12 @@ using namespace core::cuda::hash;
 DH_INLINE float2 normal_vector2(float r1, float r2) {
 
     r1 = fmaxf(r1, 1e-7f); // Guard against log(0)
-    float r = sqrtf(-2.0f * fast::logf(r1));
+    float r = sqrtf(-2.0f * fast::log(r1));
 
     float theta = r2 * constants::TAU;
 
     float s, c;
-    fast::sincosf(theta, &s, &c);
+    fast::sincos(theta, &s, &c);
 
     return make_float2(r * c, r * s);
 }
@@ -383,13 +383,13 @@ DH_INLINE int2 wrap_or_clamp_index(int2 pos, int2 range, bool wrap) {
 // length of float2 vector
 DH_INLINE float length(float2 v) {
     float s = v.x * v.x + v.y * v.y;
-    return s * fast::rsqrtf(s);
+    return s * fast::rsqrt(s);
 }
 
 // length of float3 vector
 DH_INLINE float length(float3 v) {
     float s = v.x * v.x + v.y * v.y + v.z * v.z;
-    return s * fast::rsqrtf(s);
+    return s * fast::rsqrt(s);
 }
 
 #else
@@ -436,7 +436,7 @@ DH_INLINE float length(int3 vector) {
 DH_INLINE float2 normalize(float2 v) {
     float len2 = v.x * v.x + v.y * v.y;
     if (len2 > 1e-12f) {
-        float inv = fast::rsqrtf(len2); // 1/sqrt(len2)
+        float inv = fast::rsqrt(len2); // 1/sqrt(len2)
         return make_float2(v.x * inv, v.y * inv);
     }
     return make_float2(0.0f, 0.0f);
@@ -445,8 +445,8 @@ DH_INLINE float2 normalize(float2 v) {
 // normalize float3 vector to length of 1.0 (with fast reciprocal root)
 DH_INLINE float3 normalize(float3 v) {
     float len2 = v.x * v.x + v.y * v.y + v.z * v.z;
-    if (len2 > 1e-12f) {                // squared epsilon
-        float inv = fast::rsqrtf(len2); // 1/sqrt(len2)
+    if (len2 > 1e-12f) {               // squared epsilon
+        float inv = fast::rsqrt(len2); // 1/sqrt(len2)
         return make_float3(v.x * inv,
                            v.y * inv,
                            v.z * inv);
@@ -459,14 +459,14 @@ DH_INLINE float3 normalize(float3 v) {
 // dot product of two float2's
 DH_INLINE float dot(float2 a, float2 b) {
     // return a.x * b.x + a.y * b.y;
-    return fast::fmaf(a.y, b.y, a.x * b.x);
+    return fast::fma(a.y, b.y, a.x * b.x);
 }
 
 // dot product of two float3's
 DH_INLINE __device__ float dot(float3 a, float3 b) {
-    return fast::fmaf(a.z, b.z,
-                      fast::fmaf(a.y, b.y,
-                                 a.x * b.x));
+    return fast::fma(a.z, b.z,
+                     fast::fma(a.y, b.y,
+                               a.x * b.x));
 }
 
 // 2D cross product (returns scalar z-component)
@@ -516,7 +516,7 @@ DH_INLINE float2 rotate(float2 v, int quarter_turns = 1) {
 // uses hyperbolic tan which means we will never reach the ceiling
 // higher sharpness saturates quicker
 DH_INLINE float soft_saturate(float value, float ceiling, float sharpness = 1.0f) {
-    return ceiling * fast::tanhf((value / ceiling) * sharpness);
+    return ceiling * fast::tanh((value / ceiling) * sharpness);
 }
 
 #pragma endregion
@@ -538,13 +538,13 @@ DH_INLINE float quintic(float t) {
 
 // Cosine interpolation — soft, wavy, analog feel
 DH_INLINE float cosine(float t) {
-    return 0.5f - 0.5f * fast::cosf(t * constants::PI);
+    return 0.5f - 0.5f * fast::cos(t * constants::PI);
 }
 
 // Power-law smoothing — adjustable sharpness
 // k > 1 sharpens, k < 1 softens
 DH_INLINE float power(float t, float k) {
-    return powf(t, k);
+    return fast::pow(t, k);
 }
 
 // Hard sharpstep (binary)
@@ -591,7 +591,7 @@ namespace kernel {
 DH_INLINE float gaussian(float distance, float sigma = 1.0f) {
     float a = distance / sigma;
     // return expf(-0.5f * a * a);
-    return fast::expf(-0.5f * a * a);
+    return fast::exp(-0.5f * a * a);
 }
 
 // Cubic spline SPH kernel (compact support).

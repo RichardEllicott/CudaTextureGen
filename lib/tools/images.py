@@ -1,19 +1,21 @@
 """
-image helpers
+Image helpers with EXR support
 
-
-# pip install imageio[ffmpeg]
-
+Dependencies:
+    pip install imageio[ffmpeg]
+    pip install openexr
+    pip install imath
 """
-# from typing import Any
-import imageio
-from numpy.typing import NDArray
+
 import numpy as np
-import imageio.v2 as imageio  # version 2 loads to numpy arrays
+import imageio
+import imageio.v2 as imageio_v2  # version 2 loads to numpy arrays
+import OpenEXR
+import Imath
+from pathlib import Path
 from collections.abc import Sequence
 from typing import cast
-from pathlib import Path
-
+from numpy.typing import NDArray
 
 
 ImageArray = NDArray[np.uint8] | NDArray[np.floating]
@@ -21,26 +23,34 @@ ImageArray = NDArray[np.uint8] | NDArray[np.floating]
 __all__ = [
     "save",
     "load",
-    # "save_frames_as_gif_animation",
-    # "save_frames_as_mp4",
 ]
 
 
 def save(
-    array: ImageArray,
+    image_array: np.ndarray,
     filename: str | Sequence[str] | Path | Sequence[Path],
     verbose: bool = True,
     scale_pngs: bool = True
 ) -> None:
     """
-    Save a NumPy 2D array as an image.
-    Supports .png (uint8) or .tif/.tiff (float32).
+    Save a NumPy array as an image.
+
+    Supports:
+      - .png  (uint8)
+      - .tif/.tiff (float32)
+      - .exr (float32, single or multi-channel)
+
+    Args:
+        image_array: NumPy array to save (2D for grayscale, 3D for RGB/RGBA)
+        filename: Output filename(s). Can be a single path or sequence of paths.
+        verbose: Print save messages
+        scale_pngs: Scale float arrays to 0-255 range for PNG output
     """
 
     # Handle multiple filenames
     if isinstance(filename, (list, tuple)):
         for fname in filename:
-            save(array, fname)
+            save(image_array, fname, verbose=verbose, scale_pngs=scale_pngs)
         return
 
     filename = cast(str, filename)
@@ -49,25 +59,90 @@ def save(
     if verbose:
         print(f"💾 saving: {filename}")
 
+    # -------------------------
+    # PNG (8-bit)
+    # -------------------------
     if ext.endswith(".png"):
-        if scale_pngs and not np.issubdtype(array.dtype, np.uint8):  # if not already a uint8, scale by 255
-            array = array * 255
-        imageio.imwrite(filename, array.astype(np.uint8))
+        arr = image_array
+        if scale_pngs and not np.issubdtype(arr.dtype, np.uint8):
+            arr = arr * 255
+        imageio.imwrite(filename, arr.astype(np.uint8))
+        return
 
-    elif ext.endswith((".tif", ".tiff")):
-        # TIFF supports float32 (good for heightmaps)
-        imageio.imwrite(filename, array.astype(np.float32))
+    # -------------------------
+    # TIFF (float32)
+    # -------------------------
+    if ext.endswith((".tif", ".tiff")):
+        imageio.imwrite(filename, image_array.astype(np.float32))
+        return
 
-    else:
-        raise ValueError(f"Unsupported format: {filename}")
+    # -------------------------
+    # EXR (float32)
+    # -------------------------
+    if ext.endswith(".exr"):
+        arr = image_array.astype(np.float32)
+
+        # Handle different array shapes
+        if arr.ndim == 2:
+            # Grayscale (H, W)
+            h, w = arr.shape
+            channels = {'Y': Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT))}
+            channel_data = {'Y': arr.tobytes()}
+
+        elif arr.ndim == 3:
+            h, w, c = arr.shape
+
+            if c == 3:
+                # RGB
+                channels = {
+                    'R': Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT)),
+                    'G': Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT)),
+                    'B': Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT))
+                }
+                channel_data = {
+                    'R': arr[:, :, 0].tobytes(),
+                    'G': arr[:, :, 1].tobytes(),
+                    'B': arr[:, :, 2].tobytes()
+                }
+            elif c == 4:
+                # RGBA
+                channels = {
+                    'R': Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT)),
+                    'G': Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT)),
+                    'B': Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT)),
+                    'A': Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT))
+                }
+                channel_data = {
+                    'R': arr[:, :, 0].tobytes(),
+                    'G': arr[:, :, 1].tobytes(),
+                    'B': arr[:, :, 2].tobytes(),
+                    'A': arr[:, :, 3].tobytes()
+                }
+            else:
+                raise ValueError(f"EXR: unsupported channel count {c}. Expected 3 (RGB) or 4 (RGBA).")
+        else:
+            raise ValueError(f"EXR: array must be 2D or 3D, got {arr.ndim}D")
+
+        header = OpenEXR.Header(w, h)
+        header['channels'] = channels
+
+        exr = OpenEXR.OutputFile(str(filename), header)
+        exr.writePixels(channel_data)
+        exr.close()
+        return
+
+    # -------------------------
+    # Unsupported
+    # -------------------------
+    raise ValueError(f"Unsupported format: {filename}")
 
 
 def load(
-    filename: str,
+    filename: str | Path,
     dtype: np.dtype | type[np.generic] = np.float32,
     verbose: bool = True,
     scale_pngs: bool = True,
-) -> ImageArray:
+) -> np.ndarray:
     """
     Load an image file into a NumPy array.
 
@@ -76,74 +151,94 @@ def load(
     - RGB → 3D array (H, W, 3)
     - RGBA → 3D array (H, W, 4)
     - Float TIFFs → 2D or 3D depending on channels
+    - EXR → single or multi-channel float32
+
+    Args:
+        filename: Path to image file
+        dtype: Output data type
+        verbose: Print load messages
+        scale_pngs: Scale PNG uint8 values to 0-1 range
+
+    Returns:
+        NumPy array containing the image data
     """
+
     if verbose:
         print(f"💾 loading: {filename}")
 
-    array = imageio.imread(filename)
+    ext = str(filename).lower()
 
-    if scale_pngs and filename.lower().endswith(".png"):
-        # Only scale if PNG is uint8
-        if np.issubdtype(array.dtype, np.uint8):
-            array = array / 255.0
+    # -------------------------
+    # EXR (float32)
+    # -------------------------
+    if ext.endswith(".exr"):
+        exr = OpenEXR.InputFile(str(filename))
+        header = exr.header()
 
-    return array.astype(dtype)
+        dw = header['dataWindow']
+        width = dw.max.x - dw.min.x + 1
+        height = dw.max.y - dw.min.y + 1
+
+        pt = Imath.PixelType(Imath.PixelType.FLOAT)
+        channels = header['channels'].keys()
+
+        # Try to load RGB/RGBA first
+        if 'R' in channels and 'G' in channels and 'B' in channels:
+            r = np.frombuffer(exr.channel('R', pt), dtype=np.float32).reshape((height, width))
+            g = np.frombuffer(exr.channel('G', pt), dtype=np.float32).reshape((height, width))
+            b = np.frombuffer(exr.channel('B', pt), dtype=np.float32).reshape((height, width))
+
+            if 'A' in channels:
+                a = np.frombuffer(exr.channel('A', pt), dtype=np.float32).reshape((height, width))
+                image_array = np.stack([r, g, b, a], axis=-1)
+            else:
+                image_array = np.stack([r, g, b], axis=-1)
+
+        # Fall back to Y (grayscale)
+        elif 'Y' in channels:
+            raw = exr.channel('Y', pt)
+            image_array = np.frombuffer(raw, dtype=np.float32).reshape((height, width))
+        else:
+            raise ValueError(f"EXR: no supported channels found. Available channels: {list(channels)}")
+
+        return image_array.astype(dtype)
+
+    # -------------------------
+    # PNG, TIFF, etc.
+    # -------------------------
+    image_array = imageio.imread(str(filename))
+
+    if scale_pngs and ext.endswith(".png"):
+        if np.issubdtype(image_array.dtype, np.uint8):
+            image_array = image_array / 255.0
+
+    return image_array.astype(dtype)
 
 
-# # ⚠️ follow i might not use
+# Example usage
+if __name__ == "__main__":
+    # Create test data
+    print("Creating test images...")
 
-# def save_frames_as_gif_animation(frames, filename, duration=0.1, loop=0) -> None:
-#     """
-#     Save a sequence of frames as an animated GIF.
+    # Grayscale test
+    grayscale = np.random.rand(256, 256).astype(np.float32)
+    save(grayscale, "test_grayscale.exr")
+    save(grayscale, "test_grayscale.png")
+    save(grayscale, "test_grayscale.tiff")
 
-#     Parameters
-#     ----------
-#     filename : str
-#         Path to the output GIF file (e.g. "animation.gif").
-#     frames : list of numpy.ndarray
-#         List of image frames. Each frame is expected to be a NumPy array
-#         with values in the range [0, 1]. They will be scaled to [0, 255]
-#         and converted to 8-bit unsigned integers for GIF encoding.
-#     duration : float, optional
-#         Time between frames in seconds. Default is 0.1 (10 frames per second).
-#     loop : int, optional
-#         Number of times the GIF should loop. Default is 0 (infinite loop).
+    # RGB test
+    rgb = np.random.rand(256, 256, 3).astype(np.float32)
+    save(rgb, "test_rgb.exr")
+    save(rgb, "test_rgb.png")
 
-#     Notes
-#     -----
-#     - Frames should be 2D (grayscale) or 3D (RGB) NumPy arrays.
-#     - Scaling assumes input frames are normalized floats in [0, 1].
-#     - Uses `imageio.mimsave` under the hood.
-#     """
-#     gif_frames = []
+    # Load back
+    print("\nLoading images...")
+    loaded_exr = load("test_grayscale.exr")
+    loaded_png = load("test_grayscale.png")
+    loaded_rgb_exr = load("test_rgb.exr")
 
-#     # Convert each frame from [0,1] float to [0,255] uint8
-#     for frame in frames:
-#         gif_frame = (frame * 255).astype(np.uint8)
-#         gif_frames.append(gif_frame)
+    print(f"\nGrayscale EXR shape: {loaded_exr.shape}")
+    print(f"Grayscale PNG shape: {loaded_png.shape}")
+    print(f"RGB EXR shape: {loaded_rgb_exr.shape}")
 
-#     # Save frames as an animated GIF
-#     imageio.mimsave(filename, gif_frames, format="GIF", duration=duration, loop=loop)
-
-
-# def save_frames_as_mp4(frames, filename, fps=10, codec='libx264'):
-#     """
-#     Save a sequence of frames as an MP4 video.
-
-#     Parameters
-#     ----------
-#     filename : str
-#         Path to the output video file (e.g. "animation.mp4").
-#     frames : list of numpy.ndarray
-#         List of image frames. Each frame should be a NumPy array
-#         with values in [0, 1] or [0, 255].
-#     fps : int, optional
-#         Frames per second. Default is 10.
-#     """
-#     # Convert frames to uint8 if needed
-#     video_frames = [(frame * 255).astype(np.uint8) if frame.dtype != np.uint8 else frame for frame in frames]
-
-#     # Use imageio's writer for MP4
-#     with imageio.get_writer(filename, fps=fps, codec=codec) as writer:
-#         for frame in video_frames:
-#             writer.append_data(frame)
+    print("\n✅ All tests completed!")

@@ -1,0 +1,97 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://b4qpi8jwgwrii"]
+
+[ext_resource type="Texture2D" uid="uid://cus1ghso80e1w" path="res://projects/erosion_test/erosion.height.png" id="1_gfadh"]
+[ext_resource type="Texture2D" uid="uid://bjj2xk5j8q1nl" path="res://projects/erosion_test/erosion.albedo.png" id="2_xm5wk"]
+[ext_resource type="Texture2D" uid="uid://c4emxtf8mcvws" path="res://projects/erosion_test/erosion.ao.png" id="3_oj2ap"]
+[ext_resource type="Texture2D" uid="uid://oxphclpymf2y" path="res://projects/erosion_test/erosion.normal.png" id="4_f22dc"]
+
+[sub_resource type="Shader" id="Shader_fq17a"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.5.1.stable.mono's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+
+uniform sampler2D texture_normal : hint_roughness_normal, filter_linear_mipmap, repeat_enable;
+uniform float normal_scale : hint_range(-16.0, 16.0);
+
+uniform sampler2D texture_ambient_occlusion : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 ao_texture_channel;
+uniform float ao_light_affect : hint_range(0.0, 8.0, 0.01);
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+
+
+uniform sampler2D heightmap;
+uniform float heightmap_strength = 0.1;
+
+void vertex() {
+    UV = UV * uv1_scale.xy + uv1_offset.xy;
+    float h = texture(heightmap, UV).r;
+    VERTEX.y += h * heightmap_strength;
+}
+
+
+
+void fragment() {
+	vec2 base_uv = UV;
+
+	vec4 albedo_tex = texture(texture_albedo, base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+
+	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
+	METALLIC = metallic_tex * metallic;
+	SPECULAR = specular;
+
+	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
+	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
+	ROUGHNESS = roughness_tex * roughness;
+
+	// Normal Map: Enabled
+	NORMAL_MAP = texture(texture_normal, base_uv).rgb;
+	NORMAL_MAP_DEPTH = normal_scale;
+
+	// Ambient Occlusion: Enabled
+	AO = dot(texture(texture_ambient_occlusion, base_uv), ao_texture_channel);
+	AO_LIGHT_AFFECT = ao_light_affect;
+}
+"
+
+[resource]
+render_priority = 0
+shader = SubResource("Shader_fq17a")
+shader_parameter/albedo = Color(1, 1, 1, 1)
+shader_parameter/texture_albedo = ExtResource("2_xm5wk")
+shader_parameter/albedo_texture_size = Vector2i(512, 512)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/texture_normal = ExtResource("4_f22dc")
+shader_parameter/normal_scale = 2.0000008549999997
+shader_parameter/texture_ambient_occlusion = ExtResource("3_oj2ap")
+shader_parameter/ao_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/ao_light_affect = 4.17999990656864
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/heightmap = ExtResource("1_gfadh")
+shader_parameter/heightmap_strength = 16.0

@@ -69,17 +69,34 @@ struct DotFluxCalculation {
 // --------------------------------------------------------------------------------------------------------------------------------
 DH_INLINE float get_water_velocity(int mode, float water, float slope_magnitude) {
 
-    float water_velocity;
     switch (mode) {
-    case 0:
-        water_velocity = pow(water, 2.0f / 3.0f) * sqrt(slope_magnitude); // manning based
+    case 0: // manning based
+        return cmath::fast::pow(water, 2.0f / 3.0f) * cmath::fast::sqrt(slope_magnitude);
         break;
-    case 1:
-        // float water_velocity = C * sqrt(water * slope_magnitude); // Chezy, friction?
+    case 1: // Chezy, friction?
+        return cmath::fast::sqrt(water * slope_magnitude);
+        break;
+    case 2: // Linear slope model (ultra‑cheap)
+        return water;
+        break;
+    case 3: // Depth‑scaled linear model
+        return water * slope_magnitude;
+        break;
+    case 4: // Square‑root slope only
+        return cmath::fast::sqrt(slope_magnitude);
+        break;
+    case 5: // Depth‑root model (A simple alternative to Chezy)
+        return cmath::fast::sqrt(water) * cmath::fast::sqrt(slope_magnitude);
+        break;
+    case 6: // Power‑law model (generalised Manning/Chezy)
+            // return cmath::fast::pow(water, a) * cmath::fast::pow(slope_magnitude, b);
+        break;
+    case 7: // Clamped velocity model
+        // return cmath::fast::pow(water, a) * cmath::fast::pow(slope_magnitude, b);
         break;
     }
 
-    return water_velocity;
+    return 0.0f;
 }
 // --------------------------------------------------------------------------------------------------------------------------------
 __global__ void calculate_flux4(
@@ -117,6 +134,7 @@ __global__ void calculate_flux4(
     int water_velocity_mode = pars->water_velocity_mode;
     float sediment_capacity = pars->sediment_capacity;
     float max_water_outflow = pars->max_water_outflow;
+    float flow_rate = pars->flow_rate;
     // ----------------------------------------------------------------
 
     // calc slope magnitude
@@ -127,6 +145,7 @@ __global__ void calculate_flux4(
 
     // water velocity
     float water_velocity = get_water_velocity(water_velocity_mode, water, slope_magnitude);
+    water_velocity *= flow_rate;
 
     // water outflow
     float water_outflow = water_velocity * water;
@@ -209,28 +228,40 @@ __global__ void apply_flux3(
     float drain_rate = pars->drain_rate;
     float evaporation_rate = pars->evaporation_rate;
     float rain_rate = pars->rain_rate;
+    float deposition_rate = pars->deposition_rate;
+    int _layer_count = pars->_layer_count;
+
+    // ================================================================
+    // [Layers]
+    // ----------------------------------------------------------------
+    int exposed_layer;
+    float layer_erosiveness = 1.0f;
+    float layer_sediment_yield = 1.0f;
+    if (_layer_count > 0) {
+        exposed_layer = arrays->_exposed_layer_map[idx];
+        layer_erosiveness = pars->layer_erosiveness_array[exposed_layer];
+        layer_sediment_yield = pars->layer_sediment_yield_array[exposed_layer];
+    }
 
     // ================================================================
     // [Flux]
     // ----------------------------------------------------------------
 
-    float sediment_change = -sediment_out;
+    // float sediment_change = -sediment_out;
+    sediment -= sediment_out;
+    water -= water_out;
 
-    float water_in = 0.0f;
-    float sediment_in = 0.0f;
-
+    float *_flux8_ptr = &_flux8_map[idx8];
+    float *_sediment_flux8_ptr = &_sediment_flux8_map[idx8];
     for (int n = 0; n < 8; ++n) {
         int2 new_pos = cmath::wrap_or_clamp_index(pos + cmath::constants::GRID_OFFSETS_8[n], map_size, wrap);
         int new_idx = cmath::pos_to_idx(new_pos, map_size);
         int new_idx8 = new_idx * 8;
-        int opposite_ref = cmath::constants::GRID_OFFSETS_8_OPPOSITE_INDEX[n];
 
-        water_in += _flux8_map[new_idx8 + opposite_ref]; //  inflow from neighbouring tiles
-        sediment_in += _sediment_flux8_map[new_idx8 + opposite_ref];
+        int opposite_n = n ^ 1;          // flip bit 1, giving opposite
+        water += _flux8_ptr[opposite_n]; //  inflow from neighbouring tiles
+        sediment += _sediment_flux8_ptr[opposite_n];
     }
-
-    water += water_in;
-    water -= water_out;
 
     // ================================================================
     // [Erosion]
@@ -242,13 +273,16 @@ __global__ void apply_flux3(
         erosion = water_out; // just outflow
         break;
     case 1:
-        erosion = water_out * water_velocity; // outflow * velocity
+        erosion = water_out * water_velocity; // outflow * velocity (note water out was already affected by velocity)
     }
-    erosion *= erosion_rate; // erosion rate setting (can be set by rock)
+
+    // 🧪 apply other effects before final adjustment
+
+    erosion *= erosion_rate * layer_erosiveness; // multiple by erosion rate and layer erosion rate
 
     erosion = cmath::clamp(erosion, 0.0f, available_erosion); // ensure not negative and not more than available_erosion
     height -= erosion;                                        // apply erosion to height (not layer mode)
-    sediment += erosion * sediment_yield;
+    sediment += erosion * sediment_yield * layer_sediment_yield;
     // ================================================================
     // [Drain]
     // ----------------------------------------------------------------
@@ -264,8 +298,18 @@ __global__ void apply_flux3(
     // ----------------------------------------------------------------
     water += rain_rate * rain_map_value;
     // ================================================================
+    // [Deposition]
+    // ----------------------------------------------------------------
+    // water -= evaporation_rate;
+    float available_sediment = sediment;
+    float deposition = cmath::min(deposition_rate, available_sediment);
+    height += deposition;
+    sediment -= deposition;
+    // ================================================================
     // [Output]
     // ----------------------------------------------------------------
+    if (_layer_count > 0) {
+    }
 
     height_map[idx] = cmath::clamp(height, min_height, max_height);
     water_map[idx] = cmath::max(water, 0.0f);

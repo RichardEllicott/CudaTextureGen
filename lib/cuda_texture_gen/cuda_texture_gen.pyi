@@ -342,10 +342,11 @@ class GNC_ErosionDelta:
     erosion_mode: Incomplete
     erosion_rate: Incomplete
     evaporation_rate: Incomplete
+    flow_rate: Incomplete
     height_map: Incomplete
     layer_erosiveness_array: Incomplete
     layer_map: Incomplete
-    layer_yield_array: Incomplete
+    layer_sediment_yield_array: Incomplete
     max_height: Incomplete
     max_water_outflow: Incomplete
     min_height: Incomplete

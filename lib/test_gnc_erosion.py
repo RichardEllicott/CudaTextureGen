@@ -36,8 +36,8 @@ def test_runner():
     print("test_runner()...")
 
 
-    map_size = (512, 512)
-    # map_size = (1024, 1024)
+    # map_size = (512, 512)
+    map_size = (1024, 1024)
 
     # ================================================================
     gnc_noise = ct.GNC_Noise()
@@ -86,7 +86,6 @@ def test_runner():
 
     # return
 
-    runner.OUTPUT_PRESET_02()
 
     device_array = ct.DeviceArrayFloat2D()
     device_array.array = noise

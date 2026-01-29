@@ -1,0 +1,18 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dynh3g73xq5il"]
+
+[ext_resource type="Shader" uid="uid://b2ojbqqdxrxqo" path="res://projects/erosion_test2/claude_shaders/sea_depth_claude2foam2.gdshader" id="1_0pub3"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_0pub3")
+shader_parameter/foam_color = Color(1, 1, 1, 0.9)
+shader_parameter/shallow_color = Color(0.340707, 0.63540596, 0.9019608, 0.8)
+shader_parameter/deep_color = Color(0, 0.2, 0.70980394, 0.8666667)
+shader_parameter/foam_distance = 0.6770000321575
+shader_parameter/shallow_distance = 4.5110002142725
+shader_parameter/wave_speed = 0.5
+shader_parameter/wave_scale = 0.1410000066975
+shader_parameter/wave_length = 3.89800018189512
+shader_parameter/wave_direction = Vector2(7.9, 1.005)
+shader_parameter/metallic = 0.0
+shader_parameter/roughness = 0.02

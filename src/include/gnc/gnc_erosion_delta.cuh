@@ -34,18 +34,19 @@ erosion using new approach to sampling
     X(float, min_height, FMIN, "")
 
 // Water
-#define TEMPLATE_CLASS_PARAMETERS_STRUCT_3 \
-    X(float, rain_rate, 0.0f, "")          \
-    X(int, water_velocity_mode, 0, "")     \
-    X(float, max_water_outflow, FMAX, "")  \
-    X(float, drain_rate, 0.0f, "")         \
+#define TEMPLATE_CLASS_PARAMETERS_STRUCT_3                               \
+    X(float, rain_rate, 0.0f, "")                                        \
+    X(int, water_velocity_mode, 0, "")                                   \
+    X(float, flow_rate, 1.0f, "scale water velocity before max outflow") \
+    X(float, max_water_outflow, FMAX, "")                                \
+    X(float, drain_rate, 0.0f, "")                                       \
     X(float, evaporation_rate, 0.0f, "")
 
 // Sediment
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT_4                              \
     X(float, sediment_capacity, 0.0f, "[0,1]")                          \
     X(float, sediment_yield, 0.0f, "[0,1] sediment yield from erosion") \
-    X(float, deposition_rate, 0.0f, "]")
+    X(float, deposition_rate, 0.0f, "[0,1]")
 
 // Erosion
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT_5 \
@@ -53,10 +54,10 @@ erosion using new approach to sampling
     X(float, erosion_rate, 0.0f, "[<0]")
 
 // Layers
-#define TEMPLATE_CLASS_PARAMETERS_STRUCT_6                                        \
-    X(int, _layer_count, 0, "")                                                   \
-    X(FloatArray<8>, layer_erosiveness_array, EROSION_DEFAULT_LAYER_SETTINGS, "") \
-    X(FloatArray<8>, layer_yield_array, EROSION_DEFAULT_LAYER_SETTINGS, "")
+#define TEMPLATE_CLASS_PARAMETERS_STRUCT_6                                                                    \
+    X(int, _layer_count, 0, "")                                                                               \
+    X(FloatArray<8>, layer_erosiveness_array, EROSION_DEFAULT_LAYER_SETTINGS, "multiplied by erosion amount") \
+    X(FloatArray<8>, layer_sediment_yield_array, EROSION_DEFAULT_LAYER_SETTINGS, "[0,1] erosion sediment yield")
 
 // #define TEMPLATE_CLASS_PARAMETERS_STRUCT_7
 // #define TEMPLATE_CLASS_PARAMETERS_STRUCT_8

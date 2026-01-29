@@ -204,10 +204,10 @@ DH_INLINE float3 noise_gradient3(int x, int y, int z, int seed) {
 
     // Fast sincos for both angles
     float sin_theta, cos_theta;
-    cmath::fast::sincosf(theta, &sin_theta, &cos_theta);
+    cmath::fast::sincos(theta, &sin_theta, &cos_theta);
 
     float sin_phi, cos_phi;
-    cmath::fast::sincosf(phi, &sin_phi, &cos_phi);
+    cmath::fast::sincos(phi, &sin_phi, &cos_phi);
 
     // Convert spherical → Cartesian
     return make_float3(
