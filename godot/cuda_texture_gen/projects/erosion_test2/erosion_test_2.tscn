@@ -29,7 +29,7 @@ uniform float normal_scale : hint_range(-16.0, 16.0);
 
 uniform sampler2D texture_ambient_occlusion : hint_default_white, filter_linear_mipmap, repeat_enable;
 uniform vec4 ao_texture_channel;
-uniform float ao_light_affect : hint_range(0.0, 1.0, 0.01);
+uniform float ao_light_affect : hint_range(0.0, 8.0, 0.01);
 
 uniform vec3 uv1_scale;
 uniform vec3 uv1_offset;
@@ -85,30 +85,30 @@ shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
 shader_parameter/specular = 0.5
 shader_parameter/metallic = 0.0
 shader_parameter/texture_normal = ExtResource("4_t3jft")
-shader_parameter/normal_scale = 1.0
+shader_parameter/normal_scale = 2.0000008549999997
 shader_parameter/texture_ambient_occlusion = ExtResource("3_ig5cu")
 shader_parameter/ao_texture_channel = Vector4(1, 0, 0, 0)
-shader_parameter/ao_light_affect = 0.82
+shader_parameter/ao_light_affect = 4.17999990656864
 shader_parameter/uv1_scale = Vector3(1, 1, 1)
 shader_parameter/uv1_offset = Vector3(0, 0, 0)
 shader_parameter/uv2_scale = Vector3(1, 1, 1)
 shader_parameter/uv2_offset = Vector3(0, 0, 0)
 shader_parameter/heightmap = ExtResource("1_r0k50")
-shader_parameter/heightmap_strength = 8.0
+shader_parameter/heightmap_strength = 16.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_fq17a"]
 material = SubResource("ShaderMaterial_3r232")
 size = Vector2(256, 256)
-subdivide_width = 255
-subdivide_depth = 255
+subdivide_width = 1027
+subdivide_depth = 1027
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r0k50"]
 transparency = 1
-albedo_color = Color(0.1553309, 0.21985297, 0.3046875, 0.39607844)
+albedo_color = Color(0.34855768, 0.48798075, 0.6796875, 0.39607844)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_sqym0"]
 material = SubResource("StandardMaterial3D_r0k50")
-size = Vector2(256, 256)
+size = Vector2(1024, 1024)
 subdivide_width = 63
 subdivide_depth = 63
 
@@ -120,6 +120,7 @@ sky_material = SubResource("ProceduralSkyMaterial_r0k50")
 [sub_resource type="Environment" id="Environment_ig5cu"]
 background_mode = 2
 sky = SubResource("Sky_sqym0")
+volumetric_fog_density = 0.02
 
 [node name="erosion_test2" type="Node3D"]
 
@@ -133,7 +134,16 @@ mesh = SubResource("PlaneMesh_sqym0")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.9299566, 0.17613444, 0.32273436, -0.32496086, 0.8043706, 0.4973815, -0.17199205, -0.5674193, 0.80526656, 0, 0, 1.8963389)
+visible = false
 shadow_enabled = true
+directional_shadow_max_distance = 256.0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_ig5cu")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -57.86709, 56.809, 16.771973)
+light_energy = 16.0
+shadow_enabled = true
+omni_range = 4096.0
+omni_attenuation = 0.444

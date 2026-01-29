@@ -34,6 +34,7 @@ compile_flags.txt
 godot/cuda_texture_gen/**/*.png
 
 **/*.png
+**/*.mp4
 
 
 

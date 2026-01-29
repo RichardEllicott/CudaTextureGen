@@ -1,42 +1,15 @@
 {
-    "process_time": 7.280231900000217,
+    "process_time": 11.238981100032106,
     "erosion_settings": {
-        "erosion_rate": 0.03125,
-        "evaporation_rate": 0.002,
-        "max_water_outflow": 0.125,
+        "drain_rate": 0.001,
+        "erosion_rate": 0.00025,
+        "max_water_outflow": 1.0,
         "min_height": 0.0,
-        "mode": 4,
-        "rain_rate": 0.007,
-        "steps": 1
+        "rain_rate": 0.0007,
+        "slope_jitter": 1.0,
+        "steps": 16
     },
     "runner_settings": {
-        "frame_count": 256,
-        "steps_per_frame": 1
-    },
-    "metrics": {
-        "height_map": {
-            "min": 0.0,
-            "max": 9.146724700927734,
-            "mean": 1.734424352645874,
-            "std": 2.14019775390625
-        },
-        "water_map": {
-            "min": 0.0,
-            "max": 19.682723999023438,
-            "mean": 1.2823988199234009,
-            "std": 1.6104800701141357
-        },
-        "sediment_map": {
-            "min": 0.0,
-            "max": 0.0,
-            "mean": 0.0,
-            "std": 0.0
-        }
-    },
-    "debug": {
-        "_debug_drain_total": 0.0,
-        "_debug_erosion_total": 0.0,
-        "_debug_evaporation_total": 0.0,
-        "_debug_rain_total": 0.0
+        "frame_count": 256
     }
 }

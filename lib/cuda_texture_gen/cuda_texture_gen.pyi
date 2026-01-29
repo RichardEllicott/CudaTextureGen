@@ -349,6 +349,7 @@ class GNC_ErosionDelta:
     max_height: Incomplete
     max_water_outflow: Incomplete
     min_height: Incomplete
+    rain_map: Incomplete
     rain_rate: Incomplete
     sediment_capacity: Incomplete
     sediment_map: Incomplete

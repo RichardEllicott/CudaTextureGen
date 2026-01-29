@@ -31,9 +31,9 @@ class RunnerBase:
 
     _erosion_default_pars: dict[str, Any]  # filled with the starting pars of erosion
 
-    output_folder: str = "E:/"  # output folder for movies and images
+    # output_folder: str = "E:/"  # output folder for movies and images
     # output_folder: str = "./output/"
-    # output_folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
+    output_folder: str = "./godot/cuda_texture_gen/projects/erosion_test/"
 
     debug_upscale: int = 1 # debug upscale
 

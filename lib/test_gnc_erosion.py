@@ -97,7 +97,7 @@ def test_runner():
     runner.frame_count = 256
 
     
-    erosion.erosion_rate = 0.001
+    erosion.erosion_rate = 0.001 / 4.0
     # erosion.erosion_rate = 0.005
     
     erosion.slope_jitter = 1.0
