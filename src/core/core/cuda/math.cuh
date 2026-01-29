@@ -300,7 +300,39 @@ __host__ inline dim3 calculate_grid(int2 size, dim3 block = dim3(16, 16)) {
 
 #pragma endregion
 
-#pragma region CLAMP // clamp templates
+#pragma region MIN_MAX_CLAMP // clamp templates
+
+// float min
+DH_INLINE float min(float a, float b) {
+    return fminf(a, b);
+}
+
+// float max
+DH_INLINE float max(float a, float b) {
+    return fmaxf(a, b);
+}
+
+// int min
+DH_INLINE int min(int a, int b) {
+    return (a < b) ? a : b;
+}
+
+// int max
+DH_INLINE int max(int a, int b) {
+    return (a > b) ? a : b;
+}
+
+// uint min
+DH_INLINE uint32_t min(uint32_t a, uint32_t b) {
+    return (a < b) ? a : b;
+}
+
+// uint max
+DH_INLINE uint32_t max(uint32_t a, uint32_t b) {
+    return (a > b) ? a : b;
+}
+
+// ----------------------------------------------------------------
 
 // float clamp
 DH_INLINE float clamp(float v, float lo, float hi) {
@@ -345,6 +377,22 @@ DH_INLINE int2 wrap_or_clamp_index(int2 pos, int2 range, bool wrap) {
 
 #pragma region VECTOR_OPS // length, dot, cross, normalize
 
+#define USE_FAST_LENGTH
+#ifdef USE_FAST_LENGTH
+
+// length of float2 vector
+DH_INLINE float length(float2 v) {
+    float s = v.x * v.x + v.y * v.y;
+    return s * fast::rsqrtf(s);
+}
+
+// length of float3 vector
+DH_INLINE float length(float3 v) {
+    float s = v.x * v.x + v.y * v.y + v.z * v.z;
+    return s * fast::rsqrtf(s);
+}
+
+#else
 // length of float2 vector
 DH_INLINE float length(float2 vector) {
     return sqrtf(vector.x * vector.x + vector.y * vector.y);
@@ -354,6 +402,8 @@ DH_INLINE float length(float2 vector) {
 DH_INLINE float length(float3 vector) {
     return sqrtf(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
 }
+#endif
+#undef USE_FAST_LENGTH
 
 // // ----------------------------------------------------------------
 // // MIGHT BE FASTER

@@ -325,21 +325,52 @@ class GNC_Erosion:
     def test(self) -> None: ...
 
 class GNC_ErosionDelta:
+    _block: Incomplete
+    _exposed_layer_map: Incomplete
+    _flux8_map: Incomplete
+    _grid: Incomplete
+    _layer_count: Incomplete
+    _sediment_flux8_map: Incomplete
+    _sediment_out_map: Incomplete
     _size: Incomplete
+    _slope_vector2_map: Incomplete
     _step: Incomplete
+    _water_out_map: Incomplete
+    _water_velocity_map: Incomplete
+    deposition_rate: Incomplete
+    drain_rate: Incomplete
+    erosion_mode: Incomplete
+    erosion_rate: Incomplete
+    evaporation_rate: Incomplete
     height_map: Incomplete
+    layer_erosiveness_array: Incomplete
+    layer_map: Incomplete
+    layer_yield_array: Incomplete
+    max_height: Incomplete
+    max_water_outflow: Incomplete
+    min_height: Incomplete
+    rain_rate: Incomplete
+    sediment_capacity: Incomplete
     sediment_map: Incomplete
+    sediment_yield: Incomplete
+    slope_jitter: Incomplete
     steps: Incomplete
     stream: Incomplete
     water_map: Incomplete
+    water_velocity_mode: Incomplete
     wrap: Incomplete
     def __init__(self) -> None: ...
+    def GPU_apply_flux4(self) -> None: ...
+    def GPU_calculate_flux4(self) -> None: ...
+    def GPU_calculate_layer(self) -> None: ...
+    def GPU_calculate_slope_vectors(self) -> None: ...
     def _copy_pars_and_array_ptrs_to_structs(self) -> None: ...
     def _instance_test_1(self) -> None: ...
     def _instance_test_2(self) -> None: ...
     def _return_int_test(self, arg: int) -> int: ...
     def compute(self) -> None: ...
     def instantiate_all_refs(self) -> None: ...
+    def setup(self) -> None: ...
     def test(self) -> None: ...
 
 class GNC_Example:

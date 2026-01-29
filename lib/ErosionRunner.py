@@ -417,6 +417,15 @@ class ErosionRunnerGNC(Runner):
     pass
 
 
+class ErosionRunnerDelta(Runner):
+
+    def __init__(self) -> None:
+
+        self.erosion = cuda_texture_gen.GNC_ErosionDelta()
+        self._erosion_default_pars = tools.dicts.from_object(self.erosion)
+        self.OUTPUT_PRESET_01()  # defaults
+
+
 def main():
     pass
 

@@ -13,6 +13,8 @@ import cuda_texture_gen as ct
 
 
 from ErosionRunner import ErosionRunnerGNC
+from ErosionRunner import ErosionRunnerDelta
+
 from IslandGenerator import IslandGenerator
 
 from pathlib import Path
@@ -20,7 +22,10 @@ from pathlib import Path
 import math
 
 
-runner = ErosionRunnerGNC()
+# runner = ErosionRunnerGNC()
+runner = ErosionRunnerDelta()
+
+
 erosion = runner.erosion
 island_generator = IslandGenerator()
 
@@ -32,6 +37,7 @@ def test_runner():
 
 
     map_size = (512, 512)
+    # map_size = (1024, 1024)
 
     # ================================================================
     gnc_noise = ct.GNC_Noise()
@@ -106,7 +112,7 @@ def test_runner():
     erosion.min_height = 0.0
     erosion.drain_rate = 1.0 / 1000.0
 
-    erosion.layer_erosiveness_array = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, ]
+    erosion.layer_erosiveness_array = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
     print(erosion.height_map)
     erosion.height_map = device_array
@@ -128,15 +134,3 @@ def test_runner():
 
 test_runner()
 
-
-def test():
-    print("test()...")
-
-    # erosion.test()
-
-    erosion = ct.GNC_ErosionDelta()
-
-    erosion.test()
-
-
-# test()

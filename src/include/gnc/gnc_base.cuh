@@ -139,6 +139,7 @@ class GNC_Base {
 
         if (map.is_null()) {
             stream.instantiate_if_null();
+            map.instantiate_if_null();
             map->set_stream(stream->get());
         }
 
