@@ -77,6 +77,16 @@ struct DotFluxCalculation {
             total += product;
         }
     }
+
+    // make all values add up to 1.0f
+    DH_INLINE void normalize() {
+
+        if (total > 1e-6f) {
+            for (int n = 0; n < 8; ++n) { values[n] /= total; }
+        } else {
+            for (int n = 0; n < 8; ++n) { values[n] = 0.0f; } // prevents div by zero (just set 0)
+        }
+    }
 };
 
 __global__ void calculate_flux4(
@@ -96,7 +106,14 @@ __global__ void calculate_flux4(
     float *sediment_map = arrays->sediment_map;
     // ================================================================
 
-    // auto DotFluxCalculation dot_flux();
+    float2 slope_vector = carray::load_float2(arrays->_slope_vector2_map, idx2);
+    DotFluxCalculation dot_flux(slope_vector); // dot flux calculations
+    dot_flux.normalize();
+
+
+
+
+    
 }
 
 // --------------------------------------------------------------------------------------------------------------------------------

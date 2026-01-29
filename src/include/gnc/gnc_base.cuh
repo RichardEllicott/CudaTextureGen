@@ -15,13 +15,21 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include <type_traits> // optional but often useful for traits
 #include <utility>     // std::forward, std::index_sequence, etc.  std::swap
 
-#include "core/cuda/cast.cuh"          // top level for this object
-#include "core/cuda/device_struct.cuh" // structure device uploader
-#include "core/cuda/hash.cuh"          // cuda hash
-#include "core/cuda/math.cuh"          // cuda math
-#include "core/cuda/stream.cuh"        // device stream
-#include "core/cuda/types.cuh"         // top level for this object
+#include "core/cuda/cast.cuh"          
+#include "core/cuda/device_struct.cuh"
+#include "core/cuda/hash.cuh"         
+#include "core/cuda/math.cuh"          
+#include "core/cuda/types/stream.cuh"        
+#include "core/cuda/types.cuh"         
+#include "core/cuda/array.cuh"         
+
+
+
+
 #include "core/macros.h"               // misc macros
+
+
+
 
 #include "core/cuda/strings.cuh" // to_string
 #include "core/defines.h"        // default definitions
@@ -44,6 +52,7 @@ using namespace core::reflection;  // include at top level
 using core::strings::to_string;    // to_string at top level
 
 namespace cmath = core::cuda::math;
+namespace carray = core::cuda::array;
 namespace chash = core::cuda::hash;
 namespace math = core::math;
 
@@ -88,7 +97,7 @@ class GNC_Base {
     bool _pars_synced = false;
 
   public:
-    core::Ref<core::cuda::Stream> stream; // gets a stream
+    core::Ref<core::cuda::types::Stream> stream; // gets a stream
 
     // ================================================================================================================================
     // [Set Par]

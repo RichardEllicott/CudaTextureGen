@@ -66,7 +66,7 @@ class TEMPLATE_CLASS_NAME {
         }
     }
 
-    core::cuda::Stream stream; // will be allocated along with object
+    core::cuda::types::Stream stream; // will be allocated along with object
     bool device_allocated = false;
 
   public:

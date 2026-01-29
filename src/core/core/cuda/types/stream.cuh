@@ -4,7 +4,7 @@ cuda stream wrapper
 
 🧩 Usage Example:
 
-core::cuda::Stream stream;  // stream is automatically created
+core::cuda::types::Stream stream;  // stream is automatically created
 my_kernel<<<grid, block, 0, stream.get()>>>(...); // run a kernel
 stream.sync(); // optional: wait for completion
 
@@ -31,7 +31,7 @@ stream.sync(); // optional: wait for completion
 // Stream pool
 #include <unordered_map>
 
-namespace core::cuda {
+namespace core::cuda::types {
 
 // Stream helper, wil create a stream automaticly
 class Stream {

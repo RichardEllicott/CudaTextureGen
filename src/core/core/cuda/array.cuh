@@ -1,6 +1,8 @@
 /*
 
-conviniant loading from arrays or int's or floats
+conviniant loading from arrays of int's or floats
+
+uses reinterpret_cast if possible
 
 */
 #pragma once
@@ -8,6 +10,9 @@ conviniant loading from arrays or int's or floats
 #include <cuda_runtime.h>
 
 #include "core/defines.h"
+
+// #define INDEX_TYPE size_t
+#define INDEX_TYPE int // note size_t might be technically correct but in practise we always have ints
 
 namespace core::cuda::array {
 
@@ -66,7 +71,7 @@ struct vec_traits<int4> {
 // Generic load for float2/3/4 and int2/3/4.
 // Scalar = float, int, unsigned int, etc.
 template <typename T, typename Scalar>
-DH_INLINE T load(const Scalar *base, size_t idx) {
+DH_INLINE T load(const Scalar *base, INDEX_TYPE idx) {
     if constexpr (vec_traits<T>::can_reinterpret) {
         return *reinterpret_cast<const T *>(&base[idx]); // fast path
     } else {
@@ -80,7 +85,7 @@ DH_INLINE T load(const Scalar *base, size_t idx) {
 
 // Generic store for float2/3/4 and int2/3/4.
 template <typename T, typename Scalar>
-DH_INLINE void store(Scalar *base, size_t idx, T v) {
+DH_INLINE void store(Scalar *base, INDEX_TYPE idx, T v) {
     if constexpr (vec_traits<T>::can_reinterpret) {
         *reinterpret_cast<T *>(&base[idx]) = v; // fast path
     } else {
@@ -96,57 +101,49 @@ DH_INLINE void store(Scalar *base, size_t idx, T v) {
 #pragma region SHORTCUTS
 
 // load float2 from float array
-DH_INLINE float2 load_float2(const float *base, size_t idx) { return load<float2, float>(base, idx); }
+DH_INLINE float2 load_float2(const float *base, INDEX_TYPE idx2) { return load<float2, float>(base, idx2); }
 
 // load float3 from float array
-DH_INLINE float3 load_float3(const float *base, size_t idx) { return load<float3, float>(base, idx); }
+DH_INLINE float3 load_float3(const float *base, INDEX_TYPE idx3) { return load<float3, float>(base, idx3); }
 
 // load float4 from float array
-DH_INLINE float4 load_float4(const float *base, size_t idx) { return load<float4, float>(base, idx); }
+DH_INLINE float4 load_float4(const float *base, INDEX_TYPE idx4) { return load<float4, float>(base, idx4); }
 
 // load int2 from int array
-DH_INLINE int2 load_int2(const int *base, size_t idx) { return load<int2, int>(base, idx); }
+DH_INLINE int2 load_int2(const int *base, INDEX_TYPE idx2) { return load<int2, int>(base, idx2); }
 
 // load int3 from int array
-DH_INLINE int3 load_int3(const int *base, size_t idx) { return load<int3, int>(base, idx); }
+DH_INLINE int3 load_int3(const int *base, INDEX_TYPE idx3) { return load<int3, int>(base, idx3); }
 
 // load int4 from int array
-DH_INLINE int4 load_int4(const int *base, size_t idx) { return load<int4, int>(base, idx); }
+DH_INLINE int4 load_int4(const int *base, INDEX_TYPE idx4) { return load<int4, int>(base, idx4); }
 
 // --------------------------------------------------------------------------------------------------------------------------------
 
 // store float2 to float array
-DH_INLINE void store_float2(float *base, size_t idx, float2 v) { store<float2, float>(base, idx, v); }
+DH_INLINE void store_float2(float *base, INDEX_TYPE idx2, float2 vec) { store<float2, float>(base, idx2, vec); }
 
 // store float3 to float array
-DH_INLINE void store_float3(float *base, size_t idx, float3 v) { store<float3, float>(base, idx, v); }
+DH_INLINE void store_float3(float *base, INDEX_TYPE idx3, float3 vec) { store<float3, float>(base, idx3, vec); }
 
 // store float4 to float array
-DH_INLINE void store_float4(float *base, size_t idx, float4 v) { store<float4, float>(base, idx, v); }
+DH_INLINE void store_float4(float *base, INDEX_TYPE idx4, float4 vec) { store<float4, float>(base, idx4, vec); }
 
 // store int2 to int array
-DH_INLINE void store_int2(int *base, size_t idx, int2 v) { store<int2, int>(base, idx, v); }
+DH_INLINE void store_int2(int *base, INDEX_TYPE idx2, int2 vec) { store<int2, int>(base, idx2, vec); }
 
 // store int3 to int array
-DH_INLINE void store_int3(int *base, size_t idx, int3 v) { store<int3, int>(base, idx, v); }
+DH_INLINE void store_int3(int *base, INDEX_TYPE idx3, int3 vec) { store<int3, int>(base, idx3, vec); }
 
 // store int4 to int array
-DH_INLINE void store_int4(int *base, size_t idx, int4 v) { store<int4, int>(base, idx, v); }
+DH_INLINE void store_int4(int *base, INDEX_TYPE idx4, int4 vec) { store<int4, int>(base, idx4, vec); }
 
 // ================================================================================================================================
 
-DH_INLINE float2 load2(const float *base, size_t idx) { return load_float2(base, idx); }
-DH_INLINE int2 load2(const int *base, size_t idx) { return load_int2(base, idx); }
-
-// --------------------------------------------------------------------------------------------------------------------------------
-
-DH_INLINE void store2(float *base, size_t idx, float2 v) { store_float2(base, idx, v); }
-DH_INLINE void store2(int *base, size_t idx, int2 v) { store_int2(base, idx, v); }
-
-// --------------------------------------------------------------------------------------------------------------------------------
-
 #pragma endregion
 
 #pragma endregion
 
-} // namespace core::cuda::math::array
+} // namespace core::cuda::array
+
+#undef INDEX_TYPE

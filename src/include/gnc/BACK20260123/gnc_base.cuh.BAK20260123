@@ -25,7 +25,7 @@ dynamic properties base template using CRTP and constexpr for automatic binding
 #include "core/cuda/device_struct.cuh"
 #include "core/cuda/hash.cuh"
 #include "core/cuda/math.cuh"
-#include "core/cuda/stream.cuh"
+#include "core/cuda/types/stream.cuh"
 #include "core/cuda/types.cuh" // top level for this object
 #include "core/macros.h"
 
@@ -321,7 +321,7 @@ class GNC_Base {
     bool _pars_synced = false;
 
   public:
-    core::Ref<core::cuda::Stream> stream; // gets a stream
+    core::Ref<core::cuda::types::Stream> stream; // gets a stream
 
     // ================================================================================================================================
     // [Set Par]

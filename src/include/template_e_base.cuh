@@ -36,7 +36,7 @@ class Base {
         }
     }
 
-    core::cuda::Stream stream; // will be allocated along with object
+    core::cuda::types::Stream stream; // will be allocated along with object
 
     dim3 block; // we now computer block in configure_device
     dim3 grid;  // and grid

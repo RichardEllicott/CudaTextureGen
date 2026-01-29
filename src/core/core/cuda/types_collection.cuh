@@ -16,7 +16,7 @@ custom Cuda objects, designed to automaticly allocate and free memory, download 
 #include "types/device_array.cuh"    // NEW device array N (multidimensional template with common base class)
 
 #include "device_struct.cuh" // uploads simple structs to memory like pars
-#include "stream.cuh"        // abstracts a stream
+#include "types/stream.cuh"        // abstracts a stream
 
 
 

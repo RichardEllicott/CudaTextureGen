@@ -8,14 +8,14 @@ python bindings for Stream
 #include "core/macros.h"
 #include "nanobind_helper.h"
 
-#include "core/cuda/stream.cuh"
+#include "core/cuda/types/stream.cuh"
 
 namespace stream {
 
 namespace nb = nanobind;
 
 // inline void bind(nb::module_ &m) {
-//     using Stream = core::cuda::Stream;
+//     using Stream = core::cuda::types::Stream;
 
 //     auto cls = nb::class_<Stream>(m, "Stream");
 //     // Constructor: optional flags
@@ -50,7 +50,7 @@ namespace nb = nanobind;
 
 inline void bind(nb::module_ &m) {
 
-    using Stream = core::cuda::Stream;
+    using Stream = core::cuda::types::Stream;
 
     auto cls = nb::class_<Stream>(m, "Stream").def(nb::init<>());
 

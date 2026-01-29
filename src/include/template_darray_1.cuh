@@ -116,7 +116,7 @@ class TEMPLATE_CLASS_NAME {
         }
     }
 
-    core::cuda::Stream stream;     // will be allocated along with object
+    core::cuda::types::Stream stream;     // will be allocated along with object
     bool device_allocated = false; // use or not, not sure but marking if the maps are uploaded
 
   public:
