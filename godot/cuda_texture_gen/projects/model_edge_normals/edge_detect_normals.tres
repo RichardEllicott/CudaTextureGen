@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://c7yjcwcnn66sa"]
+
+[ext_resource type="Shader" uid="uid://dk8sptgcaet4s" path="res://projects/model_edge_normals/edge_detect_normals.gdshader" id="1_x68j5"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_x68j5")
+shader_parameter/albedo = Color(0.5, 0.36835343, 0.31791306, 1)
+shader_parameter/edge_width = 0.02

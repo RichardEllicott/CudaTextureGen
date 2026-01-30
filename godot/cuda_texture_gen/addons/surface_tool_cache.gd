@@ -19,9 +19,15 @@ mesh = st_cache.get_mesh() # get mesh, will have automatic uvs
 
 does not set materials, set these after creating the mesh on on material override
     
+    
+30/01/2026
+
+added static helpers
+    
 """
 @tool
 class_name SurfaceToolCache
+
 
 ## uv scale for cube projection
 var uv_scale := Vector2(1.0, 1.0)
@@ -36,6 +42,30 @@ var correct_reversed_uvs = true
 
 ## private surface tools
 var _surface_tools: Array[SurfaceTool] = []
+
+var debug_print := true
+
+
+enum UVMode {
+    Default,
+    CubeProject,
+    XProject,
+    YProject,
+    ZProject
+}
+
+# default uv projection mode (if we don't supply a uv)
+var uv_mode:= UVMode.Default
+
+static var DEFAULT_QUAD_UVS = PackedVector2Array([
+    Vector2(0,0),
+    Vector2(1,0),
+    Vector2(1,1),
+    Vector2(0,1),
+])
+    
+
+
 
 ## private, get the surface tool based on material_index
 func _get_surface_tool() -> SurfaceTool:
@@ -52,28 +82,28 @@ func get_mesh() -> Mesh:
     var mesh: Mesh
     
     for st: SurfaceTool in _surface_tools:
-        
-        print("test123...")
-        
+                
         st.generate_normals()
         #st.deindex()
         st.index() # found need to index here after generating normals
         st.generate_tangents()
         
         mesh = st.commit(mesh)
-        
-    var mesh_data = mesh.surface_get_arrays(0)
-    var vertices = mesh_data[Mesh.ARRAY_VERTEX]
-    print("Final vertex count: ", vertices.size())
     
-    var indices = mesh_data[Mesh.ARRAY_INDEX]
-    if indices:
-        print("Index count: ", indices.size())
-        print("Triangle count: ", indices.size() / 3)
+    if debug_print:
+    
+        var mesh_data = mesh.surface_get_arrays(0)
+        var vertices = mesh_data[Mesh.ARRAY_VERTEX]
+        print("Mesh Final vertex count: ", vertices.size())
+        
+        var indices = mesh_data[Mesh.ARRAY_INDEX]
+        if indices:
+            print("Index count: ", indices.size())
+            print("Triangle count: ", indices.size() / 3)
     
     return mesh
 
-## determine dominant axis of a normal
+## determine dominant axis of a normal for cube project
 static func get_axis(input: Vector3) -> int:
     
     input.x = abs(input.x) 
@@ -91,14 +121,18 @@ static func get_axis(input: Vector3) -> int:
         else:
             return Vector3.AXIS_Z
 
-## get normal direction based on first three verts
-static func get_normal_direction(vertices: PackedVector3Array):
+## get normal direction based on first three verts for cube project
+static func get_normal(vertices: PackedVector3Array) -> Vector3:
     assert(vertices.size() >= 3)
     var v1 := vertices[1] - vertices[0]
     var v2 := vertices[2] - vertices[0]
     return v1.cross(v2).normalized()
 
-## generate uvs with cube projection
+
+
+    
+
+## generate uvs with cube projection (or now other settings)
 func generate_uvs(vertices: PackedVector3Array) -> PackedVector2Array:
     
     assert(vertices.size() >= 3)
@@ -109,7 +143,26 @@ func generate_uvs(vertices: PackedVector3Array) -> PackedVector2Array:
     var v1 := vertices[1] - vertices[0]
     var v2 := vertices[2] - vertices[0]
     var cross := v1.cross(v2)
-    var axis := get_axis(cross)
+    
+    var axis: int
+    
+    match uv_mode:
+        UVMode.Default:
+            for i in uvs.size():
+                uvs[i] = DEFAULT_QUAD_UVS[i] * uv_scale + uv_offset
+            return uvs
+                
+        UVMode.CubeProject:
+            axis = get_axis(cross)
+        UVMode.XProject:
+            axis = Vector3.AXIS_X
+        UVMode.YProject:
+            axis = Vector3.AXIS_Y
+        UVMode.ZProject:
+            axis = Vector3.AXIS_Z
+            
+    
+    
     
     for i in vertices.size():    
         var vert := vertices[i]
@@ -152,6 +205,7 @@ func make_ngon(
     
     _get_surface_tool().set_smooth_group(smooth_group)
     _get_surface_tool().add_triangle_fan(vertices, uvs, colors)
+
 
     
     

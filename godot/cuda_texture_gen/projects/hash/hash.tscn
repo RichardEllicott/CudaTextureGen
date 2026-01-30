@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://b4de86glmhtjb"]
+
+[ext_resource type="Shader" uid="uid://ccdb4wvv57rkt" path="res://projects/hash/hash3_simplex.gdshader" id="1_yhnwv"]
+[ext_resource type="Shader" uid="uid://bignulxyluoom" path="res://projects/hash/prebake_noise.gdshader" id="2_hhqk0"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hhqk0"]
+render_priority = 0
+shader = ExtResource("1_yhnwv")
+shader_parameter/speed = 0.25
+shader_parameter/scale = 5.0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_4j0ch"]
+material = SubResource("ShaderMaterial_hhqk0")
+size = Vector2(128, 128)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ntpmy"]
+size = Vector2(128, 128)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_hhqk0"]
+frequency = 0.1202
+fractal_type = 0
+
+[sub_resource type="NoiseTexture3D" id="NoiseTexture3D_4j0ch"]
+noise = SubResource("FastNoiseLite_hhqk0")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dqmsh"]
+render_priority = 0
+shader = ExtResource("2_hhqk0")
+shader_parameter/noise_3d = SubResource("NoiseTexture3D_4j0ch")
+shader_parameter/speed = 0.0510000024225
+shader_parameter/scale = 0.10000000149012
+
+[sub_resource type="BoxMesh" id="BoxMesh_yhnwv"]
+
+[node name="Hash" type="Node3D" unique_id=1938186507]
+
+[node name="simplex_noise" type="MeshInstance3D" parent="." unique_id=1677150668]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0026789308, 0.0020816922, -0.00016868114)
+visible = false
+mesh = SubResource("PlaneMesh_4j0ch")
+
+[node name="prebake_noise" type="MeshInstance3D" parent="." unique_id=377409102]
+mesh = SubResource("PlaneMesh_ntpmy")
+surface_material_override/0 = SubResource("ShaderMaterial_dqmsh")
+
+[node name="box" type="MeshInstance3D" parent="." unique_id=2097879131]
+visible = false
+mesh = SubResource("BoxMesh_yhnwv")

@@ -1,0 +1,148 @@
+[gd_scene format=4 uid="uid://bmtn5pxqwxl2y"]
+
+[ext_resource type="Material" uid="uid://cvirici48leas" path="res://textures/proto.tres" id="1_jgh7h"]
+[ext_resource type="Script" uid="uid://cukv284p8k8ve" path="res://projects/model_edge_normals/model_edge_normals.gd" id="1_t2xu2"]
+[ext_resource type="Texture2D" uid="uid://dvmymnvlm22ph" path="res://textures/PROTO.png" id="2_xwisk"]
+[ext_resource type="Material" uid="uid://c7yjcwcnn66sa" path="res://projects/model_edge_normals/edge_detect_normals.tres" id="3_vxlk4"]
+[ext_resource type="Script" uid="uid://bgqsaj2q5rqqe" path="res://projects/model_edge_normals/genrate_normal_map.gd" id="5_nlc5y"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_vxlk4"]
+
+[sub_resource type="Shader" id="Shader_vxlk4"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.6.stable's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+void vertex() {
+	UV = UV * uv1_scale.xy + uv1_offset.xy;
+}
+
+void fragment() {
+	vec2 base_uv = UV;
+
+	vec4 albedo_tex = texture(texture_albedo, base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+
+	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
+	METALLIC = metallic_tex * metallic;
+	SPECULAR = specular;
+
+	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
+	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
+	ROUGHNESS = roughness_tex * roughness;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_nlc5y"]
+render_priority = 0
+shader = SubResource("Shader_vxlk4")
+shader_parameter/albedo = Color(1, 1, 1, 1)
+shader_parameter/texture_albedo = ExtResource("2_xwisk")
+shader_parameter/albedo_texture_size = Vector2i(128, 128)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_jgh7h"]
+_surfaces = [{
+"aabb": AABB(0, -1, -4.371139e-08, 1, 1, 1e-05),
+"attribute_data": PackedByteArray("AACAPwAAAAAAAIA/AAAAPwAAAAAAAAA/AAAAAAAAAAAAAIA/AACAPwAAAAAAAIA/"),
+"format": 34359742487,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAAACAAMAAQAEAAUAAQAFAAIA"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 6,
+"vertex_data": PackedByteArray("AACAPwAAAAAAAAAAAACAPwAAAL8uvbuyAAAAAAAAAL8uvbuyAAAAAAAAAAAAAAAAAACAPwAAgL8uvTuzAAAAAAAAgL8uvTuz/3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+/")
+}]
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_nlc5y"]
+_surfaces = [{
+"aabb": AABB(0, 0, -0.25, 1, 1, 0.25),
+"attribute_data": PackedByteArray("AACAPwAAAAAAAIA/AACAPgAAAAAAAIA+AAAAAAAAAAAAAIA/AACAPwAAAAAAAIA/"),
+"format": 34359742487,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAAACAAMAAQAEAAUAAQAFAAIA"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 6,
+"vertex_data": PackedByteArray("AACAPwAAgD8AAIC+AACAPwAAQD8AAAAAAAAAAAAAQD8AAAAAAAAAAAAAgD8AAIC+AACAPwAAAAAAAAAAAAAAAAAAAAAAAAAA/3//v////7//f4Ga////v/9/R6////+//3//v////7//f/9/////v/9//3////+/")
+}]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_vxlk4"]
+
+[sub_resource type="Sky" id="Sky_jgh7h"]
+sky_material = SubResource("ProceduralSkyMaterial_vxlk4")
+
+[sub_resource type="Environment" id="Environment_nlc5y"]
+background_mode = 2
+sky = SubResource("Sky_jgh7h")
+
+[node name="model_edge_normals" type="Node3D" unique_id=1930773157]
+
+[node name="Cube" type="MeshInstance3D" parent="." unique_id=1500220203]
+visible = false
+mesh = SubResource("BoxMesh_vxlk4")
+surface_material_override/0 = ExtResource("1_jgh7h")
+
+[node name="Cube2" type="MeshInstance3D" parent="." unique_id=641850149]
+visible = false
+mesh = SubResource("BoxMesh_vxlk4")
+surface_material_override/0 = SubResource("ShaderMaterial_nlc5y")
+
+[node name="edge_detect_normals" type="MeshInstance3D" parent="." unique_id=1477328248]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7030349, 0, 0)
+visible = false
+mesh = SubResource("BoxMesh_vxlk4")
+surface_material_override/0 = ExtResource("3_vxlk4")
+
+[node name="edge_detect_normals3" type="MeshInstance3D" parent="." unique_id=653295181]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2776325, 0.1352005, -0.526008)
+visible = false
+mesh = SubResource("BoxMesh_vxlk4")
+surface_material_override/0 = ExtResource("3_vxlk4")
+
+[node name="proto" type="MeshInstance3D" parent="." unique_id=933522972]
+visible = false
+material_override = ExtResource("1_jgh7h")
+mesh = SubResource("ArrayMesh_jgh7h")
+script = ExtResource("1_t2xu2")
+
+[node name="edge_detect_normals2" type="MeshInstance3D" parent="." unique_id=865926838]
+mesh = SubResource("ArrayMesh_nlc5y")
+surface_material_override/0 = ExtResource("3_vxlk4")
+script = ExtResource("1_t2xu2")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=807844199]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1282604, 0.22998893, -0.88891697)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1649057063]
+environment = SubResource("Environment_nlc5y")
+
+[node name="genrate_normal_map" type="Node" parent="." unique_id=702442143]
+script = ExtResource("5_nlc5y")

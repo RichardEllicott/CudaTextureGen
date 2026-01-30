@@ -5,5 +5,3 @@ void vertex() {
     float h = texture(texture_heightmap, UV).r;
     VERTEX.y += h * heightmap_scale;
 }
-
-// or
