@@ -31,12 +31,16 @@ class_name SurfaceToolCache
 
 ## uv scale for cube projection
 var uv_scale := Vector2(1.0, 1.0)
+
 ## uv offset for cube projection
 var uv_offset := Vector2.ZERO
+
 ## material_index will trigger more surface tools to be created, whih allows multiple materials for mesh
 var material_index := 0
+
 ## set to -1 for flat shading, otherwise smooth shading will be used
 var smooth_group := 0
+
 ## correct reversed textures so no textures are mirrored
 var correct_reversed_uvs = true
 
@@ -57,7 +61,7 @@ enum UVMode {
 # default uv projection mode (if we don't supply a uv)
 var uv_mode:= UVMode.Default
 
-static var DEFAULT_QUAD_UVS = PackedVector2Array([
+static var DEFAULT_QUAD_UVS := PackedVector2Array([
     Vector2(0,0),
     Vector2(1,0),
     Vector2(1,1),
@@ -104,33 +108,63 @@ func get_mesh() -> Mesh:
     return mesh
 
 ## determine dominant axis of a normal for cube project
-static func get_axis(input: Vector3) -> int:
+static func get_major_axis(input: Vector3) -> int:
     
     input.x = abs(input.x) 
     input.y = abs(input.y)
     input.z = abs(input.z)
     
     if input.x >= input.y:
-        if input.x >= input.z:
-            return Vector3.AXIS_X
-        else:
-            return Vector3.AXIS_Z
+        if input.x >= input.z: return Vector3.AXIS_X
+        else: return Vector3.AXIS_Z
     else:
-        if input.y >= input.z:
-            return Vector3.AXIS_Y
-        else:
-            return Vector3.AXIS_Z
+        if input.y >= input.z: return Vector3.AXIS_Y
+        else: return Vector3.AXIS_Z
 
 ## get normal direction based on first three verts for cube project
-static func get_normal(vertices: PackedVector3Array) -> Vector3:
+static func get_face_normal(vertices: PackedVector3Array) -> Vector3:
     assert(vertices.size() >= 3)
     var v1 := vertices[1] - vertices[0]
     var v2 := vertices[2] - vertices[0]
     return v1.cross(v2).normalized()
 
 
-
+func cube_project(
+    vertices: PackedVector3Array,
+    correct_reversed_uvs: bool = false,
+    uv_scale: Vector2 = Vector2(1,1),
+    uv_offset: Vector2 = Vector2(1,1)
     
+    ) -> PackedVector2Array:
+    
+    
+    assert(vertices.size() >= 3)
+    
+    var uvs := PackedVector2Array() # build uv array
+    uvs.resize(vertices.size()) # set it's size
+    
+    var normal := get_face_normal(vertices)
+    var axis := get_major_axis(normal)
+    
+    for i in vertices.size():
+        var vert := vertices[i]
+        var uv := Vector2.ZERO
+        match axis:
+            Vector3.AXIS_X: uv = Vector2(-vert.z, -vert.y)
+            Vector3.AXIS_Y: uv = Vector2(vert.x, vert.z)
+            Vector3.AXIS_Z: uv = Vector2(vert.x, -vert.y)    
+            
+        # reversed uv correction
+        if correct_reversed_uvs and normal[axis] > 0.0:
+            uv.x = -uv.x
+        
+        uv *= uv_scale # scale
+        uv += uv_offset
+        uvs[i] = uv
+        
+
+
+    return uvs
 
 ## generate uvs with cube projection (or now other settings)
 func generate_uvs(vertices: PackedVector3Array) -> PackedVector2Array:
@@ -153,7 +187,7 @@ func generate_uvs(vertices: PackedVector3Array) -> PackedVector2Array:
             return uvs
                 
         UVMode.CubeProject:
-            axis = get_axis(cross)
+            axis = get_major_axis(cross)
         UVMode.XProject:
             axis = Vector3.AXIS_X
         UVMode.YProject:
@@ -185,7 +219,7 @@ func generate_uvs(vertices: PackedVector3Array) -> PackedVector2Array:
     return uvs
 
 ## make an ngon, if the uvs is empty or wrong size, we will build it with a cube projection
-func make_ngon(
+func add_ngon(
     vertices: PackedVector3Array,
     uvs: PackedVector2Array = PackedVector2Array(),
     colors: PackedColorArray = PackedColorArray()
@@ -193,7 +227,7 @@ func make_ngon(
         
     assert(vertices.size() >= 3)
     
-    # if uvs empty, we assume we want a cube projection
+    # if uvs empty, we assume we want a default uv
     if vertices.size() != uvs.size():
         uvs = generate_uvs(vertices)
     else:
@@ -207,5 +241,9 @@ func make_ngon(
     _get_surface_tool().add_triangle_fan(vertices, uvs, colors)
 
 
+func add_stuff():
     
+    _get_surface_tool().add
+    
+    pass
     

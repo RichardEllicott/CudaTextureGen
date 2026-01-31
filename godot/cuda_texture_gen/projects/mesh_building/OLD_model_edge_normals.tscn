@@ -1,10 +1,9 @@
 [gd_scene format=4 uid="uid://bmtn5pxqwxl2y"]
 
-[ext_resource type="Material" uid="uid://cvirici48leas" path="res://textures/proto.tres" id="1_jgh7h"]
-[ext_resource type="Script" uid="uid://cukv284p8k8ve" path="res://projects/model_edge_normals/model_edge_normals.gd" id="1_t2xu2"]
-[ext_resource type="Texture2D" uid="uid://dvmymnvlm22ph" path="res://textures/PROTO.png" id="2_xwisk"]
-[ext_resource type="Material" uid="uid://c7yjcwcnn66sa" path="res://projects/model_edge_normals/edge_detect_normals.tres" id="3_vxlk4"]
-[ext_resource type="Script" uid="uid://bgqsaj2q5rqqe" path="res://projects/model_edge_normals/genrate_normal_map.gd" id="5_nlc5y"]
+[ext_resource type="Material" uid="uid://cvirici48leas" path="res://textures/proto.tres" id="1_p5als"]
+[ext_resource type="Texture2D" uid="uid://dvmymnvlm22ph" path="res://textures/PROTO.png" id="2_eqeb7"]
+[ext_resource type="Material" uid="uid://c7yjcwcnn66sa" path="res://projects/mesh_building/shaders/edge_detect_uv_based.tres" id="3_wsaak"]
+[ext_resource type="Script" uid="uid://cukv284p8k8ve" path="res://projects/mesh_building/model_edge_normals.gd" id="4_lpmn8"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_vxlk4"]
 
@@ -56,7 +55,7 @@ void fragment() {
 render_priority = 0
 shader = SubResource("Shader_vxlk4")
 shader_parameter/albedo = Color(1, 1, 1, 1)
-shader_parameter/texture_albedo = ExtResource("2_xwisk")
+shader_parameter/texture_albedo = ExtResource("2_eqeb7")
 shader_parameter/albedo_texture_size = Vector2i(128, 128)
 shader_parameter/point_size = 1.0
 shader_parameter/roughness = 1.0
@@ -96,19 +95,19 @@ _surfaces = [{
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_vxlk4"]
 
-[sub_resource type="Sky" id="Sky_jgh7h"]
+[sub_resource type="Sky" id="Sky_qvg5b"]
 sky_material = SubResource("ProceduralSkyMaterial_vxlk4")
 
 [sub_resource type="Environment" id="Environment_nlc5y"]
 background_mode = 2
-sky = SubResource("Sky_jgh7h")
+sky = SubResource("Sky_qvg5b")
 
 [node name="model_edge_normals" type="Node3D" unique_id=1930773157]
 
 [node name="Cube" type="MeshInstance3D" parent="." unique_id=1500220203]
 visible = false
 mesh = SubResource("BoxMesh_vxlk4")
-surface_material_override/0 = ExtResource("1_jgh7h")
+surface_material_override/0 = ExtResource("1_p5als")
 
 [node name="Cube2" type="MeshInstance3D" parent="." unique_id=641850149]
 visible = false
@@ -119,30 +118,27 @@ surface_material_override/0 = SubResource("ShaderMaterial_nlc5y")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7030349, 0, 0)
 visible = false
 mesh = SubResource("BoxMesh_vxlk4")
-surface_material_override/0 = ExtResource("3_vxlk4")
+surface_material_override/0 = ExtResource("3_wsaak")
 
 [node name="edge_detect_normals3" type="MeshInstance3D" parent="." unique_id=653295181]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2776325, 0.1352005, -0.526008)
 visible = false
 mesh = SubResource("BoxMesh_vxlk4")
-surface_material_override/0 = ExtResource("3_vxlk4")
+surface_material_override/0 = ExtResource("3_wsaak")
 
 [node name="proto" type="MeshInstance3D" parent="." unique_id=933522972]
 visible = false
-material_override = ExtResource("1_jgh7h")
+material_override = ExtResource("1_p5als")
 mesh = SubResource("ArrayMesh_jgh7h")
-script = ExtResource("1_t2xu2")
+script = ExtResource("4_lpmn8")
 
 [node name="edge_detect_normals2" type="MeshInstance3D" parent="." unique_id=865926838]
 mesh = SubResource("ArrayMesh_nlc5y")
-surface_material_override/0 = ExtResource("3_vxlk4")
-script = ExtResource("1_t2xu2")
+surface_material_override/0 = ExtResource("3_wsaak")
+script = ExtResource("4_lpmn8")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=807844199]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1282604, 0.22998893, -0.88891697)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1282604, 0.22998893, 2.3495097)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1649057063]
 environment = SubResource("Environment_nlc5y")
-
-[node name="genrate_normal_map" type="Node" parent="." unique_id=702442143]
-script = ExtResource("5_nlc5y")

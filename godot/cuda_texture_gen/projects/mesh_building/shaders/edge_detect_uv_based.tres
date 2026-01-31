@@ -1,0 +1,14 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://c7yjcwcnn66sa"]
+
+[ext_resource type="Shader" uid="uid://d4erdjb5q5yvl" path="res://projects/mesh_building/shaders/edge_detect_uv_based.gdshader" id="1_geowk"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_geowk")
+shader_parameter/albedo = Color(0.53115404, 0.5293523, 0.6640625, 1)
+shader_parameter/edge_width = 0.22800001083
+shader_parameter/normal_map_depth = 0.50000002375
+shader_parameter/cubic_ease = false
+shader_parameter/apply_edge_mask_to_albedo = false
+shader_parameter/ao_strength = 0.0
+shader_parameter/ao_light_affect = 11.1150005279625

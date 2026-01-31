@@ -59,8 +59,7 @@ erosion using new approach to sampling
     X(FloatArray<8>, layer_erosiveness_array, EROSION_DEFAULT_LAYER_SETTINGS, "multiplied by erosion amount") \
     X(FloatArray<8>, layer_sediment_yield_array, EROSION_DEFAULT_LAYER_SETTINGS, "[0,1] erosion sediment yield")
 
-// #define TEMPLATE_CLASS_PARAMETERS_STRUCT_7
-// #define TEMPLATE_CLASS_PARAMETERS_STRUCT_8
+
 
 #define TEMPLATE_CLASS_PARAMETERS_STRUCT \
     TEMPLATE_CLASS_PARAMETERS_STRUCT_1   \
@@ -70,8 +69,6 @@ erosion using new approach to sampling
     TEMPLATE_CLASS_PARAMETERS_STRUCT_5   \
     TEMPLATE_CLASS_PARAMETERS_STRUCT_6
 
-// TEMPLATE_CLASS_PARAMETERS_STRUCT_7
-// TEMPLATE_CLASS_PARAMETERS_STRUCT_8
 
 // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 

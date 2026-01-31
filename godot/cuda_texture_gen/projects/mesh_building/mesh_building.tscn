@@ -1,0 +1,56 @@
+[gd_scene format=4 uid="uid://cv5w0nvhaisj8"]
+
+[ext_resource type="Material" uid="uid://cvirici48leas" path="res://textures/proto.tres" id="1_s0q7a"]
+[ext_resource type="Script" uid="uid://cukv284p8k8ve" path="res://projects/mesh_building/model_edge_normals.gd" id="1_y8ir2"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_qbng3"]
+
+[sub_resource type="Sky" id="Sky_jgh7h"]
+sky_material = SubResource("ProceduralSkyMaterial_qbng3")
+
+[sub_resource type="Environment" id="Environment_y8ir2"]
+background_mode = 2
+sky = SubResource("Sky_jgh7h")
+
+[sub_resource type="Curve3D" id="Curve3D_s0q7a"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1),
+"tilts": PackedFloat32Array(0, 0, 0)
+}
+point_count = 3
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_s0q7a"]
+_surfaces = [{
+"aabb": AABB(0, 0, 0, 1, 1, 1),
+"attribute_data": PackedByteArray("AAAAQAAAAAAAAIA/AAAAAAAAgD8AAIA/AAAAQAAAgD8AAABAAACAPwAAgD8AAIA/AACAPwAAAAAAAABAAACAPwAAgD8AAAAAAAAAQAAAAAAAAABAAAAAQAAAgD8AAABAAACAPwAAgD8AAABAAACAPwAAAAAAAAAAAAAAAAAAgD8AAIA/AACAPwAAgD8AAAAAAACAPwAAAEAAAABAAAAAQAAAAEAAAIA/AACAPwAAgD8AAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAgD8AAAAAAACAPwAAgD8="),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAAACAAMABAAFAAYABwAIAAkACgALAAwACgAMAA0ADgAPABAADgAQABEAEgATABQAEgAUABUAFgAXABgAGQAaABsA"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 28,
+"vertex_data": PackedByteArray("AACAPwAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAgD8AAIA/AACAPwAAAAAAAIA/AAAAAAAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAgD8AAIA/AAAAAAAAgD8AAAAAAACAPwAAgD8AAAAAAAAAAAAAgD8AAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAIA/AACAPwAAAAAAAIA/AACAPwAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAPwAAAAAAAAAA/////////z//////////P/////////8//////////z//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f///////v/9///////+//3///////7//f///////vwAA/3///wAAAAD/f///AAAAAP9///8AAAAA/3///wAA/38AAP///z//fwAA////P/9/AAD///8//38AAP///z////9//////////3//////////f/////////9//////////3//////////f/////8=")
+}]
+
+[node name="MeshBuilding" type="Node3D" unique_id=1092026233]
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=311438803]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1282604, 2.9586153, -2.6094089)
+visible = false
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=838995684]
+environment = SubResource("Environment_y8ir2")
+
+[node name="Path3D" type="Path3D" parent="." unique_id=526212074]
+visible = false
+curve = SubResource("Curve3D_s0q7a")
+
+[node name="Node3D" type="Node3D" parent="." unique_id=770927855]
+visible = false
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="." unique_id=1141966128]
+mesh = SubResource("ArrayMesh_s0q7a")
+surface_material_override/0 = ExtResource("1_s0q7a")
+script = ExtResource("1_y8ir2")
+generate_normal_texture = true
+mode = 3
