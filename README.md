@@ -10,8 +10,7 @@ CudaTextureGen is a Python-based framework for procedural texture generation and
 
 ## ⚙️ Requirements
 
-This framework requires a CUDA-capable NVIDIA GPU and a compatible
-software stack. It has been tested on the following configurations:
+This framework requires a CUDA-capable NVIDIA GPU and a compatible software stack. It has been tested on the following configurations:
 
 ### ✅ Primary Environment
 
@@ -26,6 +25,8 @@ software stack. It has been tested on the following configurations:
 * C++: C++17
 * CUDA: V12.0.140
 * Python: 3.12.3
+
+Build system uses CMake, Ninja (SSCache) MSVC or GCC
 
 > ⚠️ **A CUDA-compatible GPU is required.** This project will not run on systems without NVIDIA hardware and drivers.  
 > 🧪 *Note: Future support for non-CUDA backends may be possible via [AdaptiveCpp](https://github.com/AdaptiveCpp/AdaptiveCpp), a SYCL-based compiler targeting multiple accelerators.*
