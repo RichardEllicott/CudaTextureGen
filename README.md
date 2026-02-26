@@ -2,7 +2,7 @@
 
 ## ⚠️ WARNING
 
-CudaTextureGen is currently still in a prototype state, so far it achives various seamless noise generators, very basic seamless erosion, seamless bluring... still undergoing major refactoring but does compile!
+CudaTextureGen is currently still in a prototype state
 
 ## ℹ️ About
 
